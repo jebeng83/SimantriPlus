@@ -7,6 +7,7 @@ use Request;
 
 class PemeriksaanRalanController extends Controller
 {
+    public $dokter, $noRawat, $noRM; 
     /**
      * Display a listing of the resource.
      *
@@ -15,71 +16,59 @@ class PemeriksaanRalanController extends Controller
     public function __construct()
     {
         $this->middleware('loginauth');
+        $this->dokter = session()->get('username');
+        $this->noRawat = Request::get('no_rawat');
+        $this->noRM = Request::get('no_rm');
     }
 
     public function index()
     {
         $dokter = session()->get('username');
         $noRawat = Request::get('no_rawat');
-        $pasien = DB::table('reg_periksa')
-                    ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-                    ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
-                    ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
-                    ->leftJoin('catatan_pasien', 'reg_periksa.no_rkm_medis', '=', 'catatan_pasien.no_rkm_medis')
-                    ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
-                    ->where('reg_periksa.no_rawat', $noRawat)
-                    ->select('reg_periksa.no_rkm_medis', 'reg_periksa.no_rawat', 'pasien.nm_pasien', 'pasien.umur', 
-                            'reg_periksa.status_lanjut', 'reg_periksa.kd_pj', 'penjab.png_jawab', 'pasien.tgl_lahir', 
-                            'dokter.nm_dokter', 'poliklinik.nm_poli', 'pasien.no_tlp', 'reg_periksa.kd_poli', 
-                            'catatan_pasien.catatan', 'pasien.pekerjaan', 'pasien.no_peserta', 'pasien.alamat')
-                    ->first();
-        $riwayatPemeriksaan = DB::table('reg_periksa')
-                                    ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
-                                    ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
-                                    ->where('no_rkm_medis', $pasien->no_rkm_medis)
-                                    ->select('reg_periksa.tgl_registrasi', 'reg_periksa.no_rawat', 'dokter.nm_dokter', 
-                                            'reg_periksa.status_lanjut', 'poliklinik.nm_poli', 'reg_periksa.no_reg')
-                                    ->orderBy('reg_periksa.tgl_registrasi', 'desc')
-                                    ->limit(5)
-                                    ->get();
-        $pemeriksaan = DB::table('pemeriksaan_ralan')->where('no_rawat', $noRawat)->first();
-        $headsRiwayatPemeriksaan = ['Tanggal', 'No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa', 'Obstetri'];
-        $headsRiwayatResep = ['Nomor Resep', 'Tanggal','Detail Resep', 'Aksi'];
-        $riwayatPeresepan = DB::table('reg_periksa')
-                                ->join('resep_obat', 'reg_periksa.no_rawat', '=', 'resep_obat.no_rawat')
-                                ->where('resep_obat.kd_dokter', $dokter)
-                                ->where('reg_periksa.no_rkm_medis', $pasien->no_rkm_medis)
-                                ->where('reg_periksa.status_lanjut', 'Ralan')
-                                ->orderBy('resep_obat.tgl_peresepan', 'desc')
-                                ->select('resep_obat.no_resep', 'resep_obat.tgl_peresepan')
-                                ->limit(5)
-                                ->get();
-        return view('ralan.pemeriksaan-ralan', [
-            'dokter' => $dokter,
-            'pasien' => $pasien,
-            'riwayatPemeriksaan' => $riwayatPemeriksaan,
-            'headsRiwayatPemeriksaan' => $headsRiwayatPemeriksaan,
-            'pemeriksaan' => $pemeriksaan,
-            'riwayatPeresepan' => $riwayatPeresepan,
-            'headsRiwayatResep' => $headsRiwayatResep,
-        ]);
+        $noRM = Request::get('no_rm');
+        return view('ralan.pemeriksaan-ralan');
     }
 
-    public static function postResep($noRawat)
+    public function hapusObat($noResep, $kdObat)
+    {
+        try{
+            $delete = DB::table('resep_dokter')->where('no_resep', $noResep)->where('kode_brng', $kdObat)->delete();
+            return response()->json(['status'=> 'sukses', 'pesan'=> 'Obat berhasil dihapus']);
+        }catch (\Illuminate\Database\QueryException $ex){
+            return response()->json(['status'=> 'gagal', 'pesan'=> $ex->getMessage()]);
+        }
+    }
+
+    public function getCopyResep($noResep)
+    {
+        $data = DB::table('resep_dokter')
+                    ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+                    ->where('resep_dokter.no_resep', $noResep)
+                    ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_dokter.tgl_peresepan', 'resep_dokter.jam_peresepan')
+                    ->get();
+        return response()->json($data);
+    }
+
+    public function postResep()
     {
         $dokter = session()->get('username');
         $resObat = Request::get('obat');
         $resJml = Request::get('jumlah');
-        $resAturan = Request::get('aturan');
+        $resAturan = Request::get('aturan_pakai');
+        $noRawat = Request::get('no_rawat');
+        // return response()->json([
+        //     'status' => 'sukses',
+        //     'data' => $noRawat,
+        // ]);
         try{
-            for ($i=0; $i < count($obat); $i++){
-                $obat = $resObat[$i].id;
+            for ($i=0; $i < count($resObat); $i++){
+                $obat = $resObat[$i];
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
                 $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxJam)->where('kd_bangsal', 'DPF')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxJam)->where('jam', $maxJam)->max('stok');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if($maxStok < 1){
                     return response()->json([
@@ -91,7 +80,7 @@ class PemeriksaanRalanController extends Controller
                 $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
                 $maxNo = substr($no->resep, 0, 4);
                 $nextNo = sprintf('%04s', ($maxNo + 1));
-                $tgl = date('Y-m-d');
+                $tgl = date('Ymd');
                 $noResep = $tgl.''.$nextNo;
 
                 if($resep){
@@ -112,17 +101,17 @@ class PemeriksaanRalanController extends Controller
                         'jam_peresepan' => date('H:i:s'),
                         'status' => 'Ralan',
                     ]);
+                    DB::table('resep_dokter')->insert([
+                        'no_resep' => $noResep,
+                        'kode_brng' => $obat,
+                        'jml' => $jml,
+                        'aturan_pakai' => $aturan,
+                    ]);
                 }
             }
-            $data = DB::table('resep_dokter')
-                        ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
-                        ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
-                        ->where('resep_obat.no_resep', $noResep)
-                        ->where('resep_obat.kd_dokter', $dokter)
-                        ->get();
-            return respone()->json([
+            return response()->json([
                 'status' => 'sukses',
-                'data' => $data
+                'pesan' => 'Input resep berhasil'
             ]);
         }catch (\Illuminate\Database\QueryException $ex){
             return response()->json([

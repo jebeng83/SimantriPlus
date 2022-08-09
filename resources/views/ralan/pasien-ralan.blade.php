@@ -11,25 +11,25 @@
     <x-adminlte-callout theme="info" title="{{$nm_poli}}">
         @php
             $config["responsive"] = true;
-            // dd($data);
         @endphp
         {{-- Minimal example / fill data using the component slot --}}
         <x-adminlte-datatable id="tablePasienRalan" :heads="$heads" :config="$config" head-theme="dark" striped hoverable bordered compressed>
             @foreach($data as $row)
-                <tr @php if($row->stts == 'Sudah'){echo 'class="bg-green text-white"';} @endphp>
-                    @php $i = 0; @endphp
-                    @foreach($row as $cell)
-                        @if($i == 1)
-                            <td>
-                                <a class="text-black" href="{{route('ralan.pemeriksaan', ['no_rawat' => $row->no_rawat])}}">
-                                    {{$cell}}
-                                </a>
-                            </td>
-                        @else
-                            <td>{!! $cell !!}</td>
-                        @endif
-                    @php $i++; @endphp
-                    @endforeach
+                <tr @if($row->stts == 'Sudah') class="bg-success" @endif >
+                    <td>{{$row->no_reg}}</td>
+                    <td> 
+                        @php
+                        $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
+                        $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
+                        @endphp
+                        <a class="text-black" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}">
+                            {{$row->nm_pasien}}
+                        </a>
+                    </td>
+                    <td>{{$row->no_rawat}}</td>
+                    <td>{{$row->no_tlp}}</td>
+                    <td>{{$row->nm_dokter}}</td>
+                    <td>{{$row->stts}}</td>
                 </tr>
             @endforeach
         </x-adminlte-datatable>
