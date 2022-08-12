@@ -22,7 +22,7 @@
                         $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
                         $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
                         @endphp
-                        <a class="text-black" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}">
+                        <a class="text-black" target="_blank" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
                             {{$row->nm_pasien}}
                         </a>
                     </td>

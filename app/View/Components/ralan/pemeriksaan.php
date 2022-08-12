@@ -8,7 +8,7 @@ use DB;
 
 class pemeriksaan extends Component
 {
-    public $noRawat;
+    public $noRawat, $encryptNoRawat;
     /**
      * Create a new component instance.
      *
@@ -16,7 +16,8 @@ class pemeriksaan extends Component
      */
     public function __construct($noRawat)
     {
-        $this->noRawat = $this->decryptData($noRawat);
+        $this->encryptNoRawat = $this->encryptData($noRawat);
+        $this->noRawat = $noRawat;
     }
 
     /**
@@ -29,12 +30,13 @@ class pemeriksaan extends Component
         $pemeriksaan = DB::table('pemeriksaan_ralan')->where('no_rawat', $this->noRawat)->first();
         return view('components.ralan.pemeriksaan', [
             'pemeriksaan' => $pemeriksaan,
+            'encryptNoRawat' => $this->encryptNoRawat,
         ]);
     }
 
-    public function decryptData($data)
+    public function encryptData($data)
     {
-        $data = Crypt::decrypt($data);
+        $data = Crypt::encrypt($data);
         return $data;
     }
 }

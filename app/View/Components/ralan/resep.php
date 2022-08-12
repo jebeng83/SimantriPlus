@@ -8,7 +8,7 @@ use Illuminate\View\Component;
 
 class resep extends Component
 {
-    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat;
+    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik;
     /**
      * Create a new component instance.
      *
@@ -16,8 +16,10 @@ class resep extends Component
      */
     public function __construct()
     {
-        $this->noRawat = $this->decryptData(Request::get('no_rawat'));
-        $this->noRM = $this->decryptData(Request::get('no_rm'));
+        $this->noRawat = Request::get('no_rawat');
+        $this->noRM = Request::get('no_rm');
+        $this->encryptNoRawat = $this->encryptData($this->noRawat);
+        $this->encryptNoRM = $this->encryptData($this->noRM);
         $this->dokter = session()->get('username');
         $this->heads = ['Nomor Resep', 'Tanggal','Detail Resep', 'Aksi'];
         $this->riwayatPeresepan = DB::table('reg_periksa')
@@ -37,6 +39,9 @@ class resep extends Component
                         ->where('resep_obat.kd_dokter', $this->dokter)
                         ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
                         ->get();
+
+        $this->dataMetodeRacik = DB::table('metode_racik')
+                                ->get();
     }
 
     /**
@@ -51,6 +56,9 @@ class resep extends Component
             'riwayatPeresepan' => $this->riwayatPeresepan, 
             'resep' => $this->resep,
             'no_rawat' => $this->noRawat,
+            'encryptNoRawat' => $this->encryptNoRawat,
+            'encryptNoRM' => $this->encryptNoRM,
+            'dataMetodeRacik' => $this->dataMetodeRacik
         ]);
     }
 
@@ -64,9 +72,9 @@ class resep extends Component
         return $data;
     }
 
-    public function decryptData($data)
+    public function encryptData($data)
     {
-        $data = Crypt::decrypt($data);
+        $data = Crypt::encrypt($data);
         return $data;
     }
 }

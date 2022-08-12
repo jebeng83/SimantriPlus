@@ -8,7 +8,7 @@ use Illuminate\View\Component;
 
 class resume extends Component
 {
-    public $noRawat, $noRm, $kel, $diagnosa, $prosedur, $terapi;
+    public $noRawat, $encrypNoRawat, $noRm, $kel, $diagnosa, $prosedur, $terapi;
     /**
      * Create a new component instance.
      *
@@ -16,8 +16,9 @@ class resume extends Component
      */
     public function __construct()
     {
-        $this->noRawat = $this->decryptData(Request::get('no_rawat'));
-        $this->noRm = $this->decryptData(Request::get('no_rm'));
+        $this->noRawat = Request::get('no_rawat');
+        $this->encrypNoRawat = $this->encryptData($this->noRawat);
+        $this->noRm = Request::get('no_rm');
         $this->kel = DB::table('pemeriksaan_ralan')->where('no_rawat', $this->noRawat)->select('keluhan')->first();
         $this->diagnosa = DB::table('resume_pasien')
                             ->join('reg_periksa', 'resume_pasien.no_rawat', '=', 'reg_periksa.no_rawat')
@@ -53,6 +54,7 @@ class resume extends Component
             'diagnosa' => $this->diagnosa, 
             'prosedur' => $this->prosedur, 
             'terapi' => $this->terapi,
+            'encrypNoRawat' => $this->encrypNoRawat,
         ]);
     }
 
@@ -97,9 +99,9 @@ class resume extends Component
         return $data ?? null;
     }
 
-    public function decryptData($data)
+    public function encryptData($data)
     {
-        $data = Crypt::decrypt($data);
+        $data = Crypt::encrypt($data);
         return $data;
     }
 }

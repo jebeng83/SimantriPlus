@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'loginauth' => \App\Http\Middleware\LoginAuth::class,
         'decrypt' => \App\Http\Middleware\RequestDecryptMiddleware::class,
+        'encrypt' => \App\Http\Middleware\RequestEncryptMiddleware::class,
     ];
 }

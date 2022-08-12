@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Crypt;
 use Closure;
 use Illuminate\Http\Request;
 
-class RequestDecryptMiddleware
+class RequestEncryptMiddleware
 {
     /**
      * Handle an incoming request.
@@ -17,18 +17,17 @@ class RequestDecryptMiddleware
     public function handle(Request $request, Closure $next)
     {
         if($request->has('no_rawat')) {
-            $request->merge(['no_rawat' => $this->decryptData($request->get('no_rawat'))]);
-          
+            $request->merge(['no_rawat' => $this->encryptData($request->get('no_rawat'))]);
         }
-        if($request->has('no_rm')){
-            $request->merge(['no_rm' => $this->decryptData($request->get('no_rm'))]);
+        if($request->has('no_rm')) {
+            $request->merge(['no_rm' => $this->encryptData($request->get('no_rm'))]);
         }
-        return $next($request);    
+        return $next($request);  
     }
 
-    public function decryptData($data)
+    public function encryptData($data)
     {
-        $data = Crypt::decrypt($data);
+        $data = Crypt::encrypt($data);
         return $data;
     }
 }

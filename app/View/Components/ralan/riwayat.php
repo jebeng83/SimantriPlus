@@ -1,7 +1,6 @@
 <?php
 
 namespace App\View\Components\ralan;
-use Illuminate\Support\Facades\Crypt;
 use DB;
 use Illuminate\View\Component;
 
@@ -16,10 +15,9 @@ class riwayat extends Component
      */
     public function __construct($noRawat)
     {
-        $param = $this->decryptData($noRawat);
         $pasien = DB::table('reg_periksa')
                             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-                            ->where('reg_periksa.no_rawat', $param)
+                            ->where('reg_periksa.no_rawat', $noRawat)
                             ->select('reg_periksa.no_rkm_medis')
                             ->first();
         $this->data = DB::table('reg_periksa')
@@ -43,11 +41,4 @@ class riwayat extends Component
     {
         return view('components.ralan.riwayat',['data' => $this->data, 'heads' => $this->heads]);
     }
-
-    public function decryptData($data)
-    {
-        $data = Crypt::decrypt($data);
-        return $data;
-    }
-
 }
