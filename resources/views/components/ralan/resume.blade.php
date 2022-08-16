@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-bell" collapsible maximizable>
+    <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible maximizable>
         <div class="row">
             <div class="col-md-6">
                 <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=10>
@@ -26,20 +26,22 @@
 @push('js')
     <script>
         $('#resumeButton').click(function(){
-            axios.post("{{ url('/ralan/simpan/copyresep/$encrypNoRawat') }}", {
-                '_token': "{{ csrf_token() }}",
-                'keluhan_utama': $('#keluhanUtama').val(),
-                'terapi': $('#terapi').val(),
-                'prosedur_utama': $('#prosedurUtama').val(),
-                'diagnosa_utama': $('#diagnosaUtama').val(),
-            })
-            .then(function (response) {
-                console.log(response);
-                $('#resumeButton').html('<i class="fas fa-check"></i> Berhasil');
-                $('#resumeButton').attr('disabled', true);
-            })
-            .catch(function (error) {
-                console.log(error);
+            $.ajax({
+                url: "{{ url('/ralan/simpan/copyresep/$encrypNoRawat') }}",
+                type: 'POST',
+                data: {
+                    keluhanUtama: $('#keluhanUtama').val(),
+                    prosedurUtama: $('#prosedurUtama').val(),
+                    diagnosaUtama: $('#diagnosaUtama').val(),
+                    terapi: $('#terapi').val(),
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response){
+                    console.log(response);
+                },
+                error: function(response){
+                    console.log(response);
+                }
             });
         });
     </script>

@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-bell" collapsible="collapsed" maximizable>
+    <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-clipboard" collapsible="collapsed" maximizable>
         <form id="pemeriksaanForm">
         <div class="row">
             <div class="col-md-4">

@@ -22,7 +22,7 @@
                         $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
                         $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
                         @endphp
-                        <a class="text-black" target="_blank" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
+                        <a @if($row->stts == 'Sudah') class="text-white" @else class="text-primary" @endif target="_blank" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
                             {{$row->nm_pasien}}
                         </a>
                     </td>
@@ -56,5 +56,4 @@
 
 @section('plugins.TempusDominusBs4', true)
 @section('js')
-    <script> console.log('Hi!'); </script>
 @stop

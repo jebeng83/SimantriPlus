@@ -1,12 +1,12 @@
 <div>
-    <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-bell" collapsible maximizable>
+    <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible maximizable>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link active" id="resep-tab" data-toggle="tab" data-target="#resep" type="button" role="tab" aria-controls="resep" aria-selected="true">Resep</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="copyresep-tab" data-toggle="tab" data-target="#copyresep" type="button" role="tab" aria-controls="copyresep" aria-selected="false">Copy Resep</button>
+              <button class="nav-link" id="copyresep-tab" data-toggle="tab" data-target="#copyresep" type="button" role="tab" aria-controls="copyresep" aria-selected="false">Resep Racikan</button>
             </li>
         </ul>
 
@@ -23,13 +23,18 @@
                             </div>
                         </div>
                         <div class="row justify-content-end">
+                            <x-adminlte-select-bs name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
+                                <option value="-">Pilih jumlah iter</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                            </x-adminlte-select>
                             <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep" theme="success" label="+" />
                             <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
                         </div>
                     </form>
                 </x-adminlte-callout>
 
-                @if(!empty($resep))
+                @if(count($resep) > 0)
                 <x-adminlte-callout theme="info">
                     <table class="table table-striped">
                         <thead>
@@ -84,10 +89,10 @@
 
             </div>
             <div class="tab-pane fade" id="copyresep" role="tabpanel" aria-labelledby="copyresep-tab">
-                <x-adminlte-callout theme="info" title="Input Resep">
+                <x-adminlte-callout theme="info" title="Input Resep Racikan">
                     <form  method="post" id="copyresepForm" action="{{url('/ralan/simpan/copyresep/'.$encryptNoRawat)}}">
                         @csrf
-                        <div class="containerResep">
+                        <div class="containerCopyResep">
                             <div class="row">
                                 <x-adminlte-input id="obat" label="Nama Racikan" name="nama_racikan" fgroup-class="col-md-12" />
                                 <x-adminlte-select-bs name="metode_racikan" label="Metode Racikan" fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
@@ -96,8 +101,8 @@
                                     @endforeach
                                 </x-adminlte-select-bs>
                                 <x-adminlte-input label="Jumlah" name="jumlah_racikan" fgroup-class="col-md-6" />
-                                <x-adminlte-input label="Aturan Pakai" name="aturan_racikan" fgroup-class="col-md-12" />
-                                <x-adminlte-input label="Keterangan" name="keterangan_racikan" fgroup-class="col-md-12" />
+                                <x-adminlte-input label="Aturan Pakai" name="aturan_racikan" fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Keterangan" name="keterangan_racikan" fgroup-class="col-md-6" />
                             </div>
                         </div>
                         <div class="row justify-content-end">
@@ -169,7 +174,7 @@
             html += '                  <input name="aturan[]" id="aturan'+x+'" class="form-control" placeholder="Aturan Pakai">';
             html += '        </div>';
             html += '    </div>';
-            html += '    <div class="col-md-1 mt-4">';
+            html += '    <div class="col-md-1 my-auto">';
             html += '      <button class="btn btn-danger delete" value="row_resep'+x+'">-</button>';
             html += '    </div>';
             html += '</div>';
@@ -278,10 +283,18 @@
                         data:{_token: _token}, 
                         success: function(data) {
                             console.log(data);
-                            Swal.fire(
-                                data.status == 'success' ? 'Terhapus!' : 'Gagal!',
+                            data.status == 'success' ? Swal.fire(
+                                'Terhapus!',
                                 data.pesan,
-                                data.status == 'success' ? 'success' : 'error'
+                                'success'
+                            ).then((result) => {
+                                if (result.value) {
+                                    window.location.reload();
+                                }
+                            }) : Swal.fire(
+                                'Gagal!',
+                                data.pesan,
+                                'error'
                             ).then((result) => {
                                 if (result.value) {
                                     window.location.reload();

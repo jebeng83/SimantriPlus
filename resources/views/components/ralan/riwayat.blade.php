@@ -1,6 +1,6 @@
 <div>
-    <x-adminlte-modal id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="teal"
-    icon="fas fa-bell" v-centered static-backdrop scrollable>
+    <x-adminlte-modal id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info"
+    icon="fas fa-book-medical" v-centered static-backdrop scrollable>
         <x-adminlte-callout theme="info">
             @php
                 $config["responsive"] = true;

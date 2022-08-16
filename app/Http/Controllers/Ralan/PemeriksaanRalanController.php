@@ -133,7 +133,8 @@ class PemeriksaanRalanController extends Controller
                     ]);
                 }
 
-                if($resep){
+                $cek = DB::table('resep_obat')->where('no_rawat', $no_rawat)->first();
+                if($cek){
                     if(!empty($jml)){
                         DB::table('resep_dokter')->insert([
                             'no_resep' => $resep->no_resep,

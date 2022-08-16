@@ -56,6 +56,7 @@ class HomeController extends Controller
             'headPasienTerakhir' => $headPasienTerakhir,
             'pasienTerakhir' => array_values($pasienTerakhir->toArray()),
             'poliklinik' => $this->getPoliklinik($kd_poli),
+            'statistikKunjungan' => $this->statistikKunjungan($kd_dokter),
         ]);
     }
 
@@ -63,5 +64,16 @@ class HomeController extends Controller
     {
         $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
         return $poli->nm_poli;
-    }    
+    } 
+    
+    public function statistikKunjungan($kd_dokter)
+    {
+        $data = DB::table('reg_periksa')
+                    ->where('kd_dokter', $kd_dokter)
+                    ->where('tgl_registrasi', 'like', date('Y').'-%')
+                    ->selectRaw("MONTHNAME (tgl_registrasi) as bulan, COUNT(DISTINCT  no_rawat) as jumlah")
+                    ->groupByRaw("MONTH(tgl_registrasi)")
+                    ->get();
+        return $data;
+    }
 }
