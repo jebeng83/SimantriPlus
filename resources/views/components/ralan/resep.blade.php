@@ -23,7 +23,7 @@
                             </div>
                         </div>
                         <div class="row justify-content-end">
-                            <x-adminlte-select-bs name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
+                            <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
                                 <option value="-">Pilih jumlah iter</option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -94,15 +94,15 @@
                         @csrf
                         <div class="containerCopyResep">
                             <div class="row">
-                                <x-adminlte-input id="obat" label="Nama Racikan" name="nama_racikan" fgroup-class="col-md-12" />
-                                <x-adminlte-select-bs name="metode_racikan" label="Metode Racikan" fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
+                                <x-adminlte-input id="obat_racikan" label="Nama Racikan" name="nama_racikan" fgroup-class="col-md-12" />
+                                <x-adminlte-select-bs id="metode_racikan" name="metode_racikan" label="Metode Racikan" fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
                                     @foreach($dataMetodeRacik as $metode)
                                         <option value="{{$metode->kd_racik}}">{{$metode->nm_racik}}</option>
                                     @endforeach
                                 </x-adminlte-select-bs>
-                                <x-adminlte-input label="Jumlah" name="jumlah_racikan" fgroup-class="col-md-6" />
-                                <x-adminlte-input label="Aturan Pakai" name="aturan_racikan" fgroup-class="col-md-6" />
-                                <x-adminlte-input label="Keterangan" name="keterangan_racikan" fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Jumlah" id="jumlah_racikan" value="10" name="jumlah_racikan" fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan" fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan" fgroup-class="col-md-6" />
                             </div>
                         </div>
                         <div class="row justify-content-end">
@@ -110,8 +110,42 @@
                         </div>
                     </form>
                 </x-adminlte-callout>
-                <x-adminlte-callout theme="info" title="Riwayat Resep Racikan">
+
+                @if(count($resepRacikan) > 0)
+                <x-adminlte-callout theme="info">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>No Resep</th>
+                                <th>Nama Racikan</th>
+                                <th>Metode Racikan</th>
+                                <th>Jumlah</th>
+                                <th>Aturan</th>
+                                <th>Keterangan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($resepRacikan as $r)
+                                <tr>
+                                    <td>{{$r->no_resep}}</td>
+                                    <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
+                                    <td>{{$r->nm_racik}}</td>
+                                    <td>{{$r->jml_dr}}</td>
+                                    <td>{{$r->aturan_pakai}}</td>
+                                    <td>{{$r->keterangan}}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>              
                 </x-adminlte-callout>
+                @endif
+
+                {{-- <x-adminlte-callout theme="info" title="Riwayat Resep Racikan">
+                </x-adminlte-callout> --}}
             </div>
         </div>
     </x-adminlte-card>
@@ -171,7 +205,7 @@
             html += '    <div class="col-md-4">';
             html += '        <div class="form-group">';
             html += '            <label class="visible-sm">Aturan Pakai</label>';
-            html += '                  <input name="aturan[]" id="aturan'+x+'" class="form-control" placeholder="Aturan Pakai">';
+            html += '            <input name="aturan[]" id="aturan'+x+'" class="form-control" placeholder="Aturan Pakai">';
             html += '        </div>';
             html += '    </div>';
             html += '    <div class="col-md-1 my-auto">';
@@ -314,6 +348,57 @@
             })
         }
 
+        function hapusRacikan($noResep, $noRacik, e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Hapus Obat?',
+                text: "Yakin ingin menghapus obat ini?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if (result.value) {
+                    let _token   = $('meta[name="csrf-token"]').attr('content');
+                    $.ajax({
+                        url: '/ralan/racikan/'+$noResep+'/'+$noRacik,
+                        type: 'DELETE',
+                        dataType: 'json',
+                        data:{_token: _token}, 
+                        success: function(data) {
+                            console.log(data);
+                            data.status == 'success' ? Swal.fire(
+                                'Terhapus!',
+                                data.pesan,
+                                'success'
+                            ).then((result) => {
+                                if (result.value) {
+                                    window.location.reload();
+                                }
+                            }) : Swal.fire(
+                                'Gagal!',
+                                data.pesan,
+                                'error'
+                            ).then((result) => {
+                                if (result.value) {
+                                    window.location.reload();
+                                }
+                            })
+                        },
+                        error: function(data) {
+                            console.log(data);
+                            Swal.fire(
+                                'Gagal!',
+                                data.pesan ?? 'Obat gagal dihapus.',
+                                'error'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+
         $("#simpanCopyResep").click(function(e) {
             e.preventDefault();
             let _token   = $('meta[name="csrf-token"]').attr('content');
@@ -381,11 +466,13 @@
             let obat = getValue('obat[]');
             let jumlah = getValue('jumlah[]');
             let aturan = getValue('aturan[]');
+            let iter = $('#iter').val();
             var form = $("#resepForm");
             var data = {
                 obat:obat,
                 jumlah:jumlah,
                 aturan_pakai:aturan,
+                iter:iter,
                 _token:_token,
             };
             var url = form.attr('action');
@@ -431,6 +518,70 @@
                     Swal.fire({
                         title: 'Error',
                         text: response.pesan ?? 'Terjadi kesalahan',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    })
+                }
+            });
+        });
+
+        $("#resepRacikanButton").click(function(e){
+            e.preventDefault();
+            let _token   = $('meta[name="csrf-token"]').attr('content');
+            let obat = $('#obat_racikan').val();
+            let metode = $('#metode_racikan').val();
+            let jumlah = $('#jumlah_racikan').val();
+            let aturan = $('#aturan_racikan').val();
+            let keterangan = $('#keterangan_racikan').val();
+            $.ajax({
+                type: 'POST',
+                url: '/ralan/simpan/racikan/'+"{{$encryptNoRawat}}",
+                data: {
+                    nama_racikan:obat,
+                    metode_racikan:metode,
+                    jumlah_racikan:jumlah,
+                    aturan_racikan:aturan,
+                    keterangan_racikan:keterangan,
+                    _token:_token,
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#modalRacikan').modal('hide')
+                    Swal.fire({
+                    title: 'Loading',
+                    imageUrl: '{{asset("img/loading.gif")}}',
+                    showConfirmButton: false,
+                    })
+                },
+                success: function (response) {
+                    console.log(response);
+                    if(response.status == 'sukses'){
+                        Swal.fire({
+                        title: 'Sukses',
+                        text: 'Data berhasil disimpan',
+                        icon: 'success',
+                        confirmButtonText: 'Ok'
+                        }).then((result) => {
+                            if (result.value) {
+                                window.location.reload();
+                            }
+                        })
+                    }
+                    else{
+                        Swal.fire({
+                        title: 'Gagal',
+                        text: response.pesan,
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                        })
+                    }
+                },
+                error: function (response) {
+                    console.log(response);
+                    var errors = $.parseJSON(response.responseText);
+                    Swal.fire({
+                        title: 'Error',
+                        text: errors.message ?? 'Terjadi kesalahan',
                         icon: 'error',
                         confirmButtonText: 'Ok'
                     })

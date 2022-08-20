@@ -27,7 +27,7 @@
     <script>
         $('#resumeButton').click(function(){
             $.ajax({
-                url: "{{ url('/ralan/simpan/copyresep/$encrypNoRawat') }}",
+                url: '/ralan/simpan/resumemedis/'+"{{$encrypNoRawat}}",
                 type: 'POST',
                 data: {
                     keluhanUtama: $('#keluhanUtama').val(),
@@ -36,11 +36,33 @@
                     terapi: $('#terapi').val(),
                     _token: '{{ csrf_token() }}'
                 },
+                format: 'json',
                 success: function(response){
                     console.log(response);
+                    if(response.status == 'success'){
+                        swal({
+                            title: "Sukses",
+                            text: "Data berhasil disimpan",
+                            icon: "success",
+                            button: "OK",
+                        });
+                    }else{
+                        swal({
+                            title: "Gagal",
+                            text: response.pesan ?? "Data gagal disimpan",
+                            icon: "error",
+                            button: "OK",
+                        });
+                    }
                 },
                 error: function(response){
                     console.log(response);
+                    swal({
+                        title: "Error",
+                        text: response.pesan ?? "Terjadi kesalahan",
+                        icon: "error",
+                        button: "OK",
+                    });
                 }
             });
         });

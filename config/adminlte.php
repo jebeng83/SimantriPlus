@@ -264,7 +264,8 @@ return [
                 ],
                 [
                     'text'  => 'Rawat Inap',
-                    'url'   => '/pasien/rawat-inap',
+                    'url'   => '/ranap/pasien',
+                    'active'=> request()->is('ranap/pasien') ? true : false,
                 ]
             ]
         ],

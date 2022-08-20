@@ -58,7 +58,8 @@ class resep extends Component
             'no_rawat' => $this->noRawat,
             'encryptNoRawat' => $this->encryptNoRawat,
             'encryptNoRM' => $this->encryptNoRM,
-            'dataMetodeRacik' => $this->dataMetodeRacik
+            'dataMetodeRacik' => $this->dataMetodeRacik,
+            'resepRacikan' => $this->getResepRacikan($this->noRawat, session()->get('username')),
         ]);
     }
 
@@ -69,6 +70,20 @@ class resep extends Component
                     ->select('databarang.nama_brng', 'resep_dokter.jml', 'resep_dokter.aturan_pakai')
                     ->get();
         
+        return $data;
+    }
+
+    public function getResepRacikan($noRawat, $kdDokter)
+    {
+        $data = DB::table('resep_dokter_racikan')
+                    ->join('resep_obat', 'resep_dokter_racikan.no_resep', '=', 'resep_obat.no_resep')
+                    ->join('metode_racik', 'resep_dokter_racikan.kd_racik', '=', 'metode_racik.kd_racik')
+                    ->where([
+                        ['resep_obat.no_rawat', '=', $noRawat], 
+                        ['resep_obat.kd_dokter', '=', $kdDokter]
+                    ])
+                    ->select('resep_dokter_racikan.*', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan', 'metode_racik.nm_racik')
+                    ->get();
         return $data;
     }
 

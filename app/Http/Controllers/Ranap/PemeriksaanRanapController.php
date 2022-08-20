@@ -6,7 +6,7 @@ use DB;
 use App\Http\Controllers\Controller;
 use Request;
 
-class PemeriksaanRalanController extends Controller
+class PemeriksaanRanapController extends Controller
 {
     public $dokter, $noRawat, $noRM; 
     /**
