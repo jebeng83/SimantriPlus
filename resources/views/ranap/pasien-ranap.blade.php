@@ -17,10 +17,11 @@
             @foreach($data as $row)
                 @php
                     $noRawat = App\Http\Controllers\Ranap\PasienRanapController::encryptData($row->no_rawat);
+                    $noRM = App\Http\Controllers\Ranap\PasienRanapController::encryptData($row->no_rkm_medis);
                 @endphp
                 <tr>
-                    <td>
-                        <a target="_blank" href="{{route('ranap.pemeriksaan', ['no_rawat' => $noRawat])}}">
+                    <td> 
+                        <a target="_blank" href="{{route('ranap.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}">
                             {{$row->nm_pasien}}
                         </a>
                     </td>

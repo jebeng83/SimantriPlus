@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Ralan;
+namespace App\Http\Controllers\Ranap;
 use Illuminate\Support\Facades\Crypt;
 use DB;
 use App\Http\Controllers\Controller;
@@ -28,7 +28,7 @@ class PemeriksaanRanapController extends Controller
         $dokter = session()->get('username');
         $noRawat = Request::get('no_rawat');
         $noRM = Request::get('no_rm');
-        return view('ralan.pemeriksaan-ralan');
+        return view('ranap.pemeriksaan-ranap');
     }
 
     public function hapusObat($noResep, $kdObat)

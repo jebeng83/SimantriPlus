@@ -35,6 +35,6 @@ Route::post('/ralan/pemeriksaan/submit', [App\Http\Controllers\Ralan\Pemeriksaan
 
 
 Route::get('/ranap/pasien', [App\Http\Controllers\Ranap\PasienRanapController::class, 'index'])->name('ranap.pasien');
-
+Route::get('/ranap/pemeriksaan', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'index'])->name('ranap.pemeriksaan');
 Route::get('/login', [App\Http\Controllers\LoginController::class, 'index'])->name('login');
 
