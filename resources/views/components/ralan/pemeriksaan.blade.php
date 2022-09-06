@@ -101,16 +101,15 @@
             gcs:gcs,
             _token: _token
           },
-          beforeSend: function() {
+          beforeSend:function() {
             Swal.fire({
-              title: 'Loading',
-            //   text: 'Sedang memproses data',
-              imageUrl: '{{asset("img/loading.gif")}}',
-              showConfirmButton: false,
-            //   allowOutsideClick: false,
-            //   allowEscapeKey: false,
-            //   allowEnterKey: false,
-            })
+                title: 'Loading....',
+                allowEscapeKey: false,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+                });
             },
           success:function(response){
             console.log(response);

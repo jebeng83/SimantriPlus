@@ -3,7 +3,7 @@
 namespace App\View\Components\ralan;
 use Illuminate\Support\Facades\Crypt;
 use Request;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
 
 class resep extends Component

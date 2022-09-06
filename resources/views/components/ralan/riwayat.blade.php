@@ -6,7 +6,6 @@
                 $config["responsive"] = true;
                 $config['order'] = [[0, 'desc']];
             @endphp
-            {{-- Minimal example / fill data using the component slot --}}
             <x-adminlte-datatable id="tableRiwayatPemeriksaan" :heads="$heads" :config="$config" head-theme="dark" striped hoverable bordered compressed>
                 @foreach($data as $row)
                     <tr>
@@ -17,7 +16,6 @@
                         @php
                             $pemriksaanRalan = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat, $row->status_lanjut);
                             $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat);
-                            
                         @endphp
                             @if ($i == 3)
                                 <td>

@@ -1,6 +1,6 @@
 <div>
     <x-adminlte-profile-widget name="{{$data->nm_pasien ?? '-'}}" desc="{{$data->no_rkm_medis ?? '-'}}" theme="lightblue"
-        img="https://picsum.photos/id/1/100" layout-type="classic">
+        src="https://picsum.photos/id/1/100" layout-type="classic">
         <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat" text="{{$data->no_rawat ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tgl Lahir" text="{{$data->tgl_lahir  ?? '-'}}"/>
         <x-adminlte-profile-row-item icon="fas fa-fw fa-clock" title="Umur" text="{{$data->umur ?? '-'}}"/>

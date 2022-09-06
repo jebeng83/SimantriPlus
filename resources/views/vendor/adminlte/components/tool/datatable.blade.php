@@ -40,8 +40,7 @@
 <script>
 
     $(() => {
-       var table = $('#{{ $id }}').DataTable( @json($config) );
-       new $.fn.dataTable.FixedHeader( table );
+        $('#{{ $id }}').DataTable( @json($config) );
     })
 
 </script>

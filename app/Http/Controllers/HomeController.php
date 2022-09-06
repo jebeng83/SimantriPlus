@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use DB;
 use Illuminate\Http\Request;
+use Session;
 
 class HomeController extends Controller
 {
@@ -75,5 +76,11 @@ class HomeController extends Controller
                     ->groupByRaw("MONTH(tgl_registrasi)")
                     ->get();
         return $data;
+    }
+
+    public function logout()
+    {
+        Session::flush();
+        return redirect('/home');
     }
 }

@@ -45,12 +45,24 @@ return [
     |
     */
 
-    'logo' => '<b>RSB</b> Nganjuk',
+    'logo' => '<b>E-Dokter</b>',
     'logo_img' => 'img/logo/logo.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
     'logo_img_alt' => 'RSB Nganjuk',
+
+
+    'preloader' => [
+        'enabled' => true,
+        'img' => [
+            'path' => 'img/logo/logo.png',
+            'alt' => 'RSB Preloader Image',
+            'effect' => 'animation__shake',
+            'width' => 150,
+            'height' => 150,
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -235,8 +247,6 @@ return [
             'type'         => 'fullscreen-widget',
             'topnav_right' => true,
         ],
-
-        // Sidebar items:
         [
             'type' => 'sidebar-menu-search',
             'text' => 'search',
@@ -249,25 +259,28 @@ return [
         [
             'text'        => 'Home',
             'url'         => '/home',
-            // 'active'      => request()->is('home') ? true : false,
             'icon'        => 'far fa-fw fa-home',
             'label_color' => 'success',
         ],
         [
             'text'        => 'Pasien',
             'icon'        => 'fas fa-fw fa-user',
-            'submenu'     =>[
+            'submenu'     => [
                 [
                     'text'  => 'Rawat Jalan',
                     'url'   => '/ralan/pasien',
-                    // 'active'=> request()->is('ralan/pasien') ? true : false,
                 ],
                 [
                     'text'  => 'Rawat Inap',
                     'url'   => '/ranap/pasien',
-                    // 'active'=> request()->is('ranap/pasien') ? true : false,
                 ]
             ]
+        ],
+        [
+            'text'        => 'Keluar',
+            'url'         => '/logout',
+            'icon'        => 'far fa-fw fa-arrow-right',
+            'label_color' => 'success',
         ],
     ],
 
