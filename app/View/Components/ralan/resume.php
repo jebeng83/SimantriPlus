@@ -1,13 +1,16 @@
 <?php
 
 namespace App\View\Components\ralan;
-use Illuminate\Support\Facades\Crypt;
+
+use App\Traits\EnkripsiData;
 use Request;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
+
 
 class resume extends Component
 {
+    use EnkripsiData;
     public $noRawat, $encrypNoRawat, $noRm, $kel, $diagnosa, $prosedur, $terapi;
     /**
      * Create a new component instance.
@@ -97,11 +100,5 @@ class resume extends Component
                     ->selectRaw("GROUP_CONCAT( databarang.nama_brng,'-', resep_dokter.jml SEPARATOR '\r\n') AS nama_brng")
                     ->first();
         return $data ?? null;
-    }
-
-    public function encryptData($data)
-    {
-        $data = Crypt::encrypt($data);
-        return $data;
     }
 }

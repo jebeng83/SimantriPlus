@@ -13,8 +13,8 @@
             </div>
         </div>
         <div class="row">
-            <x-adminlte-input name="prosedurUtama" label="Prosedur Utama"  fgroup-class="col-md-6" />
-            <x-adminlte-input name="diagnosaUtama" label="Diagnosa Utama"  fgroup-class="col-md-6" />
+            <x-adminlte-input name="prosedurUtama" label="Prosedur Utama" value="{{$prosedur->deskripsi_panjang ?? ''}}"  fgroup-class="col-md-6" />
+            <x-adminlte-input name="diagnosaUtama" label="Diagnosa Utama" value="{{$diagnosa->diagnosa_utama ?? ''}}"  fgroup-class="col-md-6" />
         </div>
 
         <div class="row justify-content-end">
@@ -24,6 +24,7 @@
 </div>
 
 @push('js')
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $('#resumeButton').click(function(){
             $.ajax({
@@ -37,6 +38,16 @@
                     _token: '{{ csrf_token() }}'
                 },
                 format: 'json',
+                beforeSend:function() {
+                Swal.fire({
+                    title: 'Loading....',
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        }
+                    });
+                },
                 success: function(response){
                     console.log(response);
                     if(response.status == 'success'){

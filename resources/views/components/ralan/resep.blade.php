@@ -17,7 +17,7 @@
                         @csrf
                         <div class="containerResep">
                             <div class="row">
-                                <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5" data-placeholder="Pilih Obat" />
+                                <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5"  data-placeholder="Pilih Obat" />
                                 <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jumlah"/>
                                 <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-5" placeholder="Aturan Pakai"/>
                             </div>
@@ -220,9 +220,9 @@
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
-                    return {
-                        results: data
-                    };
+                        return {
+                            results: data
+                        };
                     },
                     cache: true
                 },
@@ -262,8 +262,9 @@
                     return $data;
             };
         });
-        </script>
-        <script>
+    </script>
+
+    <script>
         function getValue(name) {
             var data = [];
             var doc = document.getElementsByName(name);
@@ -284,8 +285,19 @@
                 url:'/ralan/copy/'+no_resep,
                 type:'GET',
                 dataType:'json',
+                beforeSend:function() {
+                Swal.fire({
+                    title: 'Loading....',
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                    });
+                },
                 success: function(data){
                     // console.log(data);
+                    Swal.close();
                     $.each(data, function (i, item) {
                         trHTML += '<tr class="body"><td><input type="text" name="jml_copyresep[]" multiple="multiple" value="' + item.jml + '" size="5"></td>'
                                 + '<td><input type="hidden" name="kode_brng_copyresep[]" multiple="multiple" value="' + item.kode_brng +'" > ' + item.nama_brng + '</td>'
@@ -315,6 +327,16 @@
                         type: 'DELETE',
                         dataType: 'json',
                         data:{_token: _token}, 
+                        beforeSend:function() {
+                        Swal.fire({
+                            title: 'Loading....',
+                            allowEscapeKey: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                            });
+                        },
                         success: function(data) {
                             console.log(data);
                             data.status == 'success' ? Swal.fire(
@@ -366,6 +388,16 @@
                         type: 'DELETE',
                         dataType: 'json',
                         data:{_token: _token}, 
+                        beforeSend:function() {
+                        Swal.fire({
+                            title: 'Loading....',
+                            allowEscapeKey: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                            });
+                        },
                         success: function(data) {
                             console.log(data);
                             data.status == 'success' ? Swal.fire(
@@ -424,6 +456,16 @@
                     imageUrl: '{{asset("img/loading.gif")}}',
                     showConfirmButton: false,
                     })
+                },
+                beforeSend:function() {
+                Swal.fire({
+                    title: 'Loading....',
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                    });
                 },
                 success: function (response) {
                     console.log(response);
@@ -589,5 +631,6 @@
             });
         });
 
-        </script>
+    </script>
+    
 @endpush

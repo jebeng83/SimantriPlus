@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Ranap;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Crypt;
-use DB;
-use Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PasienRanapController extends Controller
 {

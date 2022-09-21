@@ -4,10 +4,11 @@ namespace App\View\Components\Ranap;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use Illuminate\View\Component;
+use Illuminate\Support\Facades\Crypt;
 
 class PemeriksaanRanap extends Component
 {
-    public $noRawat, $noRM, $heads, $riwayat, $pemeriksaan;
+    public $noRawat, $noRM, $heads, $riwayat, $pemeriksaan, $encryptNoRawat;
     /**
      * Create a new component instance.
      *
@@ -16,6 +17,7 @@ class PemeriksaanRanap extends Component
     public function __construct($noRawat)
     {
         $this->noRM = Request::get('no_rm');
+        $this->encryptNoRawat = $this->encryptData($noRawat);
         $this->noRawat = $noRawat;
         $this->heads = ['Tgl', 'Jam', 'Keluhan', 'Pemeriksaan', 'Penilaian', 'Suhu', 'tensi', 'Nadi', 'Aksi'];
         $this->riwayat = $this->getRiwayat($this->noRM);
@@ -34,6 +36,7 @@ class PemeriksaanRanap extends Component
             'heads' => $this->heads,
             'riwayat' => $this->riwayat,
             'no_rm' => $this->noRM,
+            'encryptNoRawat' => $this->encryptNoRawat,
         ]);
     }
 
@@ -45,6 +48,12 @@ class PemeriksaanRanap extends Component
                             ->select('pemeriksaan_ranap.*')
                             ->orderBy('pemeriksaan_ranap.tgl_perawatan', 'DESC')
                             ->get();
+        return $data;
+    }
+
+    public function encryptData($data)
+    {
+        $data = Crypt::encrypt($data);
         return $data;
     }
 }

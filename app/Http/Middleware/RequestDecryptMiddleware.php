@@ -4,9 +4,11 @@ namespace App\Http\Middleware;
 use Illuminate\Support\Facades\Crypt;
 use Closure;
 use Illuminate\Http\Request;
+use App\Traits\EnkripsiData;
 
 class RequestDecryptMiddleware
 {
+    use EnkripsiData;
     /**
      * Handle an incoming request.
      *
@@ -24,11 +26,5 @@ class RequestDecryptMiddleware
             $request->merge(['no_rm' => $this->decryptData($request->get('no_rm'))]);
         }
         return $next($request);    
-    }
-
-    public function decryptData($data)
-    {
-        $data = Crypt::decrypt($data);
-        return $data;
     }
 }

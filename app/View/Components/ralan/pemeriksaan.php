@@ -1,14 +1,16 @@
 <?php
 
 namespace App\View\Components\ralan;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Http\Request; 
+
+use App\Traits\EnkripsiData;
+use Request; 
 use Illuminate\View\Component;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class pemeriksaan extends Component
 {
-    public $noRawat, $encryptNoRawat;
+    use EnkripsiData;
+    public $noRawat, $encryptNoRawat, $data;
     /**
      * Create a new component instance.
      *
@@ -18,6 +20,7 @@ class pemeriksaan extends Component
     {
         $this->encryptNoRawat = $this->encryptData($noRawat);
         $this->noRawat = $noRawat;
+        $this->data = $this->getRiwayat(Request::get('no_rm'));
     }
 
     /**
@@ -27,16 +30,28 @@ class pemeriksaan extends Component
      */
     public function render()
     {
-        $pemeriksaan = DB::table('pemeriksaan_ralan')->where('no_rawat', $this->noRawat)->first();
+        $pemeriksaan = $this->data->firstWhere('no_rawat', '=', $this->noRawat);
+        $alergi =  $this->data->whereNotNull('alergi')->where('alergi', '!=', '-')->implode('alergi', ', ');
         return view('components.ralan.pemeriksaan', [
             'pemeriksaan' => $pemeriksaan,
             'encryptNoRawat' => $this->encryptNoRawat,
+            'alergi' => $alergi,
         ]);
     }
 
-    public function encryptData($data)
+    public function getRiwayat($noRM)
     {
-        $data = Crypt::encrypt($data);
+        $data = DB::table('pemeriksaan_ralan')
+                            ->join('reg_periksa', 'reg_periksa.no_rawat', '=', 'pemeriksaan_ralan.no_rawat')
+                            ->where('reg_periksa.no_rkm_medis', $noRM)
+                            ->select('pemeriksaan_ralan.*')
+                            ->orderBy('pemeriksaan_ralan.tgl_perawatan', 'DESC')
+                            ->get();
         return $data;
+    }
+
+    public function getAlergi()
+    {
+    
     }
 }

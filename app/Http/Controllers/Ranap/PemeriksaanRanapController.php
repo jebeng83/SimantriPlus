@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Ranap;
 use Illuminate\Support\Facades\Crypt;
-use DB;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Request;
 
@@ -285,9 +285,9 @@ class PemeriksaanRanapController extends Controller
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0001')->max('tanggal');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0001')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0001')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if($maxStok < 1){
                     return response()->json([
@@ -318,7 +318,7 @@ class PemeriksaanRanapController extends Controller
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => $tgl,
                         'jam_peresepan' => date('H:i:s'),
-                        'status' => 'Ralan',
+                        'status' => 'Ranap',
                     ]);
                     DB::table('resep_dokter')->insert([
                         'no_resep' => $noResep,
@@ -419,8 +419,9 @@ class PemeriksaanRanapController extends Controller
             'penilaian' => 'required',
             'instruksi' => 'required',
         ]);
-        $cek = DB::table('pemeriksaan_ralan')
+        $cek = DB::table('pemeriksaan_ranap')
                     ->where('no_rawat', Request::get('no_rawat'))
+                    ->where('tgl_perawatan', date('Y-m-d'))
                     ->count();
         $data = [
                     'no_rawat' => Request::get('no_rawat'),
@@ -438,13 +439,12 @@ class PemeriksaanRanapController extends Controller
                     'keluhan' => Request::get('keluhan'),
                     'pemeriksaan' => Request::get('pemeriksaan'),
                     'alergi' => Request::get('alergi'),
-                    'imun_ke' => Request::get('imun'),
                     'rtl' => Request::get('rtl'),
                     'penilaian' => Request::get('penilaian'),
                     'instruksi' => Request::get('instruksi'),
                 ];
         if($cek > 0){
-            $insert = DB::table('pemeriksaan_ralan')
+            $insert = DB::table('pemeriksaan_ranap')
                         ->where('no_rawat', Request::get('no_rawat'))
                         ->update($data);
                     if($insert){
@@ -458,7 +458,7 @@ class PemeriksaanRanapController extends Controller
                         'message' => 'Data gagal disimpan'
                     ], 500);
         }else{
-            $insert = DB::table('pemeriksaan_ralan')
+            $insert = DB::table('pemeriksaan_ranap')
                         ->insert($data);
                     
             if($insert){

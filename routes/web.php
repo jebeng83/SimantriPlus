@@ -18,7 +18,7 @@ Route::get('/', function () {
 });
 
 // Auth::routes();
-
+Route::get('/', [App\Http\Controllers\LoginController::class, 'index'])->name('login');
 Route::post('/customlogin', [App\Http\Controllers\LoginController::class, 'customLogin'])->name('customlogin');
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/ralan/pasien', [App\Http\Controllers\Ralan\PasienRalanController::class, 'index'])->name('ralan.pasien');
@@ -36,5 +36,6 @@ Route::get('/logout', [App\Http\Controllers\HomeController::class, 'logout'])->n
 
 Route::get('/ranap/pasien', [App\Http\Controllers\Ranap\PasienRanapController::class, 'index'])->name('ranap.pasien');
 Route::get('/ranap/pemeriksaan', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'index'])->name('ranap.pemeriksaan');
-Route::get('/', [App\Http\Controllers\LoginController::class, 'index'])->name('login');
+Route::post('/ranap/pemeriksaan/submit', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'postPemeriksaan'])->name('ranap.pemeriksaan.submit');
+
 
