@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('content_header')
-    <h1>Dashboard Dokter</h1>
+    <h1>Selamat Datang, </br>{{$nm_dokter}}</h1>
 @stop
 
 @section('content')

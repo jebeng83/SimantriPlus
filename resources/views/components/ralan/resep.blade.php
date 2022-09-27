@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible maximizable>
+    <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed" maximizable>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">

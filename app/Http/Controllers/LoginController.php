@@ -25,17 +25,21 @@ class LoginController extends Controller
                     ->join("jadwal", "jadwal.kd_dokter", "=", "dokter.kd_dokter")
                     ->join("poliklinik", "poliklinik.kd_poli", "=", "jadwal.kd_poli")
                     ->whereRaw("id_user = AES_ENCRYPT('{$request->username}', 'nur')")
-                    ->whereRaw("password = AES_ENCRYPT('{$request->password}', 'windi')")
+                    // ->whereRaw("password = AES_ENCRYPT('{$request->password}', 'windi')")
                     ->where("poliklinik.nm_poli", "like", 'KLINIK%')
                     ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password, jadwal.kd_poli")
                     ->first();
         if ($cek) {
-            session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$cek->kd_poli]);
-            return redirect()->intended('home')
+            if($cek->password == $request->password){
+                session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$cek->kd_poli]);
+                return redirect()->intended('home')
                         ->withSuccess('Signed in');
+            }else{
+                return back()->withErrors(['message' => 'Password salah']);
+            }
         }
   
-        return redirect("/")->with('message','Login details are not valid');
+        return back()->withErrors(['message' => 'User tidak ditemukan']);
     }
 
 

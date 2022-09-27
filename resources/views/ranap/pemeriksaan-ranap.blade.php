@@ -13,6 +13,7 @@
         </div>
         <div class="col-md-8">
             <x-ranap.pemeriksaan-ranap :no-rawat="request()->get('no_rawat')" />
+            <x-ranap.resep-ranap />
         </div>
     </div>
 @stop

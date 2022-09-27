@@ -64,7 +64,7 @@
         this._parent = element;
       }
 
-      if (this._settings.source === '') {
+      if (this._element.source === '') {
         throw new Error('Source url was not defined. Please specify a url in your CardRefresh source option.');
       }
     }

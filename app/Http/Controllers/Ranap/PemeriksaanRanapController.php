@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Ranap;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Traits\EnkripsiData;
 use Request;
 
 class PemeriksaanRanapController extends Controller
 {
+    use EnkripsiData;
     public $dokter, $noRawat, $noRM; 
     /**
      * Display a listing of the resource.
@@ -415,13 +417,13 @@ class PemeriksaanRanapController extends Controller
         $validate = Request::validate([
             'tensi' => 'required',
             'kesadaran' => 'required',
-            'rtl' => 'required',
             'penilaian' => 'required',
             'instruksi' => 'required',
         ]);
         $cek = DB::table('pemeriksaan_ranap')
                     ->where('no_rawat', Request::get('no_rawat'))
                     ->where('tgl_perawatan', date('Y-m-d'))
+                    ->where('jam_rawat', date('H:i:s'))
                     ->count();
         $data = [
                     'no_rawat' => Request::get('no_rawat'),
@@ -474,11 +476,65 @@ class PemeriksaanRanapController extends Controller
         }
     }
 
-    public function decryptData($data)
+    public  function getPemeriksaan($noRawat, $tgl, $jam)
     {
-        $data = Crypt::decrypt($data);
-        return $data;
+        $no_rawat =  $this->decryptData($noRawat);
+        try{
+            $data = DB::table('pemeriksaan_ranap')
+                    ->where('no_rawat', $no_rawat)
+                    ->where('tgl_perawatan', $tgl)
+                    ->where('jam_rawat', $jam)
+                    ->first();
+            return response()->json([
+                        'status' => 'success',
+                        'data' => $data
+                    ], 200);
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
+    public function editPemeriksaan($noRawat,$tgl, $jam){
+        $no_rawat =  $this->decryptData($noRawat);
+        $data = [
+                    'nip' => session()->get('username'),
+                    'suhu_tubuh' => Request::get('suhu'),
+                    'tensi' => Request::get('tensi'),
+                    'nadi' => Request::get('nadi'),
+                    'respirasi' => Request::get('respirasi'),
+                    'tinggi' => Request::get('tinggi'),
+                    'berat' => Request::get('berat'),
+                    'gcs' => Request::get('gcs'),
+                    'kesadaran' => Request::get('kesadaran'),
+                    'keluhan' => Request::get('keluhan'),
+                    'pemeriksaan' => Request::get('pemeriksaan'),
+                    'alergi' => Request::get('alergi'),
+                    'rtl' => Request::get('rtl'),
+                    'penilaian' => Request::get('penilaian'),
+                    'instruksi' => Request::get('instruksi'),
+                ];
+        try{
+            $update = DB::table('pemeriksaan_ranap')
+                        ->where('no_rawat', $no_rawat)
+                        ->where('tgl_perawatan', $tgl)
+                        ->where('jam_rawat', $jam)
+                        ->update($data);
+
+            return response()->json([
+                            'status' => 'success',
+                            'message' => 'Data berhasil diubah'
+                        ], 200);
+                        
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
     
 }

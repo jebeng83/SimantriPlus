@@ -1,24 +1,24 @@
 <div>
-    <x-adminlte-modal id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info"
+    <x-adminlte-modal id="modalRiwayatPemeriksaanRanap" title="Riwayat Pemeriksaan" size="xl" theme="info"
     icon="fas fa-book-medical" v-centered static-backdrop scrollable>
     
         <div class="timeline timeline-inverse">
             @foreach($data as $row)
                 @php
-                    $pemriksaanRalan = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
+                    $pemeriksaan = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
                     $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat);
                     $laboratorium = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanLab($row->no_rawat);
-                    $tgl = date_create($pemriksaanRalan->tgl_perawatan ?? '0000-00-00');
+                    $tgl = date_create($pemeriksaan->tgl_perawatan ?? '0000-00-00');
                     $date = date_format($tgl,"d M Y");
                 @endphp
-                @isset($pemriksaanRalan)
+                @isset($pemeriksaan)
                     <div class="time-label">
                         <span class="bg-green">{{ $date ?? '' }}</span>
                     </div>
                     <div>
-                        <i class="fas fa-stethoscope bg-blue"></i>
+                        <i class="fas fa-clock bg-blue"></i>
                         <div class="timeline-item">
-                            <span class="time"><i class="fas fa-clock"></i> {{ $pemriksaanRalan->jam_rawat ?? '' }}</span>
+                            <span class="time"><i class="fas fa-clock"></i> {{ $pemeriksaan->jam_rawat ?? '' }}</span>
                             <h3 class="timeline-header"><b>Pemeriksaan</b></h3>
                             <div class="timeline-body">
                                 <div class="table-responsive">
@@ -37,31 +37,31 @@
                                         </tr>
                                         <tr>
                                             <td>{{$row->status_lanjut}}</td>
-                                            <td>{{ $pemriksaanRalan->suhu_tubuh ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->tensi ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->nadi ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->respirasi ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->tinggi ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->berat ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->gcs ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->alergi ?? '-' }}</td>
-                                            <td>{{ $pemriksaanRalan->kesadaran ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->suhu_tubuh ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->tensi ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->nadi ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->respirasi ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->tinggi ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->berat ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->gcs ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->alergi ?? '-' }}</td>
+                                            <td>{{ $pemeriksaan->kesadaran ?? '-' }}</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2"><b>Subjek</b></td>
-                                            <td colspan="8"> : {{ $pemriksaanRalan->keluhan ?? '' }}</td>
+                                            <td colspan="8"> : {{ $pemeriksaan->keluhan ?? '' }}</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2"><b>Objek</b></td>
-                                            <td colspan="8"> : {{ $pemriksaanRalan->pemeriksaan ?? '' }}</td>
+                                            <td colspan="8"> : {{ $pemeriksaan->pemeriksaan ?? '' }}</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2"><b>Asesmen</b></td>
-                                            <td colspan="8"> : {{ $pemriksaanRalan->penilaian ?? '' }}</td>
+                                            <td colspan="8"> : {{ $pemeriksaan->penilaian ?? '' }}</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2"><b>Plan</b></td>
-                                            <td colspan="8"> : {{ $pemriksaanRalan->rtl ?? '' }}</td>
+                                            <td colspan="8"> : {{ $pemeriksaan->rtl ?? '' }}</td>
                                         </tr>
                                     </table>
                                 </div>
@@ -71,11 +71,11 @@
                     @isset($diagnosa)
                         <div>
                             <!-- Before each timeline item corresponds to one icon on the left scale -->
-                            <i class="fas fa-clipboard bg-blue"></i>
+                            <i class="fas fa-clock bg-blue"></i>
                             <!-- Timeline item -->
                                 <div class="timeline-item">
                                 <!-- Time -->
-                                    <span class="time"><i class="fas fa-clock"></i> {{ $pemriksaanRalan->jam_rawat ?? '' }}</span>
+                                    <span class="time"><i class="fas fa-clock"></i> {{ $pemeriksaan->jam_rawat ?? '' }}</span>
                                     <!-- Header. Optional -->
                                     <h3 class="timeline-header"><b>Diagnosa</b></h3>
                                     <!-- Body -->
@@ -92,7 +92,7 @@
                     @if(count($laboratorium)>0)
                         <div>
                             <!-- Before each timeline item corresponds to one icon on the left scale -->
-                            <i class="fas fa-flask bg-blue"></i>
+                            <i class="fas fa-clock bg-blue"></i>
                             <!-- Timeline item -->
                                 <div class="timeline-item">
                                 <!-- Time -->

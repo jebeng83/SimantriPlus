@@ -16,6 +16,7 @@
             <x-ralan.pemeriksaan :no-rawat="request()->get('no_rawat')" />
             <x-ralan.resep />
             <x-ralan.resume />
+            <x-ralan.catatan :no-rawat="request()->get('no_rawat')" />
         </div>
     </div>
 @stop

@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible maximizable>
+    <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
         <div class="row">
             <div class="col-md-6">
                 <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=10>

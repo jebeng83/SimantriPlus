@@ -54,7 +54,7 @@ return [
 
 
     'preloader' => [
-        'enabled' => false,
+        'enabled' => true,
         'img' => [
             'path' => 'img/logo/logo.png',
             'alt' => 'RSB Preloader Image',
@@ -248,13 +248,14 @@ return [
             'topnav_right' => true,
         ],
         [
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
+            'text'        => 'Keluar',
+            'url'         => '/logout',
+            'icon'        => 'fas fa-fw fa-sign-out-alt',
+            'topnav_right' => true,
         ],
         [
-            'text' => 'blog',
-            'url'  => 'admin/blog',
-            'can'  => 'manage-blog',
+            'type' => 'sidebar-menu-search',
+            'text' => 'search',
         ],
         [
             'text'        => 'Home',
@@ -263,23 +264,19 @@ return [
             'label_color' => 'success',
         ],
         [
-            'text'        => 'Pasien',
-            'icon'        => 'fas fa-fw fa-user',
-            'submenu'     => [
-                [
-                    'text'  => 'Rawat Jalan',
-                    'url'   => '/ralan/pasien',
-                ],
-                [
-                    'text'  => 'Rawat Inap',
-                    'url'   => '/ranap/pasien',
-                ]
-            ]
+            'text'        => 'Ralan',
+            'icon'        => 'fas fa-fw fa-stethoscope',
+            'url'         => '/ralan/pasien',
+        ],
+        [
+            'text'       => 'Ranap',
+            'icon'       => 'fas fa-fw fa-bed',
+            'url'        => '/ranap/pasien',
         ],
         [
             'text'        => 'Keluar',
             'url'         => '/logout',
-            'icon'        => 'far fa-fw fa-arrow-right',
+            'icon'        => 'fas fa-fw fa-sign-out-alt',
             'label_color' => 'success',
         ],
     ],

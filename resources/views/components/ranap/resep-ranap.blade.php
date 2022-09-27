@@ -1,6 +1,6 @@
 <div>
     <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible maximizable>
-        <x-adminlte-callout theme="info" title="Input Resep">
+        <x-adminlte-card theme="info" title="Input Resep" theme-mode="outline">
             <form  method="post" id="resepForm" action="{{url('/ranap/simpan/resep/'.$encryptNoRawat)}}">
                 @csrf
                 <div class="containerResep">
@@ -11,11 +11,11 @@
                     </div>
                 </div>
                 <div class="row justify-content-end">
-                    <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
+                    {{-- <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
                         <option value="-">Pilih jumlah iter</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
-                    </x-adminlte-select>
+                    </x-adminlte-select> --}}
                     <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep" theme="success" label="+" />
                     <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
                 </div>
@@ -62,13 +62,13 @@
                             <td class="align-middle text-center">{{$r->no_resep}}</td>
                             <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
                             <td>
-                                <ul>
+                                <ol>
                                 @foreach($getResepObat($r->no_resep) as $ro)
                                     <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
                                 @endforeach
-                                </ul>
+                                </ol>
                             </td>
-                            <td class="align-middle text-center"><x-adminlte-button label="Copy Resep" onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto" theme="primary" icon="fas fa-note"/></td>
+                            <td class="align-middle text-center"><x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)' class="btn btn-sm" theme="primary" mode="outline" icon="fa fa-sm fa-fw fa-pen"/></td>
                         </tr>
                     @endforeach
                 {{-- </x-slot> --}}

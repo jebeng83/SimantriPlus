@@ -22,6 +22,11 @@
 @section('auth_header', __('adminlte::adminlte.login_message'))
 
 @section('auth_body')
+    @error('message')
+        <x-adminlte-alert theme="danger" title="Gagal" dismissable>
+            {{ $message }}
+        </x-adminlte-alert>
+    @enderror
     <form action="{{ route('customlogin') }}" method="post">
         @csrf
 

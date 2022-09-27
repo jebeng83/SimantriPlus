@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Ralan;
 use Illuminate\Support\Facades\Crypt;
-use DB;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Request;
 
@@ -381,6 +381,16 @@ class PemeriksaanRalanController extends Controller
         }
         return $data;
     }
+    
+    public static function getPemeriksaanLab($noRawat)
+    {
+        $data = DB::table('detail_periksa_lab')
+                    ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('detail_periksa_lab.no_rawat', $noRawat)
+                    ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.tgl_periksa','detail_periksa_lab.jam','detail_periksa_lab.nilai', 'template_laboratorium.satuan', 'detail_periksa_lab.nilai_rujukan', 'detail_periksa_lab.keterangan')
+                    ->get();
+        return $data;
+    }
 
     public static function getDiagnosa($noRawat)
     {
@@ -478,6 +488,59 @@ class PemeriksaanRalanController extends Controller
     {
         $data = Crypt::decrypt($data);
         return $data;
+    }
+
+    public function postCatatan()
+    {
+        $validate = Request::validate([
+            'catatan' => 'required',
+        ]);
+        try{
+            $cek = DB::table('catatan_perawatan')
+                    ->where('no_rawat', Request::get('no_rawat'))
+                    ->count();
+            $data = [
+                        'no_rawat' => Request::get('no_rawat'),
+                        'kd_dokter' => session()->get('username'),
+                        'tanggal' => date('Y-m-d'),
+                        'jam' => date('H:i:s'),
+                        'catatan' => Request::get('catatan'),
+                    ];
+            if($cek > 0){
+                $insert = DB::table('catatan_perawatan')
+                            ->where('no_rawat', Request::get('no_rawat'))
+                            ->update($data);
+                        if($insert){
+                            return response()->json([
+                                'status' => 'success',
+                                'message' => 'Data berhasil disimpan'
+                            ], 200);
+                        }
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Data gagal disimpan'
+                        ], 500);
+            }else{
+                $insert = DB::table('catatan_perawatan')
+                            ->insert($data);
+                        
+                if($insert){
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Data berhasil disimpan'
+                    ], 200);
+                }
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data gagal disimpan'
+                ], 500);
+            }
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     
