@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Ralan;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Crypt;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Request;
 
 class PasienRalanController extends Controller

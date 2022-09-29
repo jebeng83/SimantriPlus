@@ -37,7 +37,7 @@
 
             <div class="input-group-append">
                 <div class="input-group-text">
-                    <span class="fas fa-envelope {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    <span class="fas fa-admin {{ config('adminlte.classes_auth_icon', '') }}"></span>
                 </div>
             </div>
 
@@ -65,6 +65,12 @@
                 </span>
             @enderror
         </div>
+
+        <x-adminlte-select-bs id="poli" name="poli" :config="$config">
+            @foreach($poli as $p)
+                <option value="{{ $p->kd_poli }}">{{ $p->nm_poli }}</option>
+            @endforeach
+        </x-adminlte-select-bs>
 
         {{-- Login field --}}
         <div class="row">

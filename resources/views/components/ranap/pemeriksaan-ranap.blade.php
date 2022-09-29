@@ -57,8 +57,8 @@
                         <td>{{ $row->tgl_perawatan }}</td>
                         <td>{{ $row->jam_rawat }}</td>
                         <td>{{ $row->keluhan }}</td>
-                        <td>{{ $row->pemeriksaan }}</td>
-                        <td>{{ $row->penilaian }}</td>
+                        {{-- <td>{{ $row->pemeriksaan }}</td>
+                        <td>{{ $row->penilaian }}</td> --}}
                         <td>{{ $row->suhu_tubuh }}</td>
                         <td>{{ $row->tensi }}</td>
                         <td>{{ $row->nadi }}</td>
@@ -80,7 +80,7 @@
     </x-adminlte-card>
 </div>
 
-<x-adminlte-modal id="editPemeriksaan" title="Edit Pemeriksaan" theme="info" icon="fas fa-bolt" size='lg' v-centered static-backdrop scrollable>
+<x-adminlte-modal id="editPemeriksaan" title="Edit Pemeriksaan" theme="info" size='lg' v-centered static-backdrop scrollable>
     <div></div>
     {{-- <x-adminlte-button class="d-flex ml-auto" id="editPemeriksaanButton" theme="primary" label="Simpan" icon="fas fa-sign-in"/> --}}
 </x-adminlte-modal>
@@ -92,9 +92,19 @@
             $.ajax({
                 url: "{{url('/ranap/pemeriksaan')}}"+"/"+"{{$encryptNoRawat}}"+"/"+tgl+"/"+jam,
                 type: "GET",
+                beforeSend : function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
                 success: function(response){
                     console.log(response);
-                    // var res = JSON.parse(data);
+                    Swal.close();
                     var html = '' + 
                                     '<input id="editjam" name="editjam" type="hidden" value="'+response.data.jam_rawat+'" class="form-control">' +                    
                                     '<input id="edittgl" name="edittgl" type="hidden" value="'+response.data.tgl_perawatan+'" class="form-control">' + 
@@ -204,12 +214,13 @@
                                     '		</div>' + 
                                     '	</div>' + 
                                     '</div>' + 
-                                    '<button type="button" class="btn btn-primary d-flex ml-auto" onclick="edit(event)"> <i class="fas fa-sign-in"></i> Simpan </button>' + 
+                                    '<button type="button" class="btn btn-primary d-flex ml-auto" onclick="edit(event)"> <i class="fas fa-sign-in"></i> Update </button>' + 
                                     '';
                     $('#editPemeriksaan').find('.modal-body').html(html);
                     $('#editPemeriksaan').modal('show');
                 },
                 error: function(data){
+                    Swal.close();
                     console.log(data);
                 }
             });

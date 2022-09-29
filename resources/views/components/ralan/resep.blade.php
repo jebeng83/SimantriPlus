@@ -80,7 +80,7 @@
                                         @endforeach
                                         </ul>
                                     </td>
-                                    <td class="align-middle text-center"><x-adminlte-button label="Copy Resep" onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto" theme="primary" icon="fas fa-note"/></td>
+                                    <td class="align-middle text-center"><x-adminlte-button label="Copy" onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto" theme="primary" icon="fas fa-note"/></td>
                                 </tr>
                             @endforeach
                         {{-- </x-slot> --}}

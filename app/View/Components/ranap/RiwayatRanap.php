@@ -3,6 +3,7 @@
 namespace App\View\Components\Ranap;
 
 use Illuminate\View\Component;
+use Illuminate\Support\Facades\DB;
 
 class RiwayatRanap extends Component
 {
@@ -27,7 +28,7 @@ class RiwayatRanap extends Component
      */
     public function render()
     {
-        return view('components.ranap.riwayat-ranap');
+        return view('components.ranap.riwayat-ranap',['data' => $this->data, 'heads' => $this->heads]);
     }
 
     public function getPasien($noRawat)
@@ -50,7 +51,7 @@ class RiwayatRanap extends Component
                     ->where('reg_periksa.stts', 'Sudah')
                     ->select('reg_periksa.tgl_registrasi', 'reg_periksa.no_rawat', 'dokter.nm_dokter', 
                             'reg_periksa.status_lanjut', 'poliklinik.nm_poli', 'reg_periksa.no_reg')
-                    ->orderBy('reg_periksa.tgl_registrasi', 'desc')
+                    ->orderBy('reg_periksa.no_rawat', 'desc')
                     ->get();
                     
         return $data;

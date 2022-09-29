@@ -88,6 +88,6 @@ class HomeController extends Controller
     public function logout()
     {
         Session::flush();
-        return redirect('/home');
+        return redirect('/');
     }
 }

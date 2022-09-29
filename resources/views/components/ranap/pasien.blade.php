@@ -11,7 +11,7 @@
         <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}"/>
         <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan" text="{{$data->catatan ?? '-'}}"/>
         <span class="nav-link">
-            {{-- <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRalan" class="bg-primary justify-content-end"/> --}}
+            <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRanap" class="bg-primary justify-content-end"/>
         </span>
     </x-adminlte-profile-widget>
 </div>

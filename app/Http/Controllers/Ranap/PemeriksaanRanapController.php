@@ -263,7 +263,6 @@ class PemeriksaanRanapController extends Controller
         $resObat = Request::get('obat');
         $resJml = Request::get('jumlah');
         $resAturan = Request::get('aturan_pakai');
-        $iter = Request::get('iter');
         $noRawat = $this->decryptData($noRawat);
         // $validate = Request::validate([
         //     'obat' => 'required',
@@ -275,12 +274,6 @@ class PemeriksaanRanapController extends Controller
         // }
 
         try{
-            if($iter != '-'){
-                $insert = DB::table('resep_iter')->upsert([
-                    'no_rawat'=> $noRawat,
-                    'catatan_iter'=> $iter,
-                ],['no_rawat'],['catatan_iter']);
-            }
 
             for ($i=0; $i < count($resObat); $i++){
                 $obat = $resObat[$i];
@@ -370,16 +363,16 @@ class PemeriksaanRanapController extends Controller
         return response()->json($obat, 200);
     }
 
-    public static function getPemeriksaanRalan($noRawat, $status)
+    public static function getPemeriksaanRanap($noRawat, $status)
     {
         if($status == 'Ralan'){
             $data = DB::table('pemeriksaan_ralan')
                         ->where('no_rawat', $noRawat)
-                        ->first();
+                        ->get();
         }else{
             $data = DB::table('pemeriksaan_ranap')
                         ->where('no_rawat', $noRawat)
-                        ->first();
+                        ->get();
         }
         return $data;
     }
@@ -528,13 +521,45 @@ class PemeriksaanRanapController extends Controller
                             'status' => 'success',
                             'message' => 'Data berhasil diubah'
                         ], 200);
-                        
+
         }catch(\Exception $e){
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public static function getPemeriksaanLab($noRawat)
+    {
+        $data = DB::table('detail_periksa_lab')
+                    ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('detail_periksa_lab.no_rawat', $noRawat)
+                    ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.tgl_periksa','detail_periksa_lab.jam','detail_periksa_lab.nilai', 'template_laboratorium.satuan', 'detail_periksa_lab.nilai_rujukan', 'detail_periksa_lab.keterangan')
+                    ->get();
+        return $data;
+    }
+
+    public static function getResume($noRM)
+    {
+        return DB::table('resume_pasien')
+                    ->where('no_rawat', $noRM)
+                    ->first();
+    }
+
+    public static function getRadiologi($noRM)
+    {
+        return DB::table('hasil_radiologi')
+
+                    ->where('no_rawat', $noRM)
+                    ->get();
+    }
+
+    public static function getFotoRadiologi($noRM)
+    {
+        return DB::table('gambar_radiologi')
+                    ->where('no_rawat', $noRM)
+                    ->get();
     }
     
 }

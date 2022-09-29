@@ -7,6 +7,7 @@
 @stop
 
 @section('content')
+    <x-ranap.riwayat-ranap :no-rawat="request()->get('no_rawat')" />
     <div class="row">
         <div class="col-md-4">
             <x-ranap.pasien :no-rawat="request()->get('no_rawat')" />

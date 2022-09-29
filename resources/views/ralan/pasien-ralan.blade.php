@@ -22,7 +22,7 @@
                         $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
                         $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
                         @endphp
-                        <a @if($row->stts == 'Sudah') class="text-white" @else class="text-primary" @endif target="_blank" href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
+                        <a @if($row->stts == 'Sudah') class="text-white" @else class="text-primary" @endif href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
                             {{$row->nm_pasien}}
                         </a>
                     </td>
@@ -40,14 +40,9 @@
                 @endphp
                 <x-adminlte-input-date name="tanggal" value="{{$tanggal}}" :config="$config" placeholder="Pilih Tanggal...">
                     <x-slot name="appendSlot">
-                        <div class="input-group-text bg-primary">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
+                        <x-adminlte-button class="btn-flat" type="submit" theme="primary" icon="fas fa-lg fa-search"/>
                     </x-slot>
                 </x-adminlte-input-date>
-            </div>
-            <div class="col-auto">
-                <x-adminlte-button class="btn-flat" type="submit" label="Cari" theme="success" icon="fas fa-lg fa-search"/>
             </div>
         </div>
     </x-adminlte-callout>

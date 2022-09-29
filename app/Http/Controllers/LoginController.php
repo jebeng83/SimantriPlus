@@ -14,7 +14,15 @@ class LoginController extends Controller
      */
     public function index()
     {
-        return view('auth.login');
+        $config = [
+            "title" => "Pilih Poliklinik",
+            "liveSearch" => true,
+            "liveSearchPlaceholder" => "Cari...",
+            "showTick" => true,
+            "actionsBox" => true,
+        ];
+        $poli = DB::table('poliklinik')->where('status', '1')->get();
+        return view('auth.login',['poli'=>$poli, 'config'=>$config]);
     }
 
     public function customLogin(Request $request)
@@ -22,16 +30,16 @@ class LoginController extends Controller
         $this->validateLogin($request);
         $cek = DB::table('user')
                     ->join("dokter", "dokter.kd_dokter", "=", DB::Raw("AES_DECRYPT(id_user, 'nur')"))
-                    ->join("jadwal", "jadwal.kd_dokter", "=", "dokter.kd_dokter")
-                    ->join("poliklinik", "poliklinik.kd_poli", "=", "jadwal.kd_poli")
+                    // ->join("jadwal", "jadwal.kd_dokter", "=", "dokter.kd_dokter")
+                    // ->join("poliklinik", "poliklinik.kd_poli", "=", "jadwal.kd_poli")
                     ->whereRaw("id_user = AES_ENCRYPT('{$request->username}', 'nur')")
                     // ->whereRaw("password = AES_ENCRYPT('{$request->password}', 'windi')")
-                    ->where("poliklinik.nm_poli", "like", 'KLINIK%')
-                    ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password, jadwal.kd_poli")
+                    // ->where("poliklinik.nm_poli", "like", 'KLINIK%')
+                    ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password")
                     ->first();
         if ($cek) {
             if($cek->password == $request->password){
-                session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$cek->kd_poli]);
+                session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$request->poli]);
                 return redirect()->intended('home')
                         ->withSuccess('Signed in');
             }else{
@@ -53,6 +61,7 @@ class LoginController extends Controller
         $this->validate($request, [
             $this->username() => 'required|string',
             'password' => 'required|string',
+            'poli' => 'required',
         ]);
     }
 

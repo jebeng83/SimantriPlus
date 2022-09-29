@@ -5,17 +5,18 @@
                 @csrf
                 <div class="containerResep">
                     <div class="row">
-                        <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5" data-placeholder="Pilih Obat" />
+                        <div class="col-md-5">
+                            <div class="form-group">
+                                <label class="visible-sm">Nama Obat</label>
+                                <select name="obat[]" class="form-control obat-ranap w-100" id="obat-ranap" data-placeholder="Pilih Obat">
+                                </select>
+                            </div>
+                        </div>
                         <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jumlah"/>
                         <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-5" placeholder="Aturan Pakai"/>
                     </div>
                 </div>
                 <div class="row justify-content-end">
-                    {{-- <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
-                        <option value="-">Pilih jumlah iter</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                    </x-adminlte-select> --}}
                     <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep" theme="success" label="+" />
                     <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
                 </div>
@@ -50,7 +51,7 @@
             </table>              
         </x-adminlte-callout>
         @endif
-        <x-adminlte-callout theme="info" title="Riwayat Peresepan">
+        <x-adminlte-card theme="info" theme-mode="outline" title="Riwayat Peresepan">
             @php
                 $config["responsive"] = true;
                 $config['order'] = [[1, 'desc']];
@@ -164,7 +165,7 @@
         })
 
         $(document).ready(function() {
-            $('.obat').select2({
+            $('#obat-ranap').select2({
                 placeholder: 'Pilih obat',
                 ajax: {
                     url: '/ranap/obat',
@@ -210,8 +211,19 @@
                 url:'/ranap/copy/'+no_resep,
                 type:'GET',
                 dataType:'json',
+                beforeSend : function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
                 success: function(data){
                     // console.log(data);
+                    Swal.close();
                     $.each(data, function (i, item) {
                         trHTML += '<tr class="body"><td><input type="text" name="jml_copyresep[]" multiple="multiple" value="' + item.jml + '" size="5"></td>'
                                 + '<td><input type="hidden" name="kode_brng_copyresep[]" multiple="multiple" value="' + item.kode_brng +'" > ' + item.nama_brng + '</td>'
@@ -292,13 +304,15 @@
                 url: '/ranap/simpan/copyresep/'+"{{$encryptNoRawat}}",
                 data: data,
                 dataType: 'json',
-                beforeSend: function() {
-                    $('#modalCopyResep').modal('hide')
+                beforeSend : function() {
                     Swal.fire({
-                    title: 'Loading',
-                    imageUrl: '{{asset("img/loading.gif")}}',
-                    showConfirmButton: false,
-                    })
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                 },
                 success: function (response) {
                     console.log(response);
@@ -341,7 +355,6 @@
             let obat = getValue('obat[]');
             let jumlah = getValue('jumlah[]');
             let aturan = getValue('aturan[]');
-            let iter = $('#iter').val();
             var form = $("#resepForm");
             var data = {
                 obat:obat,

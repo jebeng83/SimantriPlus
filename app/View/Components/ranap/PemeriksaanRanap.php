@@ -19,7 +19,7 @@ class PemeriksaanRanap extends Component
         $this->noRM = Request::get('no_rm');
         $this->encryptNoRawat = $this->encryptData($noRawat);
         $this->noRawat = $noRawat;
-        $this->heads = ['Tgl', 'Jam', 'Keluhan', 'Pemeriksaan', 'Penilaian', 'Suhu', 'tensi', 'Nadi', 'Aksi'];
+        $this->heads = ['Tgl', 'Jam', 'Keluhan', 'Suhu', 'tensi', 'Nadi', 'Aksi'];
         $this->riwayat = $this->getRiwayat($this->noRM);
         // $this->pemeriksaan = DB::table('pemeriksaan_ranap')->where('no_rawat', $this->noRawat)->get();
     }

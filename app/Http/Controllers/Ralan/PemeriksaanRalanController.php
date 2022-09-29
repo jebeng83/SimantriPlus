@@ -373,11 +373,11 @@ class PemeriksaanRalanController extends Controller
         if($status == 'Ralan'){
             $data = DB::table('pemeriksaan_ralan')
                         ->where('no_rawat', $noRawat)
-                        ->first();
+                        ->get();
         }else{
             $data = DB::table('pemeriksaan_ranap')
                         ->where('no_rawat', $noRawat)
-                        ->first();
+                        ->get();
         }
         return $data;
     }
@@ -543,5 +543,24 @@ class PemeriksaanRalanController extends Controller
         }
     }
 
-    
+    public static function getResume($noRM)
+    {
+        return DB::table('resume_pasien')
+                    ->where('no_rawat', $noRM)
+                    ->first();
+    }
+
+    public static function getRadiologi($noRM)
+    {
+        return DB::table('hasil_radiologi')
+                    ->where('no_rawat', $noRM)
+                    ->get();
+    }
+
+    public static function getFotoRadiologi($noRM)
+    {
+        return DB::table('gambar_radiologi')
+                    ->where('no_rawat', $noRM)
+                    ->get();
+    }
 }
