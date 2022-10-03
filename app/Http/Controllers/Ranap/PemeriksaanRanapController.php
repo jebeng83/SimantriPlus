@@ -280,15 +280,24 @@ class PemeriksaanRanapController extends Controller
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0001')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0001')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0001')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'FARM')->max('tanggal');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'FARM')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'FARM')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if($maxStok < 1){
-                    return response()->json([
-                        'status' => 'gagal',
-                        'pesan' => 'Stok obat '.$obat.' kosong'
-                    ]);
+                    if(empty($obat)){
+                        return response()->json([
+                            'status' => 'gagal',
+                            'pesan' => 'Obat tidak boleh kosong'
+                        ]);
+                    }else{
+                        $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
+                        return response()->json([
+                            'status' => 'gagal',
+                            'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
+                        ]);
+                    }
+                    
                 }
                 $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->first();
                 $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();

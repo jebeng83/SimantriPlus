@@ -253,9 +253,19 @@
                         type: 'DELETE',
                         dataType: 'json',
                         data:{_token: _token}, 
+                        beforeSend : function() {
+                            Swal.fire({
+                                title: 'Loading....',
+                                allowEscapeKey: false,
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
                         success: function(data) {
                             console.log(data);
-                            data.status == 'success' ? Swal.fire(
+                            data.status == 'sukses' ? Swal.fire(
                                 'Terhapus!',
                                 data.pesan,
                                 'success'
@@ -360,7 +370,6 @@
                 obat:obat,
                 jumlah:jumlah,
                 aturan_pakai:aturan,
-                iter:iter,
                 _token:_token,
             };
             var url = form.attr('action');
@@ -371,12 +380,15 @@
                 url: url,
                 data: data,
                 dataType: 'json',
-                beforeSend: function() {
+                beforeSend : function() {
                     Swal.fire({
-                    title: 'Loading',
-                    imageUrl: '{{asset("img/loading.gif")}}',
-                    showConfirmButton: false,
-                    })
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                 },
                 success: function (response) {
                     console.log(response);

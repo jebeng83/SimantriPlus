@@ -21,7 +21,7 @@
                 @endphp
                 <tr>
                     <td> 
-                        <a target="_blank" href="{{route('ranap.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}">
+                        <a class="text-primary" href="{{route('ranap.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}">
                             {{$row->nm_pasien}}
                         </a>
                     </td>

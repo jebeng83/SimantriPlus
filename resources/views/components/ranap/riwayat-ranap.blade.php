@@ -1,6 +1,5 @@
 <div>
-    <x-adminlte-modal id="modalRiwayatPemeriksaanRanap" title="Riwayat Pemeriksaan" size="xl" theme="primary"
-    icon="fas fa-book-medical" v-centered static-backdrop scrollable>
+    <x-adminlte-modal id="modalRiwayatPemeriksaanRanap" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered static-backdrop scrollable>
     
         <div class="timeline">
             @foreach($data as $row)
@@ -21,7 +20,7 @@
                     <div>
                         <i class="fas fa-clock bg-blue"></i>
                         <div class="timeline-item">
-                            <h4 class="timeline-header"><b>{{$row->no_rawat}}</b></h4>
+                            <h4 class="timeline-header d-flex justify-content-between"><b>{{$row->no_rawat}}</b>  <b>{{$row->nm_dokter}}</b></h4>
                             <div class="timeline-body">
                                 @if(count($pemeriksaan)>0)
                                 <x-adminlte-card theme="dark" title="Pemeriksaan" collapsible="collapsed">

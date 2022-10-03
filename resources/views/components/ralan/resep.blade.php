@@ -17,7 +17,14 @@
                         @csrf
                         <div class="containerResep">
                             <div class="row">
-                                <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5"  data-placeholder="Pilih Obat" />
+                                {{-- <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5"  data-placeholder="Pilih Obat" /> --}}
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="visible-sm">Nama Obat</label>
+                                        <select name="obat[]" class="form-control obat w-100" id="obat" data-placeholder="Pilih Obat">
+                                        </select>
+                                    </div>
+                                </div>
                                 <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jumlah"/>
                                 <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-5" placeholder="Aturan Pakai"/>
                             </div>
@@ -339,7 +346,7 @@
                         },
                         success: function(data) {
                             console.log(data);
-                            data.status == 'success' ? Swal.fire(
+                            data.status == 'sukses' ? Swal.fire(
                                 'Terhapus!',
                                 data.pesan,
                                 'success'
