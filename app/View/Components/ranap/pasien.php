@@ -4,7 +4,7 @@ namespace App\View\Components\ranap;
 use Illuminate\View\Component;
 use DB;
 
-class pasien extends Component
+class Pasien extends Component
 {
     public $data;
     /**

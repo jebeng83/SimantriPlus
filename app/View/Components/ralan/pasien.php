@@ -2,9 +2,9 @@
 
 namespace App\View\Components\ralan;
 use Illuminate\View\Component;
-use DB;
+use Illuminate\Support\Facades\DB;
 
-class pasien extends Component
+class Pasien extends Component
 {
     public $data;
     /**

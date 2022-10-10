@@ -6,7 +6,7 @@ use Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
 
-class resep extends Component
+class Resep extends Component
 {
     public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik;
     /**

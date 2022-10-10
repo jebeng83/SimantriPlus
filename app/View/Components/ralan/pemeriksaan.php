@@ -7,7 +7,7 @@ use Request;
 use Illuminate\View\Component;
 use Illuminate\Support\Facades\DB;
 
-class pemeriksaan extends Component
+class Pemeriksaan extends Component
 {
     use EnkripsiData;
     public $noRawat, $encryptNoRawat, $data;

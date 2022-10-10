@@ -4,7 +4,7 @@ namespace App\View\Components\ralan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
 
-class riwayat extends Component
+class Riwayat extends Component
 {
     public $data;
     public $heads;

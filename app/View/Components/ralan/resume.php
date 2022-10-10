@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
 
 
-class resume extends Component
+class Resume extends Component
 {
     use EnkripsiData;
     public $noRawat, $encrypNoRawat, $noRm, $kel, $diagnosa, $prosedur, $terapi;
