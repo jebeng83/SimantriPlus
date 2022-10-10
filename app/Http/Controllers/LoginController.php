@@ -62,6 +62,10 @@ class LoginController extends Controller
             $this->username() => 'required|string',
             'password' => 'required|string',
             'poli' => 'required',
+        ],[
+            'username.required' => 'NIP Dokter tidak boleh kosong',
+            'password.required' => 'Password tidak boleh kosong',
+            'poli.required' => 'Poli tidak boleh kosong',
         ]);
     }
 

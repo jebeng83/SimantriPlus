@@ -31,7 +31,7 @@
         {{-- Email field --}}
         <div class="input-group mb-3">
             <input type="text" name="username" class="form-control @error('username') is-invalid @enderror"
-                   value="{{ old('username') }}" placeholder="{{ __('Username') }}" autofocus>
+                   value="{{ old('username') }}" placeholder="{{ __('NIP Dokter') }}" autofocus>
 
             <div class="input-group-append">
                 <div class="input-group-text">
@@ -73,13 +73,7 @@
         {{-- Login field --}}
         <div class="row">
             <div class="col-7">
-                {{-- <div class="icheck-primary" title="{{ __('adminlte::adminlte.remember_me_hint') }}">
-                    <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-
-                    <label for="remember">
-                        {{ __('adminlte::adminlte.remember_me') }}
-                    </label>
-                </div> --}}
+                
             </div>
 
             <div class="col-5">
@@ -88,6 +82,14 @@
                     {{ __('adminlte::adminlte.sign_in') }}
                 </button>
             </div>
+        </div>
+        <div class="row">
+            <b>NB:</b>
+                <ol>
+                    <li>Login Menggunakan User NIP DOKTER</li>
+                    <li>Pilih POLIKLINIK Sesuai Spesialis</li>
+                    <li>Sesi Login 30 Menit auto logout ketika tidak ada transaksi</li>
+                </ol>
         </div>
 
     </form>
