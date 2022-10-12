@@ -274,6 +274,12 @@ return [
             'url'        => '/ranap/pasien',
         ],
         [
+            'text'        => 'Master Obat',
+            'url'         => '/master_obat',
+            'icon'        => 'fas fa-fw fa-pills',
+            'label_color' => 'success',
+        ],
+        [
             'text'        => 'Keluar',
             'url'         => '/logout',
             'icon'        => 'fas fa-fw fa-sign-out-alt',
@@ -448,6 +454,16 @@ return [
                     'type' => 'css',
                     'asset' => true,
                     'location' => 'vendor/bootstrap-select/dist/css/bootstrap-select.min.css',
+                ],
+            ],
+        ],
+        'BsCustomFileInput' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
+                    'asset' => true,
+                    'location' => 'vendor/bs-custom-file-input/bs-custom-file-input.min.js',
                 ],
             ],
         ],

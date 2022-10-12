@@ -14,5 +14,34 @@
         <span class="nav-link">
             <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRalan" class="bg-primary justify-content-end"/>
         </span>
+        <span class="nav-link">
+            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" placeholder="Berkas Digital" legend="Pilih">
+                <x-slot name="appendSlot">
+                    <x-adminlte-button theme="primary" onclick="uploadFile()" label="Upload"/>
+                </x-slot>
+                <x-slot name="prependSlot">
+                    <div class="input-group-text text-primary">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                </x-slot>
+            </x-adminlte-input-file>
+        </span>
     </x-adminlte-profile-widget>
 </div>
+
+@push('js')
+    <script>
+        async function uploadFile() {
+            let formData = new FormData();           
+            formData.append("file", fileupload.files[0]);
+            formData.append("no_rawat", "{{$data->no_rawat}}");
+            formData.append("url", "{{url()->current()}}");
+            await fetch('http://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php', {
+            method: "POST", 
+            body: formData,
+            headers: {"Access-Control-Allow-Origin": "*"}
+            });    
+            alert('The file has been uploaded successfully.');
+        }
+    </script>
+@endpush

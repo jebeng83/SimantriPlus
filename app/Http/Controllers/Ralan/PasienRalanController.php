@@ -29,6 +29,7 @@ class PasienRalanController extends Controller
         $kd_dokter = session()->get('username');
         $tanggal = Request::get('tanggal') ?? date('Y-m-d');
         $heads = ['No. Reg', 'Nama Pasien', 'No Rawat', 'Telp', 'Dokter', 'Status'];
+        $headsInternal = ['No. Reg', 'No. RM', 'Nama Pasien', 'Dokter', 'Status'];
         $data = DB::table('reg_periksa')
                     ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                     ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
@@ -43,6 +44,8 @@ class PasienRalanController extends Controller
             'heads' => $heads,
             'data' => $data,
             'tanggal' => $tanggal,
+            'headsInternal' => $headsInternal,
+            'dataInternal' => $this->getRujukInternal($tanggal)
         ]);
     }
 
@@ -50,6 +53,18 @@ class PasienRalanController extends Controller
     {
         $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
         return $poli->nm_poli;
+    }
+
+    private function getRujukInternal($tanggal)
+    {
+        return DB::table('reg_periksa')
+                    ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                    ->join('rujukan_internal_poli', 'reg_periksa.no_rawat', '=', 'rujukan_internal_poli.no_rawat')
+                    ->join('dokter', 'dokter.kd_dokter', '=', 'rujukan_internal_poli.kd_dokter')
+                    ->where('rujukan_internal_poli.kd_poli', session()->get('kd_poli'))
+                    ->where('reg_periksa.tgl_registrasi', $tanggal)
+                    ->select('reg_periksa.no_reg', 'reg_periksa.no_rkm_medis', 'pasien.nm_pasien', 'dokter.nm_dokter', 'reg_periksa.stts')
+                    ->get();
     }
     
     public static function encryptData($data)
