@@ -12,7 +12,6 @@
         "laravel/sanctum": "^2.14.1",
         "laravel/tinker": "^2.7",
         "laravel/ui": "^3.4",
-        "silviolleite/laravelpwa": "^2.0",
         "yajra/laravel-datatables": "^9.0"
     },
     "require-dev": {
