@@ -46,6 +46,7 @@ Route::post('/ranap/simpan/resep/{noRawat}', [App\Http\Controllers\Ranap\Pemerik
 Route::delete('/ranap/obat/{noResep}/{kdObat}', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'hapusObat']);
 
 Route::get('/master_obat', [App\Http\Controllers\MasterObat::class, 'index'])->name('master_obat');
+Route::get('/berkas/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRM'])->where('noRawat', '.*');;
 
 
 

@@ -563,4 +563,30 @@ class PemeriksaanRalanController extends Controller
                     ->where('no_rawat', $noRM)
                     ->get();
     }
+
+    public function getBerkasRM($noRawat)
+    {
+        try{
+
+            $data = DB::table('berkas_digital_perawatan')
+                    ->where('no_rawat', $noRawat)
+                    ->get();
+            if($data->count() > 0){
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $data
+                ], 200);
+            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data tidak ditemukan'
+            ], 200);
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
