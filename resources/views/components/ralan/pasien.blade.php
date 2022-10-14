@@ -15,7 +15,7 @@
             <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRalan" class="bg-info justify-content-end"/>
         </span>
         <span class="nav-link">
-            <x-adminlte-button label="Berkas RM Lama" onclick="getBerkasRM()" data-toggle="modal" data-target="#modalBerkasRM" class="bg-success justify-content-end"/>
+            <x-adminlte-button label="Berkas RM Lama" onclick="getBerkasRM()" class="bg-success justify-content-end"/>
         </span>
         <span class="nav-link">
             <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" placeholder="Berkas Digital" legend="Pilih">
