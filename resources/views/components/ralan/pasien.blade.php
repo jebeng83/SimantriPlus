@@ -109,15 +109,23 @@
                     });
                 },
                 success: function (data) {
-                    console.log(data);
                     Swal.close();
-                    var html = '';
+                    if(data.status == 'success'){
+                        var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
                             html += '<img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" >';
                         });
                         $('.body-modal-berkasrm').html(html);
-                    $('#modalBerkasRM').modal('show');
+                        $('#modalBerkasRM').modal('show');
+                    }else{
+                        Swal.fire({
+                            title: 'Gagal',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        })
+                    }
                 },
                 error: function (data) {
                     console.log('Error:', data);
