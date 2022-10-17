@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Ralan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Traits\EnkripsiData;
 use Request;
 
 class PemeriksaanRalanController extends Controller
 {
+    use EnkripsiData;
     public $dokter, $noRawat, $noRM; 
     /**
      * Display a listing of the resource.
@@ -589,4 +591,117 @@ class PemeriksaanRalanController extends Controller
             ], 500);
         }
     }
+
+    public static function getPoli()
+    {
+        $q = Request::get('q');
+        $que = '%'.$q.'%';
+        $obat = DB::table('poliklinik')
+                    ->where('status', '1')
+                    ->where('nm_poli', 'like', $que)
+                    ->selectRaw('kd_poli AS id, nm_poli AS text')
+                    ->get();
+        return response()->json($obat, 200);
+    }
+
+    public static function getDokter($kdPoli)
+    {
+        $data = DB::table('jadwal')
+                    ->join('dokter', 'dokter.kd_dokter', '=', 'jadwal.kd_dokter')
+                    ->where('jadwal.kd_poli', $kdPoli)
+                    ->groupBy('jadwal.kd_dokter')
+                    ->selectRaw('jadwal.kd_dokter, dokter.nm_dokter')
+                    ->get();
+        return response()->json($data, 200);
+    }
+
+    public static function postRujukan(Request $request)
+    {
+        $validate = Request::validate([
+            'no_rawat' => 'required',
+            'kd_poli' => 'required',
+            'kd_dokter' => 'required',
+            'catatan' => 'required',
+        ], [
+            'no_rawat.required' => 'No Rawat tidak boleh kosong',
+            'kd_poli.required' => 'Poli tujuan tidak boleh kosong',
+            'kd_dokter.required' => 'Dokter tujuan tidak boleh kosong',
+            'catatan.required' => 'Catatan tidak boleh kosong',
+        ]);
+        try{
+            $data = [
+                        'no_rawat' => Request::get('no_rawat'),
+                        'kd_poli' => Request::get('kd_poli'),
+                        'kd_dokter' => Request::get('kd_dokter'),
+                    ];
+            $insert = DB::table('rujukan_internal_poli')
+                        ->insert($data);
+            if($insert){
+                $insert = DB::table('rujukan_internal_poli_detail')
+                            ->insert([
+                                'no_rawat' =>Request::get('no_rawat'),
+                                'konsul' =>Request::get('catatan'),
+                            ]);
+                if($insert){
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Data berhasil disimpan'
+                    ], 200);
+                }else{
+                    $delete = DB::table('rujuk_internal_poli')
+                                ->where('no_rawat',Request::get('no_rawat'))
+                                ->delete();
+                    if($delete){
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Data gagal disimpan'
+                        ], 500);
+                    }else{
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Gagal menghapus data'
+                        ], 500);
+                    }
+                }
+            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data gagal disimpan'
+            ], 500);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteRujukan($noRawat)
+    {
+        $noRawat = $this->decryptData($noRawat);
+        try{
+            $delete = DB::table('rujukan_internal_poli')
+                        ->where('no_rawat', $noRawat)
+                        ->delete();
+            if($delete){
+                $delete = DB::table('rujukan_internal_poli_detail')
+                            ->where('no_rawat', $noRawat)
+                            ->delete();
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Data berhasil dihapus'
+                ], 200);
+            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data gagal dihapus'
+            ], 500);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

@@ -47,6 +47,10 @@ Route::delete('/ranap/obat/{noResep}/{kdObat}', [App\Http\Controllers\Ranap\Peme
 
 Route::get('/master_obat', [App\Http\Controllers\MasterObat::class, 'index'])->name('master_obat');
 Route::get('/berkas/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRM'])->where('noRawat', '.*');;
+Route::get('/ralan/poli', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getPoli']);
+Route::get('/ralan/dokter/{kdPoli}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getDokter']);
+Route::post('/ralan/rujuk-internal/submit', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'postRujukan']);
+Route::delete('/ralan/rujuk-internal/delete/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'deleteRujukan']);
 
 
 
