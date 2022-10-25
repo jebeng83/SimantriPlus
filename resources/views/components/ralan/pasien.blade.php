@@ -18,7 +18,7 @@
             <x-adminlte-button label="Berkas RM Lama" onclick="getBerkasRM()" class="bg-success justify-content-end"/>
         </span>
         <span class="nav-link">
-            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" placeholder="Berkas Digital" legend="Pilih">
+            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*" placeholder="Berkas Digital" legend="Pilih">
                 <x-slot name="appendSlot">
                     <x-adminlte-button theme="primary" onclick="uploadFile()" label="Upload"/>
                 </x-slot>

@@ -19,6 +19,6 @@ class LoginAuth
         if($request->session()->has('username') && $request->session()->has('password')) {
             return $next($request);
         }
-        return response()->view('auth.login');
+        return redirect()->route('login');
     }
 }
