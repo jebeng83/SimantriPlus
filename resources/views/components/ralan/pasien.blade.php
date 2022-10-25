@@ -46,49 +46,30 @@
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function uploadFile() {
-            let formData = new FormData();           
-            formData.append("file", fileupload.files[0]);
-            formData.append("no_rawat", "{{$data->no_rawat}}");
-            formData.append("url", "{{url()->current()}}");
+            var file_data = $('#fileupload').prop('files')[0];
+            var form_data = new FormData();
+            form_data.append('file', file_data);
+            form_data.append('no_rawat', '{{$data->no_rawat}}');
+            form_data.append('url', '{{url()->current()}}');
             $.ajax({
                 url: "http://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
                 type: "POST",
-                data: formData,
-                prosesData: false,
+                data: form_data,
                 contentType: false,
-                beforeSend: function () {
-                    Swal.fire({
-                        title: 'Mohon Tunggu',
-                        html: 'Sedang mengupload file',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading()
-                        },
-                    });
-                },
+                cache: false,
+                processData: false,
                 success: function (data) {
-                    // if (data.status == 'success') {
-                    //     Swal.fire({
-                    //         title: 'Sukses',
-                    //         text: data.message,
-                    //         icon: 'success',
-                    //         confirmButtonText: 'OK'
-                    //     })
-                    // } else {
-                    //     Swal.fire({
-                    //         title: 'Gagal',
-                    //         text: data.message,
-                    //         icon: 'error',
-                    //         confirmButtonText: 'OK'
-                    //     })
-                    // }
-                    console.log(data);
+                    Swal.fire({
+                        title: 'Sukses',
+                        text: 'Berkas berhasil diupload',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    })
                 },
                 error: function (data) {
-                    console.log(data);
                     Swal.fire({
                         title: 'Gagal',
-                        text: data.message,
+                        text: 'Berkas gagal diupload',
                         icon: 'error',
                         confirmButtonText: 'OK'
                     })
