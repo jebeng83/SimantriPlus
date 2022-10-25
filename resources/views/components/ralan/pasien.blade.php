@@ -54,6 +54,8 @@
                 url: "http://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
                 type: "POST",
                 data: formData,
+                prosesData: false,
+                contentType: false,
                 beforeSend: function () {
                     Swal.fire({
                         title: 'Mohon Tunggu',
