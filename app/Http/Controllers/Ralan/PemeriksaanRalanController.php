@@ -486,11 +486,11 @@ class PemeriksaanRalanController extends Controller
         }
     }
 
-    public function decryptData($data)
-    {
-        $data = Crypt::decrypt($data);
-        return $data;
-    }
+    // public function decryptData($data)
+    // {
+    //     $data = Crypt::decrypt($data);
+    //     return $data;
+    // }
 
     public function postCatatan()
     {
@@ -696,6 +696,44 @@ class PemeriksaanRalanController extends Controller
                 'status' => 'error',
                 'message' => 'Data gagal dihapus'
             ], 500);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateRujukanInternal($noRawat)
+    {
+        $noRawat = $this->decryptData($noRawat);
+        try{
+            $data = [
+                        'pemeriksaan' => Request::get('pemeriksaan'),
+                        'diagnosa' => Request::get('diagnosa'),
+                        'saran' => Request::get('saran'),
+                    ];
+            $update = DB::table('rujukan_internal_poli_detail')
+                        ->where('no_rawat', $noRawat)
+                        ->update($data);
+                if($update){
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Data berhasil disimpan'
+                    ], 200);
+                }
+                else{
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Data gagal disimpan',
+                        'no_rawat' => $noRawat,
+                    ], 200);
+                }
+            // }
+            // return response()->json([
+            //     'status' => 'error',
+            //     'message' => 'Data gagal disimpan'
+            // ], 500);
         }catch(\Exception $e){
             return response()->json([
                 'status' => 'error',

@@ -43,20 +43,6 @@
                             </tr>
                         @endforeach
                     </x-adminlte-datatable>
-                    <div class="row justify-content-end pt-5">
-                        <div class="md:col-3 sm:col-auto">
-                            @php
-                            $config = ['format' => 'YYYY-MM-DD'];
-                            @endphp
-                            <form action="{{route('ralan.pasien')}}" method="GET">
-                            <x-adminlte-input-date name="tanggal" value="{{$tanggal}}" :config="$config" placeholder="Pilih Tanggal...">
-                                <x-slot name="appendSlot">
-                                    <x-adminlte-button class="btn-flat" type="submit" theme="primary" icon="fas fa-lg fa-search"/>
-                                </x-slot>
-                            </x-adminlte-input-date>
-                            </form>
-                        </div>
-                    </div>
                 </x-adminlte-card>
             </div>
             <div class="tab-pane fade" id="rujuk" role="tabpanel" aria-labelledby="rujuk-tab">
@@ -69,7 +55,14 @@
                         @foreach($dataInternal as $row)
                             <tr @if($row->stts == 'Sudah') class="bg-success" @endif >
                                 <td>{{$row->no_reg}}</td>
-                                <td> {{$row->nm_pasien}}</td>
+                                <td>
+                                    @php
+                                    $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
+                                    $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
+                                    @endphp
+                                    <a @if($row->stts == 'Sudah') class="text-white" @else class="text-primary" @endif href="{{route('ralan.rujuk-internal', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">{{$row->nm_pasien}}
+                                    </a>
+                                </td>
                                 <td>{{$row->no_rkm_medis}}</td>
                                 <td>{{$row->nm_dokter}}</td>
                                 <td>{{$row->stts}}</td>
@@ -77,6 +70,20 @@
                         @endforeach
                     </x-adminlte-datatable>
                 </x-adminlte-card>
+            </div>
+        </div>
+        <div class="row justify-content-end pr-2">
+            <div class="md:col-3 sm:col-auto">
+                @php
+                $config = ['format' => 'YYYY-MM-DD'];
+                @endphp
+                <form action="{{route('ralan.pasien')}}" method="GET">
+                <x-adminlte-input-date name="tanggal" value="{{$tanggal}}" :config="$config" placeholder="Pilih Tanggal...">
+                    <x-slot name="appendSlot">
+                        <x-adminlte-button class="btn-flat" type="submit" theme="primary" icon="fas fa-lg fa-search"/>
+                    </x-slot>
+                </x-adminlte-input-date>
+                </form>
             </div>
         </div>
     </x-adminlte-callout>
