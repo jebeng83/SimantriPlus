@@ -10,19 +10,15 @@
         <div class="row">
             <div class="col-md-3">
                 <x-adminlte-info-box title="TOTAL PASIEN" text="{{$totalPasien}}" icon="fas fa-lg fa-users" theme="primary"/>
-                {{-- <x-adminlte-small-box title="{{$totalPasien}}" text="Total Pasien" icon="fas fa-sm fa-user-plus text-primary" theme="gradient-primary" icon-theme="white"/> --}}
             </div>
             <div class="col-md-3">
                 <x-adminlte-info-box title="PASIEN BULAN INI" text="{{$pasienBulanIni}}" icon="fas fa-lg fa-clipboard" theme="success"/>
-                {{-- <x-adminlte-small-box title="{{$pasienBulanIni}}" text="PASIEN BULAN INI" icon="fas fa-sm fa-user-plus text-primary" theme="gradient-primary" icon-theme="white"/> --}}
             </div>
             <div class="col-md-3">
                 <x-adminlte-info-box title="PASIEN POLI BULAN INI" text="{{$pasienPoliBulanIni}}" icon="fas fa-lg fa-hospital" theme="danger"/>
-                {{-- <x-adminlte-small-box title="{{$pasienPoliBulanIni}}" text="PASIEN POLI BULAN INI" icon="fas fa-sm fa-user-plus text-primary" theme="gradient-primary" icon-theme="white"/> --}}
             </div>
             <div class="col-md-3">
                 <x-adminlte-info-box title="PASIEN POLI HARI INI" text="{{$pasienPoliHariIni}}" icon="fas fa-lg fa-stethoscope" theme="info"/>
-                {{-- <x-adminlte-small-box title="{{$pasienPoliHariIni}}" text="PASIEN POLI HARI INI" icon="fas fa-sm fa-user-plus text-primary" theme="gradient-primary" icon-theme="white"/> --}}
             </div>
         </div>
 

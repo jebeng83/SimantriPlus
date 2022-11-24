@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible maximizable>
+    <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed" maximizable>
         <x-adminlte-card theme="info" title="Input Resep" theme-mode="outline">
             <form  method="post" id="resepForm" action="{{url('/ranap/simpan/resep/'.$encryptNoRawat)}}">
                 @csrf

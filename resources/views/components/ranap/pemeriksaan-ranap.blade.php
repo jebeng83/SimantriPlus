@@ -214,7 +214,7 @@
                                     '		</div>' + 
                                     '	</div>' + 
                                     '</div>' + 
-                                    '<button type="button" class="btn btn-primary d-flex ml-auto" onclick="edit(event)"> <i class="fas fa-sign-in"></i> Update </button>' + 
+                                    '<button type="button" class="btn btn-primary d-flex ml-auto" onclick="edit(event)"> <i class="fas fa-sign-in"></i> Perbaharui </button>' + 
                                     '';
                     $('#editPemeriksaan').find('.modal-body').html(html);
                     $('#editPemeriksaan').modal('show');

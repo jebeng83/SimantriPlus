@@ -174,6 +174,8 @@
                             </x-adminlte-card>
                             @endif
 
+                            <x-ralan.penilaian-awal-keperawatan />
+
                         </div>
                     </div>
                 </div>
@@ -184,3 +186,4 @@
         </x-slot>
     </x-adminlte-modal>
 </div>
+

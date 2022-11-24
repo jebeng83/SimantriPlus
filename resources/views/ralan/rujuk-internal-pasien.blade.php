@@ -90,6 +90,7 @@
             diagnosa: $("textarea[name='diagnosa']").val(),
             saran: $("textarea[name='saran']").val(),
         }
+
         $.ajax({
             url: '/ralan/rujuk-internal/update/'+"{{$encryptNoRawat}}",
             type: "PUT",
@@ -139,6 +140,7 @@
                 });
             }
         });
+
     }
 </script>
 @endpush

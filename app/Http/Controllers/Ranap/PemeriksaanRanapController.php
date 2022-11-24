@@ -190,7 +190,7 @@ class PemeriksaanRanapController extends Controller
         $no_rawat = $this->decryptData($noRawat);
 
         $resep = DB::table('resep_obat')->where('no_rawat', $no_rawat)->first();
-        $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+        $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->orWhere('tgl_peresepan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
         $maxNo = substr($no->resep, 0, 4);
         $nextNo = sprintf('%04s', ($maxNo + 1));
         $tgl = date('Ymd');
@@ -300,7 +300,7 @@ class PemeriksaanRanapController extends Controller
                     
                 }
                 $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->first();
-                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->orWhere('tgl_peresepan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
                 $maxNo = substr($no->resep, 0, 4);
                 $nextNo = sprintf('%04s', ($maxNo + 1));
                 $tgl = date('Ymd');
