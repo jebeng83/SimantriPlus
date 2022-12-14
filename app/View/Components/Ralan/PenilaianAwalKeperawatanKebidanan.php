@@ -4,7 +4,8 @@ namespace App\View\Components\Ralan;
 
 use Illuminate\View\Component;
 use Illuminate\Support\Facades\DB;
-class PenilaianAwalKeperawatan extends Component
+
+class PenilaianAwalKeperawatanKebidanan extends Component
 {
     protected $noRawat;
     /**
@@ -14,7 +15,7 @@ class PenilaianAwalKeperawatan extends Component
      */
     public function __construct($noRawat)
     {
-        $this->noRawat=$noRawat;
+        $this->noRawat = $noRawat;
     }
 
     /**
@@ -24,17 +25,13 @@ class PenilaianAwalKeperawatan extends Component
      */
     public function render()
     {
-        return view('components.ralan.penilaian-awal-keperawatan',[
-            'data' => $this->getPenilaianAwalKeperawatan(),
+        return view('components.ralan.penilaian-awal-keperawatan-kebidanan',[
+            'data'=>$this->getPenilaianKebidanan($this->noRawat)
         ]);
     }
 
-    public function getPenilaianAwalKeperawatan()
+    public function getPenilaianKebidanan($noRawat)
     {
-        $penilaianAwalKeperawatan = DB::table('penilaian_awal_keperawatan_ralan')
-            ->where('no_rawat', $this->noRawat)
-            ->first();
-
-        return $penilaianAwalKeperawatan;
+        return DB::table('penilaian_awal_keperawatan_kebidanan')->where('no_rawat', $noRawat)->first();
     }
 }

@@ -54,18 +54,30 @@
                 url: "https://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
                 type: "POST",
                 data: form_data,
-                contentType: false,
                 cache: false,
                 processData: false,
+                crossDomain: true,
+                headers: {  'Access-Control-Allow-Origin': '*' },
                 success: function (data) {
-                    Swal.fire({
-                        title: 'Sukses',
-                        text: 'Berkas berhasil diupload',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    })
+                    // console.log(data);
+                    if(data.status){
+                        Swal.fire({
+                            title: 'Sukses',
+                            text: data.message,
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                    }else{
+                        Swal.fire({
+                            title: 'Gagal',
+                            text: data.message,
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                    }  
                 },
                 error: function (data) {
+                    console.log(data);
                     Swal.fire({
                         title: 'Gagal',
                         text: 'Berkas gagal diupload',
@@ -102,9 +114,8 @@
                         $('#modalBerkasRM').modal('show');
                     }else{
                         Swal.fire({
-                            title: 'Gagal',
-                            text: data.message,
-                            icon: 'error',
+                            title: data.message,
+                            icon: 'info',
                             confirmButtonText: 'OK'
                         })
                     }

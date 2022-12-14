@@ -68,9 +68,9 @@
                 },
                 error: function (data) {
                     Swal.fire({
-                        title: 'Gagal',
-                        text: 'Berkas gagal diupload',
-                        icon: 'error',
+                        title: 'Sukses',
+                        text: 'Berkas berhasil diupload',
+                        icon: 'success',
                         confirmButtonText: 'OK'
                     })
                 }
@@ -97,15 +97,15 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" >';
+                            html += '<img style="width:540px;height:auto;" src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" >';
                         });
                         $('.body-modal-berkasrm').html(html);
                         $('#modalBerkasRM').modal('show');
                     }else{
                         Swal.fire({
-                            title: 'Gagal',
+                            title: 'Kosong',
                             text: data.message,
-                            icon: 'error',
+                            icon: 'info',
                             confirmButtonText: 'OK'
                         })
                     }

@@ -30,11 +30,7 @@ class LoginController extends Controller
         $this->validateLogin($request);
         $cek = DB::table('user')
                     ->join("dokter", "dokter.kd_dokter", "=", DB::Raw("AES_DECRYPT(id_user, 'nur')"))
-                    // ->join("jadwal", "jadwal.kd_dokter", "=", "dokter.kd_dokter")
-                    // ->join("poliklinik", "poliklinik.kd_poli", "=", "jadwal.kd_poli")
                     ->whereRaw("id_user = AES_ENCRYPT('{$request->username}', 'nur')")
-                    // ->whereRaw("password = AES_ENCRYPT('{$request->password}', 'windi')")
-                    // ->where("poliklinik.nm_poli", "like", 'KLINIK%')
                     ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password")
                     ->first();
         if ($cek) {

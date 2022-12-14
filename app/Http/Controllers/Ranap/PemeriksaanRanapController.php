@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Ranap;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Traits\EnkripsiData;

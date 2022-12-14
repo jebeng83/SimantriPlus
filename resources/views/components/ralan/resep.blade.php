@@ -87,7 +87,7 @@
                                         @endforeach
                                         </ul>
                                     </td>
-                                    <td class="align-middle text-center"><x-adminlte-button label="Copy" onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto" theme="primary" icon="fas fa-note"/></td>
+                                    <td class="align-middle text-center"><x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto btn-sm" theme="primary" icon="fa fa-sm fa-fw fa-pen"/></td>
                                 </tr>
                             @endforeach
                         {{-- </x-slot> --}}
@@ -120,34 +120,37 @@
 
                 @if(count($resepRacikan) > 0)
                 <x-adminlte-callout theme="info">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>No Resep</th>
-                                <th>Nama Racikan</th>
-                                <th>Metode Racikan</th>
-                                <th>Jumlah</th>
-                                <th>Aturan</th>
-                                <th>Keterangan</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($resepRacikan as $r)
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <td>{{$r->no_resep}}</td>
-                                    <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
-                                    <td>{{$r->nm_racik}}</td>
-                                    <td>{{$r->jml_dr}}</td>
-                                    <td>{{$r->aturan_pakai}}</td>
-                                    <td>{{$r->keterangan}}</td>
-                                    <td>
-                                        <button class="btn btn-danger btn-sm" onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
-                                    </td>
+                                    <th>No Resep</th>
+                                    <th>Nama Racikan</th>
+                                    <th>Metode Racikan</th>
+                                    <th>Jumlah</th>
+                                    <th>Aturan</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>              
+                            </thead>
+                            <tbody>
+                                @foreach($resepRacikan as $r)
+                                    <tr>
+                                        <td>{{$r->no_resep}}</td>
+                                        <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
+                                        <td>{{$r->nm_racik}}</td>
+                                        <td>{{$r->jml_dr}}</td>
+                                        <td>{{$r->aturan_pakai}}</td>
+                                        <td>{{$r->keterangan}}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table> 
+                    </div>
+                                 
                 </x-adminlte-callout>
                 @endif
 

@@ -1,6 +1,6 @@
 <div>
     <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-book-medical" collapsible="collapsed" maximizable>
-        <x-adminlte-card theme="primary" title="Input Pemeriksaan" theme-mode="outline" maximizable collapsible="collapsed">
+        <x-adminlte-card theme="dark" title="Input Pemeriksaan" theme-mode="outline" maximizable collapsible="collapsed">
             <form id="pemeriksaanForm">
                 <div class="row">
                     <x-adminlte-textarea name="keluhan" label="Subjek" fgroup-class="col-md-6" rows="4">
@@ -35,7 +35,7 @@
                 <div class="row">
                     <x-adminlte-input name="tensi" label="Tensi" fgroup-class="col-md-3" />
                     <x-adminlte-input name="nadi" label="Nadi (per Menit)" fgroup-class="col-md-3" />
-                    <x-adminlte-input name="respirasi" label="Respirasi (per Menit)" fgroup-class="col-md-3" />  
+                    <x-adminlte-input name="respirasi" label="Respirasi" fgroup-class="col-md-3" />  
                     <x-adminlte-select-bs name="kesadaran" label="Kesadaran" fgroup-class="col-md-3">
                             <option>Compos Mentis</option>
                             <option>Somnolence</option>
@@ -66,12 +66,6 @@
                             <button class="btn btn-xs btn-default text-primary mx-1 shadow" onclick="showModalEdit('{{$row->no_rawat}}' ,'{{$row->tgl_perawatan}}', '{{$row->jam_rawat}}')" title="Edit">
                                 <i class="fa fa-lg fa-fw fa-pen"></i>
                             </button>
-                            {{-- <button class="btn btn-xs btn-default text-danger mx-1 shadow" title="Delete">
-                                <i class="fa fa-lg fa-fw fa-trash"></i>
-                            </button>
-                            <button class="btn btn-xs btn-default text-teal mx-1 shadow" title="Details">
-                                <i class="fa fa-lg fa-fw fa-eye"></i>
-                            </button> --}}
                         </td>
                     </tr>
                 @endforeach

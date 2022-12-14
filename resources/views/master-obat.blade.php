@@ -10,15 +10,17 @@
     @php
         $config["responsive"] = true;
     @endphp
-    <x-adminlte-datatable id="tableMasterObat" :heads="$heads" head-theme="dark" striped hoverable bordered compressed>
-        @foreach($obat as $row)
-            <tr>
-                <td>{{$row->kode_brng}}</td>
-                <td>{{$row->nama_brng}}</td>
-                <td>{{$row->stok}}</td>
-            </tr>
-        @endforeach
-    </x-adminlte-datatable>
+    <x-adminlte-card>
+        <x-adminlte-datatable id="tableMasterObat" :heads="$heads" head-theme="dark" striped hoverable bordered compressed>
+            @foreach($obat as $row)
+                <tr>
+                    <td>{{$row->kode_brng}}</td>
+                    <td>{{$row->nama_brng}}</td>
+                    <td>{{$row->stok}}</td>
+                </tr>
+            @endforeach
+        </x-adminlte-datatable>
+    </x-adminlte-card>
 @stop
 
 @section('plugins.Datatables', true)
