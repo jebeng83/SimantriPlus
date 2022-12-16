@@ -177,6 +177,7 @@
                             <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
                             <x-ralan.penilaian-awal-keperawatan-gigi-mulut :no-rawat="$row->no_rawat" />
                             <x-ralan.penilaian-awal-keperawatan-kebidanan :no-rawat="$row->no_rawat" />
+                            <x-ralan.penilaian-awal-keperawatan-bayi :no-rawat="$row->no_rawat" />
                         </div>
                     </div>
                 </div>

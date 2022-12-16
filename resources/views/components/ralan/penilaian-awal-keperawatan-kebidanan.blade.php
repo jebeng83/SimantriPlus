@@ -359,7 +359,7 @@
                         </tr>
                         <tr>
                             <td style="width: 30%">Penyebab</td>
-                            <td>: {{$data->}} </td>
+                            <td>:  </td>
                         </tr>
                         <tr>
                             <td>Kualitas</td>

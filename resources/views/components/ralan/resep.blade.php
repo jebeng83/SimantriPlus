@@ -112,7 +112,55 @@
                                 <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan" fgroup-class="col-md-6" />
                             </div>
                         </div>
+                        <div class="containerRacikan">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="visible-sm">Obat</label>
+                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label for="Stok">Stok</label>
+                                        <input id="Stok" class="form-control no-label" type="text" name="stok" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label for="kps">Kps</label>
+                                        <input id="kps" class="form-control" type="text" name="kps">
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label for="p1">P1</label>
+                                        <input id="p1" class="form-control" type="text" name="p1">
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label for="p2">P2</label>
+                                        <input id="p2" class="form-control" type="text" name="p2">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="kandunga">Kandungan</label>
+                                        <input id="kandunga" class="form-control" type="text" name="kandungan">
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label for="jml">Jml</label>
+                                        <input id="jml" class="form-control" type="text" name="jml">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row justify-content-end">
+                            <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan" theme="success" label="+" />
                             <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
                         </div>
                     </form>
@@ -182,6 +230,14 @@
     </x-slot>
 </x-adminlte-modal>
 
+@push('css')
+<style>
+.no-border {
+    border: 0;
+    box-shadow: none; /* You may want to include this as bootstrap applies these styles too */
+}
+</style>
+@endpush
 
 @push('js')
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -195,6 +251,60 @@
                     );
                     return $data;
             };
+
+        $("#addRacikan").click(function(e){
+            e.preventDefault();
+            var variable = '';
+            var variable = '' + 
+                            '<div class="row">' + 
+                            '                                <div class="col-md-5">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label class="visible-sm">Obat</label>' + 
+                            '                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">' + 
+                            '                                        </select>' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="Stok">Stok</label>' + 
+                            '                                        <input id="Stok" class="form-control no-label" type="text" name="stok" disabled>' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="kps">Kps</label>' + 
+                            '                                        <input id="kps" class="form-control" type="text" name="kps">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="p1">P1</label>' + 
+                            '                                        <input id="p1" class="form-control" type="text" name="p1">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="p2">P2</label>' + 
+                            '                                        <input id="p2" class="form-control" type="text" name="p2">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-2">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="kandunga">Kandungan</label>' + 
+                            '                                        <input id="kandunga" class="form-control" type="text" name="kandungan">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="jml">Jml</label>' + 
+                            '                                        <input id="jml" class="form-control" type="text" name="jml">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                            </div>' + 
+                            '';
+            $("#containerRacikan").append(variable.trim());
+        });
+        
         $(add_button).click(function(e) {
             e.preventDefault();
             var html = '';
@@ -263,6 +373,27 @@
                 },
                 templateResult: formatData,
                 minimumInputLength: 3
+            });
+
+            $('.obat-racikan').select2({
+                placeholder: 'Pilih obat racikan',
+                ajax: {
+                    url: '/ralan/obat',
+                    dataType: 'json',
+                    delay: 250,
+                    processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                    },
+                    cache: true
+                },
+                templateResult: formatData,
+                minimumInputLength: 3
+            }).on("select2:select", function(e){
+                var data = e.params.data;
+                console.log(data);
+                alert(data.id);
             });
 
             function formatData (data) {
