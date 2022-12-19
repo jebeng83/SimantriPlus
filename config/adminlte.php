@@ -322,6 +322,31 @@ return [
     */
 
     'plugins' => [
+        'EasyUI' => [
+            'active' => false,
+            'files' => [
+                [
+                    'type' => 'css',
+                    'asset' => true,
+                    'location' => 'js/easyui/themes/default/easyui.css',
+                ],
+                [
+                    'type' => 'css',
+                    'asset' => true,
+                    'location' => 'js/easyui/themes/icon.css',
+                ],
+                [
+                    'type' => 'js',
+                    'asset' => true,
+                    'location' => 'js/easyui/jquery.min.js',
+                ],
+                [
+                    'type' => 'js',
+                    'asset' => true,
+                    'location' => 'js/easyui/jquery.easyui.min.js',
+                ],
+            ]
+        ],
         'Datatables' => [
             'active' => true,
             'files' => [

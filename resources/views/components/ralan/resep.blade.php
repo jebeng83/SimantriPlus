@@ -43,30 +43,32 @@
 
                 @if(count($resep) > 0)
                 <x-adminlte-callout theme="info">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Nama Obat</th>
-                                <th>Tanggal / Jam</th>
-                                <th>Jumlah</th>
-                                <th>Aturan Pakai</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($resep as $r)
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <td>{{$r->nama_brng}}</td>
-                                    <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
-                                    <td>{{$r->jml}}</td>
-                                    <td>{{$r->aturan_pakai}}</td>
-                                    <td>
-                                        <button class="btn btn-danger btn-sm" onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
-                                    </td>
+                                    <th>Nama Obat</th>
+                                    <th>Tanggal / Jam</th>
+                                    <th>Jumlah</th>
+                                    <th>Aturan Pakai</th>
+                                    <th>Aksi</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>              
+                            </thead>
+                            <tbody>
+                                @foreach($resep as $r)
+                                    <tr>
+                                        <td>{{$r->nama_brng}}</td>
+                                        <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
+                                        <td>{{$r->jml}}</td>
+                                        <td>{{$r->aturan_pakai}}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>  
+                    </div>            
                 </x-adminlte-callout>
                 @endif
                 <x-adminlte-callout theme="info" title="Riwayat Peresepan">
@@ -116,45 +118,45 @@
                             <div class="row">
                                 <div class="col-md-5">
                                     <div class="form-group">
-                                        <label class="visible-sm">Obat</label>
+                                        <label class="d-block">Obat</label>
                                         <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
-                                        <label for="Stok">Stok</label>
-                                        <input id="Stok" class="form-control no-label" type="text" name="stok" disabled>
+                                        <label for="stok">Stok</label>
+                                        <input id="stok" class="form-control p-1" type="text" name="stok[]" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="kps">Kps</label>
-                                        <input id="kps" class="form-control" type="text" name="kps">
+                                        <input id="kps" class="form-control p-1 text-black" type="text" name="kps[]" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p1">P1</label>
-                                        <input id="p1" class="form-control" type="text" name="p1">
+                                        <input id="p1" class="form-control" type="text" name="p1[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p2">P2</label>
-                                        <input id="p2" class="form-control" type="text" name="p2">
+                                        <input id="p2" class="form-control" type="text" name="p2[]">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-group">
                                         <label for="kandunga">Kandungan</label>
-                                        <input id="kandunga" class="form-control" type="text" name="kandungan">
+                                        <input id="kandunga" class="form-control" type="text" name="kandungan[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="jml">Jml</label>
-                                        <input id="jml" class="form-control" type="text" name="jml">
+                                        <input id="jml" class="form-control" type="text" name="jml[]">
                                     </div>
                                 </div>
                             </div>
@@ -242,6 +244,80 @@
 @push('js')
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+
+        var x = 0;
+        $("#addRacikan").click(function(e){
+            e.preventDefault();
+            var variable = '';
+            var variable = '' + 
+                            '<div class="row">' + 
+                            '                                <div class="col-md-5">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label class="d-sm-block">Obat</label>' + 
+                            '                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan'+x+'" data-placeholder="Pilih Obat">' + 
+                            '                                        </select>' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label class="d-sm-block" for="stok'+x+'">Stok</label>' + 
+                            '                                        <input id="stok'+x+'" class="form-control no-label" type="text" name="stok[]" disabled>' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label class="d-sm-block" for="kps'+x+'">Kps</label>' + 
+                            '                                        <input id="kps'+x+'" class="form-control" type="text" name="kps[]">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label class="d-sm-block" for="p1'+x+'">P1</label>' + 
+                            '                                        <input id="p1'+x+'" class="form-control" type="text" name="p1[]">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label  for="p2'+x+'">P2</label>' + 
+                            '                                        <input id="p2'+x+'" class="form-control" type="text" name="p2[]">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-2">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="kandungan'+x+'">Kandungan</label>' + 
+                            '                                        <input id="kandungan'+x+'" class="form-control" type="text" name="kandungan[]">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                                <div class="col-md-1">' + 
+                            '                                    <div class="form-group">' + 
+                            '                                        <label for="jml'+x+'">Jml</label>' + 
+                            '                                        <input id="jml'+x+'" class="form-control" type="text" name="jml[]">' + 
+                            '                                    </div>' + 
+                            '                                </div>' + 
+                            '                            </div>' + 
+                            '';
+            $(".containerRacikan").append(variable.trim());
+            $('#'+'obatRacikan'+x, ".containerRacikan").select2({
+                placeholder: 'Pilih obat',
+                ajax: {
+                    url: '/ralan/obat',
+                    dataType: 'json',
+                    delay: 250,
+                    processResults: function (data) {
+                        return {
+                            results: data
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: formatData,
+                minimumInputLength: 3
+            }).on();
+            x++;
+        });
+
+    </script>
+    <script>
         var wrapper = $(".containerResep");
         var add_button = $("#addFormResep");
         var x = 0;
@@ -251,59 +327,6 @@
                     );
                     return $data;
             };
-
-        $("#addRacikan").click(function(e){
-            e.preventDefault();
-            var variable = '';
-            var variable = '' + 
-                            '<div class="row">' + 
-                            '                                <div class="col-md-5">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label class="visible-sm">Obat</label>' + 
-                            '                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">' + 
-                            '                                        </select>' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-1">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="Stok">Stok</label>' + 
-                            '                                        <input id="Stok" class="form-control no-label" type="text" name="stok" disabled>' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-1">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="kps">Kps</label>' + 
-                            '                                        <input id="kps" class="form-control" type="text" name="kps">' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-1">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="p1">P1</label>' + 
-                            '                                        <input id="p1" class="form-control" type="text" name="p1">' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-1">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="p2">P2</label>' + 
-                            '                                        <input id="p2" class="form-control" type="text" name="p2">' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-2">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="kandunga">Kandungan</label>' + 
-                            '                                        <input id="kandunga" class="form-control" type="text" name="kandungan">' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                                <div class="col-md-1">' + 
-                            '                                    <div class="form-group">' + 
-                            '                                        <label for="jml">Jml</label>' + 
-                            '                                        <input id="jml" class="form-control" type="text" name="jml">' + 
-                            '                                    </div>' + 
-                            '                                </div>' + 
-                            '                            </div>' + 
-                            '';
-            $("#containerRacikan").append(variable.trim());
-        });
         
         $(add_button).click(function(e) {
             e.preventDefault();
@@ -392,8 +415,18 @@
                 minimumInputLength: 3
             }).on("select2:select", function(e){
                 var data = e.params.data;
-                console.log(data);
-                alert(data.id);
+                $.ajax({
+                    url: '/api/obat/'+data.id,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        console.log(data);
+                        $('#stok').val(data.stok_akhir);
+                        $('#kps').val(data.kapasitas);
+                        $('#p1').val('1');
+                        $('#p2').val('1');
+                    }
+                });
             });
 
             function formatData (data) {
@@ -771,6 +804,10 @@
                 }
             });
         });
+
+        function hitung(){
+
+        } 
 
     </script>
     
