@@ -54,7 +54,7 @@ return [
 
 
     'preloader' => [
-        'enabled' => true,
+        'enabled' => false,
         'img' => [
             'path' => 'img/logo/logo.png',
             'alt' => 'RSB Preloader Image',
@@ -453,17 +453,17 @@ return [
             ],
         ],
         'Pace' => [
-            'active' => false,
+            'active' => true,
             'files' => [
                 [
                     'type' => 'css',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/themes/blue/pace-theme-center-radar.min.css',
+                    'asset' => true,
+                    'location' => 'vendor/pace-progress/themes/blue/pace-theme-corner-indicator.css',
                 ],
                 [
                     'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js',
+                    'asset' => true,
+                    'location' => 'vendor/pace-progress/pace.min.js',
                 ],
             ],
         ],
@@ -489,6 +489,36 @@ return [
                     'type' => 'js',
                     'asset' => true,
                     'location' => 'vendor/bs-custom-file-input/bs-custom-file-input.min.js',
+                ],
+            ],
+        ],
+        'EkkoLightBox' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
+                    'asset' => true,
+                    'location' => 'vendor/ekko-lightbox/ekko-lightbox.min.js',
+                ],
+                [
+                    'type' => 'css',
+                    'asset' => true,
+                    'location' => 'vendor/ekko-lightbox/ekko-lightbox.css',
+                ],
+            ],
+        ],
+        'JqueryUI' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
+                    'asset' => true,
+                    'location' => 'vendor/jquery-ui/jquery-ui.min.js',
+                ],
+                [
+                    'type' => 'css',
+                    'asset' => true,
+                    'location' => 'vendor/jquery-ui/jquery-ui.min.css',
                 ],
             ],
         ],

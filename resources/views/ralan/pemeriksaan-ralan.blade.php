@@ -20,9 +20,9 @@
             <x-ralan.rujuk-internal :no-rawat="request()->get('no_rawat')" />
         </div>
     </div>
+    
 @stop
 
 @section('plugins.TempusDominusBs4', true)
 @section('js')
-    <script> console.log('Hi!'); </script>
 @stop

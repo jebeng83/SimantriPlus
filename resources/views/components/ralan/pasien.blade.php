@@ -97,7 +97,8 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<img style="width:540px;height:auto;" src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" >';
+                            html += '<a href="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4"><img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" class="img-fluid"></a>';
+                            
                         });
                         $('.body-modal-berkasrm').html(html);
                         $('#modalBerkasRM').modal('show');
@@ -115,5 +116,11 @@
                 }
             });
         }
+    </script>
+    <script>
+        $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+                event.preventDefault();
+                $(this).ekkoLightbox();
+            });
     </script>
 @endpush
