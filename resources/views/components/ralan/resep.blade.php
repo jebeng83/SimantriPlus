@@ -83,7 +83,18 @@
                                     <td class="align-middle text-center">{{$r->no_resep}}</td>
                                     <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
                                     <td>
-                                        <ul>
+                                        @php
+                                        $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
+                                        @endphp
+                                        <ul class="p-4">
+                                        @if($racikan)
+                                            <li>Racikan - {{$racikan->nama_racik}} - {{$racikan->jml_dr}} - [{{$racikan->aturan_pakai}}]</li>
+                                            <ul>
+                                                @foreach($getDetailRacikan($racikan->no_resep) as $ror)
+                                                    <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} - {{$ror->jml}}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
                                         @foreach($getResepObat($r->no_resep) as $ro)
                                             <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
                                         @endforeach
@@ -138,30 +149,31 @@
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p1">P1</label>
-                                        <input id="p1" class="form-control" type="text" name="p1[]">
+                                        <input id="p1" class="form-control p-1" type="text" name="p1[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p2">P2</label>
-                                        <input id="p2" class="form-control" type="text" name="p2[]">
+                                        <input id="p2" class="form-control p-1" type="text" name="p2[]">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-group">
-                                        <label for="kandunga">Kandungan</label>
-                                        <input id="kandunga" class="form-control" type="text" name="kandungan[]">
+                                        <label for="kandungan">Kandungan</label>
+                                        <input id="kandungan" onclick="hitungRacikan(0)" class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="jml">Jml</label>
-                                        <input id="jml" class="form-control" type="text" name="jml[]">
+                                        <input id="jml" onclick="hitungRacikan(0)" class="form-control p-1 jml-0" type="text" name="jml[]">
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="row justify-content-end">
+                            <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()" class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
                             <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan" theme="success" label="+" />
                             <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
                         </div>
@@ -203,9 +215,6 @@
                                  
                 </x-adminlte-callout>
                 @endif
-
-                {{-- <x-adminlte-callout theme="info" title="Riwayat Resep Racikan">
-                </x-adminlte-callout> --}}
             </div>
         </div>
     </x-adminlte-card>
@@ -244,60 +253,66 @@
 @push('js')
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        function getIndexValue(name, index) {
+            var doc = document.getElementsByName(name);
+            return doc[index].value;
+        }
 
-        var x = 0;
+        var i = 0;
         $("#addRacikan").click(function(e){
             e.preventDefault();
+            i++;
             var variable = '';
             var variable = '' + 
-                            '<div class="row">' + 
+                            '<div class="row racikan-'+i+'">' + 
                             '                                <div class="col-md-5">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label class="d-sm-block">Obat</label>' + 
-                            '                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan'+x+'" data-placeholder="Pilih Obat">' + 
+                            '                                        <label class="d-sm-none">Obat</label>' + 
+                            '                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan'+i+'" data-placeholder="Pilih Obat">' + 
                             '                                        </select>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label class="d-sm-block" for="stok'+x+'">Stok</label>' + 
-                            '                                        <input id="stok'+x+'" class="form-control no-label" type="text" name="stok[]" disabled>' + 
+                            '                                        <label class="d-sm-none stok-'+i+'" for="stok'+i+'">Stok</label>' + 
+                            '                                        <input id="stok'+i+'" class="form-control p-1 stok-'+i+'" type="text" name="stok[]" disabled>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label class="d-sm-block" for="kps'+x+'">Kps</label>' + 
-                            '                                        <input id="kps'+x+'" class="form-control" type="text" name="kps[]">' + 
+                            '                                        <label class="d-sm-none" for="kps'+i+'">Kps</label>' + 
+                            '                                        <input id="kps'+i+'" class="form-control p-1 kps-'+i+'" type="text" name="kps[]" disabled>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label class="d-sm-block" for="p1'+x+'">P1</label>' + 
-                            '                                        <input id="p1'+x+'" class="form-control" type="text" name="p1[]">' + 
+                            '                                        <label class="d-sm-none" for="p1'+i+'">P1</label>' + 
+                            '                                        <input id="p1'+i+'" class="form-control p-1 p1-'+i+'" type="text" name="p1[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label  for="p2'+x+'">P2</label>' + 
-                            '                                        <input id="p2'+x+'" class="form-control" type="text" name="p2[]">' + 
+                            '                                        <label class="d-sm-none"  for="p2'+i+'">P2</label>' + 
+                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" name="p2[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-2">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label for="kandungan'+x+'">Kandungan</label>' + 
-                            '                                        <input id="kandungan'+x+'" class="form-control" type="text" name="kandungan[]">' + 
+                            '                                        <label class="d-sm-none" for="kandungan'+i+'">Kandungan</label>' + 
+                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" onclick="hitungRacikan('+i+')" name="kandungan[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
-                            '                                        <label for="jml'+x+'">Jml</label>' + 
-                            '                                        <input id="jml'+x+'" class="form-control" type="text" name="jml[]">' + 
+                            '                                        <label class="d-sm-none" for="jml'+i+'">Jml</label>' + 
+                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" onclick="hitungRacikan('+i+')" type="text" name="jml[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                            </div>' + 
                             '';
+
             $(".containerRacikan").append(variable.trim());
-            $('#'+'obatRacikan'+x, ".containerRacikan").select2({
+            $('#'+'obatRacikan'+i, ".containerRacikan").select2({
                 placeholder: 'Pilih obat',
                 ajax: {
                     url: '/ralan/obat',
@@ -312,9 +327,41 @@
                 },
                 templateResult: formatData,
                 minimumInputLength: 3
-            }).on();
-            x++;
+            }).on("change", function(e){
+                var data = $(this).select2('data');
+                var id = $(this).attr('id').replace ( /[^\d.]/g, '' );
+                var idRow = parseInt(id);
+                $.ajax({
+                    url: '/api/obat/'+data[0].id,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        $('input[id="stok'+idRow+'"]').val(data.stok_akhir);
+                        $('input[id="kps'+idRow+'"]').val(data.kapasitas);
+                        $('input[id="p1'+idRow+'"]').val('1');
+                        $('input[id="p2'+idRow+'"]').val('1');
+                    }
+                });
+            });
         });
+
+        function deleteRowRacikan(){
+            $(".racikan-"+i).remove();
+            if(i>=1){
+                i--;
+            }
+        }
+
+        function hitungRacikan(index){
+            var p1 = getIndexValue('p1[]', index);
+            var p2 = getIndexValue('p2[]', index);
+            var jmlRacikan = $('#jumlah_racikan').val();
+            var kps = getIndexValue('kps[]', index);
+            var kandungan = (p1/p2)*kps;
+            var jml = (p1/p2)*jmlRacikan;
+            $(".kandungan-"+index).val(kandungan);
+            $(".jml-"+index).val(jml);
+        }
 
     </script>
     <script>
@@ -574,7 +621,7 @@
                         },
                         success: function(data) {
                             console.log(data);
-                            data.status == 'success' ? Swal.fire(
+                            data.status == 'sukses' ? Swal.fire(
                                 'Terhapus!',
                                 data.pesan,
                                 'success'
@@ -626,13 +673,6 @@
                 beforeSend: function() {
                     $('#modalCopyResep').modal('hide')
                     Swal.fire({
-                    title: 'Loading',
-                    imageUrl: '{{asset("img/loading.gif")}}',
-                    showConfirmButton: false,
-                    })
-                },
-                beforeSend:function() {
-                Swal.fire({
                     title: 'Loading....',
                     allowEscapeKey: false,
                     allowOutsideClick: false,
@@ -640,6 +680,17 @@
                         Swal.showLoading();
                     }
                     });
+            
+                },
+                beforeSend:function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                        });
                 },
                 success: function (response) {
                     console.log(response);
@@ -701,10 +752,13 @@
                 dataType: 'json',
                 beforeSend: function() {
                     Swal.fire({
-                    title: 'Loading',
-                    imageUrl: '{{asset("img/loading.gif")}}',
-                    showConfirmButton: false,
-                    })
+                    title: 'Loading....',
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                    });
                 },
                 success: function (response) {
                     console.log(response);
@@ -749,25 +803,38 @@
             let jumlah = $('#jumlah_racikan').val();
             let aturan = $('#aturan_racikan').val();
             let keterangan = $('#keterangan_racikan').val();
+            let kdObat = getValue('obatRacikan[]');
+            let p1 = getValue('p1[]');
+            let p2 = getValue('p2[]');
+            let kandungan = getValue('kandungan[]');
+            let jml = getValue('jml[]');
             $.ajax({
                 type: 'POST',
-                url: '/ralan/simpan/racikan/'+"{{$encryptNoRawat}}",
+                url: '/api/resep/racikan/'+"{{$encryptNoRawat}}",
                 data: {
                     nama_racikan:obat,
                     metode_racikan:metode,
                     jumlah_racikan:jumlah,
                     aturan_racikan:aturan,
                     keterangan_racikan:keterangan,
+                    kd_obat:kdObat,
+                    p1:p1,
+                    p2:p2,
+                    kandungan:kandungan,
+                    jml:jml,
                     _token:_token,
                 },
                 dataType: 'json',
                 beforeSend: function() {
                     $('#modalRacikan').modal('hide')
                     Swal.fire({
-                    title: 'Loading',
-                    imageUrl: '{{asset("img/loading.gif")}}',
-                    showConfirmButton: false,
-                    })
+                    title: 'Loading....',
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                    });
                 },
                 success: function (response) {
                     console.log(response);
@@ -786,7 +853,7 @@
                     else{
                         Swal.fire({
                         title: 'Gagal',
-                        text: response.pesan,
+                        text: response.message,
                         icon: 'error',
                         confirmButtonText: 'Ok'
                         })

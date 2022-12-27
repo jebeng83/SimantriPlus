@@ -73,6 +73,15 @@ class Resep extends Component
         return $data;
     }
 
+    public static function getDetailRacikan($noResep)
+    {
+        return DB::table('resep_dokter_racikan_detail')
+                    ->join('databarang', 'resep_dokter_racikan_detail.kode_brng', '=', 'databarang.kode_brng')
+                    ->where('resep_dokter_racikan_detail.no_resep', $noResep)
+                    ->select('databarang.nama_brng', 'resep_dokter_racikan_detail.*')
+                    ->get();
+    }
+
     public function getResepRacikan($noRawat, $kdDokter)
     {
         $data = DB::table('resep_dokter_racikan')
