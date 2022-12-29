@@ -1,6 +1,6 @@
 <div>
     <x-adminlte-card title="Resep" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed" maximizable>
-        <x-adminlte-card theme="info" title="Input Resep" theme-mode="outline">
+        <x-adminlte-card theme="dark" title="Input Resep" theme-mode="outline">
             <form  method="post" id="resepForm" action="{{url('/ranap/simpan/resep/'.$encryptNoRawat)}}">
                 @csrf
                 <div class="containerResep">
@@ -51,7 +51,7 @@
             </table>              
         </x-adminlte-callout>
         @endif
-        <x-adminlte-card theme="info" theme-mode="outline" title="Riwayat Peresepan">
+        <x-adminlte-card theme="dark" theme-mode="outline" title="Riwayat Peresepan">
             @php
                 $config["responsive"] = true;
                 $config['order'] = [[1, 'desc']];
@@ -78,7 +78,7 @@
     </x-adminlte-card>
 </div>
 
-<x-adminlte-modal id="modalCopyResep" title="Copy Resep" size="lg" theme="teal"
+<x-adminlte-modal id="modalCopyResep" title="Copy Resep" size="lg" theme="dark"
     icon="fas fa-bell" v-centered static-backdrop scrollable>
     <div class="table-responsive">
         <table class="table table-copy-resep">
@@ -118,24 +118,24 @@
             html += '<div class="row">';
             html += '   <div class="col-md-5">';
             html += '       <div class="form-group">';
-            html += '            <label class="visible-sm">Nama Obat</label>';
+            html += '            <label class="d-sm-none">Nama Obat</label>';
             html += '            <select name="obat[]" class="form-control obat-'+x+'" id="obat'+x+'" data-placeholder="Pilih Obat">';
             html += '            </select>';
             html += '        </div>';
             html += '    </div>';
             html += '    <div class="col-md-2">';
             html += '        <div class="form-group">';
-            html += '            <label class="visible-sm">Jumlah</label>';
+            html += '            <label class="d-sm-none">Jumlah</label>';
             html += '            <input type="text" name="jumlah[]" class="form-control" id="jumlah'+x+'" placeholder="Jumlah"/>';
             html += '        </div>';
             html += '    </div>';
             html += '    <div class="col-md-4">';
             html += '        <div class="form-group">';
-            html += '            <label class="visible-sm">Aturan Pakai</label>';
+            html += '            <label class="d-sm-none">Aturan Pakai</label>';
             html += '            <input name="aturan[]" id="aturan'+x+'" class="form-control" placeholder="Aturan Pakai">';
             html += '        </div>';
             html += '    </div>';
-            html += '    <div class="col-md-1 my-auto">';
+            html += '    <div class="col-md-1">';
             html += '      <button class="btn btn-danger delete" value="row_resep'+x+'">-</button>';
             html += '    </div>';
             html += '</div>';

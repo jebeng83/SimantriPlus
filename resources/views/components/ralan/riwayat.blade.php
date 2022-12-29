@@ -23,7 +23,7 @@
                         <h3 class="timeline-header d-flex justify-content-between"><b>{{$row->no_rawat}}</b>  <b>{{$row->nm_dokter}}</b></h3>
                         <div class="timeline-body">
                             @if(count($pemeriksaan)>0)
-                            <x-adminlte-card theme="dark" title="Pemeriksaan" collapsible="collapsed">
+                            <x-adminlte-card theme="dark" title="Pemeriksaan" collapsible="collapsed" maximizable>
                                 <div class="table-responsive">
                                     @foreach($pemeriksaan as $pemeriksaan)
                                     @php
@@ -84,7 +84,7 @@
                             @endif
 
                             @if(count($diagnosa)>0)
-                            <x-adminlte-card theme="dark" title="Diagnosa" collapsible="collapsed">
+                            <x-adminlte-card theme="dark" title="Diagnosa" collapsible="collapsed" maximizable>
                                 <ul>
                                     @foreach($diagnosa as $diagnosa)
                                         <li>{{$diagnosa->nm_penyakit}} ({{$diagnosa->kd_penyakit}})</li>
@@ -94,7 +94,7 @@
                             @endisset
 
                             @isset($resume)
-                            <x-adminlte-card theme="dark" title="Resume Medis" collapsible="collapsed">
+                            <x-adminlte-card theme="dark" title="Resume Medis" collapsible="collapsed" maximizable>
                                 <div class="table-responsive">
                                     <table class="table table-bordered">
                                         <tr>
@@ -119,16 +119,14 @@
                             @endisset
 
                             @if(count($radiologi)>0)
-                            <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed">
+                            <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed" maximizable>
                                 <x-adminlte-card theme="dark" title="Gambar Radiologi" collapsible="collapsed">
                                     <div class="container">
                                         <div class="row row-cols-auto">
                                             @foreach($gambarRadiologi as $gambar)
-                                                <div class="col mb-3">
-                                                    <a href="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" target="_blank">
-                                                        <img src="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" id="{{$loop->iteration}}-img-{{$gambar->tgl_periksa}}" alt="gambar{{$loop->iteration}}" width="250px" height="250px">
-                                                    </a>
-                                                </div>
+                                                <a href="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                                    <img src="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" class="img-fluid" style="width: 200px;height:250px">
+                                                </a>
                                             @endforeach  
                                         </div>
                                     </div>
@@ -146,7 +144,7 @@
                             @endif
 
                             @if(count($laboratorium)>0)
-                            <x-adminlte-card theme="dark" title="Laboratorium" collapsible="collapsed">
+                            <x-adminlte-card theme="dark" title="Laboratorium" collapsible="collapsed" maximizable>
                                 <div class="table-responsive">
                                     <table class="table table-bordered">
                                         <thead>
@@ -188,6 +186,15 @@
         </x-slot>
     </x-adminlte-modal>
 </div>
+
+@push('js')
+    <script>
+        $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+                event.preventDefault();
+                $(this).ekkoLightbox();
+        });
+    </script>
+@endpush
 
 
 

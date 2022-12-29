@@ -124,11 +124,9 @@
                                         <div class="container">
                                             <div class="row row-cols-auto">
                                                 @foreach($gambarRadiologi as $gambar)
-                                                    <div class="col mb-3">
-                                                        <a href="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" target="_blank">
-                                                            <img src="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" id="{{$loop->iteration}}-img-{{$gambar->tgl_periksa}}" alt="gambar{{$loop->iteration}}" width="250px" height="250px">
-                                                        </a>
-                                                    </div>
+                                                    <a href="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                                        <img src="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}" class="img-fluid" style="width: 200px;height:250px">
+                                                    </a>
                                                 @endforeach  
                                             </div>
                                         </div>
@@ -284,6 +282,11 @@
 
 @push('js')
     <script>
+
+        $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+                event.preventDefault();
+                $(this).ekkoLightbox();
+        });
 
         function openModalImage(id){
             var modal = document.getElementById("myModal");

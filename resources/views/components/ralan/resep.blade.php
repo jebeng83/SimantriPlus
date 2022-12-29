@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed" maximizable>
+    <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible maximizable>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -379,27 +379,30 @@
             e.preventDefault();
             var html = '';
             html += '<div class="row">';
+            html += '<hr class="d-sm-none">';
             html += '   <div class="col-md-5">';
             html += '       <div class="form-group">';
-            html += '            <label class="visible-sm">Nama Obat</label>';
+            html += '            <label class="d-sm-none">Nama Obat</label>';
             html += '            <select name="obat[]" class="form-control obat-'+x+'" id="obat'+x+'" data-placeholder="Pilih Obat">';
             html += '            </select>';
             html += '        </div>';
             html += '    </div>';
             html += '    <div class="col-md-2">';
             html += '        <div class="form-group">';
-            html += '            <label class="visible-sm">Jumlah</label>';
+            html += '            <label class="d-sm-none">Jumlah</label>';
             html += '            <input type="text" name="jumlah[]" class="form-control" id="jumlah'+x+'" placeholder="Jumlah"/>';
             html += '        </div>';
             html += '    </div>';
-            html += '    <div class="col-md-4">';
+            html += '    <div class="col-md-5">';
             html += '        <div class="form-group">';
-            html += '            <label class="visible-sm">Aturan Pakai</label>';
+            html += '            <label class="d-sm-none">Aturan Pakai</label>';
+            html += '            <div class="input-group">';
             html += '            <input name="aturan[]" id="aturan'+x+'" class="form-control" placeholder="Aturan Pakai">';
+            html += '            <div class="input-group-append">';
+            html += '                 <button class="btn btn-danger delete" value="row_resep'+x+'">-</button>';
+            html += '            </div>';
+            html += '            </div>';
             html += '        </div>';
-            html += '    </div>';
-            html += '    <div class="col-md-1 my-auto">';
-            html += '      <button class="btn btn-danger delete" value="row_resep'+x+'">-</button>';
             html += '    </div>';
             html += '</div>';
             $(wrapper).append(html.trim()); 

@@ -16,24 +16,27 @@
         <x-adminlte-card title="Konsul Rujukan Internal" theme="dark" theme-mode="outline" >
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
-                    Poli Tujuan
+                    Poli Perujuk
                 </div>
-                <x-adminlte-input name="poli_tujuan" value="{{$rujukan->nm_poli}}"
-                    fgroup-class="col-md-9" igroup-size="sm" disabled/>
+                <div class="col-md-9 pb-2">
+                    {{$regPeriksa->nm_poli}}
+                </div>
             </div>
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
-                    Dokter Tujuan
+                    Dokter Perujuk
                 </div>
-                <x-adminlte-input name="dokter_tujuan" value="{{$rujukan->nm_dokter}}"
-                    fgroup-class="col-md-9" igroup-size="sm" disabled/>
+                <div class="col-md-9 pb-2">
+                    {{$regPeriksa->nm_dokter}}
+                </div>
             </div>
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
                     Catatan Konsul
                 </div>
-                <x-adminlte-input name="konsul" value="{{$rujukan->konsul}}"
-                    fgroup-class="col-md-9" igroup-size="sm" disabled/>
+                <div class="col-md-9 pb-2">
+                    {{$rujukan->konsul}}
+                </div>
             </div>
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
@@ -107,7 +110,6 @@
                     });
                 },
             success: function(response){
-                console.log(response);
                 if(response.status == "success"){
                     Swal.fire({
                         title: "Berhasil",

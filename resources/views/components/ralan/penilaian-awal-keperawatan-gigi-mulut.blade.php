@@ -1,6 +1,6 @@
 <div>
     @if(!empty($data))
-    <x-adminlte-card theme="dark" title="Penilaian Awal Keperawatan Gigi dan Mulut" collapsible="collapsed">
+    <x-adminlte-card theme="dark" title="Penilaian Awal Keperawatan Gigi dan Mulut" collapsible="collapsed" maximizable>
         <x-adminlte-card theme="dark" title="RIWAYAT KESEHATAN" theme-mode="outline">
             <table class="table table-bordered">
                 <tr>
