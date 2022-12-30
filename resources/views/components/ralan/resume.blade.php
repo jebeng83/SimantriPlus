@@ -2,32 +2,15 @@
     <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
         <div class="row">
             <div class="col-md-6">
-                <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=4>
+                <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=5>
                     {{ $kel->keluhan ?? '' }}
                 </x-adminlte-textarea>
             </div>
             <div class="col-md-6">
-                <x-adminlte-textarea name="laboratorium" label="Hasil Laboratorium yang Positif" rows=4>
-                    
+                <x-adminlte-textarea name="terapi" label="Terapi" rows=5>
+                    {{ $getTerapi->nama_brng ?? '' }}
                 </x-adminlte-textarea>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <x-adminlte-textarea name="jalan" label="Jalannya Penyakit Selama Perawatan" rows=4>
-                    
-                </x-adminlte-textarea>
-            </div>
-            <div class="col-md-6">
-                <x-adminlte-textarea name="pemeriksaan" label="Pemeriksaan Penunjang yang Positif" rows=4>
-                    
-                </x-adminlte-textarea>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <x-adminlte-textarea name="terapi" label="Terapi / Obat pulang" rows=4>
-                {{ $getTerapi->nama_brng ?? '' }}
-            </x-adminlte-textarea>
         </div>
         <div class="row">
             <x-adminlte-input name="prosedurUtama" label="Prosedur Utama" value="{{$prosedur->deskripsi_panjang ?? ''}}"  fgroup-class="col-md-6" />
