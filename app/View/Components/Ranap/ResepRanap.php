@@ -41,6 +41,9 @@ class ResepRanap extends Component
                         ->where('resep_obat.kd_dokter', $this->dokter)
                         ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
                         ->get();
+
+        $this->dataMetodeRacik = DB::table('metode_racik')
+                        ->get();
     }
 
     /**
@@ -57,6 +60,8 @@ class ResepRanap extends Component
             'no_rawat' => $this->noRawat,
             'encryptNoRawat' => $this->encryptNoRawat,
             'encryptNoRM' => $this->encryptNoRM,
+            'dataMetodeRacik' => $this->dataMetodeRacik,
+            'resepRacikan' => $this->getResepRacikan($this->noRawat, session()->get('username')),
         ]);
     }
 
@@ -69,4 +74,33 @@ class ResepRanap extends Component
         
         return $data;
     }
+
+    public static function getDetailRacikan($noResep)
+    {
+        return DB::table('resep_dokter_racikan_detail')
+                    ->join('databarang', 'resep_dokter_racikan_detail.kode_brng', '=', 'databarang.kode_brng')
+                    ->where('resep_dokter_racikan_detail.no_resep', $noResep)
+                    ->select('databarang.nama_brng', 'resep_dokter_racikan_detail.*')
+                    ->get();
+    }
+
+    public function getResepRacikan($noRawat, $kdDokter)
+    {
+        $data = DB::table('resep_dokter_racikan')
+                    ->join('resep_obat', 'resep_dokter_racikan.no_resep', '=', 'resep_obat.no_resep')
+                    ->join('metode_racik', 'resep_dokter_racikan.kd_racik', '=', 'metode_racik.kd_racik')
+                    ->where([
+                        ['resep_obat.no_rawat', '=', $noRawat], 
+                        ['resep_obat.kd_dokter', '=', $kdDokter]
+                    ])
+                    ->select('resep_dokter_racikan.*', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan', 'metode_racik.nm_racik')
+                    ->get();
+        return $data;
+    }
+
+    // public function encryptData($data)
+    // {
+    //     $data = Crypt::encrypt($data);
+    //     return $data;
+    // }
 }

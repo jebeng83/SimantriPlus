@@ -21,5 +21,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
 Route::post('/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikan']);
+Route::post('ranap/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikanRanap']);
 
 
