@@ -10,6 +10,53 @@ use App\Traits\EnkripsiData;
 class ResepController extends Controller
 {
     use EnkripsiData;
+
+    public function getObatRanap(Request $request, $bangsal)
+    {
+        $q = $request->get('q');
+        $que = '%'.$q.'%';
+
+        $depo = DB::table('set_depo_ranap')
+                    ->where('kd_bangsal', $bangsal)
+                    ->first();
+
+        $obat = DB::table('databarang')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('status', '1')
+                    ->where('gudangbarang.stok', '>', '0')
+                    ->where('gudangbarang.kd_bangsal', $depo->kd_depo)
+                    ->where(function($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                              ->orWhere('databarang.nama_brng', 'like', $que);
+                    })
+                    ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
+                    ->get();
+        return response()->json($obat, 200);
+    }
+
+    public function getObatRalan(Request $request, $poli)
+    {
+        $q = $request->get('q');
+        $que = '%'.$q.'%';
+
+        $depo = DB::table('set_depo_ralan')
+                    ->where('kd_poli', $poli)
+                    ->first();
+
+        $obat = DB::table('databarang')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('status', '1')
+                    ->where('gudangbarang.stok', '>', '0')
+                    ->where('gudangbarang.kd_bangsal', $depo->kd_bangsal)
+                    ->where(function($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                              ->orWhere('databarang.nama_brng', 'like', $que);
+                    })
+                    ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
+                    ->get();
+        return response()->json($obat, 200);
+    }
+
     public function getDataObat($kdObat)
     {
         $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('kd_bangsal', 'DPF')->max('tanggal');
@@ -24,6 +71,7 @@ class ResepController extends Controller
 
         return response()->json($data);
     }
+
 
     public function postResepRacikan(Request $request, $noRawat)
     {

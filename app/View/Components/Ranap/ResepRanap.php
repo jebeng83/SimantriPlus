@@ -10,7 +10,7 @@ use Request;
 class ResepRanap extends Component
 {
     use EnkripsiData;
-    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik;
+    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik, $bangsal;
     /**
      * Create a new component instance.
      *
@@ -20,6 +20,7 @@ class ResepRanap extends Component
     {
         $this->noRawat = Request::get('no_rawat');
         $this->noRM = Request::get('no_rm');
+        $this->bangsal = Request::get('bangsal');
         $this->encryptNoRawat = $this->encryptData($this->noRawat);
         $this->encryptNoRM = $this->encryptData($this->noRM);
         $this->dokter = session()->get('username');
@@ -61,6 +62,7 @@ class ResepRanap extends Component
             'encryptNoRawat' => $this->encryptNoRawat,
             'encryptNoRM' => $this->encryptNoRM,
             'dataMetodeRacik' => $this->dataMetodeRacik,
+            'bangsal' => $this->bangsal,
             'resepRacikan' => $this->getResepRacikan($this->noRawat, session()->get('username')),
         ]);
     }

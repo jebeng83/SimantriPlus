@@ -40,6 +40,8 @@ class PasienRalanController extends Controller
             ->orderBy('reg_periksa.jam_reg', 'desc')
             ->select('reg_periksa.no_reg', 'pasien.nm_pasien', 'reg_periksa.no_rawat', 'pasien.no_tlp', 'dokter.nm_dokter', 'reg_periksa.stts', 'pasien.no_rkm_medis')
             ->get();
+
+
         return view('ralan.pasien-ralan', [
             'nm_poli' => $this->getPoliklinik($kd_poli),
             'heads' => $heads,

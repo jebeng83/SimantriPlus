@@ -49,16 +49,16 @@
                     });
                 },
                 success: function(response){
-                    console.log(response);
-                    if(response.status == 'success'){
-                        swal({
+                    // console.log(response);
+                    if(response.status == 'sukses'){
+                        Swal.fire({
                             title: "Sukses",
                             text: "Data berhasil disimpan",
                             icon: "success",
                             button: "OK",
                         });
                     }else{
-                        swal({
+                        Swal.fire({
                             title: "Gagal",
                             text: response.pesan ?? "Data gagal disimpan",
                             icon: "error",
@@ -67,8 +67,8 @@
                     }
                 },
                 error: function(response){
-                    console.log(response);
-                    swal({
+                    // console.log(response);
+                    Swal.fire({
                         title: "Error",
                         text: response.pesan ?? "Terjadi kesalahan",
                         icon: "error",

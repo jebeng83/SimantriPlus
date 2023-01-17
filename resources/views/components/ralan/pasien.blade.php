@@ -11,12 +11,14 @@
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No Peserta" text="{{$data->no_peserta ?? '-'}}"/>
         <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}"/>
         <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan" text="{{$data->catatan ?? '-'}}"/>
-        <span class="nav-link">
-            <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRalan" class="bg-info justify-content-end"/>
-        </span>
-        <span class="nav-link">
-            <x-adminlte-button label="Berkas RM Lama" onclick="getBerkasRM()" class="bg-success justify-content-end"/>
-        </span>
+        <div class="p-0 col-12">
+            <span class="nav-link">
+                <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal" data-target="#modalRiwayatPemeriksaanRalan" class="bg-info justify-content-end"/>
+            </span>
+            <span class="nav-link">
+                <x-adminlte-button label="Berkas RM Lama" onclick="getBerkasRM()" class="bg-success justify-content-end"/>
+            </span>
+        </div>
         <span class="nav-link">
             <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*" placeholder="Berkas Digital" legend="Pilih">
                 <x-slot name="appendSlot">

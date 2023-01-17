@@ -1,6 +1,102 @@
 <div>
     <x-adminlte-modal id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered static-backdrop scrollable>
-    
+        {{-- <table id="example" class="table table-striped table-bordered" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Klinik</th>
+                    <th>Keluhan</th>
+                    <th>Pemeriksaan</th>
+                    <th>Diagnosa</th>
+                    <th>Laboratorium</th>
+                    <th>Radiologi</th>
+                    <th>Catatan</th>
+                    <th>Resume Medis</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data as $row)
+                <tr>
+                    <td>{{$row->tgl_registrasi}}</td>
+                    <td>{{$row->nm_poli}}</td>
+                    @php
+                    $pemeriksaan = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
+                    @endphp
+                    <td>{{ $pemeriksaan->keluhan }}</td>
+                    <td>
+                        <ul style="list-style:none;margin:0;padding:0;">
+                            <li>{{$pemeriksaan->pemeriksaan ?? ''}}</li>
+                            @isset($pemeriksaan->tinggi)
+                            <li>Suhu : {{$pemeriksaan->tinggi}}</li>
+                            @endisset
+                            @isset($pemeriksaan->berat)
+                            <li>Suhu : {{$pemeriksaan->berat}}</li>
+                            @endisset
+                            @isset($pemeriksaan->suhu_tubuh)
+                            <li>Suhu : {{$pemeriksaan->suhu_tubuh}}</li>
+                            @endisset
+                            @isset($pemeriksaan->tensi)
+                            <li>Tensi : {{$pemeriksaan->tensi}}</li>
+                            @endisset
+                            @isset($pemeriksaan->nadi)
+                            <li>Nadi : {{$pemeriksaan->nadi}}</li>
+                            @endisset
+                            @isset($pemeriksaan->respirasi)
+                            <li>RR : {{$pemeriksaan->respirasi}}</li>
+                            @endisset
+                            @isset($pemeriksaan->alergi)
+                            <li><b>Alergi : {{$pemeriksaan->alergi}}</b></li>
+                            @endisset
+                            @isset($pemeriksaan->rtl)
+                            <li>Tindak Lanjut : {{$pemeriksaan->rtl}} mmHg</li>
+                            @endisset
+                        </ul>
+                    </td>
+                    <td>
+                        <ol style="margin-left:20px;padding:0;">
+                            @foreach($diagnosa as $diagnosa)
+                                <li>{{$diagnosa->nm_penyakit}} ({{$diagnosa->kd_penyakit}})</li>
+                            @endforeach
+                        </ol>
+                    </td>
+                    <td>
+                        <div class="container">
+                            <div class="row row-cols-auto">
+                                @foreach($berkasLab as $l)
+                                    <a href="{{ env('URL_BERKAS').$l->lokasi_file }}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                        <img src="{{ env('URL_BERKAS').$l->lokasi_file }}" class="img-fluid" style="width: 200px;height:250px">
+                                    </a>
+                                @endforeach  
+                            </div>
+                        </div>
+                        <ol>
+                            @foreach($detailLab as $l)
+                                <li>{{$l->Pemeriksaan}} ({{$l->nilai_rujukan}}) = {{$l->nilai}}  {{$l->satuan}}</li>
+                            @endforeach
+                        </ol>
+                    </td>
+                    <td>
+                        <div class="container">
+                            <div class="row row-cols-auto">
+                                @foreach($berkasRadiologi as $r)
+                                    <a href="{{ env('URL_RADIOLOGI').$l->lokasi_gambar }}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                        <img src="{{ env('URL_RADIOLOGI').$l->lokasi_gambar }}" class="img-fluid" style="width: 200px;height:250px">
+                                    </a>
+                                @endforeach  
+                            </div>
+                        </div>
+                        <ol>
+                            @foreach($hasilRadiologi as $r)
+                            {{ nl2br(e($r->hasil)) }}
+                            @endforeach
+                        </ol> 
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table> --}}
     <div class="timeline">
         @foreach($data as $row)
             @php
@@ -189,6 +285,9 @@
 
 @push('js')
     <script>
+        $(document).ready(function () {
+            $('#example').DataTable();
+        });
         $(document).on('click', '[data-toggle="lightbox"]', function(event) {
                 event.preventDefault();
                 $(this).ekkoLightbox();

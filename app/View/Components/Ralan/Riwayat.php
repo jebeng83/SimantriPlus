@@ -6,7 +6,7 @@ use Illuminate\View\Component;
 
 class Riwayat extends Component
 {
-    public $data;
+    public $data, $noRawat;
     public $heads;
     /**
      * Create a new component instance.
@@ -15,6 +15,7 @@ class Riwayat extends Component
      */
     public function __construct($noRawat)
     {
+        $this->noRawat = $noRawat;
         $pasien = $this->getPasien($noRawat);
         $this->data = $this->getRiwayatPemeriksaan($pasien->no_rkm_medis);
         $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];                        
@@ -27,7 +28,16 @@ class Riwayat extends Component
      */
     public function render()
     {
-        return view('components.ralan.riwayat',['data' => $this->data, 'heads' => $this->heads]);
+        return view('components.ralan.riwayat',[
+            'data' => $this->data, 
+            'heads' => $this->heads,
+            // 'pemeriksaan' => $this->getPemeriksaanRalan($this->noRawat),
+            // 'diagnosa' => $this->getDiagnosa($this->noRawat),
+            // 'berkasLab' => $this->berkasLab($this->noRawat),
+            // 'detailLab' => $this->detailLab($this->noRawat),
+            // 'berkasRadiologi' => $this->berkasRadiologi($this->noRawat),
+            // 'hasilRadiologi' => $this->hasilRadiologi($this->noRawat)
+        ]);
     }
 
     public function getPasien($noRawat)
@@ -38,6 +48,54 @@ class Riwayat extends Component
                     ->select('reg_periksa.no_rkm_medis')
                     ->first();
 
+        return $data;
+    }
+
+    public function getPemeriksaanRalan($noRawat)
+    {
+        return DB::table('pemeriksaan_ralan')
+                    ->where('no_rawat', $noRawat)
+                    ->first();
+    }
+
+    public function berkasLab($noRawat)
+    {
+        return DB::table('berkas_digital_perawatan')
+                    ->where('no_rawat', $noRawat)
+                    ->where('kode', 'B05')
+                    ->get();
+    }
+
+    public function detailLab($noRawat)
+    {
+        return DB::table('detail_periksa_lab')
+                    ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('detail_periksa_lab.no_rawat', $noRawat)
+                    ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.nilai', 'template_laboratorium.satuan', 'detail_periksa_lab.nilai_rujukan', 'detail_periksa_lab.keterangan')
+                    ->get();
+    }
+
+    public function berkasRadiologi($noRawat)
+    {
+        return DB::table('gambar_radiologi')
+                    ->where('no_rawat', $noRawat)
+                    ->get();
+    }
+
+    public function hasilRadiologi($noRawat)
+    {
+        return DB::table('hasil_radiologi')
+                    ->where('no_rawat', $noRawat)
+                    ->get();
+    }
+
+    public static function getDiagnosa($noRawat)
+    {
+        $data = DB::table('diagnosa_pasien')
+                    ->join('penyakit', 'diagnosa_pasien.kd_penyakit', '=', 'penyakit.kd_penyakit')
+                    ->where('diagnosa_pasien.no_rawat', $noRawat)
+                    ->select('penyakit.kd_penyakit', 'penyakit.nm_penyakit')
+                    ->get();
         return $data;
     }
 

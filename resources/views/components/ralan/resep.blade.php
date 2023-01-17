@@ -315,7 +315,7 @@
             $('#'+'obatRacikan'+i, ".containerRacikan").select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/ralan/obat',
+                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -409,7 +409,7 @@
             $('#'+'obat'+x, wrapper).select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/ralan/obat',
+                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -434,7 +434,7 @@
             $('.obat').select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/ralan/obat',
+                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -451,7 +451,7 @@
             $('.obat-racikan').select2({
                 placeholder: 'Pilih obat racikan',
                 ajax: {
-                    url: '/ralan/obat',
+                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {

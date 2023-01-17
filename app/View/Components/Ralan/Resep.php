@@ -58,6 +58,7 @@ class Resep extends Component
             'no_rawat' => $this->noRawat,
             'encryptNoRawat' => $this->encryptNoRawat,
             'encryptNoRM' => $this->encryptNoRM,
+            'poli' => session()->get('kd_poli'),
             'dataMetodeRacik' => $this->dataMetodeRacik,
             'resepRacikan' => $this->getResepRacikan($this->noRawat, session()->get('username')),
         ]);

@@ -316,8 +316,8 @@ class PemeriksaanRalanController extends Controller
                 }else{
                     DB::table('resep_obat')->insert([
                         'no_resep' => $noResep,
-                        'tgl_perawatan' => $tgl,
-                        'jam' => date('H:i:s'),
+                        'tgl_perawatan' => '0000-00-00',
+                        'jam' => '00:00:00',
                         'no_rawat' => $noRawat,
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => $tgl,

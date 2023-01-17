@@ -36,7 +36,7 @@ class PasienRanapController extends Controller
                     ->join('dpjp_ranap', 'dpjp_ranap.no_rawat', '=', 'reg_periksa.no_rawat')
                     ->where('kamar_inap.stts_pulang', '-')
                     ->where('dpjp_ranap.kd_dokter', $kd_dokter)
-                    ->select('pasien.nm_pasien','reg_periksa.no_rkm_medis','bangsal.nm_bangsal','kamar_inap.kd_kamar','kamar_inap.tgl_masuk','penjab.png_jawab','reg_periksa.no_rawat')
+                    ->select('pasien.nm_pasien','reg_periksa.no_rkm_medis','bangsal.nm_bangsal','kamar_inap.kd_kamar','kamar_inap.tgl_masuk','penjab.png_jawab','reg_periksa.no_rawat', 'bangsal.kd_bangsal')
                     ->get();
         return view('ranap.pasien-ranap',[
             'heads' => $heads,
