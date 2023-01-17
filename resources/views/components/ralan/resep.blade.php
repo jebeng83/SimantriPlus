@@ -333,6 +333,10 @@
                 var idRow = parseInt(id);
                 $.ajax({
                     url: '/api/obat/'+data[0].id,
+                    data:{
+                        status:'ralan',
+                        kode:"{{$poli}}"
+                    },
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
@@ -467,6 +471,10 @@
                 var data = e.params.data;
                 $.ajax({
                     url: '/api/obat/'+data.id,
+                    data:{
+                        status:'ralan',
+                        kode:"{{$poli}}"
+                    },
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {

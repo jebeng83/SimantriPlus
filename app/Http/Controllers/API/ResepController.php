@@ -57,9 +57,20 @@ class ResepController extends Controller
         return response()->json($obat, 200);
     }
 
-    public function getDataObat($kdObat)
+    public function getDataObat(Request $request ,$kdObat)
     {
-        $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('kd_bangsal', 'DPF')->max('tanggal');
+        $input = $request->all();
+        $status = $input['status'];
+        $kode = $input['kode'];
+        $bangsal = "";
+        if($status == 'ralan'){
+            $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
+            $bangsal = $db->kd_bangsal;
+        }else{
+            $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
+            $bangsal = $db->kd_depo;
+        }
+        $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('kd_bangsal', $bangsal)->max('tanggal');
         $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('tanggal', $maxTgl)->where    ('kd_bangsal', 'DPF')->max('jam');
         $data = DB::table('databarang')
             ->join('riwayat_barang_medis', 'databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
