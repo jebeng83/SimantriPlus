@@ -13,7 +13,7 @@
         <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="resep" role="tabpanel" aria-labelledby="resep-tab">
                 <x-adminlte-callout theme="info" title="Input Resep">
-                    <form  method="post" id="resepForm" action="{{url('/ranap/simpan/resep/'.$encryptNoRawat)}}">
+                    <form  method="post" id="resepForm" action="{{url('/api/resep/'.$encryptNoRawat)}}">
                         @csrf
                         <div class="containerResep">
                             <div class="row">
@@ -673,12 +673,14 @@
                 obat:obat,
                 jumlah:jumlah,
                 aturan_pakai:aturan,
+                status:'Ranap',
+                kode:"{{$bangsal}}",
                 _token:_token,
             };
             // console.log(data);
             $.ajax({
                 type: 'POST',
-                url: '/ranap/simpan/copyresep/'+"{{$encryptNoRawat}}",
+                url: '/api/resep/'+"{{$encryptNoRawat}}",
                 data: data,
                 dataType: 'json',
                 beforeSend: function() {
@@ -749,6 +751,8 @@
                 obat:obat,
                 jumlah:jumlah,
                 aturan_pakai:aturan,
+                status:'Ranap',
+                kode:"{{$bangsal}}",
                 _token:_token,
             };
             var url = form.attr('action');

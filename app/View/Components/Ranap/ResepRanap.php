@@ -29,9 +29,9 @@ class ResepRanap extends Component
                                 ->join('resep_obat', 'reg_periksa.no_rawat', '=', 'resep_obat.no_rawat')
                                 ->where('resep_obat.kd_dokter', $this->dokter)
                                 ->where('reg_periksa.no_rkm_medis', $this->noRM)
-                                ->where('reg_periksa.status_lanjut', 'Ralan')
+                                ->where('reg_periksa.status_lanjut', 'Ranap')
                                 ->orderBy('resep_obat.tgl_peresepan', 'desc')
-                                ->select('resep_obat.no_resep', 'resep_obat.tgl_peresepan')
+                                ->select('resep_obat.no_resep', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
                                 ->limit(5)
                                 ->get();
 
