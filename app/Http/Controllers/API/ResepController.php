@@ -96,15 +96,6 @@ class ResepController extends Controller
 
         DB::beginTransaction();
         try{
-            $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->first();
-            if(!empty($resep)){
-                if($resep->tgl_perawatan != '0000-00-00'){
-                    return response()->json([
-                        'status' => 'gagal',
-                        'pesan' => 'Resep obat sudah tervalidasi'
-                    ]);
-                }
-            }
 
             if($status == 'Ralan'){
                 $iter = $request->get('iter');
@@ -150,6 +141,15 @@ class ResepController extends Controller
                     
                 }
                 
+                $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->first();
+                if(!empty($resep)){
+                    if($resep->tgl_perawatan != '0000-00-00'){
+                        return response()->json([
+                            'status' => 'gagal',
+                            'pesan' => 'Resep obat sudah tervalidasi'
+                        ]);
+                    }
+                }
                 $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%'.date('Y-m-d').'%')->orWhere('tgl_peresepan', 'like', '%'.date('Y-m-d').'%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
                 $maxNo = substr($no->resep, 0, 4);
                 $nextNo = sprintf('%04s', ($maxNo + 1));

@@ -2,19 +2,39 @@
     <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
         <div class="row">
             <div class="col-md-6">
-                <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=5>
+                <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=4>
                     {{ $kel->keluhan ?? '' }}
                 </x-adminlte-textarea>
             </div>
             <div class="col-md-6">
-                <x-adminlte-textarea name="terapi" label="Terapi" rows=5>
-                    {{ $getTerapi->nama_brng ?? '' }}
+                <x-adminlte-textarea name="jalan" label="Jalannya Penyakit Selama Perawatan" rows=4>
                 </x-adminlte-textarea>
             </div>
         </div>
         <div class="row">
-            <x-adminlte-input name="prosedurUtama" label="Prosedur Utama" value="{{$prosedur->deskripsi_panjang ?? ''}}"  fgroup-class="col-md-6" />
+            <div class="col-md-6">
+                <x-adminlte-textarea name="radiologi" label="Pemeriksaan Penunjang yang Positif" rows=4>
+                    <x-slot name="appendSlot">
+                        <x-adminlte-button theme="primary" icon="fas fa-paperclip" data-toggle="modal" data-target="#modalRad" />
+                    </x-slot>
+                </x-adminlte-textarea>
+            </div>
+            <div class="col-md-6">
+                <x-adminlte-textarea name="lab" label="Hasil Laboratorium yang Positif" rows=4>
+                    <x-slot name="appendSlot">
+                        <x-adminlte-button theme="primary" icon="fas fa-paperclip" data-toggle="modal" data-target="#modalLab" />
+                    </x-slot>
+                </x-adminlte-textarea>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <x-adminlte-textarea name="terapi" label="Terapi" rows=4>
+                {{ $getTerapi->nama_brng ?? '' }}
+            </x-adminlte-textarea>
+        </div>
+        <div class="row">
             <x-adminlte-input name="diagnosaUtama" label="Diagnosa Utama" value="{{$diagnosa->diagnosa_utama ?? ''}}"  fgroup-class="col-md-6" />
+            <x-adminlte-input name="prosedurUtama" label="Prosedur Utama" value="{{$prosedur->deskripsi_panjang ?? ''}}"  fgroup-class="col-md-6" />
         </div>
 
         <div class="row justify-content-end">
@@ -23,59 +43,27 @@
     </x-adminlte-card>
 </div>
 
+<x-adminlte-modal id="modalLab" title="Pemeriksaan Lab" size="lg" theme="primary"
+    icon="fas fa-bell" v-centered static-backdrop scrollable>
+    <x-slot name="footerSlot">
+        <x-adminlte-button theme="danger" label="Dismiss" data-dismiss="modal"/>
+    </x-slot>
+</x-adminlte-modal>
+
+<x-adminlte-modal id="modalRad" title="Pemeriksaan Radiologi" size="lg" theme="primary"
+    icon="fas fa-bell" v-centered static-backdrop scrollable>
+    .container-
+    <x-slot name="footerSlot">
+        <x-adminlte-button theme="danger" label="Dismiss" data-dismiss="modal"/>
+    </x-slot>
+</x-adminlte-modal>
+
+
 @push('js')
-    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
-    <script>
-        $('#resumeButton').click(function(){
-            $.ajax({
-                url: '/ralan/simpan/resumemedis/'+"{{$encrypNoRawat}}",
-                type: 'POST',
-                data: {
-                    keluhanUtama: $('#keluhanUtama').val(),
-                    prosedurUtama: $('#prosedurUtama').val(),
-                    diagnosaUtama: $('#diagnosaUtama').val(),
-                    terapi: $('#terapi').val(),
-                    _token: '{{ csrf_token() }}'
-                },
-                format: 'json',
-                beforeSend:function() {
-                Swal.fire({
-                    title: 'Loading....',
-                    allowEscapeKey: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                        }
-                    });
-                },
-                success: function(response){
-                    // console.log(response);
-                    if(response.status == 'sukses'){
-                        Swal.fire({
-                            title: "Sukses",
-                            text: "Data berhasil disimpan",
-                            icon: "success",
-                            button: "OK",
-                        });
-                    }else{
-                        Swal.fire({
-                            title: "Gagal",
-                            text: response.pesan ?? "Data gagal disimpan",
-                            icon: "error",
-                            button: "OK",
-                        });
-                    }
-                },
-                error: function(response){
-                    // console.log(response);
-                    Swal.fire({
-                        title: "Error",
-                        text: response.pesan ?? "Terjadi kesalahan",
-                        icon: "error",
-                        button: "OK",
-                    });
-                }
-            });
-        });
+    <script 
+        id="resume" 
+        src="{{ asset('js/ralan/resume.js') }}" 
+        data-encrypNoRawat="{{ $encrypNoRawat }}" 
+        data-token="{{ csrf_token() }}">
     </script>
 @endpush

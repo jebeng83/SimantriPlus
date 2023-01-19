@@ -426,13 +426,13 @@ class PemeriksaanRalanController extends Controller
         //                 'status' => 'success',
         //                 'message' => Request::get('no_rawat')
         //             ], 200);
-        $validate = Request::validate([
-            'tensi' => 'required',
-            'kesadaran' => 'required',
-            'rtl' => 'required',
-            'penilaian' => 'required',
-            'instruksi' => 'required',
-        ]);
+        // $validate = Request::validate([
+        //     'tensi' => 'required',
+        //     'kesadaran' => 'required',
+        //     'rtl' => 'required',
+        //     'penilaian' => 'required',
+        //     'instruksi' => 'required',
+        // ]);
         $cek = DB::table('pemeriksaan_ralan')
                     ->where('no_rawat', Request::get('no_rawat'))
                     ->count();
