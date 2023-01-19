@@ -54,10 +54,9 @@
                 url: "https://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
                 type: "POST",
                 data: form_data,
+                contentType: false,
                 cache: false,
                 processData: false,
-                crossDomain: true,
-                headers: {  'Access-Control-Allow-Origin': '*' },
                 success: function (data) {
                     // console.log(data);
                     if(data.status){
