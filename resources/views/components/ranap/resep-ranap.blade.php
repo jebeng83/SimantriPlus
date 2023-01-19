@@ -251,7 +251,7 @@
 @endpush
 
 @push('js')
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
     <script>
         function getIndexValue(name, index) {
             var doc = document.getElementsByName(name);

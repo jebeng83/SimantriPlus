@@ -10,7 +10,7 @@
 </div>
 
 @push('js')
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
     <script>
     $("#catatanButton").click(function(event){
         event.preventDefault();

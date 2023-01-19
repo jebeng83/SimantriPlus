@@ -80,7 +80,7 @@
 </x-adminlte-modal>
 
 @push('js')
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
     <script>
         function showModalEdit(noRawat, tgl, jam){
             $.ajax({

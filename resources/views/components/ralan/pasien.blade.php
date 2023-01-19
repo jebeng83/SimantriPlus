@@ -45,7 +45,7 @@
 </x-adminlte-modal>
 
 @push('js')
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
     <script>
         function uploadFile() {
             var file_data = $('#fileupload').prop('files')[0];
