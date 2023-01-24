@@ -10,6 +10,31 @@ use App\Traits\EnkripsiData;
 class LabController extends Controller
 {
     use EnkripsiData;
+
+    public function getPemeriksaanLab($noRawat)
+    {
+        $noRawat = $this->decryptData($noRawat);
+        try{
+
+            $data = DB::table('detail_periksa_lab')
+                    ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('detail_periksa_lab.no_rawat', $noRawat)
+                    ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.nilai')
+                    ->get();
+
+            return response()->json([
+                'status' => 'sukses',
+                'pesan' => 'Data pemeriksaan lab berhasil diambil',
+                'data' => $data
+            ]);
+        }catch(\Illuminate\Database\QueryException $ex){
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => $ex->getMessage()
+            ]);
+        }
+    }
+
     public function getPerawatanLab(Request $request)
     {
         $q = $request->get('q');
@@ -27,13 +52,14 @@ class LabController extends Controller
 
     public function postPermintaanLab(Request $request, $noRawat)
     {
-        $$input = $request->all();
-        $klinis = $$input['klinis'];
+        $input = $request->all();
+        $klinis = $input['klinis'];
         $info = $input['info'];
-        $jnsPemeriksaan = $input['jenis_pemeriksaan'];
+        $jnsPemeriksaan = $input['jns_pemeriksaan'];
         $noRawat = $this->decryptData($noRawat);
 
         try{
+            DB::beginTransaction();
             $getNumber = DB::table('permintaan_lab')
                             ->where('tgl_permintaan', date('Y-m-d'))
                             ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
@@ -41,7 +67,7 @@ class LabController extends Controller
 
             $lastNumber = substr($getNumber->no, 0, 4);
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
-            $noOrder = 'PL'.date('dmy').$getNextNumber;
+            $noOrder = 'PL'.date('Ymd').$getNextNumber;
 
             DB::table('permintaan_lab')
                     ->insert([
@@ -64,12 +90,33 @@ class LabController extends Controller
                         ]);
             }
 
+            DB::commit();
             return response()->json(['status' => 'sukses', 'message' => 'Permintaan lab berhasil disimpan'], 200);
 
         }catch(\Illuminate\Database\QueryException $ex){
+            DB::rollBack();
             return response()->json(['status' => 'gagal', 'message' => $ex->getMessage()], 200);
         }
+    }
 
+    public function hapusPermintaanLab($noOrder)
+    {
+        try{
+            DB::beginTransaction();
 
+            DB::table('permintaan_lab')
+                    ->where('noorder', $noOrder)
+                    ->delete();
+
+            // DB::table('permintaan_pemeriksaan_lab')
+            //         ->where('noorder', $noOrder)
+            //         ->delete();
+
+            DB::commit();
+            return response()->json(['status' => 'sukses', 'message' => 'Permintaan lab berhasil dihapus'], 200);
+        }catch(\Illuminate\Database\QueryException $ex){
+            DB::rollBack();
+            return response()->json(['status' => 'gagal', 'message' => $ex->getMessage()], 200);
+        }
     }
 }

@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ResepController;
 use App\Http\Controllers\API\LabController;
+use App\Http\Controllers\API\RadiologiController;
+use App\Http\Controllers\API\ResumePasienController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +25,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
 Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::post('/resep/{noRawat}', [ResepController::class, 'postResep']);
+
+Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
+Route::post('/permintaanlab/{noRawat}', [LabController::class, 'postPermintaanLab']);
+Route::delete('/permintaanlab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
+Route::get('/hasil/rad/{noRawat}', [RadiologiController::class, 'getPermintaanRadiologi']);
+
+Route::post('/resumemedis/{noRawat}', [ResumePasienController::class, 'postResume']);
 
 Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);

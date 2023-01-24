@@ -1,4 +1,4 @@
-<x-adminlte-card title="Permintaan Lab" theme="info" icon="fas fa-lg fa-bell" collapsible removable maximizable>
+<x-adminlte-card title="Permintaan Lab" theme="info" icon="fas fa-lg fa-flask" collapsible="collapsed" maximizable>
     <form id="formPermintaanLab"></form>
     <div class="form-group row">
         <label for="klinis" class="col-sm-4 col-form-label">Klinis</label>
@@ -18,96 +18,47 @@
           <select class="form-control jenis" id="jenis" name="jenis[]" multiple="multiple" ></select>
         </div>
     </div>
-    <div class="d-flex flex-row-reverse">
+    <div class="d-flex flex-row-reverse pb-3">
         <x-adminlte-button id="simpanPermintaanLab" class="ml-1" theme="primary" type="submit" label="Simpan" />
     </div>
+    <x-adminlte-callout theme="info" title="Daftar Permintaan Lab">
+        <table class="table table-striped">
+            <thead class="thead-inverse" style="width: 100%">
+                <tr>
+                    <th>No. Order</th>
+                    <th>Informasi</th>
+                    <th>Klinis</th>
+                    <th>Pemeriksaan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($pemeriksaan as $row)
+                    <tr>
+                        <td scope="row">{{$row->noorder}}</td>
+                        <td>{{$row->informasi_tambahan}}</td>
+                        <td>{{$row->diagnosa_klinis}}</td>
+                        <td>
+                            @php
+                            $pemeriksaan = App\View\Components\Ralan\PermintaanLab::getDetailPemeriksaan($row->noorder);
+                            @endphp
+                            @foreach($pemeriksaan as $p)
+                                <li>{{$p->nm_perawatan}}</li>
+                            @endforeach
+                        </td>
+                        <td><button class="btn btn-danger btn-sm" onclick='hapusPermintaanLab("{{$row->noorder}}", event)'>Hapus</button></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-adminlte-callout>
 </x-adminlte-card>
 
 @push('js')
-<script>
-    function getValue(name) {
-            var data = [];
-            var doc = document.getElementsByName(name);
-            for (var i = 0; i < doc.length; i++) {
-                    var a = doc[i].value;
-                    data.push(a);
-                }
-
-            return data;
-        }
-
-    function formatData (data) {
-            var $data = $(
-                '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
-            );
-            return $data;
-    };
-
-    $('.jenis').select2({
-        placeholder: 'Pilih Jenis',
-        ajax: {
-            url: '/api/jns_perawatan_lab',
-            dataType: 'json',
-            delay: 250,
-                processResults: function (data) {
-                    return {
-                        results: data
-                    };
-                },
-            cache: true
-            },
-            templateResult: formatData,
-            minimumInputLength: 3
-    });
-
-    $('#simpanPermintaanLab').click(function(){
-        $.ajax({
-            url: '/api/ralan/simpan/permintaanlab/'+"{{$encrypNoRawat}}",
-            type: 'POST',
-            data: {
-                klinis: $('#klinis').val(),
-                info: $('#info').val(),
-                jns_pemeriksaan: getValue('jenis[]'),
-                _token: '{{ csrf_token() }}'
-            },
-            format: 'json',
-            beforeSend:function() {
-            Swal.fire({
-                title: 'Loading....',
-                allowEscapeKey: false,
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                    }
-                });
-            },
-            success: function(response){
-                // console.log(response);
-                if(response.status == 'sukses'){
-                    Swal.fire({
-                        title: "Sukses",
-                        text: "Data berhasil disimpan",
-                        icon: "success",
-                        button: "OK",
-                    });
-                }else{
-                    Swal.fire({
-                        title: "Gagal",
-                        text: "Data gagal disimpan",
-                        icon: "error",
-                        button: "OK",
-                    });
-                }
-            },
-            error: function(response){
-                Swal.fire({
-                    title: "Gagal",
-                    text: "Data gagal disimpan",
-                    icon: "error",
-                    button: "OK",
-                });
-            }
-        });
-    });
-</script>
+    <script 
+        id="permintaanLab" 
+        src="{{ asset('js/ralan/permintaanLab.js') }}" 
+        data-encrypNoRawat="{{ $encrypNoRawat }}" 
+        data-token="{{ csrf_token() }}">
+    </script>
 @endpush

@@ -36,10 +36,17 @@ class PermintaanLab extends Component
 
     public function getPemeriksaanLab($noRawat)
     {
-        return DB::table('reg_periksa')
-                    ->join('permintaan_lab', 'reg_periksa.no_rawat', '=', 'permintaan_lab.no_rawat')
-                    ->join('permintaan_pemeriksaan_lab', 'permintaan_lab.noorder', '=', 'permintaan_pemeriksaan_lab.noorder')
-                    ->where('reg_periksa.no_rawat', $noRawat)
+        return DB::table('permintaan_lab')
+                    ->where('no_rawat', $noRawat)
+                    ->get();
+    }
+
+    public static function getDetailPemeriksaan($noOrder)
+    {
+        return DB::table('permintaan_pemeriksaan_lab')
+                    ->join('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
+                    ->where('permintaan_pemeriksaan_lab.noorder', $noOrder)
+                    ->select('jns_perawatan_lab.*')
                     ->get();
     }
 }
