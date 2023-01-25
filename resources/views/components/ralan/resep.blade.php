@@ -555,8 +555,8 @@
                 if (result.value) {
                     let _token   = $('meta[name="csrf-token"]').attr('content');
                     $.ajax({
-                        url: '/ralan/obat/'+$noResep+'/'+$kdObat,
-                        type: 'DELETE',
+                        url: '/api/obat/'+$noResep+'/'+$kdObat,
+                        type: 'POST',
                         dataType: 'json',
                         data:{_token: _token}, 
                         beforeSend:function() {

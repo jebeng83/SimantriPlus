@@ -8,14 +8,14 @@
             </div>
             <div class="col-md-6">
                 <x-adminlte-textarea name="jalan" label="Jalannya Penyakit Selama Perawatan" rows=4>
-                    {{ $diagnosa->jalannya_penyakit }}
+                    {{ $diagnosa->jalannya_penyakit ?? '' }}
                 </x-adminlte-textarea>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6">
                 <x-adminlte-textarea name="radiologi" id="rad-form" label="Pemeriksaan Penunjang yang Positif" rows=4>
-                    {{ $diagnosa->pemeriksaan_penunjang }}
+                    {{ $diagnosa->pemeriksaan_penunjang ?? '' }}
                     <x-slot name="appendSlot">
                         <x-adminlte-button theme="primary" id="radButton" icon="fas fa-paperclip" />
                     </x-slot>
@@ -23,7 +23,7 @@
             </div>
             <div class="col-md-6">
                 <x-adminlte-textarea name="lab" id="lab-form" label="Hasil Laboratorium yang Positif" rows=4>
-                    {{ $diagnosa->hasil_laborat }}
+                    {{ $diagnosa->hasil_laborat ?? '' }}
                     <x-slot name="appendSlot">
                         <x-adminlte-button theme="primary" icon="fas fa-paperclip" id="labButton"/>
                     </x-slot>
