@@ -429,13 +429,13 @@ class ResepController extends Controller
 
     }
 
-    // public function hapusObatRacikanRanap($noResep, $noRacikan)
-    // {
-    //     try{
-    //         $delete = DB::table('resep_dokter_racikan')->where('no_resep', $noResep)->where('no_racik', $noRacikan)->delete();
-    //         return response()->json(['status'=> 'sukses', 'pesan'=> 'Obat berhasil dihapus']);
-    //     }catch (\Illuminate\Database\QueryException $ex){
-    //         return response()->json(['status'=> 'gagal', 'pesan'=> $ex->getMessage()]);
-    //     }
-    // }
+    public function hapusObat($noResep, $kdObat)
+    {
+        try{
+            DB::table('resep_dokter')->where('no_resep', $noResep)->where('kode_brng', $kdObat)->delete();
+            return response()->json(['status'=> 'sukses', 'pesan'=> 'Obat berhasil dihapus']);
+        }catch (\Illuminate\Database\QueryException $ex){
+            return response()->json(['status'=> 'gagal', 'pesan'=> $ex->getMessage()]);
+        }
+    }
 }
