@@ -556,7 +556,7 @@
                     let _token   = $('meta[name="csrf-token"]').attr('content');
                     $.ajax({
                         url: '/api/obat/'+$noResep+'/'+$kdObat,
-                        type: 'DELETE',
+                        type: 'POST',
                         dataType: 'json',
                         data:{_token: _token}, 
                         beforeSend:function() {

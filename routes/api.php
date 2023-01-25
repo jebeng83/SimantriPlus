@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
 Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::post('/resep/{noRawat}', [ResepController::class, 'postResep']);
-Route::delete('/obat/{noResep}/{kdObat}', [ResepController::class, 'hapusObat']);
+Route::post('/obat/{noResep}/{kdObat}', [ResepController::class, 'hapusObat']);
 
 Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
 Route::post('/permintaanlab/{noRawat}', [LabController::class, 'postPermintaanLab']);
