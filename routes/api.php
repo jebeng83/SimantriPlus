@@ -29,8 +29,12 @@ Route::post('/obat/{noResep}/{kdObat}', [ResepController::class, 'hapusObat']);
 
 Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
 Route::post('/permintaanlab/{noRawat}', [LabController::class, 'postPermintaanLab']);
-Route::delete('/permintaanlab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
+Route::post('/hapus/permintaanlab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
+
 Route::get('/hasil/rad/{noRawat}', [RadiologiController::class, 'getPermintaanRadiologi']);
+Route::post('/permintaanrad/{noRawat}', [RadiologiController::class, 'postPermintaanRadiologi']);
+Route::post('/hapus/permintaanrad/{noOrder}', [RadiologiController::class, 'hapusPermintaanRadiologi']);
+Route::get('/jns_perawatan_rad', [RadiologiController::class, 'getPerawatanRadiologi']);
 
 Route::post('/resumemedis/{noRawat}', [ResumePasienController::class, 'postResume']);
 

@@ -1,4 +1,4 @@
-var script = document.getElementById("permintaanLab");
+var script = document.getElementById("permintaanRad");
 var encrypNoRawat = script.getAttribute("data-encrypNoRawat");
 var token = script.getAttribute("data-token");
 
@@ -20,10 +20,10 @@ function formatData (data) {
     return $data;
 };
 
-$('.jenis').select2({
+$('.jenisRad').select2({
     placeholder: 'Pilih Jenis',
     ajax: {
-        url: '/api/jns_perawatan_lab',
+        url: '/api/jns_perawatan_rad',
         dataType: 'json',
         delay: 250,
             processResults: function (data) {
@@ -37,15 +37,15 @@ $('.jenis').select2({
         minimumInputLength: 3
 });
 
-$('#simpanPermintaanLab').click(function(event){
+$('#simpanPermintaanRad').click(function(event){
     event.preventDefault();
     $.ajax({
-        url: '/api/permintaanlab/'+encrypNoRawat,
+        url: '/api/permintaanrad/'+encrypNoRawat,
         type: 'POST',
         data: {
-            klinis: $('#klinis').val(),
-            info: $('#info').val(),
-            jns_pemeriksaan: $('#jenis').val(),
+            klinis: $('#klinisRad').val(),
+            info: $('#infoRad').val(),
+            jns_pemeriksaan: $('#jenisRad').val(),
             _token: token
         },
         format: 'json',
@@ -93,7 +93,7 @@ $('#simpanPermintaanLab').click(function(event){
     });
 });
 
-function hapusPermintaanLab(noOrder, event){
+function hapusPermintaanRad(noOrder, event){
     event.preventDefault();
     Swal.fire({
         title: 'Apakah anda yakin?',
@@ -107,7 +107,7 @@ function hapusPermintaanLab(noOrder, event){
         }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: '/api/hapus/permintaanlab/'+noOrder,
+                url: '/api/hapus/permintaanrad/'+noOrder,
                 type: 'POST',
                 data: {
                     _token: token

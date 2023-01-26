@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Rujuk Internal" theme="info" icon="fas fa-lg fa-notes-medical" collapsible="collapsed" maximizable>
+    <x-adminlte-card title="Rujuk Internal" theme="info" icon="fas fa-lg fa-wheelchair" collapsible="collapsed" maximizable>
         <div class="mb-3 row">
             <label for="poli" class="col-sm-2 col-form-label">Poli Tujuan</label>
             <div class="col-sm-10">

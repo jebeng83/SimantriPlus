@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Catatan Pasien" theme="info" icon="fas fa-lg fa-notes-medical" collapsible="collapsed" maximizable>
+    <x-adminlte-card title="Catatan Pasien" theme="info" icon="fas fa-lg fa-receipt" collapsible="collapsed" maximizable>
         <x-adminlte-textarea name="catatan" label="Catatan" fgroup-class="col-md-12" rows="4">
             {{$data->catatan ?? ''}}
         </x-adminlte-textarea>

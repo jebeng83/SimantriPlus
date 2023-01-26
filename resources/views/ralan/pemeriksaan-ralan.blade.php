@@ -19,6 +19,7 @@
             <x-ralan.catatan :no-rawat="request()->get('no_rawat')" />
             <x-ralan.rujuk-internal :no-rawat="request()->get('no_rawat')" />
             <x-ralan.permintaan-lab :no-rawat="request()->get('no_rawat')" />
+            <x-ralan.permintaan-radiologi :no-rawat="request()->get('no_rawat')" />
         </div>
     </div>
     
