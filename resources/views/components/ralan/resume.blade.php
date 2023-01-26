@@ -2,8 +2,11 @@
     <x-adminlte-card title="Resume Medis" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
         <div class="row">
             <div class="col-md-6">
-                <x-adminlte-textarea name="keluhanUtama" label="Keluhan Utama" rows=4>
+                <x-adminlte-textarea name="keluhanUtama" id="keluhanUtama" label="Keluhan Utama" rows=4>
                     {{ $kel->keluhan ?? '' }}
+                    <x-slot name="appendSlot">
+                        <x-adminlte-button theme="primary" id="kelButton" icon="fas fa-paperclip" />
+                    </x-slot>
                 </x-adminlte-textarea>
             </div>
             <div class="col-md-6">

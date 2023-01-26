@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
 Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::post('/resep/{noRawat}', [ResepController::class, 'postResep']);
+Route::post('/resep_ranap/{noRawat}', [ResepController::class, 'postResepRanap']);
 Route::post('/obat/{noResep}/{kdObat}', [ResepController::class, 'hapusObat']);
 
 Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
@@ -37,6 +38,7 @@ Route::post('/hapus/permintaanrad/{noOrder}', [RadiologiController::class, 'hapu
 Route::get('/jns_perawatan_rad', [RadiologiController::class, 'getPerawatanRadiologi']);
 
 Route::post('/resumemedis/{noRawat}', [ResumePasienController::class, 'postResume']);
+Route::get('/hasil/kel/{noRawat}', [ResumePasienController::class, 'getKeluhanUtama']);
 
 Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);

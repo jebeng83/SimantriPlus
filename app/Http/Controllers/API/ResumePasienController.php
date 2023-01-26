@@ -82,4 +82,27 @@ class ResumePasienController extends Controller
             ]);
         }
     }
+
+    public function getKeluhanUtama($noRawat)
+    {
+        $noRawat = $this->decryptData($noRawat);
+
+        try{
+            $cek = DB::table('reg_periksa')->where('no_rawat', $noRawat)->first();
+            if($cek->status_lanjut == 'Ralan'){
+                $data = DB::table('pemeriksaan_ralan')->where('no_rawat', $noRawat)->select('keluhan')->first();
+            }else{
+                $data = DB::table('pemeriksaan_ranap')->where('no_rawat', $noRawat)->select('keluhan')->first();
+            }
+            return response()->json([
+                'status'=> 'sukses', 
+                'data'=> $data->keluhan
+            ]);
+        }catch(\Illuminate\Database\QueryException $ex){
+            return response()->json([
+                'status'=> 'gagal', 
+                'message'=> $ex->getMessage()
+            ]);
+        }
+    }
 }

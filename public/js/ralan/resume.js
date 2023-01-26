@@ -22,6 +22,39 @@ $('#okrad').click(function(event){
     $('#modalRad').modal('hide');
 });
 
+$('#kelButton').click(function(event){
+    event.preventDefault();
+    $.ajax({
+        url: '/api/hasil/kel/'+encrypNoRawat,
+        type: 'GET',
+        format: 'json',
+        beforeSend:function() {
+        Swal.fire({
+            title: 'Loading....',
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+                }
+            });
+        },
+        success: function(response){
+            Swal.close();
+            var keluhan = response.data;
+            $('#keluhanUtama').val(keluhan);
+        },
+        error: function(response){
+            Swal.close();
+            Swal.fire({
+                title: "Error",
+                text: response.message ?? "Terjadi kesalahan",
+                icon: "error",
+                button: "OK",
+            });
+        }
+    });
+});
+
 $('#radButton').click(function(event){
     event.preventDefault();
     var radHTML = '';

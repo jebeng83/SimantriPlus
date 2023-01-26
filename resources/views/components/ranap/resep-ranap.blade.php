@@ -13,7 +13,7 @@
         <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="resep" role="tabpanel" aria-labelledby="resep-tab">
                 <x-adminlte-callout theme="info" title="Input Resep">
-                    <form  method="post" id="resepForm" action="{{url('/api/resep/'.$encryptNoRawat)}}">
+                    <form  method="post" id="resepForm" action="{{url('/api/resep_ranap/'.$encryptNoRawat)}}">
                         @csrf
                         <div class="containerResep">
                             <div class="row">
