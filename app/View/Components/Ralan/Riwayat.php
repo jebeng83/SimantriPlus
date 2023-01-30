@@ -3,6 +3,7 @@
 namespace App\View\Components\ralan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
+use Illuminate\Support\Facades\Cache;
 
 class Riwayat extends Component
 {

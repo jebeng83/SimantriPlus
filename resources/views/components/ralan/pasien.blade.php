@@ -99,7 +99,7 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<a href="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4"><img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" class="img-fluid"></a>';
+                            html += '<a href="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4"><img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" class="img-fluid" style="width:200px;height:400px;"></a>';
                             
                         });
                         $('.body-modal-berkasrm').html(html);
@@ -123,6 +123,7 @@
         $(document).on('click', '[data-toggle="lightbox"]', function(event) {
                 event.preventDefault();
                 $(this).ekkoLightbox();
+                $('#modalBerkasRM').modal('hide');
             });
     </script>
 @endpush
