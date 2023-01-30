@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ResepController;
 use App\Http\Controllers\API\LabController;
 use App\Http\Controllers\API\RadiologiController;
 use App\Http\Controllers\API\ResumePasienController;
+use App\Http\Controllers\API\RiwayatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,5 +45,8 @@ Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);
 Route::post('/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikan']);
 Route::post('ranap/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikanRanap']);
+
+Route::get('/riwayat_pemeriksaan', [RiwayatController::class, 'getRiwayatPemeriksaan']);
+Route::get('/pemeriksaan', [RiwayatController::class, 'getPemeriksaan']);
 
 

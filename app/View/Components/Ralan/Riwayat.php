@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 
 class Riwayat extends Component
 {
-    public $data, $noRawat;
+    public $data, $noRawat, $noRM;
     public $heads;
     /**
      * Create a new component instance.
@@ -18,6 +18,7 @@ class Riwayat extends Component
     {
         $this->noRawat = $noRawat;
         $pasien = $this->getPasien($noRawat);
+        $this->noRM = $pasien->no_rkm_medis;
         $this->data = $this->getRiwayatPemeriksaan($pasien->no_rkm_medis);
         $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];                        
     }
@@ -32,6 +33,7 @@ class Riwayat extends Component
         return view('components.ralan.riwayat',[
             'data' => $this->data, 
             'heads' => $this->heads,
+            'no_rm' => $this->noRM,
             // 'pemeriksaan' => $this->getPemeriksaanRalan($this->noRawat),
             // 'diagnosa' => $this->getDiagnosa($this->noRawat),
             // 'berkasLab' => $this->berkasLab($this->noRawat),
