@@ -42,7 +42,7 @@
     {{-- Livewire Styles --}}
     @if(config('adminlte.livewire'))
         @if(app()->version() >= 7)
-            @livewireStyles
+            <livewire:styles />
         @else
             <livewire:styles />
         @endif
@@ -98,7 +98,7 @@
     {{-- Livewire Script --}}
     @if(config('adminlte.livewire'))
         @if(app()->version() >= 7)
-            @livewireScripts
+            <livewire:scripts />
         @else
             <livewire:scripts />
         @endif
