@@ -6,7 +6,7 @@
                 <i class="fas fa-lg fa-expand"></i>     
             </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-lg fa-plus"></i>
+                <i wire:ignore class="fas fa-lg fa-plus"></i>
             </button>
         </div>
     </div>
