@@ -11,7 +11,8 @@ trait SwalResponse
             'timer'=>3000,
             'icon'=> $icon,
             'toast'=>true,
-            'position'=> $position
+            'position'=> $position,
+            'showConfirmButton'=>false,
         ];
     }
 }

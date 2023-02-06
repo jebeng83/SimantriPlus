@@ -1,10 +1,10 @@
 <div @if($isCollapsed) class="card card-info collapsed-card" @else class="card card-info" @endif>
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Permintaan Radiologi </h3>
+        <h3 class="card-title"><i class="fas fa-lg fa-x-ray mr-1"></i> Permintaan Radiologi </h3>
         <div class="card-tools">
-            <button type="button" class="btn btn-tool" wire:click="collapsed" data-card-widget="maximize">
+            {{-- <button type="button" class="btn btn-tool" wire:click="collapsed" data-card-widget="maximize">
                 <i class="fas fa-lg fa-expand"></i>     
-            </button>
+            </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i wire:ignore class="fas fa-lg fa-plus"></i>
             </button>

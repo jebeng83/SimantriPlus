@@ -2,9 +2,9 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Permintaan Lab </h3>
         <div class="card-tools">
-            <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
+            {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
                 <i class="fas fa-lg fa-expand"></i>     
-            </button>
+            </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i class="fas fa-lg fa-plus"></i>
             </button>
