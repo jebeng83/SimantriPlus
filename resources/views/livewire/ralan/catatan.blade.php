@@ -52,28 +52,3 @@
         </div>
     </div>
 </div>
-
-@section('js')
-<script>
-    window.addEventListener('swal',function(e){
-            Swal.fire(e.detail);
-        });
-
-    window.addEventListener('swal:confirm',function(e){
-        Swal.fire({
-            title: e.detail.title,
-            text: e.detail.text,
-            icon: e.detail.type,
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: e.detail.confirmButtonText,
-            cancelButtonText: e.detail.cancelButtonText,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.livewire.emit(e.detail.function, e.detail.params[0]);
-            }
-        });
-    });
-</script>
-@endsection

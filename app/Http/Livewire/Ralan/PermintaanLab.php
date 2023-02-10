@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire\Ranap;
+namespace App\Http\Livewire\Ralan;
 
 use App\Traits\EnkripsiData;
 use App\Traits\SwalResponse;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class PermintaanLab extends Component
 {
     use EnkripsiData, SwalResponse;
-    public $noRawat, $klinis, $info, $jns_pemeriksaan = [], $permintaanLab = [], $isCollapsed = true;
+    public $noRawat, $klinis, $info, $jns_pemeriksaan = [], $permintaanLab = [], $isCollapsed = true, $isExpand = false;
 
     protected $rules = [
         'klinis' => 'required',
@@ -38,7 +38,7 @@ class PermintaanLab extends Component
 
     public function render()
     {
-        return view('livewire.ranap.permintaan-lab');
+        return view('livewire.ralan.permintaan-lab');
     }
 
     public function selectedJnsPerawatan($item)
@@ -85,6 +85,7 @@ class PermintaanLab extends Component
             $this->getPermintaanLab();
             $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil ditambahkan'));
             $this->emit('select2Lab');
+            $this->resetForm();
 
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollBack();
@@ -104,6 +105,17 @@ class PermintaanLab extends Component
     public function collapsed()
     {
         $this->isCollapsed = !$this->isCollapsed;
+    }
+
+    public function expanded()
+    {
+        $this->isExpand = !$this->isExpand;
+    }
+
+    public function resetForm()
+    {
+        $this->reset(['klinis', 'info', 'jns_pemeriksaan']);
+        $this->dispatchBrowserEvent('select2Lab:reset');
     }
 
     public function getDetailPemeriksaan($noOrder)

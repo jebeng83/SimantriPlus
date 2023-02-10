@@ -125,19 +125,20 @@ class ResepController extends Controller
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
                 $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
-                if($maxStok < 1){
-                    if(empty($obat)){
-                        return response()->json([
-                            'status' => 'gagal',
-                            'pesan' => 'Obat tidak boleh kosong'
-                        ]);
-                    }else{
-                        $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
-                        return response()->json([
-                            'status' => 'gagal',
-                            'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
-                        ]);
-                    }
+                if($maxStok < $jml){
+                    continue;
+                    // if(empty($obat)){
+                    //     return response()->json([
+                    //         'status' => 'gagal',
+                    //         'pesan' => 'Obat tidak boleh kosong'
+                    //     ]);
+                    // }else{
+                    //     $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
+                    //     return response()->json([
+                    //         'status' => 'gagal',
+                    //         'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
+                    //     ]);
+                    // }
                     
                 }
                 
@@ -207,9 +208,9 @@ class ResepController extends Controller
         $noRawat = $this->decryptData($noRawat);
         $bangsal = "";
 
-        DB::beginTransaction();
+        
         try{
-
+            DB::beginTransaction();
             $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
             $bangsal = $db->kd_depo;
 
@@ -228,19 +229,20 @@ class ResepController extends Controller
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
                 $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
-                if($maxStok < 1){
-                    if(empty($obat)){
-                        return response()->json([
-                            'status' => 'gagal',
-                            'pesan' => 'Obat tidak boleh kosong'
-                        ]);
-                    }else{
-                        $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
-                        return response()->json([
-                            'status' => 'gagal',
-                            'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
-                        ]);
-                    }
+                if($maxStok < $jml){
+                    continue;
+                    // if(empty($obat)){
+                    //     return response()->json([
+                    //         'status' => 'gagal',
+                    //         'pesan' => 'Obat tidak boleh kosong'
+                    //     ]);
+                    // }else{
+                    //     $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
+                    //     return response()->json([
+                    //         'status' => 'gagal',
+                    //         'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
+                    //     ]);
+                    // }
                     
                 }
                 

@@ -1,8 +1,8 @@
 <div @if($isCollapsed) class="card card-info collapsed-card" @else class="card card-info" @endif>
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Permintaan Lab </h3>
+        <h3 class="card-title"><i class="fas fa-lg fa-x-ray mr-1"></i> Permintaan Radiologi </h3>
         <div class="card-tools">
-            {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
+            {{-- <button type="button" class="btn btn-tool" wire:click="collapsed" data-card-widget="maximize">
                 <i class="fas fa-lg fa-expand"></i>     
             </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
@@ -11,7 +11,7 @@
         </div>
     </div>
     <div class="card-body">
-        <form wire:submit.prevent="savePermintaanLab">
+        <form wire:submit.prevent="savePermintaanRadiologi">
             <div class="form-group row">
                 <label for="klinis" class="col-sm-4 col-form-label">Klinis</label>
                 <div class="col-sm-8">
@@ -29,16 +29,16 @@
             <div wire:ignore class="form-group row">
                 <label for="jenis" class="col-sm-4 col-form-label">Jenis Pemeriksaan</label>
                 <div class="col-sm-8">
-                <select class="form-control jenis" wire:model.defer="jns_pemeriksaan" id="jenis_lab" name="jenis[]" multiple="multiple" ></select>
-                </div>
+                <select class="form-control jenis" wire:model.defer="jns_pemeriksaan" id="jenis_rad" name="jenis[]" multiple="multiple" ></select>
                 @error('jns_pemeriksaan') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
             </div>
             <div class="d-flex flex-row-reverse pb-3">
                 <button class="btn btn-primary ml-1" type="submit" > Simpan </button>
             </div>
         </form>
         <div class="callout callout-info">
-            <h5> Daftar Permintaan Lab </h5>
+            <h5> Daftar Permintaan Radiologi </h5>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead class="thead-inverse" style="width: 100%">
@@ -51,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($permintaanLab as $item)
+                        @forelse ($permintaanRad as $item)
                             <tr>
                                 <td>{{ $item->noorder }}</td>
                                 <td>{{ $item->informasi_tambahan }}</td>
@@ -62,12 +62,12 @@
                                     @endforeach
                                 </td>
                                 <td>
-                                    <button class="btn btn-danger btn-sm" wire:click="konfirmasiHapus('{{ $item->noorder }}')">Hapus</button>
+                                    <button class="btn btn-danger btn-sm" wire:click="deletePermintaanRadiologi('{{ $item->noorder }}')">Hapus</button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center">Permintaan Lab Kosong</td>
+                                <td colspan="5" class="text-center">Permintaan Radiologi Kosong</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -84,23 +84,6 @@
             Swal.fire(e.detail);
         });
 
-        window.addEventListener('swal:confirm',function(e){
-            Swal.fire({
-                title: e.detail.title,
-                text: e.detail.text,
-                icon: e.detail.type,
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: e.detail.confirmButtonText,
-                cancelButtonText: e.detail.cancelButtonText,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.livewire.emit(e.detail.function, e.detail.params[0]);
-                }
-            });
-        });
-
         function formatData (data) {
             var $data = $(
                 '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
@@ -108,10 +91,10 @@
             return $data;
         };
 
-        $('#jenis_lab').select2({
-            placeholder: 'Pilih Jenis',
+        $('#jenis_rad').select2({
+            placeholder: 'Pilih Jenis Perawatan',
             ajax: {
-                url: '/api/jns_perawatan_lab',
+                url: '/api/jns_perawatan_rad',
                 dataType: 'json',
                 delay: 250,
                     processResults: function (data) {
@@ -125,16 +108,20 @@
                 minimumInputLength: 3
         });
 
-        $('#jenis_lab').on('change', function (e) {
-            let data = $(this).val();
-            @this.set('jns_pemeriksaan', data);
+        $('#jenis_rad').on('change', function (e) {
+                let data = $(this).val();
+                 @this.set('jns_pemeriksaan', data);
         });
 
-        window.livewire.on('select2Lab', () => {
-            $('#jenis_lab').select2({
-            placeholder: 'Pilih Jenis',
+        window.livewire.on('select2Rad:reset', () => {
+            $('#jenis_rad').val("").trigger('change');
+        });
+
+        window.livewire.on('select2Rad', () => {
+            $('#jenis_rad').select2({
+            placeholder: 'Pilih Jenis Perawatan',
             ajax: {
-                url: '/api/jns_perawatan_lab',
+                url: '/api/jns_perawatan_rad',
                 dataType: 'json',
                 delay: 250,
                     processResults: function (data) {

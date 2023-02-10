@@ -56,7 +56,7 @@ class PermintaanRadiologi extends Component
 
             $lastNumber = substr($getNumber->no, 0, 4);
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
-            $noOrder = 'PL'.date('Ymd').$getNextNumber;
+            $noOrder = 'PR'.date('Ymd').$getNextNumber;
 
             DB::table('permintaan_radiologi')
                     ->insert([

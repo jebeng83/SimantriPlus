@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-clipboard" collapsible maximizable>
+    <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-clipboard" collapsible>
         <form id="pemeriksaanForm">
             <div class="row">
                 <x-adminlte-textarea name="keluhan" label="Subjek" fgroup-class="col-md-6" rows="4">

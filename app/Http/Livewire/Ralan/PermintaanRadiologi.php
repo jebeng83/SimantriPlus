@@ -1,17 +1,16 @@
 <?php
 
-namespace App\Http\Livewire\Ranap;
+namespace App\Http\Livewire\Ralan;
 
 use App\Traits\EnkripsiData;
 use App\Traits\SwalResponse;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 
-class PermintaanLab extends Component
+class PermintaanRadiologi extends Component
 {
     use EnkripsiData, SwalResponse;
-    public $noRawat, $klinis, $info, $jns_pemeriksaan = [], $permintaanLab = [], $isCollapsed = true;
-
+    public $noRawat, $klinis, $info, $jns_pemeriksaan = [], $permintaanRad = [], $isCollapsed = true;
     protected $rules = [
         'klinis' => 'required',
         'info' => 'required',
@@ -24,8 +23,6 @@ class PermintaanLab extends Component
         'jns_pemeriksaan.required' => 'Jenis pemeriksaan tidak boleh kosong',
     ];
 
-    protected $listeners = ['deletePermintaanLab'];
-
     public function mount($noRawat)
     {
         $this->noRawat = $noRawat;
@@ -33,12 +30,12 @@ class PermintaanLab extends Component
 
     public function hydrate()
     {
-        $this->getPermintaanLab();
+        $this->getPermintaanRadiologi();
     }
 
     public function render()
     {
-        return view('livewire.ranap.permintaan-lab');
+        return view('livewire.ralan.permintaan-radiologi');
     }
 
     public function selectedJnsPerawatan($item)
@@ -46,22 +43,22 @@ class PermintaanLab extends Component
         $this->jns_pemeriksaan = $item;
     }
 
-    public function savePermintaanLab()
+    public function savePermintaanRadiologi()
     {
         $this->validate();
 
         try{
             DB::beginTransaction();
-            $getNumber = DB::table('permintaan_lab')
+            $getNumber = DB::table('permintaan_radiologi')
                             ->where('tgl_permintaan', date('Y-m-d'))
                             ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
                             ->first();
 
             $lastNumber = substr($getNumber->no, 0, 4);
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
-            $noOrder = 'PL'.date('Ymd').$getNextNumber;
+            $noOrder = 'PR'.date('Ymd').$getNextNumber;
 
-            DB::table('permintaan_lab')
+            DB::table('permintaan_radiologi')
                     ->insert([
                         'noorder' => $noOrder,
                         'no_rawat' => $this->noRawat,
@@ -74,7 +71,7 @@ class PermintaanLab extends Component
                     ]);
 
             foreach( $this->jns_pemeriksaan as $pemeriksaan){
-                DB::table('permintaan_pemeriksaan_lab')
+                DB::table('permintaan_pemeriksaan_radiologi')
                         ->insert([
                             'noorder' => $noOrder,
                             'kd_jenis_prw' => $pemeriksaan,
@@ -82,21 +79,22 @@ class PermintaanLab extends Component
                         ]);
             }
             DB::commit();
-            $this->getPermintaanLab();
-            $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil ditambahkan'));
-            $this->emit('select2Lab');
+            $this->getPermintaanRadiologi();
+            $this->dispatchBrowserEvent('swal', $this->toastResponse("Permintaan Radiologi berhasil ditambahkab"));
+            $this->emit('select2Rad');
+            $this->resetForm();
 
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollBack();
 
-            $this->dispatchBrowserEvent('swal', $this->toastResponse($ex->getMessage() ?? 'Permintaan Lab gagal ditambahkan', 'error'));
+            $this->dispatchBrowserEvent('swal', $this->toastResponse("Permintaan Radiologi gagal ditambahkan", 'error'));
         }
 
     }
 
-    public function getPermintaanLab()
+    public function getPermintaanRadiologi()
     {
-        $this->permintaanLab = DB::table('permintaan_lab')
+        $this->permintaanRad = DB::table('permintaan_radiologi')
                                     ->where('no_rawat', $this->noRawat)
                                     ->get();
     }
@@ -106,43 +104,36 @@ class PermintaanLab extends Component
         $this->isCollapsed = !$this->isCollapsed;
     }
 
+    public function resetForm()
+    {
+        $this->reset(['klinis', 'info', 'jns_pemeriksaan']);
+        $this->dispatchBrowserEvent('select2Rad:reset');
+    }
+
     public function getDetailPemeriksaan($noOrder)
     {
-        return DB::table('permintaan_pemeriksaan_lab')
-                    ->join('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
-                    ->where('permintaan_pemeriksaan_lab.noorder', $noOrder)
-                    ->select('jns_perawatan_lab.*')
+        return DB::table('permintaan_pemeriksaan_radiologi')
+                    ->join('jns_perawatan_radiologi', 'permintaan_pemeriksaan_radiologi.kd_jenis_prw', '=', 'jns_perawatan_radiologi.kd_jenis_prw')
+                    ->where('permintaan_pemeriksaan_radiologi.noorder', $noOrder)
+                    ->select('jns_perawatan_radiologi.*')
                     ->get();
     }
 
-    public function konfirmasiHapus($id)
-    {
-        $this->dispatchBrowserEvent('swal:confirm', [
-            'title' => 'Konfirmasi Hapus Data',
-            'text' => 'Apakah anda yakin ingin menghapus data ini?',
-            'type' => 'warning',
-            'confirmButtonText' => 'Ya, Hapus',
-            'cancelButtonText' => 'Tidak',
-            'function' => 'deletePermintaanLab',
-            'params' => [$id]
-        ]);
-    }
-
-    public function deletePermintaanLab($noOrder)
+    public function deletePermintaanRadiologi($noOrder)
     {
         try{
             DB::beginTransaction();
-            DB::table('permintaan_lab')
+            DB::table('permintaan_radiologi')
                 ->where('noorder', $noOrder)
                 ->delete();
 
-            $this->getPermintaanLab();
+            $this->getPermintaanRadiologi();
             DB::commit();
-            $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil dihapus'));
+            $this->dispatchBrowserEvent('swal', $this->toastResponse("Permintaan Radiologi berhasil dihapus"));
             
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollBack();
-            $this->dispatchBrowserEvent('swal', $this->toastResponse($ex->getMessage() ?? 'Permintaan Lab gagal dihapus', 'error'));
+            $this->dispatchBrowserEvent('swal', $this->toastResponse("Permintaan Radiologi gagal dihapus", 'error'));
         }
     }
 }

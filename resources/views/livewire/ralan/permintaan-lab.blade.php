@@ -2,8 +2,8 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Permintaan Lab </h3>
         <div class="card-tools">
-            {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
-                <i class="fas fa-lg fa-expand"></i>     
+            {{-- <button type="button" wire:click="expanded" class="btn btn-tool" data-card-widget="maximize" >
+                <i wire:ignore class="fas fa-lg fa-expand"></i>     
             </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i wire:ignore class="fas fa-lg fa-plus"></i>
@@ -128,6 +128,10 @@
         $('#jenis_lab').on('change', function (e) {
             let data = $(this).val();
             @this.set('jns_pemeriksaan', data);
+        });
+
+        window.livewire.on('select2Lab:reset', () => {
+            $('#jenis_lab').val("").trigger('change');
         });
 
         window.livewire.on('select2Lab', () => {

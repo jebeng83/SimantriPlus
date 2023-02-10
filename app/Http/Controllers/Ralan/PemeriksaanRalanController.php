@@ -208,12 +208,13 @@ class PemeriksaanRalanController extends Controller
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
                 $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
-                if($maxStok < 1){
-                    $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
-                    return response()->json([
-                        'status' => 'gagal',
-                        'pesan' => 'Stok obat '.$dataBarang->nama_brng ?? $obat.' kosong'
-                    ]);
+                if($maxStok < $jml){
+                    continue;
+                    // $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
+                    // return response()->json([
+                    //     'status' => 'gagal',
+                    //     'pesan' => 'Stok obat '.$dataBarang->nama_brng ?? $obat.' kosong'
+                    // ]);
                 }
 
                 $cek = DB::table('resep_obat')->where('no_rawat', $no_rawat)->first();
