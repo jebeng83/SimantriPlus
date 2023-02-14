@@ -9,7 +9,7 @@ use Livewire\Component;
 class Pemeriksaan extends Component
 {
     use SwalResponse;
-    public $isCollapsed = false, $noRawat, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $imun, $gcs, $kesadaran;
+    public $isCollapsed = false, $noRawat, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran, $lingkar, $spo2;
 
     public function mount($noRawat)
     {
@@ -57,9 +57,11 @@ class Pemeriksaan extends Component
             $this->tensi = $pemeriksaan->tensi;
             $this->nadi = $pemeriksaan->nadi;
             $this->respirasi = $pemeriksaan->respirasi;
-            $this->imun = $pemeriksaan->imun_ke;
+            $this->evaluasi = $pemeriksaan->evaluasi;
             $this->gcs = $pemeriksaan->gcs;
             $this->kesadaran = $pemeriksaan->kesadaran;
+            $this->lingkar = $pemeriksaan->lingkar_perut;
+            $this->spo2 = $pemeriksaan->spo2;
         }
     }
 
@@ -86,9 +88,11 @@ class Pemeriksaan extends Component
                         'tensi' => $this->tensi,
                         'nadi' => $this->nadi,
                         'respirasi' => $this->respirasi,
-                        'imun_ke' => $this->imun,
-                        'gcs' => $this->gcs,
+                        'evaluasi' => $this->evaluasi,
                         'kesadaran' => $this->kesadaran,
+                        'gcs' => $this->gcs,
+                        'lingkar_perut' => $this->lingkar,
+                        'spo2' => $this->spo2,
                     ]);
             }else{
                 DB::table('pemeriksaan_ralan')
@@ -106,9 +110,11 @@ class Pemeriksaan extends Component
                         'tensi' => $this->tensi,
                         'nadi' => $this->nadi,
                         'respirasi' => $this->respirasi,
-                        'imun_ke' => $this->imun,
                         'gcs' => $this->gcs,
                         'kesadaran' => $this->kesadaran,
+                        'lingkar_perut' => $this->lingkar,
+                        'spo2' => $this->spo2,
+                        'evaluasi' => $this->evaluasi,
                         'tgl_perawatan' => date('Y-m-d'),
                         'jam_rawat' => date('H:i:s'),
                         'nip' => session()->get('username'),
@@ -117,11 +123,11 @@ class Pemeriksaan extends Component
             
             DB::commit();
             $this->getPemeriksaan();
-            $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Permintaan Lab berhasil ditambah'));
+            $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Pemeriksaan berhasil ditambahkan'));
 
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollback();
-            $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Permintaan Lab gagal ditambahkan', 'error'));
+            $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
         }
     }
 }

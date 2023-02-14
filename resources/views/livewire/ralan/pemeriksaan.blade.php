@@ -43,17 +43,21 @@
                 </div>
             </div>
             <div class="row">
-                <div class="form-group col-md-4">
-                    <label for="">Suhu (C)</label>
+                <div class="form-group col-md-3">
+                    <label for="">Suhu</label>
                     <input type="text" wire:model.defer='suhu' class="form-control" name="" id="" aria-describedby="helpId" placeholder="">
                 </div>
-                <div class="form-group col-md-4">
-                    <label for="">Berat (Kg)</label>
+                <div class="form-group col-md-3">
+                    <label for="">Berat</label>
                     <input type="text" wire:model.defer='berat' class="form-control" name="" id="" aria-describedby="helpId" placeholder="">
                 </div>
-                <div class="form-group col-md-4">
-                    <label for="">Tinggi (Cm)</label>
+                <div class="form-group col-md-3">
+                    <label for="">Tinggi</label>
                     <input type="text" wire:model.defer='tinggi' class="form-control" name="" id="" aria-describedby="helpId" placeholder="">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="">Lingkar Perut</label>
+                    <input type="text" wire:model.defer='lingkar' class="form-control" name="" id="" aria-describedby="helpId" placeholder="">
                 </div>
             </div>
             <div class="row">
@@ -72,22 +76,8 @@
             </div>
             <div class="row">
                 <div class="form-group col-md-4">
-                  <label for="">Imun Ke</label>
-                  <select class="form-control" wire:model.defer='imun' name="" id="">
-                    <option value="-">-</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                  </select>
+                    <label for="">SPO2</label>
+                    <input type="text" wire:model.defer='spo2' class="form-control" name="" id="" aria-describedby="helpId" placeholder="">
                 </div>
                 <div class="form-group col-md-4">
                     <label for="">GCS (E, V, M)</label>
@@ -96,12 +86,16 @@
                 <div class="form-group col-md-4">
                     <label for="">Kesadaran</label>
                     <select class="form-control" wire:model.defer='kesadaran' name="" id="">
-                        <option>Compos Mentis</option>
-                        <option>Somnolence</option>
-                        <option>Sopor</option>
-                        <option>Coma</option>
+                        <option value="Compos Mentis">Compos Mentis</option>
+                        <option value="Somnolence">Somnolence</option>
+                        <option value="Sopor">Sopor</option>
+                        <option value="Coma">Coma</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="">Evaluasi</label>
+                <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="3" required></textarea>
             </div>
             <div class="d-flex flex-row-reverse">
                 <button type="submit" class="btn btn-primary">Simpan</button>
