@@ -445,6 +445,8 @@ class PemeriksaanRanapController extends Controller
                     'rtl' => Request::get('rtl'),
                     'penilaian' => Request::get('penilaian'),
                     'instruksi' => Request::get('instruksi'),
+                    'spo2' => Request::get('spo2'),
+                    'evaluasi' => Request::get('evaluasi'),
                 ];
         if($cek > 0){
             $insert = DB::table('pemeriksaan_ranap')
@@ -517,6 +519,8 @@ class PemeriksaanRanapController extends Controller
                     'rtl' => Request::get('rtl'),
                     'penilaian' => Request::get('penilaian'),
                     'instruksi' => Request::get('instruksi'),
+                    'spo2' => Request::get('spo2'),
+                    'evaluasi' => Request::get('evaluasi'),
                 ];
         try{
             $update = DB::table('pemeriksaan_ranap')

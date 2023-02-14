@@ -27,14 +27,15 @@
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
-                    <x-adminlte-input name="suhu" label="Suhu Badan (C)" fgroup-class="col-md-3" />
-                    <x-adminlte-input name="berat" label="Berat (Kg)" fgroup-class="col-md-3" />
-                    <x-adminlte-input name="tinggi" label="Tinggi Badan (Cm)" fgroup-class="col-md-3" />
+                    <x-adminlte-input name="suhu" label="Suhu" fgroup-class="col-md-3" />
+                    <x-adminlte-input name="berat" label="Berat" fgroup-class="col-md-3" />
+                    <x-adminlte-input name="tinggi" label="Tinggi Badan" fgroup-class="col-md-3" />
                     <x-adminlte-input name="gcs" label="GCS (E, V, M)" fgroup-class="col-md-3" />
                 </div>
                 <div class="row">
-                    <x-adminlte-input name="tensi" label="Tensi" fgroup-class="col-md-3" />
-                    <x-adminlte-input name="nadi" label="Nadi (per Menit)" fgroup-class="col-md-3" />
+                    <x-adminlte-input name="spo2" label="SP02" fgroup-class="col-md-2" />
+                    <x-adminlte-input name="tensi" label="Tensi" fgroup-class="col-md-2" />
+                    <x-adminlte-input name="nadi" label="Nadi" fgroup-class="col-md-2" />
                     <x-adminlte-input name="respirasi" label="Respirasi" fgroup-class="col-md-3" />  
                     <x-adminlte-select-bs name="kesadaran" label="Kesadaran" fgroup-class="col-md-3">
                             <option>Compos Mentis</option>
@@ -43,6 +44,8 @@
                             <option>Coma</option>
                     </x-adminlte-select-bs>            
                 </div>
+                <x-adminlte-textarea name="evaluasi" label="Evaluasi" fgroup-class="col-md-12" rows="2">
+                </x-adminlte-textarea>
                 <x-adminlte-button class="d-flex ml-auto" id="pemeriksaanButton" theme="primary" label="Simpan" icon="fas fa-sign-in"/>
             </form>
         </x-adminlte-card>
@@ -167,12 +170,17 @@
                                     '	</div>' + 
                                     '</div>' + 
                                     '<div class="row">' + 
-                                    '	<div class="form-group col-md-3">' + 
+                                    '	<div class="form-group col-md-2">' + 
+                                    '		<label for="edittensi"> SP02 </label>' + 
+                                    '		<div class="input-group">' + 
+                                    '			<input id="editspo2" name="editspo2" value="'+response.data.spo2+'" class="form-control"> </div>' + 
+                                    '	</div>' + 
+                                    '	<div class="form-group col-md-2">' + 
                                     '		<label for="edittensi"> Tensi </label>' + 
                                     '		<div class="input-group">' + 
                                     '			<input id="edittensi" name="edittensi" value="'+response.data.tensi+'" class="form-control"> </div>' + 
                                     '	</div>' + 
-                                    '	<div class="form-group col-md-3">' + 
+                                    '	<div class="form-group col-md-2">' + 
                                     '		<label for="editnadi"> Nadi (per Menit) </label>' + 
                                     '		<div class="input-group">' + 
                                     '			<input id="editnadi" name="editnadi" value="'+response.data.nadi+'" class="form-control"> </div>' + 
@@ -208,6 +216,12 @@
                                     '		</div>' + 
                                     '	</div>' + 
                                     '</div>' + 
+                                    '<div class="form-group col-md-12">' + 
+                                    '		<label for="editrtl"> Evaluasi </label>' + 
+                                    '		<div class="input-group">' + 
+                                    '			<textarea id="edievaluasi" name="editevaluasi" class="form-control" rows="2">'+response.data.evaluasi+'</textarea>' + 
+                                    '		</div>' + 
+                                    '	</div>' + 
                                     '<button type="button" class="btn btn-primary d-flex ml-auto" onclick="edit(event)"> <i class="fas fa-sign-in"></i> Perbaharui </button>' + 
                                     '';
                     $('#editPemeriksaan').find('.modal-body').html(html);
@@ -240,6 +254,8 @@
                 alergi:$("textarea[name=editalergi]").val(),
                 rtl:$("textarea[name=editrtl]").val(),
                 gcs:$("input[name=editgcs]").val(),
+                evaluasi:$("textarea[name=edievaluasi]").val(),
+                spo2:$("input[name=editspo2]").val(),
                 _token:$('meta[name="csrf-token"]').attr('content'),
             };
             $.ajax({
@@ -297,6 +313,8 @@
             let alergi = $("textarea[name=alergi]").val();
             let rtl = $("textarea[name=rtl]").val();
             let gcs = $("input[name=gcs]").val();
+            let spo2 = $("input[name=spo2]").val();
+            let evaluasi = $("input[name=evaluasi]").val();
             let _token   = $('meta[name="csrf-token"]').attr('content');
             // alert("{{request()->get('no_rawat')}}");
             $.ajax({
