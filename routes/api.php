@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ResepController;
 use App\Http\Controllers\API\LabController;
+use App\Http\Controllers\API\PemeriksaanController;
 use App\Http\Controllers\API\RadiologiController;
 use App\Http\Controllers\API\ResumePasienController;
 use App\Http\Controllers\API\RiwayatController;
@@ -48,5 +49,7 @@ Route::post('ranap/resep/racikan/{noRawat}', [ResepController::class, 'postResep
 
 Route::get('/riwayat_pemeriksaan', [RiwayatController::class, 'getRiwayatPemeriksaan']);
 Route::get('/pemeriksaan', [RiwayatController::class, 'getPemeriksaan']);
+
+Route::get('/pemeriksaan/{noRawat}', [PemeriksaanController::class, 'getPemeriksaan']);
 
 

@@ -51,6 +51,11 @@ class PemeriksaanRanap extends Component
         return $data;
     }
 
+    public function getPetugas()
+    {
+        return DB::table('pegawai')->get();
+    }
+
     public function encryptData($data)
     {
         $data = Crypt::encrypt($data);

@@ -3,27 +3,21 @@
         <x-adminlte-card theme="dark" title="Input Pemeriksaan" theme-mode="outline" maximizable collapsible="collapsed">
             <form id="pemeriksaanForm">
                 <div class="row">
-                    <x-adminlte-textarea name="keluhan" label="Subjek" fgroup-class="col-md-6" rows="4">
-                        
+                    <x-adminlte-textarea name="keluhan" label="Subjek" fgroup-class="col-md-6" rows="4">                        
                     </x-adminlte-textarea>
-                    <x-adminlte-textarea name="pemeriksaan" label="Objek" fgroup-class="col-md-6" rows="4">
-                        
+                    <x-adminlte-textarea name="pemeriksaan" label="Objek" fgroup-class="col-md-6" rows="4">  
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
                     <x-adminlte-textarea name="penilaian" label="Asesmen" fgroup-class="col-md-6" rows="2">
-                        
                     </x-adminlte-textarea>
                     <x-adminlte-textarea name="instruksi" label="Instruksi" fgroup-class="col-md-6" rows="2">
-                        
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
                     <x-adminlte-textarea name="rtl" label="Plan" fgroup-class="col-md-6" rows="2">
-                        
                     </x-adminlte-textarea>
                     <x-adminlte-textarea name="alergi" label="Alergi" fgroup-class="col-md-6" rows="2">
-                        
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
@@ -46,7 +40,10 @@
                 </div>
                 <x-adminlte-textarea name="evaluasi" label="Evaluasi" fgroup-class="col-md-12" rows="2">
                 </x-adminlte-textarea>
-                <x-adminlte-button class="d-flex ml-auto" id="pemeriksaanButton" theme="primary" label="Simpan" icon="fas fa-sign-in"/>
+                <div class="row justify-content-end">
+                    <x-adminlte-button id="copyPemeriksaanButton" class="col-2" theme="warning" label="Copy" icon="fas fa-sign-in"/>
+                    <x-adminlte-button id="pemeriksaanButton" class="col-2 ml-1" theme="primary" label="Simpan" icon="fas fa-sign-in"/>
+                </div>
             </form>
         </x-adminlte-card>
         <x-adminlte-card theme="info" title="Riwayat" theme-mode="outline" header-class="rounded-bottom" collapsible>
@@ -293,7 +290,54 @@
                 }
             });
         }
-    
+
+        $('#copyPemeriksaanButton').click(function (e){
+            e.preventDefault();
+            $.ajax({
+                url:"{{url('/api/pemeriksaan')}}"+"/"+"{{$encryptNoRawat}}",
+                method:"GET",
+                beforeSend:function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+
+                success:function(response){
+                    Swal.close();
+                    console.log(response);
+                    $("select[name=kesadaran]").val(response.data.kesadaran);
+                    $("textarea[name=keluhan]").val(response.data.keluhan);
+                    $("textarea[name=pemeriksaan]").val(response.data.pemeriksaan);
+                    $("textarea[name=penilaian]").val(response.data.penilaian);
+                    $("input[name=suhu]").val(response.data.suhu);
+                    $("input[name=berat]").val(response.data.berat);
+                    $("input[name=tinggi]").val(response.data.tinggi);
+                    $("input[name=tensi]").val(response.data.tensi);
+                    $("input[name=nadi]").val(response.data.nadi);
+                    $("input[name=respirasi]").val(response.data.respirasi);
+                    $("textarea[name=instruksi]").val(response.data.instruksi);
+                    $("textarea[name=alergi]").val(response.data.alergi);
+                    $("textarea[name=rtl]").val(response.data.rtl);
+                    $("input[name=gcs]").val(response.data.gcs);
+                    // $("textarea[name=edievaluasi]").val(response.data.evaluasi);
+                    $("input[name=spo2]").val(response.data.spo2);
+                },
+                error:function(error){
+                    console.log(error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message,
+                        icon: 'error',
+                        confirmButtonText: 'Tutup'
+                    });
+                }
+            });
+        });
 
         $("#pemeriksaanButton").click(function(event){
             event.preventDefault();
