@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.7",
         "laravel/ui": "^3.4",
         "livewire/livewire": "^2.11",
+        "silviolleite/laravelpwa": "^2.0",
         "yajra/laravel-datatables": "^9.0"
     },
     "require-dev": {
