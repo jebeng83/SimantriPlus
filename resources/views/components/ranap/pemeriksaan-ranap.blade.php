@@ -324,6 +324,7 @@
                     $("textarea[name=alergi]").val(response.data.alergi);
                     $("textarea[name=rtl]").val(response.data.rtl);
                     $("input[name=gcs]").val(response.data.gcs);
+                    $("input[name=spo2]").val(response.data.spo2);
                     // $("textarea[name=edievaluasi]").val(response.data.evaluasi);
                     $("input[name=spo2]").val(response.data.spo2);
                 },
@@ -358,7 +359,7 @@
             let rtl = $("textarea[name=rtl]").val();
             let gcs = $("input[name=gcs]").val();
             let spo2 = $("input[name=spo2]").val();
-            let evaluasi = $("input[name=evaluasi]").val();
+            let evaluasi = $("textarea[name=evaluasi]").val();
             let _token   = $('meta[name="csrf-token"]').attr('content');
             // alert("{{request()->get('no_rawat')}}");
             $.ajax({
@@ -380,6 +381,8 @@
                 alergi:alergi,
                 rtl:rtl,
                 gcs:gcs,
+                spo2:spo2,
+                evaluasi:evaluasi,
                 _token: _token
             },
             beforeSend:function() {
