@@ -137,37 +137,37 @@
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="stok">Stok</label>
-                                        <input id="stok" class="form-control p-1" type="text" name="stok[]" disabled>
+                                        <input id="stok" class="form-control stok p-1" type="text" name="stok[]" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="kps">Kps</label>
-                                        <input id="kps" class="form-control p-1 text-black" type="text" name="kps[]" disabled>
+                                        <input id="kps" class="form-control kps text-black p-1" type="text" name="kps[]" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p1">P1</label>
-                                        <input id="p1" class="form-control p-1" type="text" name="p1[]">
+                                        <input id="p1" class="form-control p-1" oninput="hitungRacikan(0)" type="text" name="p1[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p2">P2</label>
-                                        <input id="p2" class="form-control p-1" type="text" name="p2[]">
+                                        <input id="p2" class="form-control p-2" oninput="hitungRacikan(0)" type="text" name="p2[]">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-group">
                                         <label for="kandungan">Kandungan</label>
-                                        <input id="kandungan" onclick="hitungRacikan(0)" class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
+                                        <input id="kandungan" oninput="hitungJml(0)" class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="jml">Jml</label>
-                                        <input id="jml" onclick="hitungRacikan(0)" class="form-control p-1 jml-0" type="text" name="jml[]">
+                                        <input id="jml" class="form-control p-1 jml-0" type="text" name="jml[]">
                                     </div>
                                 </div>
                             </div>
@@ -287,25 +287,25 @@
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="p1'+i+'">P1</label>' + 
-                            '                                        <input id="p1'+i+'" class="form-control p-1 p1-'+i+'" type="text" name="p1[]">' + 
+                            '                                        <input id="p1'+i+'" class="form-control p-1 p1-'+i+'" oninput="hitungRacikan('+i+')" type="text" name="p1[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none"  for="p2'+i+'">P2</label>' + 
-                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" name="p2[]">' + 
+                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" oninput="hitungRacikan('+i+')" type="text" name="p2[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-2">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="kandungan'+i+'">Kandungan</label>' + 
-                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" onclick="hitungRacikan('+i+')" name="kandungan[]">' + 
+                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungJml('+i+')" name="kandungan[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="jml'+i+'">Jml</label>' + 
-                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" onclick="hitungRacikan('+i+')" type="text" name="jml[]">' + 
+                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" type="text" name="jml[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                            </div>' + 
@@ -331,6 +331,7 @@
                 var data = $(this).select2('data');
                 var id = $(this).attr('id').replace ( /[^\d.]/g, '' );
                 var idRow = parseInt(id);
+                var jmlRacikan = $('#jumlah_racikan').val();
                 $.ajax({
                     url: '/api/obat/'+data[0].id,
                     data:{
@@ -344,6 +345,8 @@
                         $('input[id="kps'+idRow+'"]').val(data.kapasitas);
                         $('input[id="p1'+idRow+'"]').val('1');
                         $('input[id="p2'+idRow+'"]').val('1');
+                        $('input[id="kandungan'+idRow+'"]').val(data.kapasitas);
+                        $('input[id="jml'+idRow+'"]').val(jmlRacikan);
                     }
                 });
             });
@@ -362,9 +365,29 @@
             var jmlRacikan = $('#jumlah_racikan').val();
             var kps = getIndexValue('kps[]', index);
             var kandungan = (p1/p2)*kps;
+            var kandungan = parseFloat(kandungan);
             var jml = (p1/p2)*jmlRacikan;
-            $(".kandungan-"+index).val(kandungan);
-            $(".jml-"+index).val(jml);
+            var jml = parseFloat(jml);
+            if(isNaN(kandungan) || isFinite(kandungan)){
+                kandungan = 0;
+            }
+            if(isNan(jml) || isFinite(jml)){
+                jml = 0;
+            }
+            $(".kandungan-"+index).val(kandungan.toFixed(2));
+            $(".jml-"+index).val(jml.toFixed(2));
+        }
+
+        function hitungJml(index){
+            var kps = getIndexValue('kps[]', index);
+            var jmlRacikan = $('#jumlah_racikan').val();
+            var kandungan = $(".kandungan-"+index).val();
+            var jml = (kps*jmlRacikan)/kandungan;
+            var jml = parseFloat(jml);
+            if(isNaN(jml) || isFinite(jml)){
+                jml = 0;
+            }
+            $(".jml-"+index).val(jml.toFixed(2));
         }
 
     </script>
@@ -469,6 +492,7 @@
                 minimumInputLength: 3
             }).on("select2:select", function(e){
                 var data = e.params.data;
+                var jmlRacikan = $('#jumlah_racikan').val();
                 $.ajax({
                     url: '/api/obat/'+data.id,
                     data:{
@@ -483,6 +507,8 @@
                         $('#kps').val(data.kapasitas);
                         $('#p1').val('1');
                         $('#p2').val('1');
+                        $('#kandungan').val(data.kapasitas);
+                        $('#jml').val(jmlRacikan);
                     }
                 });
             });
