@@ -367,111 +367,69 @@ class ResepController extends Controller
                     ->select('resep_obat.no_resep', 'resep_obat.tgl_perawatan')
                     ->first();
 
-            // if (!empty($cek) && $cek->tgl_perawatan != '0000-00-00') {
-            //     $noRacik = DB::table('resep_dokter_racikan')->where('no_resep', $cek->no_resep)->max('no_racik');
-            //     $nextNoRacik = $noRacik + 1;
-            //     $insert = DB::table('resep_dokter_racikan')
-            //                     ->insert([
-            //                         'no_resep' => $cek->no_resep,
-            //                         'no_racik' => $nextNoRacik,
-            //                         'nama_racik' => $namaRacikan,
-            //                         'kd_racik' => $metodeRacikan,
-            //                         'jml_dr' => $jumlahRacikan,
-            //                         'aturan_pakai' => $aturanPakai,
-            //                         'keterangan' => $keteranganRacikan,
-            //                     ]);
-            //     if($insert){
-            //         return response()->json(['status'=>'sukses', 'message'=>'Racikan berhasil ditambahkan']);
-            //     }
-            // }else{
-            //     $insert = DB::table('resep_obat')
-            //                     ->insert([
-            //                         'no_resep' => $noResep,
-            //                         'tgl_perawatan' => '0000-00-00',
-            //                         'jam' => '00:00:00',
-            //                         'no_rawat' => $no_rawat,
-            //                         'kd_dokter' => $dokter,
-            //                         'tgl_peresepan' => date('Y-m-d'),
-            //                         'jam_peresepan' => date('H:i:s'),
-            //                         'status' => $status,
-            //                         'tgl_penyerahan' => '0000-00-00',
-            //                         'jam_penyerahan' => '00:00:00',
-            //                     ]);
-            //     if($insert){
-            //         $insert = DB::table('resep_dokter_racikan')
-            //                     ->insert([
-            //                         'no_resep' => $noResep,
-            //                         'no_racik' => '1',
-            //                         'nama_racik' => $namaRacikan,
-            //                         'kd_racik' => $metodeRacikan,
-            //                         'jml_dr' => $jumlahRacikan,
-            //                         'aturan_pakai' => $aturanPakai,
-            //                         'keterangan' => $keteranganRacikan,
-            //                     ]);
-            //         if($insert){
-            //             for($i=0; $i < count($kdObat); $i++){
-            //                 DB::table('resep_dokter_racikan_detail')->insert([
-            //                     'no_resep' => $noResep,
-            //                     'no_racik' => '1',
-            //                     'kode_brng' => $kdObat[$i],
-            //                     'p1' => $p1[$i],
-            //                     'p2' => $p2[$i],
-            //                     'kandungan' => $kandungan[$i],
-            //                     'jml' => $jml[$i],
-            //                 ]);
-            //             }
-            //             DB::commit();
-            //             return response()->json(['status'=>'sukses', 'message'=>'Racikan berhasil ditambahkan']);
-            //         }
-            //     }else{
-            //         DB::rollBack();
-            //         return response()->json(['status'=>'gagal', 'message'=>'Racikan gagal ditambahkan']);
-            //     }
-            // }
-
-            $insert = DB::table('resep_obat')
-                            ->insert([
-                                'no_resep' => $noResep,
-                                'tgl_perawatan' => '0000-00-00',
-                                'jam' => '00:00:00',
-                                'no_rawat' => $no_rawat,
-                                'kd_dokter' => $dokter,
-                                'tgl_peresepan' => date('Y-m-d'),
-                                'jam_peresepan' => date('H:i:s'),
-                                'status' => $status,
-                                'tgl_penyerahan' => '0000-00-00',
-                                'jam_penyerahan' => '00:00:00',
-                            ]);
-            if($insert){
+            if (!empty($cek) && $cek->tgl_perawatan != '0000-00-00') {
+                $noRacik = DB::table('resep_dokter_racikan')->where('no_resep', $cek->no_resep)->max('no_racik');
+                $nextNoRacik = $noRacik + 1;
                 $insert = DB::table('resep_dokter_racikan')
-                            ->insert([
-                                'no_resep' => $noResep,
-                                'no_racik' => '1',
-                                'nama_racik' => $namaRacikan,
-                                'kd_racik' => $metodeRacikan,
-                                'jml_dr' => $jumlahRacikan,
-                                'aturan_pakai' => $aturanPakai,
-                                'keterangan' => $keteranganRacikan,
-                            ]);
+                                ->insert([
+                                    'no_resep' => $cek->no_resep,
+                                    'no_racik' => $nextNoRacik,
+                                    'nama_racik' => $namaRacikan,
+                                    'kd_racik' => $metodeRacikan,
+                                    'jml_dr' => $jumlahRacikan,
+                                    'aturan_pakai' => $aturanPakai,
+                                    'keterangan' => $keteranganRacikan,
+                                ]);
                 if($insert){
-                    for($i=0; $i < count($kdObat); $i++){
-                        DB::table('resep_dokter_racikan_detail')->insert([
-                            'no_resep' => $noResep,
-                            'no_racik' => '1',
-                            'kode_brng' => $kdObat[$i],
-                            'p1' => $p1[$i],
-                            'p2' => $p2[$i],
-                            'kandungan' => $kandungan[$i],
-                            'jml' => $jml[$i],
-                        ]);
-                    }
-                    DB::commit();
                     return response()->json(['status'=>'sukses', 'message'=>'Racikan berhasil ditambahkan']);
                 }
             }else{
-                DB::rollBack();
-                return response()->json(['status'=>'gagal', 'message'=>'Racikan gagal ditambahkan']);
+                $insert = DB::table('resep_obat')
+                                ->insert([
+                                    'no_resep' => $noResep,
+                                    'tgl_perawatan' => '0000-00-00',
+                                    'jam' => '00:00:00',
+                                    'no_rawat' => $no_rawat,
+                                    'kd_dokter' => $dokter,
+                                    'tgl_peresepan' => date('Y-m-d'),
+                                    'jam_peresepan' => date('H:i:s'),
+                                    'status' => $status,
+                                    'tgl_penyerahan' => '0000-00-00',
+                                    'jam_penyerahan' => '00:00:00',
+                                ]);
+                if($insert){
+                    $insert = DB::table('resep_dokter_racikan')
+                                ->insert([
+                                    'no_resep' => $noResep,
+                                    'no_racik' => '1',
+                                    'nama_racik' => $namaRacikan,
+                                    'kd_racik' => $metodeRacikan,
+                                    'jml_dr' => $jumlahRacikan,
+                                    'aturan_pakai' => $aturanPakai,
+                                    'keterangan' => $keteranganRacikan,
+                                ]);
+                    if($insert){
+                        for($i=0; $i < count($kdObat); $i++){
+                            DB::table('resep_dokter_racikan_detail')->insert([
+                                'no_resep' => $noResep,
+                                'no_racik' => '1',
+                                'kode_brng' => $kdObat[$i],
+                                'p1' => $p1[$i],
+                                'p2' => $p2[$i],
+                                'kandungan' => $kandungan[$i],
+                                'jml' => $jml[$i],
+                            ]);
+                        }
+                        DB::commit();
+                        return response()->json(['status'=>'sukses', 'message'=>'Racikan berhasil ditambahkan']);
+                    }
+                }else{
+                    DB::rollBack();
+                    return response()->json(['status'=>'gagal', 'message'=>'Racikan gagal ditambahkan']);
+                }
             }
+
+            
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollBack();
             return response()->json(['status' => 'gagal', 'message' => $ex->getMessage()]);
@@ -547,8 +505,8 @@ class ResepController extends Controller
                 $insert = DB::table('resep_obat')
                                 ->insert([
                                     'no_resep' => $noResep,
-                                    'tgl_perawatan' => date('Y-m-d'),
-                                    'jam' => date('H:i:s'),
+                                    'tgl_perawatan' => '0000-00-00',
+                                    'jam' => '00:00:00',
                                     'no_rawat' => $no_rawat,
                                     'kd_dokter' => $dokter,
                                     'tgl_peresepan' => date('Y-m-d'),
