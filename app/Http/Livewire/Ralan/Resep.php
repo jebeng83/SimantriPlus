@@ -9,13 +9,14 @@ use Livewire\Component;
 class Resep extends Component
 {
     use SwalResponse;
-    public $isCollapsed = true, $noRawat, $noRm, $swal = 'swal:resep', $poli, $jmlForm = 1;
+    public $isCollapsed = true, $noRawat, $noRm, $swal = 'swal:resep', $poli, $jmlForm = 1, $form = [];
 
     public function mount($noRawat, $noRm)
     {
         $this->noRawat = $noRawat;
         $this->noRm = $noRm;
         $this->poli = session()->get('kd_poli');
+        $this->dispatchBrowserEvent('poli-id', ['poli' => $this->poli]);
     }
 
     public function render()
@@ -31,5 +32,13 @@ class Resep extends Component
     public function tambahForm()
     {
         $this->jmlForm++;
+        $this->emit('tambahForm', ['jml' => $this->jmlForm]);
+    }
+
+    public function kurangiForm()
+    {
+        if($this->jmlForm > 1){
+            $this->jmlForm--;
+        }
     }
 }

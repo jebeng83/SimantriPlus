@@ -27,26 +27,40 @@
                     <form wire:submit.prevent='save'>
                         <div class="containerResep">
                             @for($i=1; $i <= $jmlForm; $i++)
-                            <div class="row pb-4">
-                                <div wire:ignore class="col-md-5">
-                                    <select name="obat[]" class="form-control obat w-100" id="obat" data-placeholder="Pilih Obat">
-                                    </select>
+                                <div class="row row-{{$i}} pb-2">
+                                    <div wire:ignore class="col-md-6">
+                                        <select name="obat[]" class="form-control obat-{{$i}} w-100" id="obat-{{$i}}" data-placeholder="Pilih Obat">
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" name="jumlah[]" class="form-control" placeholder="Jumlah">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <div class="input-group">
+                                                <input type="text" name="aturan[]" class="form-control" placeholder="Aturan Pakai">
+                                                {{-- @if($i > 1)
+                                                    <div class="input-group-append">
+                                                        <a class="btn btn-danger" role="button">-</a> 
+                                                    </div>
+                                                @endif --}}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <input type="text" name="jumlah[]" class="form-control" placeholder="Jumlah">
-                                </div>
-                                <div class="col-md-5">
-                                    <input type="text" name="aturan[]" class="form-control" placeholder="Aturan Pakai">
-                                </div>
-                            </div>
                             @endfor
                         </div>
                         <div class="d-flex flex-row-reverse">
                             <div class="col-md-2">
                                 <button class="btn btn-primary" type="submit">Simpan</button>
+                            </div>  
+                            <div wire:ignore class="col-md-1">
+                                <button class="btn btn-success" wire:click='tambahForm' type="reset">+</button>
+                            </div> 
+                            <div class="col-md-1">
+                                <button class="btn btn-danger" wire:click='kurangiForm' type="reset">-</button>
                             </div>
-    
-                            <div class="col-md-4">
+                            <div wire:ignore class="col-md-4">
                                 <select id="iter" class="form-control" name="iter">
                                     <option value="-">Pilih jumlah iter</option>
                                     <option value="1">1</option>
@@ -55,62 +69,67 @@
                             </div>
                         </div>
                     </form>
-                    <div class="col-md-1">
-                        <button class="btn btn-success" wire:click='tambahForm' role="button">+</button>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@section('js')
+@push('js')
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            var poli = '';
-            Livewire.hook('component.initialized', (component) => {
-                poli = @this.data;
-            });
-            $('.obat').select2({
+        var poli = '';
+
+        function formatData (data) {
+            var $data = $(
+                '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
+            );
+            return $data;
+        };
+
+        document.addEventListener('livewire:load', function () {
+            poli = @this.poli;
+            console.log(poli);
+            $('.obat-1').select2({
                 placeholder: 'Pilih Obat',
                 ajax: {
-                    url: '/api/ralan/'+poli+'/obat'
+                    url: '/api/ralan/'+poli+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
                         return {
-                            results:  $.map(data, function (item) {
-                                return {
-                                    text: item.nama,
-                                    id: item.id
-                                }
-                            })
+                            results: data
                         };
                     },
-                    cache: true
-                }
+                    templateResult: formatData,
+                },
+                cache: true,
+                minimumInputLength: 3
             });
-            window.livewire.on('tambahForm', () => {
-                $('.obat').select2({
-                    placeholder: 'Pilih Obat',
-                    ajax: {
-                        url: '/api/ralan/'+poli+'/obat'
-                        dataType: 'json',
-                        delay: 250,
-                        processResults: function (data) {
-                            return {
-                                results:  $.map(data, function (item) {
-                                    return {
-                                        text: item.nama,
-                                        id: item.id
-                                    }
-                                })
-                            };
-                        },
-                        cache: true
-                    }
-                });
+            
+            $('#iter').select2({
+                placeholder: 'Pilih jumlah iter',
+                allowClear: true,
+            });
+        })
+        
+        window.livewire.on('tambahForm', (e) => {
+            var i = e.jml;
+            $('.obat-'+i).select2({
+                placeholder: 'Pilih Obat',
+                ajax: {
+                    url: '/api/ralan/'+poli+'/obat',
+                    dataType: 'json',
+                    delay: 250,
+                    processResults: function (data) {
+                        return {
+                            results: data
+                        };
+                    },
+                    templateResult: formatData,
+                },
+                cache: true,
+                minimumInputLength: 3
             });
         });
     </script>
-@endsection
+@endpush

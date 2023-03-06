@@ -18,8 +18,8 @@
             @if(session()->get('username') == 'U002')
                 <livewire:ralan.odontogram :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')">
             @endif
-            <x-ralan.resep />
-            {{-- <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')"> --}}
+            {{-- <x-ralan.resep /> --}}
+            <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')">
             {{-- <x-ralan.resume /> --}}
             <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')"/>
             {{-- <x-ralan.catatan :no-rawat="request()->get('no_rawat')" /> --}}

@@ -157,3 +157,7 @@ Route::put('/ralan/rujuk-internal/update/{noRawat}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'updateRujukanInternal',
 ])->name('ralan.rujuk-internal.update');
+
+Route::get('/offline', function () {
+    return view('modules/laravelpwa/offline');
+});
