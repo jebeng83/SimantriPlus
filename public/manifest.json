@@ -1,0 +1,17 @@
+{
+    "name": "Aplikasi Dokter RSB Nganjuk",
+    "short_name": "E-DOKTER",
+    "start_url": "/",
+    "background_color": "#0275d8",
+    "description": "Aplikasi Dokter RS Bhayangkara Nganjuk",
+    "display": "fullscreen",
+    "theme_color": "#0275d8",
+    "icons": [
+        {
+            "src": "assets/logo.PNG",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
