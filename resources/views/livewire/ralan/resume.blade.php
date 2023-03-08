@@ -16,19 +16,19 @@
                 <div class="form-group col-md-6">
                     <label for="keluhan">Keluhan Utama</label>
                     <div class="input-group">
-                        <textarea type="text" rows="3" class="form-control" wire:model.lazy="keluhan" id="keluhan" name="keluhan" ></textarea>
+                        <textarea type="text" rows="3" class="form-control" wire:model.defer="keluhan" id="keluhan" name="keluhan" ></textarea>
                         <div class="input-group-append">
                             <button type="button" class="btn btn-primary" wire:click="getKeluhanUtama">
                             <i class="fas fa-paperclip"></i>     
                             </button>
                         </div>
                     </div>
-                    @error('keluhan') <span class="text-danger">{{ $message }}</span> @enderror
+                    {{-- @error('keluhan') <span class="text-danger">{{ $message }}</span> @enderror --}}
                 </div>
                 <div class="form-group col-md-6">
                     <label for="perawatan">Jalannya Penyakit Selama Perawatan</label>
                     <textarea type="text" rows="3" class="form-control" wire:model.defer='perawatan' id="perawatan" name="perawatan" ></textarea>
-                    @error('perawatan') <span class="text-danger">{{ $message }}</span> @enderror
+                    {{-- @error('perawatan') <span class="text-danger">{{ $message }}</span> @enderror --}}
                 </div>
             </div>
             <div class="row">
@@ -70,7 +70,7 @@
                 <div class="form-group col-md-4">
                     <label for="diagnosa">Diagnosa Utama</label>
                     <input type="text" class="form-control" wire:model.defer='diagnosa' id="diagnosa" name="diagnosa" >
-                    @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
                 </div>
                 <div class="form-group col-md-4">
                     <label for="prosedur">Prosedur Utama</label>
@@ -82,7 +82,7 @@
                         <option value="Hidup">Hidup</option>
                         <option value="Meninggal">Meninggal</option>
                     </select>
-                    @error('kondisi') <span class="text-danger">{{ $message }}</span> @enderror
+                    {{-- @error('kondisi') <span class="text-danger">{{ $message }}</span> @enderror --}}
                 </div>
             </div>
             <div class="d-flex flex-row-reverse pb-3">
@@ -114,14 +114,14 @@
                             {{-- <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})">
                                 <i class="fas fa-edit"></i>
                             </button> --}}
-                            <button class="btn btn-danger btn-sm" wire:click="hapusResume('{{ $item->no_rawat }}')">
+                            <button class="btn btn-danger btn-sm" wire:click="konfirmasiHapus('{{ $item->no_rawat }}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center">Tidak ada data</td>
+                        <td colspan="6" class="text-center">Data Resume Kosong</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -243,7 +243,7 @@
                             </label>
                         </div> 
                     @empty
-                        <h5>Data Pemeriksaan Lab Kosong</h5>
+                        <h5>Data Terapi Kosong</h5>
                     @endforelse
                 </div>
             </div>
@@ -259,6 +259,23 @@
 
 @push('js')
     <script>
+        window.addEventListener('swal:confirm',function(e){
+            Swal.fire({
+                title: e.detail.title,
+                text: e.detail.text,
+                icon: e.detail.type,
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: e.detail.confirmButtonText,
+                cancelButtonText: e.detail.cancelButtonText,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.livewire.emit(e.detail.function, e.detail.params[0]);
+                }
+            });
+        });
+
         window.livewire.on('getKeluhanUtama',() => {
             $('#keluhanModal').modal('show');
         });

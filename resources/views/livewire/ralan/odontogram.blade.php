@@ -695,7 +695,7 @@
     </style>
 @endpush
 
-@section('js')
+@push('js')
     <script>
         $('.formgigi').select2({
             placeholder: 'Pilih Gigi',
@@ -745,4 +745,4 @@
             });
         });
     </script>
-@endsection
+@endpush

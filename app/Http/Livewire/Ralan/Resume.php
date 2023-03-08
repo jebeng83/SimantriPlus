@@ -27,6 +27,8 @@ class Resume extends Component
         'kondisi.required' => 'Kondisi Pulang tidak boleh kosong',
     ];
 
+    protected $listeners = ['hapusResume'];
+
     public function mount($noRawat, $noRm)
     {
         $this->noRawat = $noRawat;
@@ -36,9 +38,9 @@ class Resume extends Component
 
     public function hydrate()
     {
-        $this->listKeluhan = DB::table('pemeriksaan_ralan')
-                                ->where('no_rawat', $this->noRawat)
-                                ->get();
+        // $this->listKeluhan = DB::table('pemeriksaan_ralan')
+        //                         ->where('no_rawat', $this->noRawat)
+        //                         ->get();
 
         $this->listRadiologi = DB::table('hasil_radiologi')
                                 ->where('no_rawat', $this->noRawat)
@@ -50,32 +52,15 @@ class Resume extends Component
                                 ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.nilai')
                                 ->get();
 
-        $this->listTerapi = DB::table('resep_obat')
-                                ->join('resep_dokter', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
-                                ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
-                                ->where('resep_obat.no_rawat', $this->noRawat)
-                                ->select('databarang.nama_brng', 'resep_dokter.jml', 'resep_dokter.aturan_pakai', 'databarang.kode_sat')
-                                ->get();
+        // $this->listTerapi = DB::table('resep_obat')
+        //                         ->join('resep_dokter', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
+        //                         ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+        //                         ->where('resep_obat.no_rawat', $this->noRawat)
+        //                         ->select('databarang.nama_brng', 'resep_dokter.jml', 'resep_dokter.aturan_pakai', 'databarang.kode_sat')
+        //                         ->get();
 
         $this->listResume = DB::table('resume_pasien')->where('no_rawat', $this->noRawat)->get();
 
-        $prosedur = DB::table('prosedur_pasien')
-                        ->join('icd9', 'prosedur_pasien.kode', '=', 'icd9.kode')
-                        ->where('prosedur_pasien.no_rawat', $this->noRawat)
-                        ->where('prosedur_pasien.prioritas', '1')
-                        ->where('prosedur_pasien.status', 'Ralan')
-                        ->select('icd9.deskripsi_panjang')
-                        ->first();
-
-        $this->prosedur = $prosedur->deskripsi_panjang ?? '';
-
-        $diagnosa = DB::table('resume_pasien')
-                        ->join('reg_periksa', 'resume_pasien.no_rawat', '=', 'reg_periksa.no_rawat')
-                        ->join('pasien', 'pasien.no_rkm_medis', '=', 'reg_periksa.no_rkm_medis')
-                        ->where('pasien.no_rkm_medis',$this->noRm)
-                        ->first();
-
-        $this->diagnosa = $diagnosa->diagnosa_utama ?? '';
 
     }
 
@@ -87,11 +72,44 @@ class Resume extends Component
     public function collapsed()
     {
         $this->isCollapsed = !$this->isCollapsed;
+        $this->getKeluhanUtama();
+        $this->getProsedurUtama();
+        $this->getDiagnosaUtama();
+        $this->getTerapi();
     }
 
     public function getKeluhanUtama()
     {
-        $this->emit('getKeluhanUtama');
+        // $this->emit('getKeluhanUtama');
+        $data = DB::table('pemeriksaan_ralan')
+                            ->where('no_rawat', $this->noRawat)
+                            ->select('keluhan')
+                            ->first();
+        $this->keluhan = $data->keluhan ?? '';
+    }
+
+    public function getDiagnosaUtama()
+    {
+        $diagnosa = DB::table('resume_pasien')
+                        ->join('reg_periksa', 'resume_pasien.no_rawat', '=', 'reg_periksa.no_rawat')
+                        ->join('pasien', 'pasien.no_rkm_medis', '=', 'reg_periksa.no_rkm_medis')
+                        ->where('pasien.no_rkm_medis',$this->noRm)
+                        ->first();
+
+        $this->diagnosa = $diagnosa->diagnosa_utama ?? '';
+    }
+
+    public function getProsedurUtama()
+    {
+        $prosedur = DB::table('prosedur_pasien')
+                        ->join('icd9', 'prosedur_pasien.kode', '=', 'icd9.kode')
+                        ->where('prosedur_pasien.no_rawat', $this->noRawat)
+                        ->where('prosedur_pasien.prioritas', '1')
+                        ->where('prosedur_pasien.status', 'Ralan')
+                        ->select('icd9.deskripsi_panjang')
+                        ->first();
+
+        $this->prosedur = $prosedur->deskripsi_panjang ?? '';
     }
 
     public function getPemeriksaanRadiologi()
@@ -106,7 +124,17 @@ class Resume extends Component
 
     public function getTerapi()
     {
-        $this->emit('getTerapi');
+        // $this->emit('getTerapi');
+        $terapi = DB::table('resep_dokter')
+                            ->join('resep_obat', 'resep_dokter.no_resep', '=', 'resep_obat.no_resep')
+                            ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+                            ->join('reg_periksa', 'resep_obat.no_rawat', '=', 'reg_periksa.no_rawat')
+                            ->where('resep_obat.no_rawat', $this->noRawat)
+                            ->where('reg_periksa.status_lanjut', 'Ralan')
+                            ->select(DB::raw("GROUP_CONCAT( databarang.nama_brng,'-', resep_dokter.jml SEPARATOR '\r\n') AS nama_brng"))
+                            ->first();
+
+        $this->terapi = $terapi->nama_brng ?? '';
     }
 
     public function tambahKeluhan()
@@ -163,15 +191,15 @@ class Resume extends Component
 
     public function simpanResume()
     {
-        $this->validate();
+        // $this->validate();
 
         $data = [
             'no_rawat' => $this->noRawat,
             'kd_dokter' => session()->get('username'),
             'keluhan_utama' => $this->keluhan,
-            'jalannya_penyakit' => $this->perawatan,
-            'pemeriksaan_penunjang' => $this->penunjang,
-            'hasil_laborat' => $this->lab,
+            'jalannya_penyakit' => $this->perawatan ?? '',
+            'pemeriksaan_penunjang' => $this->penunjang ?? '',
+            'hasil_laborat' => $this->lab ?? '',
             'obat_pulang' => $this->terapi,
             'diagnosa_utama' => $this->diagnosa,
             'prosedur_utama' => $this->prosedur,
@@ -187,8 +215,21 @@ class Resume extends Component
 
         }catch(\Illuminate\Database\QueryException $ex){
             DB::rollBack();
-            $this->dispatchBrowserEvent('swal', $this->toastResponse( $ex->getMessage() ?? "Resume pasien gagal disimpan"));
+            $this->dispatchBrowserEvent('swal', $this->toastResponse( $ex->getMessage() ?? "Resume pasien gagal disimpan", 'error'));
         }
+    }
+
+    public function konfirmasiHapus($id)
+    {
+        $this->dispatchBrowserEvent('swal:confirm', [
+            'title' => 'Konfirmasi Hapus Data',
+            'text' => 'Apakah anda yakin ingin menghapus data ini?',
+            'type' => 'warning',
+            'confirmButtonText' => 'Ya, Hapus',
+            'cancelButtonText' => 'Tidak',
+            'function' => 'hapusResume',
+            'params' => [$id]
+        ]);
     }
 
     public function hapusResume($noRawat)

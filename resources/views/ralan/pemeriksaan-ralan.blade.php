@@ -15,7 +15,7 @@
         <div class="col-md-8">
             {{-- <x-ralan.pemeriksaan :no-rawat="request()->get('no_rawat')" /> --}}
             <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" />
-            @if(session()->get('username') == 'U002')
+            @if(session()->get('kd_poli') == 'U002' || session()->get('kd_poli') == 'U003')
                 <livewire:ralan.odontogram :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')">
             @endif
             <x-ralan.resep />
