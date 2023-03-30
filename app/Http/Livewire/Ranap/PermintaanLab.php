@@ -73,13 +73,23 @@ class PermintaanLab extends Component
                         'status' => 'ralan'
                     ]);
 
-            foreach( $this->jns_pemeriksaan as $pemeriksaan){
+            foreach($this->jns_pemeriksaan as $pemeriksaan){
                 DB::table('permintaan_pemeriksaan_lab')
                         ->insert([
                             'noorder' => $noOrder,
                             'kd_jenis_prw' => $pemeriksaan,
                             'stts_bayar' => 'Belum'
                         ]);
+                
+                $template = DB::table('template_laboratorium')->where('kd_jenis_prw', $pemeriksaan)->select('id_template')->get();
+                foreach($template as $temp){
+                    DB::table('permintaan_detail_permintaan_lab')->insert([
+                        'noorder'   =>  $noOrder,
+                        'kd_jenis_prw'  =>  $pemeriksaan,
+                        'id_template'   =>  $temp->id_template,
+                        'stts_bayar'    =>  'Belum'
+                    ]);
+                }
             }
             DB::commit();
             $this->getPermintaanLab();

@@ -158,6 +158,12 @@ Route::put('/ralan/rujuk-internal/update/{noRawat}', [
     'updateRujukanInternal',
 ])->name('ralan.rujuk-internal.update');
 
+// Route menu booking
+Route::get('/booking', [
+    App\Http\Controllers\BookingController::class,
+    'index',
+])->name('booking');
+
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });
