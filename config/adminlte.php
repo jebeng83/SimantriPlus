@@ -264,6 +264,12 @@ return [
             'label_color' => 'success',
         ],
         [
+            'text'        => 'Booking',
+            'url'         => '/booking',
+            'icon'        => 'far fa-fw fa-book',
+            'label_color' => 'success',
+        ],
+        [
             'text'        => 'Ralan',
             'icon'        => 'fas fa-fw fa-stethoscope',
             'url'         => '/ralan/pasien',
