@@ -162,7 +162,7 @@ class ResepController extends Controller
                         'no_resep' => $resep->no_resep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                        'aturan_pakai' => $aturan ?? '-',
                     ]);
                 }else{
                     DB::table('resep_obat')->insert([
@@ -179,7 +179,7 @@ class ResepController extends Controller
                         'no_resep' => $noResep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                        'aturan_pakai' => $aturan ?? '-',
                     ]);
                 }
             }
@@ -267,7 +267,7 @@ class ResepController extends Controller
                         'no_resep' => $noResep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                        'aturan_pakai' => $aturan ?? '-',
                     ]);
 
                 }else if(empty($resep)){
@@ -288,7 +288,7 @@ class ResepController extends Controller
                         'no_resep' => $noResep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                        'aturan_pakai' => $aturan ?? '-',
                     ]);
 
                 }else{
@@ -298,7 +298,7 @@ class ResepController extends Controller
                         'no_resep' => $resep->no_resep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                        'aturan_pakai' => $aturan ?? '-',
                     ]);
                 }
             }
