@@ -19,7 +19,7 @@
                     Poli Perujuk
                 </div>
                 <div class="col-md-9 pb-2">
-                    {{$regPeriksa->nm_poli}}
+                    {{$regPeriksa->nm_poli ?? ''}}
                 </div>
             </div>
             <div class="row">
@@ -27,7 +27,7 @@
                     Dokter Perujuk
                 </div>
                 <div class="col-md-9 pb-2">
-                    {{$regPeriksa->nm_dokter}}
+                    {{$regPeriksa->nm_dokter ?? ''}}
                 </div>
             </div>
             <div class="row">
@@ -35,7 +35,7 @@
                     Catatan Konsul
                 </div>
                 <div class="col-md-9 pb-2">
-                    {{$rujukan->konsul}}
+                    {{$rujukan->konsul ?? ''}}
                 </div>
             </div>
             <div class="row">
@@ -44,25 +44,23 @@
                 </div>
                 <x-adminlte-textarea name="pemeriksaan" value="{{$rujukan->pemeriksaan}}"
                     fgroup-class="col-md-9" rows="4" placeholder="Tulis pemeriksaan konsul di sini">
-                    {{$rujukan->pemeriksaan}}
+                    {{$rujukan->pemeriksaan ?? ''}}
                 </x-adminlte-textarea>
             </div>
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
                     Diagnosa
                 </div>
-                <x-adminlte-textarea name="diagnosa" value="{{$rujukan->diagnosa}}"
-                    fgroup-class="col-md-9" rows="4" placeholder="Tulis diagnosa di sini">
-                    {{$rujukan->diagnosa}}
+                <x-adminlte-textarea name="diagnosa" fgroup-class="col-md-9" rows="4" placeholder="Tulis diagnosa di sini">
+                    {{$rujukan->diagnosa ?? ''}}
                 </x-adminlte-textarea>
             </div>
             <div class="row">
                 <div class="col-md-3 mb-auto label-side">
                     Saran
                 </div>
-                <x-adminlte-textarea name="saran" value="{{$rujukan->saran}}"
-                    fgroup-class="col-md-9" rows="4" placeholder="Tulis saran di sini">
-                    {{$rujukan->saran}}
+                <x-adminlte-textarea name="saran" fgroup-class="col-md-9" rows="4" placeholder="Tulis saran di sini">
+                    {{$rujukan->saran ?? ''}}
                 </x-adminlte-textarea>
             </div>
             <div class="d-flex flex-row-reverse">
