@@ -42,8 +42,7 @@
                 <div class="col-md-3 mb-auto label-side">
                     Pemeriksaan
                 </div>
-                <x-adminlte-textarea name="pemeriksaan" value="{{$rujukan->pemeriksaan}}"
-                    fgroup-class="col-md-9" rows="4" placeholder="Tulis pemeriksaan konsul di sini">
+                <x-adminlte-textarea name="pemeriksaan" fgroup-class="col-md-9" rows="4" placeholder="Tulis pemeriksaan konsul di sini">
                     {{$rujukan->pemeriksaan ?? ''}}
                 </x-adminlte-textarea>
             </div>
