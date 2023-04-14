@@ -9,7 +9,7 @@ use Livewire\Component;
 class Pemeriksaan extends Component
 {
     use SwalResponse;
-    public $isCollapsed = false, $noRawat, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran, $lingkar, $spo2;
+    public $isCollapsed = false, $noRawat, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
 
     public function mount($noRawat)
     {
