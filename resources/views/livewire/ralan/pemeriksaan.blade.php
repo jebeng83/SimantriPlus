@@ -86,6 +86,7 @@
                 <div class="form-group col-md-4">
                     <label for="">Kesadaran</label>
                     <select class="form-control" wire:model.defer='kesadaran' name="" id="">
+                        @if(!$kesadaran) <option value="{{$kesadaran}}">{{$kesadaran}}</option> @endif
                         <option value="Compos Mentis">Compos Mentis</option>
                         <option value="Somnolence">Somnolence</option>
                         <option value="Sopor">Sopor</option>
@@ -95,7 +96,7 @@
             </div>
             <div class="form-group">
                 <label for="">Evaluasi</label>
-                <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="3" required></textarea>
+                <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="3"></textarea>
             </div>
             <div class="d-flex flex-row-reverse">
                 <button type="submit" class="btn btn-primary">Simpan</button>
