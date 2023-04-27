@@ -71,7 +71,7 @@ class ResepController extends Controller
             $bangsal = $db->kd_depo;
         }
         $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('kd_bangsal', $bangsal)->max('tanggal');
-        $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('tanggal', $maxTgl)->where    ('kd_bangsal', $bangsal)->max('jam');
+        $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('tanggal', $maxTgl)->where('kd_bangsal', $bangsal)->max('jam');
         $data = DB::table('databarang')
             ->join('riwayat_barang_medis', 'databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
             ->where('databarang.kode_brng', $kdObat)

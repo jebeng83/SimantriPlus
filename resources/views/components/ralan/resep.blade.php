@@ -17,16 +17,15 @@
                         @csrf
                         <div class="containerResep">
                             <div class="row">
-                                {{-- <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5"  data-placeholder="Pilih Obat" /> --}}
-                                <div class="col-md-5">
+                                <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="visible-sm">Nama Obat</label>
                                         <select name="obat[]" class="form-control obat w-100" id="obat" data-placeholder="Pilih Obat">
                                         </select>
                                     </div>
                                 </div>
-                                <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jumlah"/>
-                                <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-5" placeholder="Aturan Pakai"/>
+                                <x-adminlte-input id="jumlah" label="Jml" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jml"/>
+                                <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-4" placeholder="Aturan Pakai"/>
                             </div>
                         </div>
                         <div class="row justify-content-end">
@@ -384,7 +383,7 @@
             var html = '';
             html += '<div class="row">';
             html += '<hr class="d-sm-none">';
-            html += '   <div class="col-md-5">';
+            html += '   <div class="col-md-6">';
             html += '       <div class="form-group">';
             html += '            <label class="d-sm-none">Nama Obat</label>';
             html += '            <select name="obat[]" class="form-control obat-'+x+'" id="obat'+x+'" data-placeholder="Pilih Obat">';
@@ -397,7 +396,7 @@
             html += '            <input type="text" name="jumlah[]" class="form-control" id="jumlah'+x+'" placeholder="Jumlah"/>';
             html += '        </div>';
             html += '    </div>';
-            html += '    <div class="col-md-5">';
+            html += '    <div class="col-md-4">';
             html += '        <div class="form-group">';
             html += '            <label class="d-sm-none">Aturan Pakai</label>';
             html += '            <div class="input-group">';

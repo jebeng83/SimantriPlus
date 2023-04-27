@@ -32,10 +32,12 @@
                     <x-adminlte-input name="nadi" label="Nadi" fgroup-class="col-md-2" />
                     <x-adminlte-input name="respirasi" label="Respirasi" fgroup-class="col-md-3" />  
                     <x-adminlte-select-bs name="kesadaran" label="Kesadaran" fgroup-class="col-md-3">
-                            <option>Compos Mentis</option>
-                            <option>Somnolence</option>
-                            <option>Sopor</option>
-                            <option>Coma</option>
+                        <option value="Compos Mentis">Compos Mentis</option>
+                        <option value="Apatis">Apatis</option>
+                        <option value="Delirium">Delirium</option>
+                        <option value="Somnolence">Somnolence</option>
+                        <option value="Sopor">Sopor</option>
+                        <option value="Coma">Coma</option>
                     </x-adminlte-select-bs>            
                 </div>
                 <x-adminlte-textarea name="evaluasi" label="Evaluasi" fgroup-class="col-md-12" rows="2">
