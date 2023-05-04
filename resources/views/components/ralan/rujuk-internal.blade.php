@@ -16,8 +16,8 @@
             </div>
         </div>
         <x-adminlte-button class="d-flex ml-auto" id="rujukButton" theme="primary" label="Simpan" onclick="postRujukan()" icon="fas fa-sign-in"/>
-        @if(!empty($data))
-            <x-adminlte-card title="Riwayat Rujukan Internal" theme="dark" theme-mode="outline" class="mt-4">
+        @foreach($data as $data)
+            <x-adminlte-card title="Konsul / Rujukan Internal" theme="dark" theme-mode="outline" class="mt-4">
                 <table class="table table-bordered table-striped mb-4">
                     <tr>
                         <th>Poli Tujuan</th>
@@ -31,10 +31,22 @@
                         <th>Konsul</th>
                         <th>{{$data->konsul}}</th>
                     </tr>
+                    <tr>
+                        <th>Pemeriksaan</th>
+                        <th>{{$data->pemeriksaan}}</th>
+                    </tr>
+                    <tr>
+                        <th>Diagnosa</th>
+                        <th>{{$data->diagnosa}}</th>
+                    </tr>
+                    <tr>
+                        <th>Saran</th>
+                        <th>{{$data->saran}}</th>
+                    </tr>
                 </table>
-                <x-adminlte-button class="d-flex ml-auto" id="rujukButtonHapus" theme="danger" label="Hapus" onclick="deleteRujukan()" />
+                {{-- <x-adminlte-button class="d-flex ml-auto" id="rujukButtonHapus" theme="danger" label="Hapus" onclick="deleteRujukan()" /> --}}
             </x-adminlte-card>
-        @endif
+        @endforeach
     </x-adminlte-card>
 </div>
 
