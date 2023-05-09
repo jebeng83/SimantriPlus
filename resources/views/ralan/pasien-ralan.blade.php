@@ -53,7 +53,7 @@
                     {{-- Minimal example / fill data using the component slot --}}
                     <x-adminlte-datatable id="tableRujuk" :heads="$headsInternal" :config="$config" head-theme="dark" striped hoverable bordered compressed>
                         @foreach($dataInternal as $row)
-                            <tr @if($row->stts == 'Sudah') class="bg-success" @endif >
+                            <tr @if(!empty($row->diagnosa_utama)) class="bg-success" @endif >
                                 <td>{{$row->no_reg}}</td>
                                 <td>
                                     @php

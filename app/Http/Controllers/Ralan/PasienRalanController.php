@@ -35,11 +35,12 @@ class PasienRalanController extends Controller
         $data = DB::table('reg_periksa')
                     ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                     ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
+                    ->leftJoin('resume_pasien', 'reg_periksa.no_rawat', '=', 'resume_pasien.no_rawat')
                     ->where('reg_periksa.kd_poli', $kd_poli)
                     ->where('tgl_registrasi', $tanggal)
                     ->where('reg_periksa.kd_dokter', $kd_dokter)
                     ->orderBy('reg_periksa.jam_reg', 'desc')
-                    ->select('reg_periksa.no_reg', 'pasien.nm_pasien', 'reg_periksa.no_rawat', 'pasien.no_tlp', 'dokter.nm_dokter', 'reg_periksa.stts', 'pasien.no_rkm_medis')
+                    ->select('reg_periksa.no_reg', 'pasien.nm_pasien', 'reg_periksa.no_rawat', 'pasien.no_tlp', 'dokter.nm_dokter', 'reg_periksa.stts', 'pasien.no_rkm_medis', 'resume_pasien.diagnosa_utama')
                     ->get();
 
 
