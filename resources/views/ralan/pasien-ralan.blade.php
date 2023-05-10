@@ -25,14 +25,14 @@
                     {{-- Minimal example / fill data using the component slot --}}
                     <x-adminlte-datatable id="tablePasienRalan" :heads="$heads" :config="$config" head-theme="dark" striped hoverable bordered compressed>
                         @foreach($data as $row)
-                            <tr @if($row->stts == 'Sudah') class="bg-success" @endif >
+                            <tr @if(!empty($row->diagnosa_utama)) class="bg-success" @endif >
                                 <td>{{$row->no_reg}}</td>
                                 <td> 
                                     @php
                                     $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
                                     $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
                                     @endphp
-                                    <a @if($row->stts == 'Sudah') class="text-white" @else class="text-primary" @endif href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
+                                    <a @if(!empty($row->diagnosa_utama)) class="text-white" @else class="text-primary" @endif href="{{route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}} ">
                                         {{$row->nm_pasien}}
                                     </a>
                                 </td>
@@ -53,7 +53,7 @@
                     {{-- Minimal example / fill data using the component slot --}}
                     <x-adminlte-datatable id="tableRujuk" :heads="$headsInternal" :config="$config" head-theme="dark" striped hoverable bordered compressed>
                         @foreach($dataInternal as $row)
-                            <tr @if(!empty($row->diagnosa_utama)) class="bg-success" @endif >
+                            <tr @if($row->stts == 'Sudah') class="bg-success" @endif >
                                 <td>{{$row->no_reg}}</td>
                                 <td>
                                     @php
