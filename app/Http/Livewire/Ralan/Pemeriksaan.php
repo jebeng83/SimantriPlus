@@ -19,6 +19,11 @@ class Pemeriksaan extends Component
         }
     }
 
+    public function openModal()
+    {
+        $this->emit('openModalRehabMedik');
+    }
+
     public function render()
     {
         return view('livewire.ralan.pemeriksaan');

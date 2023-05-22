@@ -2,9 +2,9 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Pemeriksaan </h3>
         <div class="card-tools">
-            <button type="button" wire:click="expanded" class="btn btn-tool" data-card-widget="maximize" >
+            {{-- <button type="button" wire:click="expanded" class="btn btn-tool" data-card-widget="maximize" >
                 <i wire:ignore class="fas fa-lg fa-expand"></i>     
-            </button>
+            </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i wire:ignore class="fas fa-lg fa-plus"></i>
             </button>
@@ -101,10 +101,12 @@
                 <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="3"></textarea>
             </div>
             <div class="d-flex flex-row-reverse">
+                {{-- <button class="btn btn-info" wire.click='openModal'>Modal</button> --}}
                 <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
         </form>
     </div>
+
 </div>
 
 @section('js')
