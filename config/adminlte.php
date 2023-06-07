@@ -1,6 +1,9 @@
 <?php
 
+use Illuminate\Support\Env;
+
 return [
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -14,7 +17,7 @@ return [
     |
     */
 
-    'title' => 'RS Bhayangkara Nganjuk',
+    'title' => env('NAMA_INSTANSI'),
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -45,12 +48,12 @@ return [
     |
     */
 
-    'logo' => '<b>E-Dokter</b>',
-    'logo_img' => 'img/logo/logo.png',
+    'logo' => "<b>".env('APP_NAME')."</b>",
+    'logo_img' => env('LOGO_INSTANSI'),
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'RSB Nganjuk',
+    'logo_img_alt' => 'logo',
 
 
     'preloader' => [

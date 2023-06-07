@@ -1,16 +1,14 @@
-<div @if($isCollapsed) class="card card-info collapsed-card" @elseif($isMaximized) class="card card-info card-maximized" @else class="card card-info" @endif>
+{{-- <div @if($isCollapsed) class="card card-info collapsed-card" @elseif($isMaximized) class="card card-info card-maximized" @else class="card card-info" @endif>
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-lg fa-flask mr-1"></i> Pemeriksaan </h3>
         <div class="card-tools">
-            {{-- <button type="button" wire:click="expanded" class="btn btn-tool" data-card-widget="maximize" >
-                <i wire:ignore class="fas fa-lg fa-expand"></i>     
-            </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i wire:ignore class="fas fa-lg fa-plus"></i>
             </button>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body"> --}}
+        <div>
         <form wire:submit.prevent='simpanPemeriksaan'>
             <div class="row">
                 <div class="form-group col-md-6">
@@ -101,13 +99,13 @@
                 <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="3"></textarea>
             </div>
             <div class="d-flex flex-row-reverse">
-                {{-- <button class="btn btn-info" wire.click='openModal'>Modal</button> --}}
                 <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
         </form>
-    </div>
+        </div>
+    {{-- </div>
 
-</div>
+</div> --}}
 
 @section('js')
     <script>

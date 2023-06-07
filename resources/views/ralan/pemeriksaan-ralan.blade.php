@@ -14,7 +14,12 @@
         </div>
         <div class="col-md-8">
             {{-- <x-ralan.pemeriksaan :no-rawat="request()->get('no_rawat')" /> --}}
-            <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" />
+            {{-- <x-adminlte-card title="Penilaian Awal Rehab Medik" theme="info" collapsible maximizable>
+                <livewire:ralan.penilaian-rehab-medik :noRawat="request()->get('no_rawat')" />
+            </x-adminlte-card> --}}
+            <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-bell" collapsible maximizable>
+                <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" />
+            </x-adminlte-card>
             @if(session()->get('kd_poli') == 'U002' || session()->get('kd_poli') == 'U003')
                 <livewire:ralan.odontogram :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')">
             @endif
