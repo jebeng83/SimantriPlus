@@ -27,7 +27,7 @@ class ResepRanap extends Component
         $this->heads = ['Nomor Resep', 'Tanggal','Detail Resep', 'Aksi'];
         $this->riwayatPeresepan = DB::table('reg_periksa')
                                 ->join('resep_obat', 'reg_periksa.no_rawat', '=', 'resep_obat.no_rawat')
-                                ->where('resep_obat.kd_dokter', $this->dokter)
+                                // ->where('resep_obat.kd_dokter', $this->dokter)
                                 ->where('reg_periksa.no_rkm_medis', $this->noRM)
                                 ->where('reg_periksa.status_lanjut', 'Ranap')
                                 ->orderBy('resep_obat.tgl_peresepan', 'desc')
