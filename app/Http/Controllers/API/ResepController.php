@@ -118,8 +118,8 @@ class ResepController extends Controller
 
             for ($i=0; $i < count($resObat); $i++){
                 $obat = $resObat[$i];
-                $jml = $resJml[$i];
-                $aturan = $resAturan[$i];
+                $jml = $resJml[$i] < 1 ? 1 : $resJml[$i];
+                $aturan = $resAturan[$i] ?? '-';
 
                 $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->max('tanggal');
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
@@ -162,7 +162,7 @@ class ResepController extends Controller
                         'no_resep' => $resep->no_resep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan ?? '-',
+                        'aturan_pakai' => $aturan,
                     ]);
                 }else{
                     DB::table('resep_obat')->insert([
@@ -179,7 +179,7 @@ class ResepController extends Controller
                         'no_resep' => $noResep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
-                        'aturan_pakai' => $aturan ?? '-',
+                        'aturan_pakai' => $aturan,
                     ]);
                 }
             }
@@ -222,8 +222,8 @@ class ResepController extends Controller
 
             for ($i=0; $i < count($resObat); $i++){
                 $obat = $resObat[$i];
-                $jml = $resJml[$i];
-                $aturan = $resAturan[$i];
+                $jml = $resJml[$i] < 1 ? 1 : $resJml[$i];
+                $aturan = $resAturan[$i] ?? '-';
 
                 $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->max('tanggal');
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
