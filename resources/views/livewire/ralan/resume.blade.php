@@ -60,8 +60,8 @@
                 <div class="input-group">
                     <textarea type="text" rows="3" class="form-control" wire:model.defer='terapi' id="terapi" name="terapi" ></textarea>
                     <div class="input-group-append">
-                        <button type="button" wire:click='getTerapi' class="btn btn-primary">
-                        <i class="fas fa-paperclip"></i>     
+                        <button type="button" wire:click='hapusTerapi' class="btn btn-danger">
+                        <i class="fas fa-trash"></i>     
                         </button>
                     </div>
                 </div>

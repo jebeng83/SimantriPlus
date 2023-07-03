@@ -137,6 +137,11 @@ class Resume extends Component
         $this->terapi = $terapi->nama_brng ?? '';
     }
 
+    public function hapusTerapi()
+    {
+        $this->terapi = '';
+    }
+
     public function tambahKeluhan()
     {
         if(!empty($this->checkKeluhan)){
