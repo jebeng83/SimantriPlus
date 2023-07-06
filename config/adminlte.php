@@ -3,7 +3,7 @@
 use Illuminate\Support\Env;
 
 return [
-    
+
 
     /*
     |--------------------------------------------------------------------------
@@ -48,7 +48,7 @@ return [
     |
     */
 
-    'logo' => "<b>".env('APP_NAME')."</b>",
+    'logo' => "<b>" . env('APP_NAME') . "</b>",
     'logo_img' => env('LOGO_INSTANSI'),
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
@@ -163,7 +163,7 @@ return [
     'sidebar_mini' => 'lg',
     'sidebar_collapse' => false,
     'sidebar_collapse_auto_size' => false,
-    'sidebar_collapse_remember' => false,
+    'sidebar_collapse_remember' => true,
     'sidebar_collapse_remember_no_transition' => true,
     'sidebar_scrollbar_theme' => 'os-theme-light',
     'sidebar_scrollbar_auto_hide' => 'l',

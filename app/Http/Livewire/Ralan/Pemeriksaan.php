@@ -9,12 +9,13 @@ use Livewire\Component;
 class Pemeriksaan extends Component
 {
     use SwalResponse;
-    public $isCollapsed = false, $noRawat, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
+    public $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
 
-    public function mount($noRawat)
+    public function mount($noRawat, $noRm)
     {
         $this->noRawat = $noRawat;
-        if(!$this->isCollapsed){
+        $this->noRm = $noRm;
+        if (!$this->isCollapsed) {
             $this->getPemeriksaan();
         }
     }
@@ -46,16 +47,23 @@ class Pemeriksaan extends Component
 
     public function getPemeriksaan()
     {
+        $data = DB::table('pasien')
+            ->join('pemeriksaan_ralan', 'pasien.no_rkm_medis', '=', 'pemeriksaan_ralan.no_rawat')
+            ->where('pasien.no_rkm_medis', $this->noRm)
+            ->where('pemeriksaan_ralan.alergi', '<>', 'Tidak Ada')
+            ->select('pemeriksaan_ralan.alergi')
+            ->first();
+
         $pemeriksaan = DB::table('pemeriksaan_ralan')
-                            ->where('no_rawat', $this->noRawat)
-                            ->first();
-        if($pemeriksaan){
+            ->where('no_rawat', $this->noRawat)
+            ->first();
+        if ($pemeriksaan) {
             $this->keluhan = $pemeriksaan->keluhan;
             $this->pemeriksaan = $pemeriksaan->pemeriksaan;
             $this->penilaian = $pemeriksaan->penilaian;
             $this->instruksi = $pemeriksaan->instruksi;
             $this->rtl = $pemeriksaan->rtl;
-            $this->alergi = $pemeriksaan->alergi;
+            $this->alergi = $pemeriksaan->alergi ?? $data->alergi;
             $this->suhu = $pemeriksaan->suhu_tubuh;
             $this->berat = $pemeriksaan->berat;
             $this->tinggi = $pemeriksaan->tinggi;
@@ -72,12 +80,12 @@ class Pemeriksaan extends Component
 
     public function simpanPemeriksaan()
     {
-        try{
+        try {
             DB::beginTransaction();
             $pemeriksaan = DB::table('pemeriksaan_ralan')
-                                ->where('no_rawat', $this->noRawat)
-                                ->first();
-            if($pemeriksaan){
+                ->where('no_rawat', $this->noRawat)
+                ->first();
+            if ($pemeriksaan) {
                 DB::table('pemeriksaan_ralan')
                     ->where('no_rawat', $this->noRawat)
                     ->update([
@@ -99,7 +107,7 @@ class Pemeriksaan extends Component
                         'lingkar_perut' => $this->lingkar,
                         'spo2' => $this->spo2,
                     ]);
-            }else{
+            } else {
                 DB::table('pemeriksaan_ralan')
                     ->insert([
                         'no_rawat' => $this->noRawat,
@@ -125,12 +133,11 @@ class Pemeriksaan extends Component
                         'nip' => session()->get('username'),
                     ]);
             }
-            
+
             DB::commit();
             $this->getPemeriksaan();
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Pemeriksaan berhasil ditambahkan'));
-
-        }catch(\Illuminate\Database\QueryException $ex){
+        } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
         }
