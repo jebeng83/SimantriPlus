@@ -63,7 +63,7 @@ class Pemeriksaan extends Component
             $this->penilaian = $pemeriksaan->penilaian;
             $this->instruksi = $pemeriksaan->instruksi;
             $this->rtl = $pemeriksaan->rtl;
-            $this->alergi = $pemeriksaan->alergi ?? $data->alergi;
+            $this->alergi = $pemeriksaan->alergi ?? $data->alergi ?? 'Tidak Ada';
             $this->suhu = $pemeriksaan->suhu_tubuh;
             $this->berat = $pemeriksaan->berat;
             $this->tinggi = $pemeriksaan->tinggi;
