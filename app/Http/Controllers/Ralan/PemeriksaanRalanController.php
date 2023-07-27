@@ -436,9 +436,9 @@ class PemeriksaanRalanController extends Controller
         //     'penilaian' => 'required',
         //     'instruksi' => 'required',
         // ]);
-        $cek = DB::table('pemeriksaan_ralan')
-            ->where('no_rawat', Request::get('no_rawat'))
-            ->count();
+        // $cek = DB::table('pemeriksaan_ralan')
+        //     ->where('no_rawat', Request::get('no_rawat'))
+        //     ->count();
         $data = [
             'no_rawat' => Request::get('no_rawat'),
             'nip' => session()->get('username'),
