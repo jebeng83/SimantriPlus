@@ -263,13 +263,13 @@ return [
         [
             'text'        => 'Home',
             'url'         => '/home',
-            'icon'        => 'far fa-fw fa-home',
+            'icon'        => 'fas fa-fw fa-home',
             'label_color' => 'success',
         ],
         [
             'text'        => 'Booking',
             'url'         => '/booking',
-            'icon'        => 'far fa-fw fa-book',
+            'icon'        => 'fas fa-fw fa-book',
             'label_color' => 'success',
         ],
         [
