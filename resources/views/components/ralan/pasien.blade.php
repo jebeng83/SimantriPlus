@@ -153,7 +153,7 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<a href="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4"><img src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" class="img-fluid" style="width:200px;height:400px;"></a>';
+                            html += '<iframe src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
                             
                         });
                         $('.body-modal-berkasrm').html(html);
