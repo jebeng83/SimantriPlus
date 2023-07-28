@@ -137,6 +137,10 @@ Route::get('/berkas/{noRawat}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getBerkasRM',
 ])->where('noRawat', '.*');
+Route::get('/berkas-retensi/{noRawat}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'getBerkasRetensi',
+]);
 Route::get('/ralan/poli', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getPoli',
