@@ -580,6 +580,31 @@ class PemeriksaanRalanController extends Controller
         }
     }
 
+    public function getBerkasRetensi($noRawat)
+    {
+        try {
+
+            $data = DB::table('retensi_pasien')
+                ->where('no_rkm_medis', $noRawat)
+                ->first();
+            if (!empty($data)) {
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $data
+                ], 200);
+            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data tidak ditemukan'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public static function getPoli()
     {
         $q = Request::get('q');
