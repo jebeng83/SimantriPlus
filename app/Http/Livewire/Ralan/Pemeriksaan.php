@@ -9,7 +9,7 @@ use Livewire\Component;
 class Pemeriksaan extends Component
 {
     use SwalResponse;
-    public $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
+    public $listPemeriksaan, $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
 
     public function mount($noRawat, $noRm)
     {
@@ -17,6 +17,7 @@ class Pemeriksaan extends Component
         $this->noRm = $noRm;
         if (!$this->isCollapsed) {
             $this->getPemeriksaan();
+            $this->getListPemeriksaan();
         }
     }
 
@@ -33,6 +34,14 @@ class Pemeriksaan extends Component
     public function hydrate()
     {
         $this->getPemeriksaan();
+        $this->getListPemeriksaan();
+    }
+
+    public function getListPemeriksaan()
+    {
+        $this->listPemeriksaan = DB::table('pemeriksaan_ralan')
+            ->where('no_rawat', $this->noRawat)
+            ->get();
     }
 
     public function collapsed()
