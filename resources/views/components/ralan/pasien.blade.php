@@ -30,7 +30,7 @@
             </span>
         </div>
         <span class="nav-link">
-            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*"
+            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*,application/pdf"
                 placeholder="Berkas Digital" legend="Pilih">
                 <x-slot name="appendSlot">
                     <x-adminlte-button theme="primary" onclick="uploadFile()" label="Upload" />
