@@ -22,7 +22,8 @@
                 <i class="fas fa-stethoscope bg-blue"></i>
                 <div class="timeline-item">
                     <h3 class="timeline-header d-flex justify-content-between"><b>{{$row->no_rawat}}</b>
-                        <b>{{$row->nm_dokter}}</b></h3>
+                        <b>{{$row->nm_dokter}}</b>
+                    </h3>
                     <div class="timeline-body">
                         @if(count($pemeriksaan)>0)
                         <x-adminlte-card theme="dark" title="Pemeriksaan" collapsible maximizable>
@@ -83,13 +84,68 @@
                                         <td colspan="2"><b>Plan</b></td>
                                         <td colspan="8">{{ $pemeriksaan->rtl ?? '' }}</td>
                                     </tr>
+                                    <tr>
+                                        <td colspan="2"><b>Resume Medis</b></td>
+                                        <td colspan="8">
+                                            @if(isset($resume))
+                                            <ul>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Keluhan Utama :</div>
+                                                        <div>
+                                                            {{$resume->keluhan_utama}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Utama :</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_utama}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Prosedur Utama :</div>
+                                                        <div>
+                                                            {{$resume->prosedur_utama}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Obat Pulang :</div>
+                                                        <div>
+                                                            <pre>{{$resume->obat_pulang}}</pre>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                            @else
+                                            -
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><b>Diagnosa</b></td>
+                                        <td colspan="8">
+                                            <ol>
+                                                @forelse($diagnosa as $diag)
+                                                <li>{{$diag->nm_penyakit}} ({{$diag->kd_penyakit}})</li>
+                                                @empty
+                                                <li>-</li>
+                                                @endforelse
+                                            </ol>
+                                        </td>
+                                    </tr>
                                 </table>
                                 @endforeach
                             </div>
                         </x-adminlte-card>
                         @endif
 
-                        @if(count($diagnosa)>0)
+                        {{-- @if(count($diagnosa)>0)
                         <x-adminlte-card theme="dark" title="Diagnosa" collapsible="collapsed" maximizable>
                             <ul>
                                 @foreach($diagnosa as $diagnosa)
@@ -97,9 +153,9 @@
                                 @endforeach
                             </ul>
                         </x-adminlte-card>
-                        @endisset
+                        @endisset --}}
 
-                        @isset($resume)
+                        {{-- @isset($resume)
                         <x-adminlte-card theme="dark" title="Resume Medis" collapsible="collapsed" maximizable>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
@@ -126,7 +182,7 @@
                                 </table>
                             </div>
                         </x-adminlte-card>
-                        @endisset
+                        @endisset --}}
 
                         @if(count($radiologi)>0)
                         <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed" maximizable>
@@ -164,6 +220,8 @@
                                         <tr>
                                             <th>No</th>
                                             <th>Nama Pemeriksaan</th>
+                                            <th>Tgl Periksa</th>
+                                            <th>Jam</th>
                                             <th>Hasil</th>
                                             <th>Satuan</th>
                                             <th>Nilai Rujukan</th>
@@ -174,6 +232,8 @@
                                         <tr>
                                             <td>{{$loop->iteration}}</td>
                                             <td>{{$lab->Pemeriksaan}}</td>
+                                            <td>{{$lab->tgl_periksa}}</td>
+                                            <td>{{$lab->jam}}</td>
                                             <td>{{$lab->nilai}}</td>
                                             <td>{{$lab->satuan}}</td>
                                             <td>{{$lab->nilai_rujukan}}</td>
