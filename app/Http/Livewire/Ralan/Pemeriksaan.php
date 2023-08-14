@@ -65,6 +65,7 @@ class Pemeriksaan extends Component
 
         $pemeriksaan = DB::table('pemeriksaan_ralan')
             ->where('no_rawat', $this->noRawat)
+            ->orderBy('jam_rawat', 'desc')
             ->first();
         if ($pemeriksaan) {
             $this->keluhan = $pemeriksaan->keluhan;
@@ -91,57 +92,30 @@ class Pemeriksaan extends Component
     {
         try {
             DB::beginTransaction();
-            $pemeriksaan = DB::table('pemeriksaan_ralan')
-                ->where('no_rawat', $this->noRawat)
-                ->first();
-            if ($pemeriksaan) {
-                DB::table('pemeriksaan_ralan')
-                    ->where('no_rawat', $this->noRawat)
-                    ->update([
-                        'keluhan' => $this->keluhan,
-                        'pemeriksaan' => $this->pemeriksaan,
-                        'penilaian' => $this->penilaian,
-                        'instruksi' => $this->instruksi,
-                        'rtl' => $this->rtl,
-                        'alergi' => $this->alergi,
-                        'suhu_tubuh' => $this->suhu,
-                        'berat' => $this->berat,
-                        'tinggi' => $this->tinggi,
-                        'tensi' => $this->tensi,
-                        'nadi' => $this->nadi,
-                        'respirasi' => $this->respirasi,
-                        'evaluasi' => $this->evaluasi,
-                        'kesadaran' => $this->kesadaran,
-                        'gcs' => $this->gcs,
-                        'lingkar_perut' => $this->lingkar,
-                        'spo2' => $this->spo2,
-                    ]);
-            } else {
-                DB::table('pemeriksaan_ralan')
-                    ->insert([
-                        'no_rawat' => $this->noRawat,
-                        'keluhan' => $this->keluhan,
-                        'pemeriksaan' => $this->pemeriksaan,
-                        'penilaian' => $this->penilaian ?? '-',
-                        'instruksi' => $this->instruksi ?? '-',
-                        'rtl' => $this->rtl ?? '-',
-                        'alergi' => $this->alergi,
-                        'suhu_tubuh' => $this->suhu,
-                        'berat' => $this->berat,
-                        'tinggi' => $this->tinggi,
-                        'tensi' => $this->tensi ?? '-',
-                        'nadi' => $this->nadi,
-                        'respirasi' => $this->respirasi,
-                        'gcs' => $this->gcs,
-                        'kesadaran' => $this->kesadaran ?? 'Compos Mentis',
-                        'lingkar_perut' => $this->lingkar,
-                        'spo2' => $this->spo2 ?? '-',
-                        'evaluasi' => $this->evaluasi ?? '-',
-                        'tgl_perawatan' => date('Y-m-d'),
-                        'jam_rawat' => date('H:i:s'),
-                        'nip' => session()->get('username'),
-                    ]);
-            }
+            DB::table('pemeriksaan_ralan')
+                ->insert([
+                    'no_rawat' => $this->noRawat,
+                    'keluhan' => $this->keluhan,
+                    'pemeriksaan' => $this->pemeriksaan,
+                    'penilaian' => $this->penilaian ?? '-',
+                    'instruksi' => $this->instruksi ?? '-',
+                    'rtl' => $this->rtl ?? '-',
+                    'alergi' => $this->alergi,
+                    'suhu_tubuh' => $this->suhu,
+                    'berat' => $this->berat,
+                    'tinggi' => $this->tinggi,
+                    'tensi' => $this->tensi ?? '-',
+                    'nadi' => $this->nadi,
+                    'respirasi' => $this->respirasi,
+                    'gcs' => $this->gcs,
+                    'kesadaran' => $this->kesadaran ?? 'Compos Mentis',
+                    'lingkar_perut' => $this->lingkar,
+                    'spo2' => $this->spo2 ?? '-',
+                    'evaluasi' => $this->evaluasi ?? '-',
+                    'tgl_perawatan' => date('Y-m-d'),
+                    'jam_rawat' => date('H:i:s'),
+                    'nip' => session()->get('username'),
+                ]);
 
             DB::commit();
             $this->getPemeriksaan();

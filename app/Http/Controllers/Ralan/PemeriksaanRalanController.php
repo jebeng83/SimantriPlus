@@ -395,6 +395,7 @@ class PemeriksaanRalanController extends Controller
             ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
             ->where('detail_periksa_lab.no_rawat', $noRawat)
             ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.tgl_periksa', 'detail_periksa_lab.jam', 'detail_periksa_lab.nilai', 'template_laboratorium.satuan', 'detail_periksa_lab.nilai_rujukan', 'detail_periksa_lab.keterangan')
+            ->orderBy('detail_periksa_lab.tgl_periksa', 'desc')
             ->get();
         return $data;
     }

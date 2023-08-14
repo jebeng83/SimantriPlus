@@ -145,45 +145,6 @@
                         </x-adminlte-card>
                         @endif
 
-                        {{-- @if(count($diagnosa)>0)
-                        <x-adminlte-card theme="dark" title="Diagnosa" collapsible="collapsed" maximizable>
-                            <ul>
-                                @foreach($diagnosa as $diagnosa)
-                                <li>{{$diagnosa->nm_penyakit}} ({{$diagnosa->kd_penyakit}})</li>
-                                @endforeach
-                            </ul>
-                        </x-adminlte-card>
-                        @endisset --}}
-
-                        {{-- @isset($resume)
-                        <x-adminlte-card theme="dark" title="Resume Medis" collapsible="collapsed" maximizable>
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <tr>
-                                        <td><b>Keluhan Utama</b></td>
-                                        <td>
-                                            <pre>{{$resume->keluhan_utama}}</pre>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><b>Diagnosa Utama</b></td>
-                                        <td>{{$resume->diagnosa_utama}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><b>Prosedur Utama</b></td>
-                                        <td>{{$resume->prosedur_utama}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><b>Obat Pulang</b></td>
-                                        <td>
-                                            <pre>{{$resume->obat_pulang}}</pre>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </x-adminlte-card>
-                        @endisset --}}
-
                         @if(count($radiologi)>0)
                         <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed" maximizable>
                             <x-adminlte-card theme="dark" title="Gambar Radiologi" collapsible="collapsed">
@@ -225,11 +186,13 @@
                                             <th>Hasil</th>
                                             <th>Satuan</th>
                                             <th>Nilai Rujukan</th>
+                                            <th>Keterangan</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($laboratorium as $lab)
-                                        <tr>
+                                        <tr
+                                            class="@if($lab->keterangan == 'T' || $lab->keterangan == 'H') bg-danger @endif">
                                             <td>{{$loop->iteration}}</td>
                                             <td>{{$lab->Pemeriksaan}}</td>
                                             <td>{{$lab->tgl_periksa}}</td>
@@ -237,6 +200,7 @@
                                             <td>{{$lab->nilai}}</td>
                                             <td>{{$lab->satuan}}</td>
                                             <td>{{$lab->nilai_rujukan}}</td>
+                                            <td>{{$lab->keterangan}}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
