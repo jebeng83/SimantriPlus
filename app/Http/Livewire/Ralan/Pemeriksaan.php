@@ -118,7 +118,7 @@ class Pemeriksaan extends Component
                 ]);
 
             DB::commit();
-            $this->getPemeriksaan();
+            $this->getListPemeriksaan();
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Pemeriksaan berhasil ditambahkan'));
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
