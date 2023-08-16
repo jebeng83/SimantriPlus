@@ -78,18 +78,19 @@
                 cache: false,
                 processData: false,
                 success: function (data) {
+                    console.log(data);
                     Swal.fire({
-                        title: 'Sukses',
-                        text: 'Berkas berhasil diupload',
-                        icon: 'success',
+                        title: data.status ? 'Sukses' : 'Gagal',
+                        text: data.message ?? 'Berkas berhasil diupload',
+                        icon: data.status ? 'success' : 'error',
                         confirmButtonText: 'OK'
                     })
                 },
                 error: function (data) {
                     Swal.fire({
-                        title: 'Sukses',
-                        text: 'Berkas berhasil diupload',
-                        icon: 'success',
+                        title: 'Gagal',
+                        text: data.message ?? 'Berkas berhasil diupload',
+                        icon: 'error',
                         confirmButtonText: 'OK'
                     })
                 }
