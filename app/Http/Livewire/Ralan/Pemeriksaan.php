@@ -40,7 +40,9 @@ class Pemeriksaan extends Component
     public function getListPemeriksaan()
     {
         $this->listPemeriksaan = DB::table('pemeriksaan_ralan')
+            ->join('pegawai', 'pemeriksaan_ralan.nip', '=', 'pegawai.nik')
             ->where('no_rawat', $this->noRawat)
+            ->select('pemeriksaan_ralan.*', 'pegawai.nama')
             ->get();
     }
 
@@ -102,8 +104,8 @@ class Pemeriksaan extends Component
                     'rtl' => $this->rtl ?? '-',
                     'alergi' => $this->alergi,
                     'suhu_tubuh' => $this->suhu,
-                    'berat' => $this->berat,
-                    'tinggi' => $this->tinggi,
+                    'berat' => $this->berat ?? '0',
+                    'tinggi' => $this->tinggi ?? '0',
                     'tensi' => $this->tensi ?? '-',
                     'nadi' => $this->nadi,
                     'respirasi' => $this->respirasi,

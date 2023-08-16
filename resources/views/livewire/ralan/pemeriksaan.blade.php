@@ -106,7 +106,7 @@
         <table class="table table-striped">
             <thead class="thead-inverse" style="width: 100%">
                 <tr>
-                    <th>No</th>
+                    <th>Petugas</th>
                     <th>Keluhan</th>
                     <th>Pemeriksaan</th>
                     <th>Tensi</th>
@@ -118,7 +118,7 @@
             <tbody>
                 @forelse ($listPemeriksaan as $item)
                 <tr>
-                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $item->nama }}</td>
                     <td>{{ $item->keluhan }}</td>
                     <td>{{ $item->pemeriksaan }}</td>
                     <td>{{ $item->tensi }}</td>
