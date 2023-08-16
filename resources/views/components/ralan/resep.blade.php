@@ -247,7 +247,7 @@
 </div>
 
 <x-adminlte-modal id="modalCopyResep" title="Copy Resep" size="lg" theme="teal" icon="fas fa-bell" v-centered
-    static-backdrop scrollable>
+    scrollable>
     <div class="table-responsive">
         <table class="table table-copy-resep">
             <thead class="thead-dark">
@@ -563,7 +563,11 @@
                                 + '<td><input type="text" name="aturan_copyresep[]" multiple="multiple" value="' + item.aturan_pakai + '"></td></tr>';
                     });
                     $('.tbBodyCopy').append(trHTML);
-                    $('#modalCopyResep').modal('show');
+                    $('#modalCopyResep').modal({
+                        backdrop: false,
+                        keyboard: false,
+                        show: true
+                    });
                 }
             });
         }
