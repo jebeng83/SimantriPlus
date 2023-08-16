@@ -22,9 +22,9 @@
             </span>
             <span class="nav-link">
                 <div class="d-flex flex-row justify-content-between">
-                    <x-adminlte-button icon="fas fa-folder" label="Berkas RM Lama" onclick="getBerkasRM()"
+                    <x-adminlte-button icon="fas fa-folder" label="Berkas RM Digital" onclick="getBerkasRM()"
                         theme="success" />
-                    <x-adminlte-button icon="fas fa-folder" label="Berkas Retensi" theme="secondary"
+                    <x-adminlte-button icon="fas fa-folder" label="Berkas RM Retensi" theme="secondary"
                         onclick="getBerkasRetensi()" />
                 </div>
             </span>
