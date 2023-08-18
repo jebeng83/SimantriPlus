@@ -140,12 +140,12 @@
                                 fgroup-class="col-md-6" />
                             <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan"
                                 fgroup-class="col-md-6" />
-                            <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan"
-                                fgroup-class="col-md-6" />
+                            <x-adminlte-input label="Keterangan" value="Resep Racikan" id="keterangan_racikan"
+                                name="keterangan_racikan" fgroup-class="col-md-6" />
                         </div>
                     </div>
                     <div class="containerRacikan">
-                        <div class="row">
+                        <div class="form-row">
                             <div class="col-md-5">
                                 <div class="form-group">
                                     <label class="d-block">Obat</label>
@@ -176,21 +176,21 @@
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="p2">P2</label>
-                                    <input id="p2" class="form-control p-1" type="text" name="p2[]">
+                                    <input id="p2" class="form-control p-1" oninput="hitungRacikan(0)" type=" text"
+                                        name="p2[]">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="kandungan">Kandungan</label>
-                                    <input id="kandungan" oninput="hitungRacikan(0)"
-                                        class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
+                                    <input id="kandungan" oninput="hitungJml(0)" class="form-control p-1 kandungan-0"
+                                        type="text" name="kandungan[]">
                                 </div>
                             </div>
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="jml">Jml</label>
-                                    <input id="jml" oninput="hitungJml(0)" class="form-control p-1 jml-0" type="text"
-                                        name="jml[]">
+                                    <input id="jml" class="form-control p-1 jml-0" type="text" name="jml[]">
                                 </div>
                             </div>
                         </div>
@@ -320,13 +320,13 @@
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none"  for="p2'+i+'">P2</label>' + 
-                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" name="p2[]">' + 
+                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" oninput="hitungRacikan('+i+')" name="p2[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-2">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="kandungan'+i+'">Kandungan</label>' + 
-                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungRacikan('+i+')" name="kandungan[]">' + 
+                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungJml('+i+')" name="kandungan[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
@@ -392,26 +392,26 @@
             var kandungan = parseFloat(kandungan);
             var jml = (p1/p2)*jmlRacikan;
             var jml = parseFloat(jml);
-            if(isNaN(kandungan) || isFinite(kandungan)){
-                kandungan = 0;
-            }
-            if(isNan(jml) || isFinite(jml)){
-                jml = 0;
-            }
-            $(".kandungan-"+index).val(kandungan.toFixed(2));
-            $(".jml-"+index).val(jml.toFixed(2));
+            // if(isNaN(kandungan) || isFinite(kandungan)){
+            //     kandungan = 0;
+            // }
+            // if(isNaN(jml) || isFinite(jml)){
+            //     jml = 0;
+            // }
+            $(".kandungan-"+index).val(kandungan.toFixed(1));
+            $(".jml-"+index).val(jml.toFixed(1));
         }
 
         function hitungJml(index){
             var kps = getIndexValue('kps[]', index);
             var jmlRacikan = $('#jumlah_racikan').val();
             var kandungan = $(".kandungan-"+index).val();
-            var jml = (kps*jmlRacikan)/kandungan;
+            var jml = (kandungan/kps)*jmlRacikan;
             var jml = parseFloat(jml);
-            if(isNaN(jml) || isFinite(jml)){
-                jml = 0;
-            }
-            $(".jml-"+index).val(jml.toFixed(2));
+            // if(isNaN(jml) || isFinite(jml)){
+            //     jml = 0;
+            // }
+            $(".jml-"+index).val(jml.toFixed(1));
         }
 
         // function hitungRacikan(index){

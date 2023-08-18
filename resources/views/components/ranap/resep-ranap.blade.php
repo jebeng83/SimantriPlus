@@ -1,42 +1,53 @@
 <div>
-    <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed" maximizable>
+    <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed"
+        maximizable>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="resep-tab" data-toggle="tab" data-target="#resep" type="button" role="tab" aria-controls="resep" aria-selected="true">Resep</button>
+                <button class="nav-link active" id="resep-tab" data-toggle="tab" data-target="#resep" type="button"
+                    role="tab" aria-controls="resep" aria-selected="true">Resep</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="copyresep-tab" data-toggle="tab" data-target="#copyresep" type="button" role="tab" aria-controls="copyresep" aria-selected="false">Resep Racikan</button>
+                <button class="nav-link" id="copyresep-tab" data-toggle="tab" data-target="#copyresep" type="button"
+                    role="tab" aria-controls="copyresep" aria-selected="false">Resep Racikan</button>
             </li>
         </ul>
 
         <div class="tab-content" id="myTabContent">
             <div class="tab-pane fade show active" id="resep" role="tabpanel" aria-labelledby="resep-tab">
                 <x-adminlte-callout theme="info" title="Input Resep">
-                    <form  method="post" id="resepForm" action="{{url('/api/resep_ranap/'.$encryptNoRawat)}}">
+                    <form method="post" id="resepForm" action="{{url('/api/resep_ranap/'.$encryptNoRawat)}}">
                         @csrf
                         <div class="containerResep">
                             <div class="row">
-                                {{-- <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]" fgroup-class="col-md-5"  data-placeholder="Pilih Obat" /> --}}
+                                {{--
+                                <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]"
+                                    fgroup-class="col-md-5" data-placeholder="Pilih Obat" /> --}}
                                 <div class="col-md-5">
                                     <div class="form-group">
                                         <label class="visible-sm">Nama Obat</label>
-                                        <select name="obat[]" class="form-control obat w-100" id="obat" data-placeholder="Pilih Obat">
+                                        <select name="obat[]" class="form-control obat w-100" id="obat"
+                                            data-placeholder="Pilih Obat">
                                         </select>
                                     </div>
                                 </div>
-                                <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2" placeholder="Jumlah"/>
-                                <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]" fgroup-class="col-md-5" placeholder="Aturan Pakai"/>
+                                <x-adminlte-input id="jumlah" label="Jumlah" name="jumlah[]" fgroup-class="col-md-2"
+                                    placeholder="Jumlah" />
+                                <x-adminlte-input id="aturan" label="Aturan Pakai" name="aturan[]"
+                                    fgroup-class="col-md-5" placeholder="Aturan Pakai" />
                             </div>
                         </div>
                         <div class="row justify-content-end">
-                            {{-- <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto" data-placeholder="Pilih Iter">
+                            {{-- <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto"
+                                data-placeholder="Pilih Iter">
                                 <option value="-">Pilih jumlah iter</option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
-                            </x-adminlte-select> --}}
-                            <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep" theme="success" label="+" />
-                            <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
+                                </x-adminlte-select> --}}
+                                <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
+                                    theme="success" label="+" />
+                                <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary"
+                                    type="submit" label="Simpan" />
                         </div>
                     </form>
                 </x-adminlte-callout>
@@ -56,73 +67,87 @@
                             </thead>
                             <tbody>
                                 @foreach($resep as $r)
-                                    <tr>
-                                        <td>{{$r->nama_brng}}</td>
-                                        <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
-                                        <td>{{$r->jml}}</td>
-                                        <td>{{$r->aturan_pakai}}</td>
-                                        <td>
-                                            <button class="btn btn-danger btn-sm" onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td>{{$r->nama_brng}}</td>
+                                    <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
+                                    <td>{{$r->jml}}</td>
+                                    <td>{{$r->aturan_pakai}}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
+                                    </td>
+                                </tr>
                                 @endforeach
                             </tbody>
-                        </table>  
-                    </div>            
+                        </table>
+                    </div>
                 </x-adminlte-callout>
                 @endif
                 <x-adminlte-callout theme="info" title="Riwayat Peresepan">
                     @php
-                        $config["responsive"] = true;
-                        $config['order'] = [[1, 'desc']];
+                    $config["responsive"] = true;
+                    $config['order'] = [[1, 'desc']];
                     @endphp
-                    <x-adminlte-datatable id="tableRiwayatResep" :heads="$heads" :config="$config" head-theme="dark" striped hoverable bordered compressed>
+                    <x-adminlte-datatable id="tableRiwayatResep" :heads="$heads" :config="$config" head-theme="dark"
+                        striped hoverable bordered compressed>
                         {{-- <x-slot name="bodySlot"> --}}
                             @foreach($riwayatPeresepan as $r)
-                                <tr>
-                                    <td class="align-middle text-center">{{$r->no_resep}}</td>
-                                    <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
-                                    <td>
-                                        @php
-                                        $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
-                                        @endphp
-                                        <ul class="p-4">
+                            <tr>
+                                <td class="align-middle text-center">{{$r->no_resep}}</td>
+                                <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
+                                <td>
+                                    @php
+                                    $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
+                                    @endphp
+                                    <ul class="p-4">
                                         @if($racikan)
-                                            <li>Racikan - {{$racikan->nama_racik}} - {{$racikan->jml_dr}} - [{{$racikan->aturan_pakai}}]</li>
-                                            <ul>
-                                                @foreach($getDetailRacikan($racikan->no_resep) as $ror)
-                                                    <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} - {{$ror->jml}}</li>
-                                                @endforeach
-                                            </ul>
+                                        <li>Racikan - {{$racikan->nama_racik}} - {{$racikan->jml_dr}} -
+                                            [{{$racikan->aturan_pakai}}]</li>
+                                        <ul>
+                                            @foreach($getDetailRacikan($racikan->no_resep) as $ror)
+                                            <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
+                                                {{$ror->jml}}</li>
+                                            @endforeach
+                                        </ul>
                                         @endif
                                         @foreach($getResepObat($r->no_resep) as $ro)
-                                            <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
+                                        <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
                                         @endforeach
-                                        </ul>
-                                    </td>
-                                    <td class="align-middle text-center"><x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)' class="mx-auto btn-sm" theme="primary" icon="fa fa-sm fa-fw fa-pen"/></td>
-                                </tr>
+                                    </ul>
+                                </td>
+                                <td class="align-middle text-center">
+                                    <x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)'
+                                        class="mx-auto btn-sm" theme="primary" icon="fa fa-sm fa-fw fa-pen" />
+                                </td>
+                            </tr>
                             @endforeach
-                        {{-- </x-slot> --}}
+                            {{--
+                        </x-slot> --}}
                     </x-adminlte-datatable>
                 </x-adminlte-callout>
 
             </div>
             <div class="tab-pane fade" id="copyresep" role="tabpanel" aria-labelledby="copyresep-tab">
                 <x-adminlte-callout theme="info" title="Input Resep Racikan">
-                    <form  method="post" id="copyresepForm" action="{{url('/ranap/simpan/copyresep/'.$encryptNoRawat)}}">
+                    <form method="post" id="copyresepForm" action="{{url('/ranap/simpan/copyresep/'.$encryptNoRawat)}}">
                         @csrf
                         <div class="containerCopyResep">
                             <div class="row">
-                                <x-adminlte-input id="obat_racikan" label="Nama Racikan" name="nama_racikan" fgroup-class="col-md-12" />
-                                <x-adminlte-select-bs id="metode_racikan" name="metode_racikan" label="Metode Racikan" fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
+                                <x-adminlte-input id="obat_racikan" label="Nama Racikan" name="nama_racikan"
+                                    fgroup-class="col-md-12" />
+                                <x-adminlte-select-bs id="metode_racikan" name="metode_racikan" label="Metode Racikan"
+                                    fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..."
+                                    data-show-tick>
                                     @foreach($dataMetodeRacik as $metode)
-                                        <option value="{{$metode->kd_racik}}">{{$metode->nm_racik}}</option>
+                                    <option value="{{$metode->kd_racik}}">{{$metode->nm_racik}}</option>
                                     @endforeach
                                 </x-adminlte-select-bs>
-                                <x-adminlte-input label="Jumlah" id="jumlah_racikan" value="10" name="jumlah_racikan" fgroup-class="col-md-6" />
-                                <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan" fgroup-class="col-md-6" />
-                                <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan" fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Jumlah" id="jumlah_racikan" value="10" name="jumlah_racikan"
+                                    fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan"
+                                    fgroup-class="col-md-6" />
+                                <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan"
+                                    fgroup-class="col-md-6" />
                             </div>
                         </div>
                         <div class="containerRacikan">
@@ -130,38 +155,44 @@
                                 <div class="col-md-5">
                                     <div class="form-group">
                                         <label class="d-block">Obat</label>
-                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">
+                                        <select name="obatRacikan[]" class="form-control obat-racikan w-100"
+                                            id="obatRacikan" data-placeholder="Pilih Obat">
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="stok">Stok</label>
-                                        <input id="stok" class="form-control stok p-1" type="text" name="stok[]" disabled>
+                                        <input id="stok" class="form-control stok p-1" type="text" name="stok[]"
+                                            disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="kps">Kps</label>
-                                        <input id="kps" class="form-control kps text-black p-1" type="text" name="kps[]" disabled>
+                                        <input id="kps" class="form-control kps text-black p-1" type="text" name="kps[]"
+                                            disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p1">P1</label>
-                                        <input id="p1" class="form-control p-1" oninput="hitungRacikan(0)" type="text" name="p1[]">
+                                        <input id="p1" class="form-control p-1" oninput="hitungRacikan(0)" type="text"
+                                            name="p1[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
                                     <div class="form-group">
                                         <label for="p2">P2</label>
-                                        <input id="p2" class="form-control p-2" oninput="hitungRacikan(0)" type="text" name="p2[]">
+                                        <input id="p2" class="form-control p-2" oninput="hitungRacikan(0)" type="text"
+                                            name="p2[]">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="form-group">
                                         <label for="kandungan">Kandungan</label>
-                                        <input id="kandungan" oninput="hitungJml(0)" class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
+                                        <input id="kandungan" oninput="hitungJml(0)"
+                                            class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
                                     </div>
                                 </div>
                                 <div class="col-md-1">
@@ -173,9 +204,12 @@
                             </div>
                         </div>
                         <div class="row justify-content-end">
-                            <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()" class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
-                            <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan" theme="success" label="+" />
-                            <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
+                            <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()"
+                                class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
+                            <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan"
+                                theme="success" label="+" />
+                            <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1"
+                                theme="primary" type="submit" label="Simpan" />
                         </div>
                     </form>
                 </x-adminlte-callout>
@@ -197,22 +231,23 @@
                             </thead>
                             <tbody>
                                 @foreach($resepRacikan as $r)
-                                    <tr>
-                                        <td>{{$r->no_resep}}</td>
-                                        <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
-                                        <td>{{$r->nm_racik}}</td>
-                                        <td>{{$r->jml_dr}}</td>
-                                        <td>{{$r->aturan_pakai}}</td>
-                                        <td>{{$r->keterangan}}</td>
-                                        <td>
-                                            <button class="btn btn-danger btn-sm" onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td>{{$r->no_resep}}</td>
+                                    <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
+                                    <td>{{$r->nm_racik}}</td>
+                                    <td>{{$r->jml_dr}}</td>
+                                    <td>{{$r->aturan_pakai}}</td>
+                                    <td>{{$r->keterangan}}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
+                                    </td>
+                                </tr>
                                 @endforeach
                             </tbody>
-                        </table> 
+                        </table>
                     </div>
-                                 
+
                 </x-adminlte-callout>
                 @endif
             </div>
@@ -220,40 +255,41 @@
     </x-adminlte-card>
 </div>
 
-<x-adminlte-modal id="modalCopyResep" title="Copy Resep" size="lg" theme="teal"
-    icon="fas fa-bell" v-centered static-backdrop scrollable>
+<x-adminlte-modal id="modalCopyResep" title="Copy Resep" size="lg" theme="teal" icon="fas fa-bell" v-centered
+    static-backdrop scrollable>
     <div class="table-responsive">
         <table class="table table-copy-resep">
             <thead class="thead-dark">
-              <tr>
-                <th scope="col">Jumlah</th>
-                <th scope="col">Nama Obat</th>
-                <th scope="col">Aturan Pakai</th>
-              </tr>
+                <tr>
+                    <th scope="col">Jumlah</th>
+                    <th scope="col">Nama Obat</th>
+                    <th scope="col">Aturan Pakai</th>
+                </tr>
             </thead>
             <tbody class="tbBodyCopy">
             </tbody>
         </table>
     </div>
     <x-slot name="footerSlot">
-        <x-adminlte-button class="mr-2" id="simpanCopyResep"  theme="primary" label="Simpan" data-dismiss="modal"/>
-        <x-adminlte-button theme="danger" label="Tutup" data-dismiss="modal"/>
+        <x-adminlte-button class="mr-2" id="simpanCopyResep" theme="primary" label="Simpan" data-dismiss="modal" />
+        <x-adminlte-button theme="danger" label="Tutup" data-dismiss="modal" />
     </x-slot>
 </x-adminlte-modal>
 
 @push('css')
 <style>
-.no-border {
-    border: 0;
-    box-shadow: none; /* You may want to include this as bootstrap applies these styles too */
-}
+    .no-border {
+        border: 0;
+        box-shadow: none;
+        /* You may want to include this as bootstrap applies these styles too */
+    }
 </style>
 @endpush
 
 @push('js')
-    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
-    <script>
-        function getIndexValue(name, index) {
+{{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+<script>
+    function getIndexValue(name, index) {
             var doc = document.getElementsByName(name);
             return doc[index].value;
         }
@@ -371,7 +407,7 @@
             if(isNaN(kandungan) || isFinite(kandungan)){
                 kandungan = 0;
             }
-            if(isNan(jml) || isFinite(jml)){
+            if(isNaN(jml) || isFinite(jml)){
                 jml = 0;
             }
             $(".kandungan-"+index).val(kandungan.toFixed(2));
@@ -390,9 +426,9 @@
             $(".jml-"+index).val(jml.toFixed(2));
         }
 
-    </script>
-    <script>
-        var wrapper = $(".containerResep");
+</script>
+<script>
+    var wrapper = $(".containerResep");
         var add_button = $("#addFormResep");
         var x = 0;
         function formatData (data) {
@@ -520,10 +556,10 @@
                     return $data;
             };
         });
-    </script>
+</script>
 
-    <script>
-        function getValue(name) {
+<script>
+    function getValue(name) {
             var data = [];
             var doc = document.getElementsByName(name);
             for (var i = 0; i < doc.length; i++) {
@@ -915,6 +951,6 @@
 
         } 
 
-    </script>
-    
+</script>
+
 @endpush
