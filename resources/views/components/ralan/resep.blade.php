@@ -182,15 +182,15 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="kandungan">Kandungan</label>
-                                    <input id="kandungan" onclick="hitungRacikan(0)"
+                                    <input id="kandungan" oninput="hitungRacikan(0)"
                                         class="form-control p-1 kandungan-0" type="text" name="kandungan[]">
                                 </div>
                             </div>
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="jml">Jml</label>
-                                    <input id="jml" onclick="hitungRacikan(0)" class="form-control p-1 jml-0"
-                                        type="text" name="jml[]">
+                                    <input id="jml" oninput="hitungJml(0)" class="form-control p-1 jml-0" type="text"
+                                        name="jml[]">
                                 </div>
                             </div>
                         </div>
@@ -326,13 +326,13 @@
                             '                                <div class="col-md-2">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="kandungan'+i+'">Kandungan</label>' + 
-                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" onclick="hitungRacikan('+i+')" name="kandungan[]">' + 
+                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungRacikan('+i+')" name="kandungan[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="jml'+i+'">Jml</label>' + 
-                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" onclick="hitungRacikan('+i+')" type="text" name="jml[]">' + 
+                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" oninput="hitungJml('+i+')" type="text" name="jml[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                            </div>' + 
@@ -389,10 +389,49 @@
             var jmlRacikan = $('#jumlah_racikan').val();
             var kps = getIndexValue('kps[]', index);
             var kandungan = (p1/p2)*kps;
+            var kandungan = parseFloat(kandungan);
             var jml = (p1/p2)*jmlRacikan;
-            $(".kandungan-"+index).val(kandungan);
-            $(".jml-"+index).val(jml);
+            var jml = parseFloat(jml);
+            if(isNaN(kandungan) || isFinite(kandungan)){
+                kandungan = 0;
+            }
+            if(isNan(jml) || isFinite(jml)){
+                jml = 0;
+            }
+            $(".kandungan-"+index).val(kandungan.toFixed(2));
+            $(".jml-"+index).val(jml.toFixed(2));
         }
+
+        function hitungJml(index){
+            var kps = getIndexValue('kps[]', index);
+            var jmlRacikan = $('#jumlah_racikan').val();
+            var kandungan = $(".kandungan-"+index).val();
+            var jml = (kps*jmlRacikan)/kandungan;
+            var jml = parseFloat(jml);
+            if(isNaN(jml) || isFinite(jml)){
+                jml = 0;
+            }
+            $(".jml-"+index).val(jml.toFixed(2));
+        }
+
+        // function hitungRacikan(index){
+        //     var p1 = getIndexValue('p1[]', index);
+        //     var p2 = getIndexValue('p2[]', index);
+        //     var jmlRacikan = $('#jumlah_racikan').val();
+        //     var kps = getIndexValue('kps[]', index);
+        //     var kandungan = (p1/p2)*kps;
+        //     var jml = (p1/p2)*jmlRacikan;
+        //     $(".kandungan-"+index).val(kandungan.toFixed(1));
+        //     $(".jml-"+index).val(jml);
+        // }
+
+        // function hitungJumlahRacikan(index){
+        //     var jmlRacikan = $('#jumlah_racikan').val();
+        //     var kandungan = $('.kandungan-'+index).val();
+        //     var kps = getIndexValue('kps[]', index);
+        //     var jml = (kandungan/kps)*jmlRacikan;
+        //     $(".jml-"+index).val(jml.toFixed(1));
+        // }
 
 </script>
 <script>

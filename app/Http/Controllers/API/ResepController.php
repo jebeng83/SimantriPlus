@@ -390,7 +390,7 @@ class ResepController extends Controller
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => date('Y-m-d'),
                         'jam_peresepan' => date('H:i:s'),
-                        'status' => $status,
+                        'status' => 'ralan',
                         'tgl_penyerahan' => '0000-00-00',
                         'jam_penyerahan' => '00:00:00',
                     ]);
@@ -427,7 +427,7 @@ class ResepController extends Controller
             }
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
-            return response()->json(['status' => 'gagal', 'message' => $ex->getMessage()]);
+            return response()->json(['status' => 'gagal', 'message' => 'Maaf ada obat masih kosong']);
         }
     }
 

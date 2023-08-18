@@ -1,18 +1,23 @@
 <div>
     <x-adminlte-callout theme="info" title="Input Resep Racikan">
-        <form  method="post" id="copyresepForm" action="{{url('/ralan/simpan/copyresep/'.$encryptNoRawat)}}">
+        <form method="post" id="copyresepForm" action="{{url('/ralan/simpan/copyresep/'.$encryptNoRawat)}}">
             @csrf
             <div class="containerCopyResep">
                 <div class="row">
-                    <x-adminlte-input id="obat_racikan" label="Nama Racikan" name="nama_racikan" fgroup-class="col-md-12" />
-                    <x-adminlte-select-bs id="metode_racikan" name="metode_racikan" label="Metode Racikan" fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
+                    <x-adminlte-input id="obat_racikan" label="Nama Racikan" name="nama_racikan"
+                        fgroup-class="col-md-12" />
+                    <x-adminlte-select-bs id="metode_racikan" name="metode_racikan" label="Metode Racikan"
+                        fgroup-class="col-md-6" data-live-search data-live-search-placeholder="Cari..." data-show-tick>
                         @foreach($dataMetodeRacik as $metode)
-                            <option value="{{$metode->kd_racik}}">{{$metode->nm_racik}}</option>
+                        <option value="{{$metode->kd_racik}}">{{$metode->nm_racik}}</option>
                         @endforeach
                     </x-adminlte-select-bs>
-                    <x-adminlte-input label="Jumlah" id="jumlah_racikan" value="10" name="jumlah_racikan" fgroup-class="col-md-6" />
-                    <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan" fgroup-class="col-md-6" />
-                    <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan" fgroup-class="col-md-6" />
+                    <x-adminlte-input label="Jumlah" id="jumlah_racikan" value="10" name="jumlah_racikan"
+                        fgroup-class="col-md-6" />
+                    <x-adminlte-input label="Aturan Pakai" id="aturan_racikan" name="aturan_racikan"
+                        fgroup-class="col-md-6" />
+                    <x-adminlte-input label="Keterangan" id="keterangan_racikan" name="keterangan_racikan"
+                        fgroup-class="col-md-6" />
                 </div>
             </div>
             <div class="containerRacikan">
@@ -20,7 +25,8 @@
                     <div class="col-md-5">
                         <div class="form-group">
                             <label class="d-block">Obat</label>
-                            <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan" data-placeholder="Pilih Obat">
+                            <select name="obatRacikan[]" class="form-control obat-racikan w-100" id="obatRacikan"
+                                data-placeholder="Pilih Obat">
                             </select>
                         </div>
                     </div>
@@ -51,21 +57,25 @@
                     <div class="col-md-2">
                         <div class="form-group">
                             <label for="kandungan">Kandungan</label>
-                            <input id="kandungan" onclick="hitungRacikan(0)" class="form-control kandungan-0" type="text" name="kandungan[]">
+                            <input id="kandungan" onclick="hitungRacikan(0)" onchange="hitungJml(0)"
+                                class="form-control kandungan0" type="text" name="kandungan[]">
                         </div>
                     </div>
                     <div class="col-md-1">
                         <div class="form-group">
                             <label for="jml">Jml</label>
-                            <input id="jml" class="form-control jml-0" type="text" name="jml[]">
+                            <input id="jml" class="form-control jml0" type="text" name="jml[]">
                         </div>
                     </div>
                 </div>
             </div>
             <div class="row justify-content-end">
-                <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()" class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
-                <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan" theme="success" label="+" />
-                <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary" type="submit" label="Simpan" />
+                <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()"
+                    class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
+                <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan" theme="success"
+                    label="+" />
+                <x-adminlte-button id="resepRacikanButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary"
+                    type="submit" label="Simpan" />
             </div>
         </form>
     </x-adminlte-callout>
@@ -87,31 +97,31 @@
                 </thead>
                 <tbody>
                     @foreach($resepRacikan as $r)
-                        <tr>
-                            <td>{{$r->no_resep}}</td>
-                            <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
-                            <td>{{$r->nm_racik}}</td>
-                            <td>{{$r->jml_dr}}</td>
-                            <td>{{$r->aturan_pakai}}</td>
-                            <td>{{$r->keterangan}}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td>{{$r->no_resep}}</td>
+                        <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
+                        <td>{{$r->nm_racik}}</td>
+                        <td>{{$r->jml_dr}}</td>
+                        <td>{{$r->aturan_pakai}}</td>
+                        <td>{{$r->keterangan}}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                onclick='hapusRacikan("{{$r->no_resep}}", "{{$r->no_racik}}", event)'>Hapus</button>
+                        </td>
+                    </tr>
                     @endforeach
                 </tbody>
-            </table> 
+            </table>
         </div>
-                     
+
     </x-adminlte-callout>
     @endif
 </div>
 
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
-    <script>
-
-        $('.obat-racikan').select2({
+<script>
+    $('.obat-racikan').select2({
                 placeholder: 'Pilih obat racikan',
                 ajax: {
                     url: '/ralan/obat',
@@ -364,9 +374,16 @@
             var kps = getIndexValue('kps[]', index);
             var kandungan = (p1/p2)*kps;
             var jml = (p1/p2)*jmlRacikan;
-            $(".kandungan-0").val(kandungan);
-            $(".jml-0").val(jml);
+            $(".kandungan"+index).val(kandungan.toFixed(1));
         }
 
-    </script>
+        function hitungJml(index){
+            var jmlRacikan = $('#jumlah_racikan').val();
+            var kandungan = getIndexValue('kandungan[]', index);
+            var kps = getIndexValue('kps[]', index);
+            var jml = (kandungan/kps)*jmlRacikan;
+            $(".jml"+index).val(jml);
+        }
+
+</script>
 @endpush
