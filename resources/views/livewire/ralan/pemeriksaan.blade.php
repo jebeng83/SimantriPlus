@@ -113,6 +113,7 @@
                     <th>Nadi</th>
                     <th>Suhu</th>
                     <th>RR</th>
+                    <th>Menu</th>
                 </tr>
             </thead>
             <tbody>
@@ -125,6 +126,16 @@
                     <td>{{ $item->nadi }}</td>
                     <td>{{ $item->suhu_tubuh }}</td>
                     <td>{{ $item->respirasi }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button
+                                wire:click='$emit("openModalEditPemeriksaan", "{{$item->no_rawat}}", "{{$item->tgl_perawatan}}","{{$item->jam_rawat}}")'
+                                class="btn btn-sm btn-warning">Edit</button>
+                            <button
+                                wire:click='confirmHapus("{{$item->no_rawat}}", "{{$item->tgl_perawatan}}","{{$item->jam_rawat}}")'
+                                class="btn btn-sm btn-danger">Hapus</button>
+                        </div>
+                    </td>
                 </tr>
                 @empty
                 <tr>

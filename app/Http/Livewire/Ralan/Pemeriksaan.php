@@ -5,11 +5,14 @@ namespace App\Http\Livewire\Ralan;
 use App\Traits\SwalResponse;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class Pemeriksaan extends Component
 {
-    use SwalResponse;
+    use SwalResponse, LivewireAlert;
     public $listPemeriksaan, $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
+    public $tgl, $jam;
+    public $listeners = ['refreshData' => '$refresh', 'hapusPemeriksaan' => 'hapus'];
 
     public function mount($noRawat, $noRm)
     {
@@ -125,6 +128,44 @@ class Pemeriksaan extends Component
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
+        }
+    }
+
+    public function confirmHapus($noRawat, $tgl, $jam)
+    {
+        $this->noRawat = $noRawat;
+        $this->tgl = $tgl;
+        $this->jam = $jam;
+        $this->confirm('Yakin ingin menghapus pemeriksaan ini?', [
+            'toast' => false,
+            'position' => 'center',
+            'showConfirmButton' => true,
+            'cancelButtonText' => 'Tidak',
+            'onConfirmed' => 'hapusPemeriksaan',
+        ]);
+    }
+
+    public function hapus()
+    {
+        try {
+            DB::table('pemeriksaan_ralan')
+                ->where('no_rawat', $this->noRawat)
+                ->where('tgl_perawatan', $this->tgl)
+                ->where('jam_rawat', $this->jam)
+                ->delete();
+            $this->getListPemeriksaan();
+            $this->alert('success', 'Pemeriksaan berhasil dihapus', [
+                'position' =>  'center',
+                'timer' =>  3000,
+                'toast' =>  false,
+            ]);
+        } catch (\Exception $e) {
+            $this->alert('error', 'Gagal', [
+                'position' =>  'center',
+                'timer' =>  3000,
+                'toast' =>  false,
+                'text' =>  $e->getMessage(),
+            ]);
         }
     }
 }
