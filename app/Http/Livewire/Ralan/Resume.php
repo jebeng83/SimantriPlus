@@ -117,7 +117,6 @@ class Resume extends Component
             ->where('prosedur_pasien.status', 'Ralan')
             ->select('icd9.deskripsi_panjang')
             ->first();
-
         $this->prosedur = $prosedur->deskripsi_panjang ?? '';
     }
 

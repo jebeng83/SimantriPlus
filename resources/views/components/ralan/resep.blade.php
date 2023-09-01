@@ -225,7 +225,21 @@
                             @foreach($resepRacikan as $r)
                             <tr>
                                 <td>{{$r->no_resep}}</td>
-                                <td>{{$r->no_racik}}. {{$r->nama_racik}}</td>
+                                <td>{{$r->no_racik}}. {{$r->nama_racik}}
+                                    @php
+                                    $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
+                                    @endphp
+                                    <ul class="p-4">
+                                        @if($racikan)
+                                        <ul>
+                                            @foreach($getDetailRacikan($racikan->no_resep) as $ror)
+                                            <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
+                                                {{$ror->jml}}</li>
+                                            @endforeach
+                                        </ul>
+                                        @endif
+                                    </ul>
+                                </td>
                                 <td>{{$r->nm_racik}}</td>
                                 <td>{{$r->jml_dr}}</td>
                                 <td>{{$r->aturan_pakai}}</td>
