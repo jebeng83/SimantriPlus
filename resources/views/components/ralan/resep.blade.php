@@ -90,20 +90,7 @@
                             <td class="align-middle text-center">{{$r->no_resep}}</td>
                             <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
                             <td>
-                                @php
-                                $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
-                                @endphp
                                 <ul class="p-4">
-                                    @if($racikan)
-                                    <li>Racikan - {{$racikan->nama_racik}} - {{$racikan->jml_dr}} -
-                                        [{{$racikan->aturan_pakai}}]</li>
-                                    <ul>
-                                        @foreach($getDetailRacikan($racikan->no_resep) as $ror)
-                                        <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
-                                            {{$ror->jml}}</li>
-                                        @endforeach
-                                    </ul>
-                                    @endif
                                     @foreach($getResepObat($r->no_resep) as $ro)
                                     <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
                                     @endforeach
@@ -294,6 +281,9 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    $(document).on("select2:open", () => {
+        document.querySelector(".select2-container--open .select2-search__field").focus()
+    })
     function getIndexValue(name, index) {
             var doc = document.getElementsByName(name);
             return doc[index].value;

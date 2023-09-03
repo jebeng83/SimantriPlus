@@ -289,6 +289,9 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    $(document).on("select2:open", () => {
+        document.querySelector(".select2-container--open .select2-search__field").focus()
+    })
     function getIndexValue(name, index) {
             var doc = document.getElementsByName(name);
             return doc[index].value;
@@ -838,16 +841,17 @@
                 success: function (response) {
                     console.log(response);
                     if(response.status == 'sukses'){
-                        Swal.fire({
-                        title: 'Sukses',
-                        text: 'Data berhasil disimpan',
-                        icon: 'success',
-                        confirmButtonText: 'Ok'
-                        }).then((result) => {
-                            if (result.value) {
-                                window.location.reload();
-                            }
-                        })
+                        window.location.reload();
+                        // Swal.fire({
+                        // title: 'Sukses',
+                        // text: 'Data berhasil disimpan',
+                        // icon: 'success',
+                        // confirmButtonText: 'Ok'
+                        // }).then((result) => {
+                        //     if (result.value) {
+                        //         window.location.reload();
+                        //     }
+                        // })
                     }
                     else{
                         Swal.fire({
