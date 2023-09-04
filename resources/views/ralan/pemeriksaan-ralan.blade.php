@@ -81,8 +81,12 @@
                 {{--
                 <x-ralan.resume /> --}}
                 <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
+                {{-- <x-adminlte-card title="Diagnosa" theme="info" icon="fas fa-lg fa-file-medical"
+                    collapsible="collapsed" maximizable>
+                    <livewire:ralan.diagnosa />
+                </x-adminlte-card> --}}
                 {{--
-                <x-ralan.diagnosa /> --}}
+                <x-ralan.diagnosa :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" /> --}}
                 {{--
                 <x-ralan.catatan :no-rawat="request()->get('no_rawat')" /> --}}
                 <livewire:ralan.catatan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />

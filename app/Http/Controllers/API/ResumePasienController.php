@@ -117,4 +117,57 @@ class ResumePasienController extends Controller
             ->get();
         return response()->json($data, 200);
     }
+
+    public function simpanDiagnosa(Request $request)
+    {
+        $noRawat = $request->get('noRawat');
+        $noRM = $request->get('noRM');
+        $this->validate($request, [
+            'diagnosa' => 'required',
+            'prioritas' => 'required',
+        ], [
+            'diagnosa.required' => 'Diagnosa tidak boleh kosong',
+            'prioritas.required' => 'Prioritas tidak boleh kosong',
+        ]);
+        try {
+            $cek_status = DB::table('diagnosa_pasien')
+                ->join('reg_periksa', 'diagnosa_pasien.no_rawat', '=', 'reg_periksa.no_rawat')
+                ->where('diagnosa_pasien.kd_penyakit', $request->get('diagnosa'))
+                ->where('reg_periksa.no_rkm_medis', $noRM)
+                ->select('diagnosa_pasien.kd_penyakit')
+                ->first();
+            if ($cek_status) {
+                $status = 'Lama';
+            } else {
+                $status = 'Baru';
+            }
+            $cek = DB::table('diagnosa_pasien')
+                ->where('kd_penyakit', $request->get('diagnosa'))
+                ->where('no_rawat', $noRawat)->count();
+            if ($cek > 0) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Sudah ada diagnosa yang sama'
+                ]);
+            } else {
+                DB::table('diagnosa_pasien')->insert([
+                    'no_rawat' => $noRawat,
+                    'kd_penyakit' => $request->get('diagnosa'),
+                    'status' => 'Ralan',
+                    'prioritas' => $request->get('prioritas'),
+                    'status_penyakit' => $status,
+                ]);
+                DB::commit();
+                return response()->json([
+                    'status' => 'sukses',
+                    'pesan' => 'Diagnosa berhasil disimpan'
+                ]);
+            }
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'status' => 'gagal',
+                'message' => $ex->getMessage()
+            ]);
+        }
+    }
 }

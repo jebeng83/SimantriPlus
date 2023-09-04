@@ -1,9 +1,11 @@
 <div>
     <x-adminlte-card title="Diagnosa" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
-        <form action="">
+        <form id="simpan-diagnosa" method="POST"
+            action="{{ route('diagnosa.simpan', ['noRawat' => $noRawat, 'noRM' => $noRm]) }}">
+            @csrf
             <div class="form-group">
                 <label for="diagnosa">Diagnosa</label>
-                <select id="diagnosa" class="form-control" name="diagnosa"></select>
+                <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
             </div>
             <div class="form-group">
                 <label for="prioritas">Prioritas</label>
@@ -20,30 +22,72 @@
                     <option value="10">Diagnosa Ke-10</option>
                 </select>
             </div>
+            <button class="btn btn-primary btn-block">Simpan</button>
         </form>
+        <div class="table-responsive mt-4">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Diagnosa</th>
+                        <th>Prioritas</th>
+                        <th>Menu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($diagnosa as $item)
+                    <tr>
+                        <td>{{$item->kd_penyakit}} - {{$item->nm_penyakit}}</td>
+                        <td>{{$item->prioritas}}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm">Hapus</button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="3" class="text-center">Tidak ada data</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </x-adminlte-card>
 </div>
 
 @push('js')
 <script>
-    $(function () {
-        $('#diagnosa').select2({
-            placeholder: 'Pilih Diagnosa',
-            ajax: {
-                url: "{{ route('diagnosa') }}",
-                dataType: 'json',
-                delay: 250,
-                processResults: function (data) {
-                    return {
-                        results: data.map(function (item) {
-                            return {
-                                id: item.kd_penyakit,
-                                text: item.nm_penyakit
-                            }
-                        })
-                    };
-                },
-                cache: true
+    $('#diagnosa-select').select2({
+        placeholder: 'Pilih Diagnosa',
+        ajax: {
+            url: "{{ route('diagnosa') }}",
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function (item) {
+                        return {
+                            id: item.kd_penyakit,
+                            text: item.kd_penyakit+' - '+item.nm_penyakit
+                        }
+                    })
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 3
+    });
+
+    $('#simpan-diagnosa').submit(function (e) {
+        e.preventDefault();
+        var data = $(this).serialize();
+        $.ajax({
+            url: $(this).attr('action'),
+            type: $(this).attr('method'),
+            data: data,
+            success: function (response) {
+                console.log(response);
+            },
+            error: function (response) {
+                console.log(response);
             }
         });
     });

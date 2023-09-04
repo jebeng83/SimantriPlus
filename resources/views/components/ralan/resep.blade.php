@@ -46,7 +46,7 @@
                 </form>
             </x-adminlte-callout>
 
-            @if(count($resep) > 0)
+            {{-- @if(count($resep) > 0) --}}
             <x-adminlte-callout theme="info">
                 <div class="table-responsive">
                     <table class="table table-striped">
@@ -59,8 +59,8 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($resep as $r)
+                        <tbody class="body-resep">
+                            @forelse($resep as $r)
                             <tr>
                                 <td>{{$r->nama_brng}}</td>
                                 <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
@@ -71,12 +71,16 @@
                                         onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
                                 </td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr>
+                                <td colspan="5" class="text-center">Tidak ada data</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </x-adminlte-callout>
-            @endif
+            {{-- @endif --}}
             <x-adminlte-callout theme="info" title="Riwayat Peresepan">
                 @php
                 $config["responsive"] = true;
@@ -629,7 +633,7 @@
                 if (result.value) {
                     let _token   = $('meta[name="csrf-token"]').attr('content');
                     $.ajax({
-                        url: '/api/obat/'+$noResep+'/'+$kdObat,
+                        url: '/api/obat/'+$noResep+'/'+$kdObat+'/'+"{{$encryptNoRawat}}",
                         type: 'POST',
                         dataType: 'json',
                         data:{_token: _token}, 
@@ -644,24 +648,27 @@
                             });
                         },
                         success: function(data) {
-                            console.log(data);
-                            data.status == 'sukses' ? Swal.fire(
-                                'Terhapus!',
-                                data.pesan,
-                                'success'
-                            ).then((result) => {
-                                if (result.value) {
-                                    window.location.reload();
+                            if(data.status == 'sukses'){
+                                Swal.close();
+                                $('.body-resep').empty();
+                                $.each(data.data, function (i, item) {
+                                    var trHTML = '';
+                                    trHTML += '<tr>';
+                                    trHTML += '<td>' + item.nama_brng + '</td>';
+                                    trHTML += '<td>' + item.tgl_peresepan + ' ' + item.jam_peresepan + '</td>';
+                                    trHTML += '<td>' + item.jml + '</td>';
+                                    trHTML += '<td>' + item.aturan_pakai + '</td>';
+                                    trHTML += '<td><button class="btn btn-danger btn-sm" onclick="hapusObat(\''+item.no_resep+'\', \''+item.kode_brng+'\', event)">Hapus</button></td>';
+                                    trHTML += '</tr>';
+                                    $('.body-resep').append(trHTML);
+                                }); 
+                                }else{
+                                    Swal.fire(
+                                        'Gagal!',
+                                        data.pesan,
+                                        'error'
+                                    )
                                 }
-                            }) : Swal.fire(
-                                'Gagal!',
-                                data.pesan,
-                                'error'
-                            ).then((result) => {
-                                if (result.value) {
-                                    window.location.reload();
-                                }
-                            })
                         },
                         error: function(data) {
                             console.log(data);
@@ -705,7 +712,6 @@
                             });
                         },
                         success: function(data) {
-                            console.log(data);
                             data.status == 'sukses' ? Swal.fire(
                                 'Terhapus!',
                                 data.pesan,
@@ -780,18 +786,22 @@
                         });
                 },
                 success: function (response) {
-                    console.log(response);
+                    // console.log(response);
                     if(response.status == 'sukses'){
-                        Swal.fire({
-                        title: 'Sukses',
-                        text: 'Data berhasil disimpan',
-                        icon: 'success',
-                        confirmButtonText: 'Ok'
-                        }).then((result) => {
-                            if (result.value) {
-                                window.location.reload();
-                            }
-                        })
+                        // window.location.reload();
+                        Swal.close();
+                        $('.body-resep').empty();
+                        $.each(response.data, function (i, item) {
+                            var trHTML = '';
+                            trHTML += '<tr>';
+                            trHTML += '<td>' + item.nama_brng + '</td>';
+                            trHTML += '<td>' + item.tgl_peresepan + ' ' + item.jam_peresepan + '</td>';
+                            trHTML += '<td>' + item.jml + '</td>';
+                            trHTML += '<td>' + item.aturan_pakai + '</td>';
+                            trHTML += '<td><button class="btn btn-danger btn-sm" onclick="hapusObat(\''+item.no_resep+'\', \''+item.kode_brng+'\', event)">Hapus</button></td>';
+                            trHTML += '</tr>';
+                            $('.body-resep').append(trHTML);
+                        });      
                     }
                     else{
                         Swal.fire({
@@ -852,16 +862,19 @@
                 success: function (response) {
                     console.log(response);
                     if(response.status == 'sukses'){
-                        Swal.fire({
-                        title: 'Sukses',
-                        text: 'Data berhasil disimpan',
-                        icon: 'success',
-                        confirmButtonText: 'Ok'
-                        }).then((result) => {
-                            if (result.value) {
-                                window.location.reload();
-                            }
-                        })
+                        Swal.close();
+                        $('.body-resep').empty();
+                        $.each(response.data, function (i, item) {
+                            var trHTML = '';
+                            trHTML += '<tr>';
+                            trHTML += '<td>' + item.nama_brng + '</td>';
+                            trHTML += '<td>' + item.tgl_peresepan + ' ' + item.jam_peresepan + '</td>';
+                            trHTML += '<td>' + item.jml + '</td>';
+                            trHTML += '<td>' + item.aturan_pakai + '</td>';
+                            trHTML += '<td><button class="btn btn-danger btn-sm" onclick="hapusObat(\''+item.no_resep+'\', \''+item.kode_brng+'\', event)">Hapus</button></td>';
+                            trHTML += '</tr>';
+                            $('.body-resep').append(trHTML);
+                        }); 
                     }
                     else{
                         Swal.fire({
