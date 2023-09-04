@@ -21,7 +21,7 @@
                     data-target="#modalRiwayatPemeriksaanRalan" class="bg-info justify-content-end" />
             </span>
             <span class="nav-link">
-                <div class="d-flex flex-row justify-content-between">
+                <div class="d-flex flex-row justify-content-between" style="gap:10px">
                     <x-adminlte-button icon="fas fa-folder" label="Berkas RM Digital" onclick="getBerkasRM()"
                         theme="success" />
                     <x-adminlte-button icon="fas fa-folder" label="Berkas RM Retensi" theme="secondary"
@@ -48,9 +48,9 @@
 <x-adminlte-modal id="modalBerkasRM" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
     static-backdrop scrollable>
     <div class="container" style="color:#0d2741">
-        <div class="row row-cols-auto">
-            <div class="col mb-3 body-modal-berkasrm">
-            </div>
+        <div class="row row-cols-auto body-modal-berkasrm" style="gap:20px">
+            {{-- <div class="body-modal-berkasrm">
+            </div> --}}
         </div>
     </div>
 </x-adminlte-modal>
@@ -136,7 +136,7 @@
 
         function getBerkasRM() {
             $.ajax({
-                url: "/berkas/{{$data->no_rawat}}",
+                url: "/berkas/{{$data->no_rawat}}/{{$data->no_rkm_medis}}",
                 type: "GET",
                 beforeSend:function() {
                 Swal.fire({

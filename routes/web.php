@@ -133,7 +133,7 @@ Route::get('/master_obat', [
     App\Http\Controllers\MasterObat::class,
     'index',
 ])->name('master_obat');
-Route::get('/berkas/{noRawat}', [
+Route::get('/berkas/{noRawat}/{noRM}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getBerkasRM',
 ])->where('noRawat', '.*');
@@ -172,6 +172,11 @@ Route::get('/diagnosa', [
     App\Http\Controllers\API\ResumePasienController::class,
     'getDiagnosa',
 ])->name('diagnosa');
+
+Route::post('/diagnosa', [
+    App\Http\Controllers\API\ResumePasienController::class,
+    'simpanDiagnosa',
+])->name('diagnosa.simpan');
 
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');

@@ -556,12 +556,12 @@ class PemeriksaanRalanController extends Controller
             ->get();
     }
 
-    public function getBerkasRM($noRawat)
+    public function getBerkasRM($noRawat, $noRM)
     {
         try {
 
             $data = DB::table('berkas_digital_perawatan')
-                ->where('no_rawat', $noRawat)
+                ->whereRaw("no_rawat IN (SELECT no_rawat FROM reg_periksa WHERE no_rkm_medis = :noRM)", ['noRM' => $noRM])
                 ->get();
             if ($data->count() > 0) {
                 return response()->json([
