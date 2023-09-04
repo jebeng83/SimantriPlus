@@ -168,6 +168,11 @@ Route::get('/booking', [
     'index',
 ])->name('booking');
 
+Route::get('/diagnosa', [
+    App\Http\Controllers\API\ResumePasienController::class,
+    'getDiagnosa',
+])->name('diagnosa');
+
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });

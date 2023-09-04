@@ -35,10 +35,10 @@ class ResumePasienController extends Controller
         //     'kondisi_pulang' => 'required',
         // ]);
 
-        try{
+        try {
             DB::beginTransaction();
             $cek = DB::table('resume_pasien')->where('no_rawat', $noRawat)->count('no_rawat');
-            if($cek > 0){
+            if ($cek > 0) {
                 DB::table('resume_pasien')->where('no_rawat', $noRawat)->update([
                     'keluhan_utama' => $keluhan,
                     'diagnosa_utama' => $diagnosa,
@@ -51,10 +51,10 @@ class ResumePasienController extends Controller
                 ]);
                 DB::commit();
                 return response()->json([
-                    'status'=> 'sukses', 
-                    'pesan'=> 'Resume medis berhasil diperbarui'
+                    'status' => 'sukses',
+                    'pesan' => 'Resume medis berhasil diperbarui'
                 ]);
-            }else{
+            } else {
                 DB::table('resume_pasien')->insert([
                     'no_rawat' => $noRawat,
                     'kd_dokter' => $dokter,
@@ -70,15 +70,15 @@ class ResumePasienController extends Controller
 
                 DB::commit();
                 return response()->json([
-                    'status'=> 'sukses', 
-                    'pesan'=> 'Resume medis berhasil ditambahkan'
+                    'status' => 'sukses',
+                    'pesan' => 'Resume medis berhasil ditambahkan'
                 ]);
             }
-        }catch (\Illuminate\Database\QueryException $ex){
+        } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
             return response()->json([
-                'status'=> 'gagal', 
-                'message'=> $ex->getMessage()
+                'status' => 'gagal',
+                'message' => $ex->getMessage()
             ]);
         }
     }
@@ -87,22 +87,34 @@ class ResumePasienController extends Controller
     {
         $noRawat = $this->decryptData($noRawat);
 
-        try{
+        try {
             $cek = DB::table('reg_periksa')->where('no_rawat', $noRawat)->first();
-            if($cek->status_lanjut == 'Ralan'){
+            if ($cek->status_lanjut == 'Ralan') {
                 $data = DB::table('pemeriksaan_ralan')->where('no_rawat', $noRawat)->select('keluhan')->first();
-            }else{
+            } else {
                 $data = DB::table('pemeriksaan_ranap')->where('no_rawat', $noRawat)->select('keluhan')->first();
             }
             return response()->json([
-                'status'=> 'sukses', 
-                'data'=> $data->keluhan
+                'status' => 'sukses',
+                'data' => $data->keluhan
             ]);
-        }catch(\Illuminate\Database\QueryException $ex){
+        } catch (\Illuminate\Database\QueryException $ex) {
             return response()->json([
-                'status'=> 'gagal', 
-                'message'=> $ex->getMessage()
+                'status' => 'gagal',
+                'message' => $ex->getMessage()
             ]);
         }
+    }
+
+    public function getDiagnosa(Request $request)
+    {
+        $q = $request->get('q');
+        $que = '%' . $q . '%';
+
+        $data = DB::table('penyakit')
+            ->where('kd_penyakit', 'like', $que)
+            ->orWhere('nm_penyakit', 'like', $que)
+            ->get();
+        return response()->json($data, 200);
     }
 }

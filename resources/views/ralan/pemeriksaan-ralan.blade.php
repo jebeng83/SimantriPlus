@@ -82,6 +82,8 @@
                 <x-ralan.resume /> --}}
                 <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
                 {{--
+                <x-ralan.diagnosa /> --}}
+                {{--
                 <x-ralan.catatan :no-rawat="request()->get('no_rawat')" /> --}}
                 <livewire:ralan.catatan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
                 <x-ralan.rujuk-internal :no-rawat="request()->get('no_rawat')" />
