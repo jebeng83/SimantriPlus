@@ -7,6 +7,7 @@
             $pemeriksaan =
             App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
             $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat);
+            $tono = App\Http\Controllers\Ralan\PemeriksaanRalanController::getTono($row->no_rawat);
             $laboratorium = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanLab($row->no_rawat);
             $resume = App\Http\Controllers\Ralan\PemeriksaanRalanController::getResume($row->no_rawat);
             $radiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getRadiologi($row->no_rawat);
@@ -84,6 +85,21 @@
                                         <td colspan="2"><b>Plan</b></td>
                                         <td colspan="8">{{ $pemeriksaan->rtl ?? '' }}</td>
                                     </tr>
+                                    @if($tono)
+                                    <tr>
+                                        <td colspan="2"><b>Pemeriksaan Tonometri</b></td>
+                                        <td colspan="8">
+                                            <ul>
+                                                <li>Suhu : {{$tono->suhu}}</li>
+                                                <li>Tensi : {{$tono->tensi}}</li>
+                                                <li>RR : {{$tono->respirasi}}</li>
+                                                <li>Nadi : {{$tono->nadi}}</li>
+                                                <li>Kanan : {{$tono->tonokanan}}</li>
+                                                <li>Kiri : {{$tono->tonokiri}}</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    @endif
                                     <tr>
                                         <td colspan="2"><b>Resume Medis</b></td>
                                         <td colspan="8">
