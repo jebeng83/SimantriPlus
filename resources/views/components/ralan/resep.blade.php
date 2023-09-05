@@ -862,7 +862,16 @@
                 success: function (response) {
                     console.log(response);
                     if(response.status == 'sukses'){
-                        Swal.close();
+                        // Swal.close();
+                        Swal.fire({
+                            title: 'Data berhasil disimpan',
+                            icon: 'success',
+                            timer: 3000,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+
+                        })
                         $('.body-resep').empty();
                         $.each(response.data, function (i, item) {
                             var trHTML = '';

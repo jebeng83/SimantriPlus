@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class Diagnosa extends Component
 {
-    public $noRawat, $noRM;
+    public $noRawat, $noRM, $diagnosa, $prioritas;
     /**
      * Create a new component instance.
      *

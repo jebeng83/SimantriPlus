@@ -1,13 +1,15 @@
 <div>
-    <form id="simpan-diagnosa" method="POST">
+    <form id="simpan-diagnosa" wire:submit.prevent='simpan'>
         @csrf
-        <div class="form-group">
+        <div wire:ignore class="form-group">
             <label for="diagnosa">Diagnosa</label>
             <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
+            @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
         <div class="form-group">
             <label for="prioritas">Prioritas</label>
-            <select id="prioritas" class="form-control" name="prioritas">
+            <select id="prioritas" wire:model.defer='prioritas' class="form-control" name="prioritas">
+                <option value="">Pilih Prioritas</option>
                 <option value="1">Diagnosa Ke-1</option>
                 <option value="2">Diagnosa Ke-2</option>
                 <option value="3">Diagnosa Ke-3</option>
@@ -19,9 +21,39 @@
                 <option value="9">Diagnosa Ke-9</option>
                 <option value="10">Diagnosa Ke-10</option>
             </select>
+            @error('prioritas') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
         <button class="btn btn-primary btn-block">Simpan</button>
     </form>
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Diagnosa</th>
+                    <th>Prioritas</th>
+                    <th>Menu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($diagnosas as $item)
+                <tr>
+                    <td>{{$loop->iteration}}</td>
+                    <td>{{$item->kd_penyakit}} - {{$item->nm_penyakit}}</td>
+                    <td>{{$item->prioritas}}</td>
+                    <td>
+                        <button wire:click='confirmDelete("{{$item->kd_penyakit}}","{{$item->prioritas}}")'
+                            class="btn btn-danger btn-sm">Hapus</button>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="4" class="text-center">Tidak ada data</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 
 @push('js')
@@ -47,20 +79,13 @@
         minimumInputLength: 3
     });
 
-    $('#simpan-diagnosa').submit(function (e) {
-        e.preventDefault();
-        var data = $(this).serialize();
-        $.ajax({
-            url: $(this).attr('action'),
-            type: $(this).attr('method'),
-            data: data,
-            success: function (response) {
-                console.log(response);
-            },
-            error: function (response) {
-                console.log(response);
-            }
-        });
+    $('#diagnosa-select').on('select2:select', function (e) {
+        var data = e.params.data;
+        @this.set('diagnosa', data.id);
+    });
+
+    window.addEventListener('resetSelect2', event => {
+        $('#diagnosa-select').val(null).trigger('change');
     });
 </script>
 @endpush
