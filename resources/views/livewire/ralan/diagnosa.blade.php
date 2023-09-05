@@ -6,6 +6,11 @@
             <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
             @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
+        <div wire:ignore class="form-group">
+            <label for="prosedur">Prosedur</label>
+            <select id="prosedur-select" class="form-control" name="prosedur"></select>
+            @error('prosedur') <span class="text-danger">{{ $message }}</span> @enderror
+        </div>
         <div class="form-group">
             <label for="prioritas">Prioritas</label>
             <select id="prioritas" wire:model.defer='prioritas' class="form-control" name="prioritas">
@@ -31,6 +36,7 @@
                 <tr>
                     <th>No</th>
                     <th>Diagnosa</th>
+                    <th>Prosedur</th>
                     <th>Prioritas</th>
                     <th>Menu</th>
                 </tr>
@@ -40,15 +46,17 @@
                 <tr>
                     <td>{{$loop->iteration}}</td>
                     <td>{{$item->kd_penyakit}} - {{$item->nm_penyakit}}</td>
+                    <td>{{$item->deskripsi_pendek}}</td>
                     <td>{{$item->prioritas}}</td>
                     <td>
-                        <button wire:click='confirmDelete("{{$item->kd_penyakit}}","{{$item->prioritas}}")'
+                        <button
+                            wire:click='confirmDelete("{{$item->kd_penyakit}}","{{$item->prioritas}}","{{$item->kode}}")'
                             class="btn btn-danger btn-sm">Hapus</button>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="text-center">Tidak ada data</td>
+                    <td colspan="5" class="text-center">Tidak ada data</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -79,13 +87,43 @@
         minimumInputLength: 3
     });
 
+    $('#prosedur-select').select2({
+        placeholder: 'Pilih prosedur',
+        ajax: {
+            url: "{{ route('icd9') }}",
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function (item) {
+                        return {
+                            id: item.kode,
+                            text: item.kode+' - '+item.deskripsi_pendek
+                        }
+                    })
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 3
+    });
+
     $('#diagnosa-select').on('select2:select', function (e) {
         var data = e.params.data;
         @this.set('diagnosa', data.id);
     });
 
+    $('#prosedur-select').on('select2:select', function (e) {
+        var data = e.params.data;
+        @this.set('prosedur', data.id);
+    });
+    
     window.addEventListener('resetSelect2', event => {
         $('#diagnosa-select').val(null).trigger('change');
+    });
+
+    window.addEventListener('resetSelect2Prosedur', event => {
+        $('#prosedur-select').val(null).trigger('change');
     });
 </script>
 @endpush

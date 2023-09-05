@@ -8,6 +8,10 @@
                 <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
             </div>
             <div class="form-group">
+                <label for="tindakan">Tindakan</label>
+                <select id="indakan-select" class="form-control" name="tindakan"></select>
+            </div>
+            <div class="form-group">
                 <label for="prioritas">Prioritas</label>
                 <select id="prioritas" class="form-control" name="prioritas">
                     <option value="1">Diagnosa Ke-1</option>
@@ -67,6 +71,27 @@
                         return {
                             id: item.kd_penyakit,
                             text: item.kd_penyakit+' - '+item.nm_penyakit
+                        }
+                    })
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 3
+    });
+
+    $('#tindakan-select').select2({
+        placeholder: 'Pilih tindakan',
+        ajax: {
+            url: "{{ route('icd9') }}",
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function (item) {
+                        return {
+                            id: item.kode,
+                            text: item.kode+' - '+item.deskripsi_pendek
                         }
                     })
                 };

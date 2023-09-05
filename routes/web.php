@@ -173,6 +173,11 @@ Route::get('/diagnosa', [
     'getDiagnosa',
 ])->name('diagnosa');
 
+Route::get('/icd9', [
+    App\Http\Controllers\API\ResumePasienController::class,
+    'getICD9',
+])->name('icd9');
+
 Route::post('/diagnosa', [
     App\Http\Controllers\API\ResumePasienController::class,
     'simpanDiagnosa',

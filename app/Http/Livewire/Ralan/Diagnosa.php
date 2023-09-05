@@ -9,8 +9,8 @@ use Livewire\Component;
 class Diagnosa extends Component
 {
     use LivewireAlert;
-    public $noRawat, $noRM, $diagnosa, $prioritas;
-    public $selectDiagnosa, $selectPrioritas;
+    public $noRawat, $noRM, $diagnosa, $prioritas, $prosedur;
+    public $selectDiagnosa, $selectPrioritas, $selectProsedur;
     protected $listeners = ['refreshDiagnosa' => '$refresh', 'deleteDiagnosa' => 'delete'];
 
     public function mount($noRawat, $noRm)
@@ -24,7 +24,10 @@ class Diagnosa extends Component
         return view('livewire.ralan.diagnosa', [
             'diagnosas' => DB::table('diagnosa_pasien')
                 ->join('penyakit', 'diagnosa_pasien.kd_penyakit', '=', 'penyakit.kd_penyakit')
+                ->leftJoin('prosedur_pasien', 'diagnosa_pasien.no_rawat', '=', 'prosedur_pasien.no_rawat')
+                ->leftJoin('icd9', 'prosedur_pasien.kode', '=', 'icd9.kode')
                 ->where('diagnosa_pasien.no_rawat', $this->noRawat)
+                ->select('penyakit.nm_penyakit', 'diagnosa_pasien.kd_penyakit', 'icd9.deskripsi_pendek', 'diagnosa_pasien.prioritas', 'prosedur_pasien.kode')
                 ->get(),
         ]);
     }
@@ -40,6 +43,7 @@ class Diagnosa extends Component
         ]);
 
         try {
+            DB::beginTransaction();
             $cek_status = DB::table('diagnosa_pasien')
                 ->join('reg_periksa', 'diagnosa_pasien.no_rawat', '=', 'reg_periksa.no_rawat')
                 ->where('diagnosa_pasien.kd_penyakit', $this->diagnosa)
@@ -64,20 +68,33 @@ class Diagnosa extends Component
                     'prioritas' => $this->prioritas,
                     'status_penyakit' => $status,
                 ]);
+                if (!empty($this->prosedur)) {
+                    DB::table('prosedur_pasien')
+                        ->insert([
+                            'no_rawat' => $this->noRawat,
+                            'kode' => $this->prosedur,
+                            'status' => 'Ralan',
+                            'prioritas' => $this->prioritas,
+                        ]);
+                }
+                DB::commit();
                 $this->dispatchBrowserEvent('resetSelect2');
+                $this->dispatchBrowserEvent('resetSelect2Prosedur');
                 $this->reset(['diagnosa', 'prioritas']);
                 $this->emit('refreshDiagnosa');
                 $this->alert('success', 'Diagnosa berhasil ditambahkan');
             }
         } catch (\Exception $e) {
+            DB::rollback();
             $this->alert('error', 'Diagnosa gagal ditambahkan');
         }
     }
 
-    public function confirmDelete($diagnosa, $prioritas)
+    public function confirmDelete($diagnosa, $prioritas, $prosedur)
     {
         $this->selectDiagnosa = $diagnosa;
         $this->selectPrioritas = $prioritas;
+        $this->selectProsedur = $prosedur;
         $this->confirm('Yakin ingin menghapus diagnosa ini?', [
             'toast' => false,
             'position' => 'center',
@@ -90,17 +107,26 @@ class Diagnosa extends Component
     public function delete()
     {
         try {
+            DB::beginTransaction();
             DB::table('diagnosa_pasien')
                 ->where('kd_penyakit', $this->selectDiagnosa)
                 ->where('prioritas', $this->selectPrioritas)
                 ->where('no_rawat', $this->noRawat)
                 ->delete();
+            DB::table('prosedur_pasien')
+                ->where('kode', $this->selectProsedur)
+                ->where('prioritas', $this->selectPrioritas)
+                ->where('no_rawat', $this->noRawat)
+                ->delete();
+            DB::commit();
             $this->dispatchBrowserEvent('resetSelect2');
+            $this->dispatchBrowserEvent('resetSelect2Prosedur');
             $this->reset(['diagnosa', 'prioritas']);
             $this->alert('success', 'Diagnosa berhasil dihapus');
             $this->emit('refreshDiagnosa');
         } catch (\Exception $e) {
-            $this->alert('error', 'Diagnosa gagal dihapus');
+            DB::rollback();
+            $this->alert('error', $e->getMessage());
         }
     }
 }

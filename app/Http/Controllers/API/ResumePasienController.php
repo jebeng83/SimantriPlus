@@ -118,6 +118,19 @@ class ResumePasienController extends Controller
         return response()->json($data, 200);
     }
 
+    public function getICD9(Request $request)
+    {
+        $q = $request->get('q');
+        $que = '%' . $q . '%';
+
+        $data = DB::table('icd9')
+            ->where('kode', 'like', $que)
+            ->orWhere('deskripsi_panjang', 'like', $que)
+            ->orWhere('deskripsi_pendek', 'like', $que)
+            ->get();
+        return response()->json($data, 200);
+    }
+
     public function simpanDiagnosa(Request $request)
     {
         $noRawat = $request->get('noRawat');
