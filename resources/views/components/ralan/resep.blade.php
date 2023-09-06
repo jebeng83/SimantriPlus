@@ -868,7 +868,7 @@
                             icon: 'success',
                             timer: 3000,
                             toast: true,
-                            position: 'top-end',
+                            position: 'center',
                             showConfirmButton: false,
 
                         })
