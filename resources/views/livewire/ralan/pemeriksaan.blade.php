@@ -106,7 +106,7 @@
         <table class="table table-striped">
             <thead class="thead-inverse" style="width: 100%">
                 <tr>
-                    <th>Petugas</th>
+                    <th>PPA</th>
                     <th>Keluhan</th>
                     <th>Pemeriksaan</th>
                     <th>Tensi</th>
