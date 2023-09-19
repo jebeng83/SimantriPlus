@@ -423,12 +423,12 @@
             var kandungan = parseFloat(kandungan);
             var jml = (p1/p2)*jmlRacikan;
             var jml = parseFloat(jml);
-            if(isNaN(kandungan) || isFinite(kandungan)){
-                var kandungan = 0;
-            }
-            if(isNaN(jml) || isFinite(jml)){
-                var jml = 0;
-            }
+            // if(isNaN(kandungan) || isFinite(kandungan)){
+            //     var kandungan = 0;
+            // }
+            // if(isNaN(jml) || isFinite(jml)){
+            //     var jml = 0;
+            // }
             $(".kandungan-"+index).val(kandungan.toFixed(1));
             $(".jml-"+index).val(jml.toFixed(1));
         }
@@ -439,9 +439,9 @@
             var kandungan = $(".kandungan-"+index).val();
             var jml = (kandungan/kps)*jmlRacikan;
             var jml = parseFloat(jml);
-            if(isNaN(jml) || isFinite(jml)){
-                var jml = 0;
-            }
+            // if(isNaN(jml) || isFinite(jml)){
+            //     var jml = 0;
+            // }
             $(".jml-"+index).val(jml.toFixed(1));
         }
 
