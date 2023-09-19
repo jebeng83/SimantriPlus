@@ -48,10 +48,13 @@
 
             {{-- @if(count($resep) > 0) --}}
             <x-adminlte-callout theme="info">
+                {{--
+                <livewire:ralan.table-resep :no-rawat="$no_rawat" /> --}}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                {{-- <th><input type="checkbox" id="checkboxAll"></th> --}}
                                 <th>Nama Obat</th>
                                 <th>Tanggal / Jam</th>
                                 <th>Jumlah</th>
@@ -62,6 +65,9 @@
                         <tbody class="body-resep">
                             @forelse($resep as $r)
                             <tr>
+                                {{--
+                            <tr data-target="{{$r->kode_brng}}" class="cursor-pointer"> --}}
+                                {{-- <td><input type="checkbox" id="checkbox-resep" disabled></td> --}}
                                 <td>{{$r->nama_brng}}</td>
                                 <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
                                 <td>{{$r->jml}}</td>
@@ -73,11 +79,24 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center">Tidak ada data</td>
+                                <td colspan="6" class="text-center">Tidak ada data</td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
+                    <div class="container-delete-resep-button">
+                        @php
+                        if(count($resep) > 0){
+                        $no_resep = $resep->pluck('no_resep')->toArray();
+                        $no = $no_resep[0];
+                        }else{
+                        $no = '';
+                        }
+                        @endphp
+                        <button class="btn btn-danger btn-sm btn-block disabled" data-target="{{$no}}"
+                            id="delete-batch-button">Hapus
+                            Obat</button>
+                    </div>
                 </div>
             </x-adminlte-callout>
             {{-- @endif --}}
@@ -161,27 +180,27 @@
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="p1">P1</label>
-                                    <input id="p1" class="form-control p-1" type="text" name="p1[]">
+                                    <input id="p1" class="form-control p-1" type="text" name="p1[]" required>
                                 </div>
                             </div>
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="p2">P2</label>
                                     <input id="p2" class="form-control p-1" oninput="hitungRacikan(0)" type=" text"
-                                        name="p2[]">
+                                        name="p2[]" required>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="kandungan">Kandungan</label>
                                     <input id="kandungan" oninput="hitungJml(0)" class="form-control p-1 kandungan-0"
-                                        type="text" name="kandungan[]">
+                                        type="text" name="kandungan[]" required>
                                 </div>
                             </div>
                             <div class="col-md-1">
                                 <div class="form-group">
                                     <label for="jml">Jml</label>
-                                    <input id="jml" class="form-control p-1 jml-0" type="text" name="jml[]">
+                                    <input id="jml" class="form-control p-1 jml-0" type="text" name="jml[]" required>
                                 </div>
                             </div>
                         </div>
@@ -222,7 +241,7 @@
                                     @endphp
                                     <ul class="p-4">
                                         @if($racikan)
-                                        <ul>
+                                        <ul style="padding: 2px">
                                             @foreach($getDetailRacikan($racikan->no_resep) as $ror)
                                             <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
                                                 {{$ror->jml}}</li>
@@ -279,6 +298,10 @@
         box-shadow: none;
         /* You may want to include this as bootstrap applies these styles too */
     }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
 </style>
 @endpush
 
@@ -322,25 +345,25 @@
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="p1'+i+'">P1</label>' + 
-                            '                                        <input id="p1'+i+'" class="form-control p-1 p1-'+i+'" type="text" name="p1[]">' + 
+                            '                                        <input id="p1'+i+'" class="form-control p-1 p1-'+i+'" type="text" name="p1[]" required>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none"  for="p2'+i+'">P2</label>' + 
-                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" oninput="hitungRacikan('+i+')" name="p2[]">' + 
+                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" type="text" oninput="hitungRacikan('+i+')" name="p2[]" required>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-2">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="kandungan'+i+'">Kandungan</label>' + 
-                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungJml('+i+')" name="kandungan[]">' + 
+                            '                                        <input id="kandungan'+i+'" class="form-control p-1 kandungan-'+i+'" type="text" oninput="hitungJml('+i+')" name="kandungan[]" required>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none" for="jml'+i+'">Jml</label>' + 
-                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" oninput="hitungJml('+i+')" type="text" name="jml[]">' + 
+                            '                                        <input id="jml'+i+'" class="form-control p-1 jml-'+i+'" oninput="hitungJml('+i+')" type="text" name="jml[]" required>' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                            </div>' + 
@@ -400,12 +423,12 @@
             var kandungan = parseFloat(kandungan);
             var jml = (p1/p2)*jmlRacikan;
             var jml = parseFloat(jml);
-            // if(isNaN(kandungan) || isFinite(kandungan)){
-            //     kandungan = 0;
-            // }
-            // if(isNaN(jml) || isFinite(jml)){
-            //     jml = 0;
-            // }
+            if(isNaN(kandungan) || isFinite(kandungan)){
+                var kandungan = 0;
+            }
+            if(isNaN(jml) || isFinite(jml)){
+                var jml = 0;
+            }
             $(".kandungan-"+index).val(kandungan.toFixed(1));
             $(".jml-"+index).val(jml.toFixed(1));
         }
@@ -416,30 +439,11 @@
             var kandungan = $(".kandungan-"+index).val();
             var jml = (kandungan/kps)*jmlRacikan;
             var jml = parseFloat(jml);
-            // if(isNaN(jml) || isFinite(jml)){
-            //     jml = 0;
-            // }
+            if(isNaN(jml) || isFinite(jml)){
+                var jml = 0;
+            }
             $(".jml-"+index).val(jml.toFixed(1));
         }
-
-        // function hitungRacikan(index){
-        //     var p1 = getIndexValue('p1[]', index);
-        //     var p2 = getIndexValue('p2[]', index);
-        //     var jmlRacikan = $('#jumlah_racikan').val();
-        //     var kps = getIndexValue('kps[]', index);
-        //     var kandungan = (p1/p2)*kps;
-        //     var jml = (p1/p2)*jmlRacikan;
-        //     $(".kandungan-"+index).val(kandungan.toFixed(1));
-        //     $(".jml-"+index).val(jml);
-        // }
-
-        // function hitungJumlahRacikan(index){
-        //     var jmlRacikan = $('#jumlah_racikan').val();
-        //     var kandungan = $('.kandungan-'+index).val();
-        //     var kps = getIndexValue('kps[]', index);
-        //     var jml = (kandungan/kps)*jmlRacikan;
-        //     $(".jml-"+index).val(jml.toFixed(1));
-        // }
 
 </script>
 <script>
@@ -789,11 +793,19 @@
                     // console.log(response);
                     if(response.status == 'sukses'){
                         // window.location.reload();
-                        Swal.close();
+                        Swal.fire({
+                            title: 'Data berhasil disimpan',
+                            icon: 'success',
+                            timer: 3000,
+                            toast: true,
+                            position: 'center',
+                            showConfirmButton: false,
+                        });
                         $('.body-resep').empty();
                         $.each(response.data, function (i, item) {
                             var trHTML = '';
-                            trHTML += '<tr>';
+                            trHTML += '<tr data-target="' + item.kode_brng + '" class="cursor-pointer">';
+                            trHTML += '<td><input type="checkbox" id="checkbox-resep" disabled></td>';
                             trHTML += '<td>' + item.nama_brng + '</td>';
                             trHTML += '<td>' + item.tgl_peresepan + ' ' + item.jam_peresepan + '</td>';
                             trHTML += '<td>' + item.jml + '</td>';
@@ -983,9 +995,140 @@
             });
         });
 
-        function hitung(){
+        let listObat = [];
 
-        } 
+        $('.cursor-pointer').on('click', function(){
+            let data = $(this).attr("data-target");
+            let name = this.className;
+            if(name.includes('bg-danger')){
+                $(this).removeClass('bg-danger');
+                $(this).closest('tr').find('input:checkbox').prop('checked', false);
+                listObat = listObat.filter(function(item) {
+                    return item !== data
+                })
+            }else{
+                $(this).addClass('bg-danger');
+                $(this).closest('tr').find('input:checkbox').prop('checked', true);
+                listObat.push(data);
+            }
+            let jmlObat = listObat.length;
+            if(jmlObat > 0){
+                $('#delete-batch-button').removeClass('disabled');
+                $('#delete-batch-button').html('Hapus '+ jmlObat +' Obat');
+            }else{
+                $('#delete-batch-button').addClass('disabled');
+                $('#delete-batch-button').html('Hapus Obat');
+            }
+        })
+
+        $('#checkboxAll').on('change', function(){
+            $('input:checkbox').prop('checked', this.checked); 
+            if(this.checked){
+                $('.cursor-pointer').addClass('bg-danger');
+                listObat = [];
+                $('.cursor-pointer').each(function(){
+                    listObat.push($(this).attr("data-target"));
+                })
+            }else{
+                $('.cursor-pointer').removeClass('bg-danger');
+                listObat = [];
+            }
+            let jmlObat = listObat.length;
+            if(jmlObat > 0){
+                $('#delete-batch-button').removeClass('disabled');
+                $('#delete-batch-button').html('Hapus '+ jmlObat +' Obat');
+            }else{
+                $('#delete-batch-button').addClass('disabled');
+                $('#delete-batch-button').html('Hapus Obat');
+            }
+        })
+
+        function hapusObatBatch($noResep, $kdObat) {
+            Swal.fire({
+                title: 'Hapus Obat?',
+                text: "Yakin ingin menghapus "+ listObat.length +" obat ini?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if (result.value) {
+                    let _token   = $('meta[name="csrf-token"]').attr('content');
+                    $.ajax({
+                        url: '/api/obat-batch',
+                        method: 'DELETE',
+                        type: 'POST',
+                        dataType: 'json',
+                        data:{
+                            _token: _token,
+                            obat:listObat,
+                            no_rawat:"{{$encryptNoRawat}}",
+                            no_resep:$noResep
+                        }, 
+                        beforeSend:function() {
+                        Swal.fire({
+                            title: 'Loading....',
+                            allowEscapeKey: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                            });
+                        },
+                        success: function(data) {
+                            console.log(data);
+                            if(data.status == 'sukses'){
+                                Swal.fire({
+                                    title: 'Data berhasil dihapus',
+                                    icon: 'success',
+                                    timer: 3000,
+                                    toast: true,
+                                    position: 'center',
+                                    showConfirmButton: false,
+                                });
+                                $('.body-resep').empty();
+                                listObat = [];
+                                $('#delete-batch-button').addClass('disabled');
+                                $('#delete-batch-button').html('Hapus Obat'); 
+                                $.each(data.data, function (i, item) {
+                                    var trHTML = '';
+                                    trHTML += '<tr data-target="' + item.kode_brng + '" class="cursor-pointer">';
+                                    trHTML += '<td><input type="checkbox" id="checkbox-resep" disabled></td>';
+                                    trHTML += '<td>' + item.nama_brng + '</td>';
+                                    trHTML += '<td>' + item.tgl_peresepan + ' ' + item.jam_peresepan + '</td>';
+                                    trHTML += '<td>' + item.jml + '</td>';
+                                    trHTML += '<td>' + item.aturan_pakai + '</td>';
+                                    trHTML += '<td><button class="btn btn-danger btn-sm" onclick="hapusObat(\''+item.no_resep+'\', \''+item.kode_brng+'\', event)">Hapus</button></td>';
+                                    trHTML += '</tr>';
+                                    $('.body-resep').append(trHTML);
+                                });  
+                            }else{
+                                Swal.fire(
+                                    'Gagal!',
+                                    data.pesan,
+                                    'error'
+                                )
+                            }
+                        },
+                        error: function(data) {
+                            console.log(data);
+                            Swal.fire(
+                                'Gagal!',
+                                data.pesan ?? 'Obat gagal dihapus.',
+                                'error'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+
+        $('#delete-batch-button').on('click', function(e){
+            e.preventDefault();
+            let noResep = $(this).attr('data-target');
+            hapusObatBatch(noResep, listObat);
+        })
 
 </script>
 
