@@ -561,9 +561,8 @@ class PemeriksaanRalanController extends Controller
         try {
 
             $data = DB::table('berkas_digital_perawatan')
-                ->whereRaw("no_rawat IN (SELECT no_rawat FROM reg_periksa WHERE no_rkm_medis = :noRM)", ['noRM' => $noRM])
-                // ->where('kode', 'B00')
-                // ->orderBy('no_rawat', 'desc')
+                ->whereRaw("no_rawat IN (SELECT no_rawat FROM reg_periksa WHERE no_rkm_medis = :noRM) AND kode = :kode", ['noRM' => $noRM, 'kode' => 'B00'])
+                ->orderBy('no_rawat', 'desc')
                 ->get();
             if ($data->count() > 0) {
                 return response()->json([

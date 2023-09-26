@@ -45,13 +45,13 @@
     </x-adminlte-profile-widget>
 </div>
 
-<x-adminlte-modal id="modalBerkasRM" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
+<x-adminlte-modal id="modalBerkasRM" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
     static-backdrop scrollable>
-    <div class="container" style="color:#0d2741">
-        <div class="row row-cols-auto body-modal-berkasrm" style="gap:20px">
-            {{-- <div class="body-modal-berkasrm">
-            </div> --}}
-        </div>
+    <div class="body-modal-berkasrm" style="gap:20px">
+        {{-- <div class="row row-cols-auto body-modal-berkasrm" style="gap:20px">
+            <div class="body-modal-berkasrm">
+            </div>
+        </div> --}}
     </div>
 </x-adminlte-modal>
 
@@ -60,6 +60,16 @@
     <div class="container-retensi" style="color:#0d2741">
     </div>
 </x-adminlte-modal>
+
+@push('css')
+<style>
+    @media (min-width: 992px) {
+        .modal-lg {
+            max-width: 100%;
+        }
+    }
+</style>
+@endpush
 
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
