@@ -15,7 +15,7 @@
         <div class="col-md-8">
             <x-ranap.pemeriksaan-ranap :no-rawat="request()->get('no_rawat')" />
             <x-ranap.resep-ranap />
-            <livewire:ranap.resume-pasien :no-rawat="request()->get('no_rawat')" />
+            {{-- <livewire:ranap.resume-pasien :no-rawat="request()->get('no_rawat')" /> --}}
             <livewire:ranap.catatan-pasien :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
             <livewire:ranap.permintaan-lab :no-rawat="request()->get('no_rawat')" />
             <livewire:ranap.permintaan-radiologi :no-rawat="request()->get('no_rawat')" />
