@@ -112,7 +112,7 @@ class Pemeriksaan extends Component
                     'tensi' => $this->tensi ?? '-',
                     'nadi' => $this->nadi ?? '-',
                     'respirasi' => $this->respirasi ?? '-',
-                    'gcs' => $this->gcs,
+                    'gcs' => $this->gcs ?? '-',
                     'kesadaran' => $this->kesadaran ?? 'Compos Mentis',
                     'lingkar_perut' => $this->lingkar ?? '0',
                     'spo2' => $this->spo2 ?? '-',
