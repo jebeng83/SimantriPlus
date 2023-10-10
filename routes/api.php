@@ -8,6 +8,7 @@ use App\Http\Controllers\API\PemeriksaanController;
 use App\Http\Controllers\API\RadiologiController;
 use App\Http\Controllers\API\ResumePasienController;
 use App\Http\Controllers\API\RiwayatController;
+use App\Http\Livewire\Ralan\Resep;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,7 @@ Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::post('/resep/{noRawat}', [ResepController::class, 'postResep']);
 Route::post('/resep_ranap/{noRawat}', [ResepController::class, 'postResepRanap']);
 Route::post('/obat/{noResep}/{kdObat}/{noRawat}', [ResepController::class, 'hapusObat']);
+Route::delete('/obat-batch', [ResepController::class, 'hapusObatBatch']);
 
 Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
 Route::post('/permintaanlab/{noRawat}', [LabController::class, 'postPermintaanLab']);
@@ -51,3 +53,5 @@ Route::get('/riwayat_pemeriksaan', [RiwayatController::class, 'getRiwayatPemerik
 Route::get('/pemeriksaan', [RiwayatController::class, 'getPemeriksaan']);
 
 Route::get('/pemeriksaan/{noRawat}', [PemeriksaanController::class, 'getPemeriksaan']);
+
+Route::post('/icare', [App\Http\Controllers\API\BPJSController::class, 'icare']);
