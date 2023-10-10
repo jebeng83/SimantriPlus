@@ -63,9 +63,11 @@
         </div> --}}
         {{--
         <x-ralan.pemeriksaan :no-rawat="request()->get('no_rawat')" /> --}}
-        {{-- <x-adminlte-card title="Penilaian Awal Rehab Medik" theme="info" collapsible maximizable>
-            <livewire:ralan.penilaian-rehab-medik :noRawat="request()->get('no_rawat')" />
-        </x-adminlte-card> --}}
+        @if(session()->get('kd_poli') == 'U017')
+        <x-adminlte-card title="Uji Fungsi KFR" theme="info" collapsible="collapsed" maximizable>
+            <livewire:ralan.uji-fungsi-kfr :noRawat="request()->get('no_rawat')" />
+        </x-adminlte-card>
+        @endif
         <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-bell" collapsible maximizable>
             <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
             <livewire:ralan.modal.edit-pemeriksaan />

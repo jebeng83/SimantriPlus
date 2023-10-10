@@ -72,16 +72,111 @@
                 </div>
             </div>
             <div class="row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-8">
                     <label for="diagnosa">Diagnosa Utama</label>
                     <input type="text" class="form-control" wire:model.defer='diagnosa' id="diagnosa" name="diagnosa">
                     {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
                 </div>
                 <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdDiagnosa' id="kdDiagnosa" name="kdDiagnosa">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="diagnosa">Diagnosa Sekunder 1</label>
+                    <input type="text" class="form-control" wire:model.defer='diagnosa1' id="diagnosa1" name="diagnosa1">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdDiagnosa1' id="kdDiagnosa1" name="kdDiagnosa1">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="diagnosa">Diagnosa Sekunder 2</label>
+                    <input type="text" class="form-control" wire:model.defer='diagnosa2' id="diagnosa2" name="diagnosa2">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdDiagnosa2' id="kdDiagnosa2" name="kdDiagnosa2">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="diagnosa">Diagnosa Sekunder 3</label>
+                    <input type="text" class="form-control" wire:model.defer='diagnosa3' id="diagnosa3" name="diagnosa3">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdDiagnosa3' id="kdDiagnosa3" name="kdDiagnosa3">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="diagnosa">Diagnosa Sekunder 4</label>
+                    <input type="text" class="form-control" wire:model.defer='diagnosa4' id="diagnosa4" name="diagnosa4">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdDiagnosa4' id="kdDiagnosa4" name="kdDiagnosa4">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
                     <label for="prosedur">Prosedur Utama</label>
                     <input type="text" class="form-control" wire:model.defer='prosedur' id="prosedur" name="prosedur">
                 </div>
                 <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdProsedur' id="kdProsedur" name="kdProsedur">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="prosedur">Prosedur Sekunder 1</label>
+                    <input type="text" class="form-control" wire:model.defer='prosedur1' id="prosedur1" name="prosedur1">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdProsedur1' id="kdProsedur1" name="kdProsedur1">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="prosedur">Prosedur Sekunder 2</label>
+                    <input type="text" class="form-control" wire:model.defer='prosedur2' id="prosedur2" name="prosedur2">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdProsedur2' id="kdProsedur2" name="kdProsedur2">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-8">
+                    <label for="prosedur">Prosedur Sekunder 3</label>
+                    <input type="text" class="form-control" wire:model.defer='prosedur3' id="prosedur3" name="prosedur3">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="diagnosa">Kode ICD</label>
+                    <input type="text" class="form-control" wire:model.defer='kdProsedur3' id="kdProsedur3" name="kdProsedur3">
+                    {{-- @error('diagnosa') <span class="text-danger">{{ $message }}</span> @enderror --}}
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-12">
                     <label for="kondisi">Kondisi Pasien Pulang</label>
                     <select type="text" class="form-control" wire:model.defer='kondisi' id="kondisi" name="kondisi">
                         <option value="Hidup">Hidup</option>

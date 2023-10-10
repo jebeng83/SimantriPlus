@@ -17,8 +17,11 @@
         <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan" text="{{$data->catatan ?? '-'}}" />
         <div class="p-0 col-12">
             <span class="nav-link">
+                <div class="d-flex flex-row justify-content-between" style="gap:10px">
                 <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
-                    data-target="#modalRiwayatPemeriksaanRalan" class="bg-info justify-content-end" />
+                    data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
+                <x-adminlte-button label="I-Care BPJS" id="icare-button" theme="success" />
+                </div>
             </span>
             <span class="nav-link">
                 <div class="d-flex flex-row justify-content-between" style="gap:10px">
@@ -52,6 +55,13 @@
             <div class="body-modal-berkasrm">
             </div>
         </div> --}}
+    </div>
+</x-adminlte-modal>
+
+<x-adminlte-modal id="icare-modal" title="I-Care BPJS" size="lg" theme="info" icon="fas fa-bell" v-centered
+    static-backdrop scrollable>
+    <div class="container container-icare">
+        
     </div>
 </x-adminlte-modal>
 
@@ -107,6 +117,57 @@
             });
         }
 
+        $('#icare-button').on('click', function(event){
+            event.preventDefault();
+            let kdDokter = "{{$dokter}}"
+            let param = "{{$data->no_peserta}}"
+            $.ajax({
+                url: '/api/icare',
+                type: 'POST',
+                data: {
+                    kodedokter: kdDokter,
+                    param: param
+                },
+                beforeSend:function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function(data){
+                    console.log(data);
+                    Swal.close();
+                    if(data.code == 200){
+                        let url = data.data.url;
+                        let html = '';
+                        $('#icare-modal').modal('show');
+                        html += '<iframe src="'+url+'" frameborder="0" height="700px" width="100%"></iframe>';
+                        $('.container-icare').html(html);
+                    }else{
+                        Swal.fire({
+                            title: 'Gagal',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        })
+                    }
+                },
+                error: function(data){
+                    console.log(data);
+                    Swal.fire({
+                        title: 'Gagal',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    })
+                }
+            })
+        })
+
         function getBerkasRetensi(){
             $.ajax({
                 url: "/berkas-retensi/{{$data->no_rkm_medis}}",
@@ -160,6 +221,7 @@
                 },
                 success: function (data) {
                     Swal.close();
+                    console.log(data);  
                     if(data.status == 'success'){
                         var html = '';
                         data.data.forEach(function(item){

@@ -10,6 +10,9 @@ class ResumePasien extends Component
 {
     use SwalResponse;
     public $isCollapsed = true, $noRawat, $noRM, $listKeluhan = [], $listRadiologi = [], $listLab = [], $listTerapi = [], $keluhan, $perawatan, $penunjang, $lab, $terapi, $diagnosa, $prosedur, $kondisi, $checkKeluhan = [], $checkRadiologi = [], $checkLab = [], $checkTerapi = [], $listResume = [];
+    public $diagnosa_awal, $alasan, $fisik, $operasi;
+    public $listPemeriksaan = [];
+    public $checkFisik = [];
 
     protected $rules = [
         'keluhan' => 'required',
@@ -17,6 +20,10 @@ class ResumePasien extends Component
         'diagnosa' => 'required',
         'prosedur' => 'required',
         'kondisi' => 'required',
+        'diagnosa_awal' => 'required',
+        'alasan' => 'required',
+        'fisik' => 'required',
+        'operasi' => 'required',
     ];
 
     protected $messages = [
@@ -25,6 +32,10 @@ class ResumePasien extends Component
         'diagnosa.required' => 'Diagnosa Utama tidak boleh kosong',
         'prosedur.required' => 'Prosedur Utama tidak boleh kosong',
         'kondisi.required' => 'Kondisi Pulang tidak boleh kosong',
+        'diagnosa_awal.required' => 'Diagnosa Awal tidak boleh kosong',
+        'alasan.required' => 'Alasan tidak boleh kosong',
+        'fisik.required' => 'Pemeriksaan Fisik tidak boleh kosong',
+        'operasi.required' => 'Operasi tidak boleh kosong',
     ];
 
     public function mount($noRawat)
@@ -56,7 +67,7 @@ class ResumePasien extends Component
             ->select('databarang.nama_brng', 'resep_dokter.jml', 'resep_dokter.aturan_pakai', 'databarang.kode_sat')
             ->get();
 
-        $this->listResume = DB::table('resume_pasien')->where('no_rawat', $this->noRawat)->get();
+        $this->listResume = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->get();
 
         $prosedur = DB::table('prosedur_pasien')
             ->join('icd9', 'prosedur_pasien.kode', '=', 'icd9.kode')
@@ -86,6 +97,14 @@ class ResumePasien extends Component
         $this->emit('getKeluhanUtama');
     }
 
+    public function getPemeriksaanFisik()
+    {
+        $this->listPemeriksaan = DB::table('pemeriksaan_ranap')
+            ->where('no_rawat', $this->noRawat)
+            ->get();
+        $this->emit('getPemeriksaanFisik');
+    }
+
     public function getPemeriksaanRadiologi()
     {
         $this->emit('getPemeriksaanRadiologi');
@@ -99,6 +118,19 @@ class ResumePasien extends Component
     public function getTerapi()
     {
         $this->emit('getTerapi');
+    }
+
+    public function tambahPemeriksaanFisik()
+    {
+        if (!empty($this->fisik)) {
+            $this->fisik = '';
+            foreach ($this->checkFisik as $fisik) {
+                $this->fisik .= $fisik . ', ';
+            }
+        } else {
+            $this->fisik = '';
+        }
+        $this->emit('closePemeriksaanFisikModal');
     }
 
     public function tambahKeluhan()
@@ -184,7 +216,7 @@ class ResumePasien extends Component
             DB::beginTransaction();
             DB::table('resume_pasien')->insert($data);
             DB::commit();
-            $this->listResume = DB::table('resume_pasien')->where('no_rawat', $this->noRawat)->get();
+            $this->listResume = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->get();
             $this->dispatchBrowserEvent('swal', $this->toastResponse("Resume pasien berhasil disimpan"));
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
@@ -198,7 +230,7 @@ class ResumePasien extends Component
             DB::beginTransaction();
             DB::table('resume_pasien')->where('no_rawat', $noRawat)->delete();
             DB::commit();
-            $this->listResume = DB::table('resume_pasien')->where('no_rawat', $this->noRawat)->get();
+            $this->listResume = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->get();
             $this->dispatchBrowserEvent('swal', $this->toastResponse("Resume pasien berhasil dihapus"));
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();

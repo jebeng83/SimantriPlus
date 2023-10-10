@@ -22,39 +22,35 @@ trait BpjsTraits
                 'X-timestamp' => $xTimestamp,
                 'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
                 'user_key' => env('BPJS_USER_KEY'),
-            ])->get(env('BPJS_BASE_URL') . $suburl);
-            // dd($res);
+            ])->get(env('BPJS_ICARE_BASE_URL') . $suburl);
+            dd($res);
             return $this->responseDataBpjs($res->json(), $xTimestamp);
         } catch (\Exception $e) {
 
-            $statusError['flag'] = 'RSUD Middleware Webservice';
+            $statusError['flag'] = 'RSB Middleware Webservice';
             $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';
-            $statusError['data'] = $e;
+            $statusError['data'] = $e->getMessage();
             return response()->json($statusError, 400);
         }
     }
-    public function requestPostBpjs($suburl)
+    public function requestPostBpjs($suburl, $request)
     {
-        // try {
-        $data['request'] = array(
-            'param' => '0002066837411',
-            'kodedokter' => '14062'
-        );
-        $xTimestamp = $this->craeteTimestamp();
-        $res = Http::accept('application/json')->withHeaders([
-            'X-cons-id' => env('BPJS_CONS_ID'),
-            'X-timestamp' => $xTimestamp,
-            'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
-            'user_key' => env('BPJS_USER_KEY'),
-        ])->withBody(json_encode($data), 'json')->post(env('BPJS_BASE_URL') . $suburl);
-        // return $res;
-        return $this->responseDataBpjs($res->json(), $xTimestamp);
-        // } catch (\Exception $e) {
-        //     $statusError['flag'] = 'RSUD Middleware Webservice';
-        //     $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';
-        //     $statusError['data'] = $e->getMessage();
-        //     return response()->json($statusError, 400);
-        // }
+        try {
+            $xTimestamp = $this->craeteTimestamp();
+            $res = Http::timeout(60)->accept('application/json')->withHeaders([
+                'X-cons-id' => env('BPJS_CONS_ID'),
+                'X-timestamp' => $xTimestamp,
+                'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
+                'user_key' => env('BPJS_USER_KEY'),
+            ])->post(env('BPJS_ICARE_BASE_URL') . $suburl, $request);
+            // dd($res->json());
+            return $this->responseDataBpjs($res->json(), $xTimestamp);
+        } catch (\Exception $e) {
+            $statusError['flag'] = 'RSB Middleware Webservice';
+            $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';
+            $statusError['message'] = $e->getMessage();
+            return response()->json($statusError, 400);
+        }
     }
     public function requestPutBpjs($suburl, $request)
     {
@@ -72,7 +68,7 @@ trait BpjsTraits
             return $this->responseDataBpjs($res->json(), $xTimestamp);
         } catch (\Exception $e) {
 
-            $statusError['flag'] = 'RSUD Middleware Webservice';
+            $statusError['flag'] = 'RSB Middleware Webservice';
             $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';
             $statusError['data'] = $e;
             return response()->json($statusError, 400);
@@ -93,8 +89,7 @@ trait BpjsTraits
             ])->withBody(json_encode($data), 'json')->delete(env('BPJS_BASE_URL') . $suburl, 'json');
             return $this->responseDataBpjs($res->json(), $xTimestamp);
         } catch (\Exception $e) {
-
-            $statusError['flag'] = 'RSUD Middleware Webservice';
+            $statusError['flag'] = 'RSB Middleware Webservice';
             $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';
             $statusError['data'] = $e;
             return response()->json($statusError, 400);

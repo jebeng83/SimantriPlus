@@ -10,6 +10,10 @@ class Resume extends Component
 {
     use SwalResponse;
     public $isCollapsed = true, $noRawat, $noRm, $listKeluhan = [], $listRadiologi = [], $listLab = [], $listTerapi = [], $keluhan, $perawatan, $penunjang, $lab, $terapi, $diagnosa, $prosedur, $kondisi, $checkKeluhan = [], $checkRadiologi = [], $checkLab = [], $checkTerapi = [], $listResume = [];
+    public $kdDiagnosa, $kdDiagnosa1, $kdDiagnosa2, $kdDiagnosa3, $kdDiagnosa4;
+    public $diagnosa1, $diagnosa2, $diagnosa3, $diagnosa4;
+    public $prosedur1, $prosedur2, $prosedur3;
+    public $kdProsedur, $kdProsedur1, $kdProsedur2, $kdProsedur3;
 
     protected $rules = [
         'keluhan' => 'required',
@@ -118,6 +122,7 @@ class Resume extends Component
             ->select('icd9.deskripsi_panjang')
             ->first();
         $this->prosedur = $prosedur->deskripsi_panjang ?? '';
+        $this->kdProsedur = $prosedur->kode ?? '';
     }
 
     public function getPemeriksaanRadiologi()
@@ -142,7 +147,18 @@ class Resume extends Component
             ->select(DB::raw("GROUP_CONCAT( databarang.nama_brng,'-', resep_dokter.jml SEPARATOR '\r\n') AS nama_brng"))
             ->first();
 
-        $this->terapi = $terapi->nama_brng ?? '';
+        $racikan = DB::table('resep_dokter_racikan_detail')
+            ->join('resep_obat', 'resep_dokter_racikan_detail.no_resep', '=', 'resep_obat.no_resep')
+            ->join('databarang', 'resep_dokter_racikan_detail.kode_brng', '=', 'databarang.kode_brng')
+            ->join('reg_periksa', 'resep_obat.no_rawat', '=', 'reg_periksa.no_rawat')
+            ->where('resep_obat.no_rawat', $this->noRawat)
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->select(DB::raw("GROUP_CONCAT( databarang.nama_brng, ' - ', resep_dokter_racikan_detail.p1, '/', resep_dokter_racikan_detail.p2, ' - ', resep_dokter_racikan_detail.kandungan, ' - ', resep_dokter_racikan_detail.jml SEPARATOR '\r\n') AS nama_racik"))
+            ->first();
+
+        $terapi = $terapi->nama_brng . "\r\n" . $racikan->nama_racik ?? '';
+
+        $this->terapi = $terapi;
     }
 
     public function hapusTerapi()
@@ -215,7 +231,23 @@ class Resume extends Component
             'hasil_laborat' => $this->lab ?? '',
             'obat_pulang' => $this->terapi,
             'diagnosa_utama' => $this->diagnosa,
+            'kd_diagnosa_utama' => $this->kdDiagnosa ?? '',
+            'diagnosa_sekunder' => $this->diagnosa1 ?? '',
+            'kd_diagnosa_sekunder' => $this->kdDiagnosa1 ?? '',
+            'diagnosa_sekunder2' => $this->diagnosa2 ?? '',
+            'kd_diagnosa_sekunder2' => $this->kdDiagnosa2 ?? '',
+            'diagnosa_sekunder3' => $this->diagnosa3 ?? '',
+            'kd_diagnosa_sekunder3' => $this->kdDiagnosa3 ?? '',
+            'diagnosa_sekunder4' => $this->diagnosa4 ?? '',
+            'kd_diagnosa_sekunder4' => $this->kdDiagnosa4 ?? '',
             'prosedur_utama' => $this->prosedur,
+            'kd_prosedur_utama' => $this->kdProsedur ?? '',
+            'prosedur_sekunder' => $this->prosedur1 ?? '',
+            'kd_prosedur_sekunder' => $this->kdProsedur1 ?? '',
+            'prosedur_sekunder2' => $this->prosedur2 ?? '',
+            'kd_prosedur_sekunder2' => $this->kdProsedur2 ?? '',
+            'prosedur_sekunder3' => $this->prosedur3 ?? '',
+            'kd_prosedur_sekunder3' => $this->kdProsedur3 ?? '',
             'kondisi_pulang' => $this->kondisi,
         ];
 
