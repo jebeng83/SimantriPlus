@@ -60,7 +60,7 @@
 
 <x-adminlte-modal id="icare-modal" title="I-Care BPJS" size="lg" theme="info" icon="fas fa-bell" v-centered
     static-backdrop scrollable>
-    <div class="container container-icare">
+    <div class="container-fluid container-icare">
         
     </div>
 </x-adminlte-modal>
