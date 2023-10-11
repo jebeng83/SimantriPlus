@@ -38,16 +38,17 @@
                             </div>
                         </div>
                         <div class="row justify-content-end">
-                            {{-- <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto"
+                            <x-adminlte-select2 id="dokter" name="dokter" fgroup-class="col-md-6 my-auto"
                                 data-placeholder="Pilih Iter">
-                                <option value="-">Pilih jumlah iter</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                </x-adminlte-select> --}}
-                                <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
-                                    theme="success" label="+" />
-                                <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary"
-                                    type="submit" label="Simpan" />
+                                <option value="">Pilih Dokter ......</option>
+                                @foreach($dokters as $dokter)
+                                <option value="{{$dokter->kd_dokter}}">{{$dokter->nm_dokter}}</option>
+                                @endforeach
+                            </x-adminlte-select2>
+                            <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
+                                theme="success" label="+" />
+                            <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary"
+                                type="submit" label="Simpan" />
                         </div>
                     </form>
                 </x-adminlte-callout>
@@ -811,6 +812,7 @@
             let obat = getValue('obat[]');
             let jumlah = getValue('jumlah[]');
             let aturan = getValue('aturan[]');
+            let dokter = $('#dokter').val();
             var form = $("#resepForm");
             var data = {
                 obat:obat,
@@ -818,6 +820,7 @@
                 aturan_pakai:aturan,
                 status:'Ranap',
                 kode:"{{$bangsal}}",
+                dokter:dokter,
                 _token:_token,
             };
             var url = form.attr('action');

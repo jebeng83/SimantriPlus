@@ -198,7 +198,7 @@ class ResepController extends Controller
 
     public function postResepRanap(Request $request, $noRawat)
     {
-        $dokter = session()->get('username');
+        $dokter = $request->get('dokter');
         $resObat = $request->get('obat');
         $resJml = $request->get('jumlah');
         $resAturan = $request->get('aturan_pakai');
@@ -206,6 +206,13 @@ class ResepController extends Controller
         $kode = $request->get('kode');
         $noRawat = $this->decryptData($noRawat);
         $bangsal = "";
+
+        if (empty($dokter)) {
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => 'Dokter tidak boleh kosong'
+            ]);
+        }
 
 
         try {
