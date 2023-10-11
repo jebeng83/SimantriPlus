@@ -39,7 +39,7 @@
                         </div>
                         <div class="row justify-content-end">
                             <x-adminlte-select2 id="dokter" name="dokter" fgroup-class="col-md-6 my-auto"
-                                data-placeholder="Pilih Iter">
+                                data-placeholder="Pilih Dokter">
                                 <option value="">Pilih Dokter ......</option>
                                 @foreach($dokters as $dokter)
                                 <option value="{{$dokter->kd_dokter}}">{{$dokter->nm_dokter}}</option>
