@@ -44,7 +44,7 @@
                         <th>{{$data->saran}}</th>
                     </tr>
                 </table>
-                {{-- <x-adminlte-button class="d-flex ml-auto" id="rujukButtonHapus" theme="danger" label="Hapus" onclick="deleteRujukan()" /> --}}
+                <x-adminlte-button class="d-flex ml-auto" id="rujukButtonHapus" theme="danger" label="Hapus" onclick="deleteRujukan()" />
             </x-adminlte-card>
         @endforeach
     </x-adminlte-card>
