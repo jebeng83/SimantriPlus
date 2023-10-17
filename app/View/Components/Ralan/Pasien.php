@@ -26,22 +26,14 @@ class Pasien extends Component
             ->select(
                 'reg_periksa.no_rkm_medis',
                 'reg_periksa.no_rawat',
-                'pasien.nm_pasien',
-                'pasien.umur',
                 'reg_periksa.status_lanjut',
                 'reg_periksa.kd_pj',
-                'penjab.png_jawab',
-                'pasien.tgl_lahir',
                 'dokter.nm_dokter',
                 'poliklinik.nm_poli',
-                'pasien.no_tlp',
                 'reg_periksa.kd_poli',
                 'catatan_pasien.catatan',
-                'pasien.pekerjaan',
-                'pasien.no_peserta',
-                'pasien.alamat',
-                'pasien.jk',
-                'personal_pasien.gambar'
+                'personal_pasien.gambar',
+                'pasien.*',
             )
             ->first();
     }

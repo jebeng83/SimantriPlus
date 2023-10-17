@@ -4,8 +4,21 @@
         img="https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}">
         <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat"
             text="{{$data->no_rawat ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tgl Lahir"
-            text="{{$data->tgl_lahir  ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP"
+            text="{{$data->no_ktp ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-user" title="Jns Kelamin"
+            text="{{$data->jk == 'L' ? 'Laki - Laki' : 'Perempuan' }}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tempat, Tgl Lahir"
+            text="{{$data->tmp_lahir ?? '-'}}, {{\Carbon\Carbon::parse($data->tgl_lahir)->isoFormat('LL')  ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Pendidikan" text="{{$data->pnd ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Nama Ibu" icon="fas fa-fw fa-user"  text="{{$data->nm_ibu  ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Nama Keluarga" icon="fas fa-fw fa-user"  text="{{$data->namakeluarga  ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-briefcase" title="Pekerjaan PJ" text="{{$data->pekerjaanpj ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat PJ" text="{{$data->alamatpj ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Gol Darah" icon="fas fa-fw fa-droplet" text="{{$data->gol_darah  ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Stts Nikah" icon="fas fa-fw fa-ring" text="{{$data->stts_nikah  ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Agama" icon="fas fa-fw fa-book" text="{{$data->agama  ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-clock" title="Umur" text="{{$data->umur ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-wallet" title="Cara Bayar" text="{{$data->png_jawab ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}" />
@@ -13,7 +26,6 @@
             text="{{$data->pekerjaan ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No Peserta"
             text="{{$data->no_peserta ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan" text="{{$data->catatan ?? '-'}}" />
         <div class="p-0 col-12">
             <span class="nav-link">
