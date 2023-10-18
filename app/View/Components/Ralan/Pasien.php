@@ -24,6 +24,8 @@ class Pasien extends Component
             ->leftJoin('personal_pasien', 'pasien.no_rkm_medis', '=', 'personal_pasien.no_rkm_medis')
             ->where('reg_periksa.no_rawat', $noRawat)
             ->select(
+                'pasien.*',
+                'penjab.png_jawab',
                 'reg_periksa.no_rkm_medis',
                 'reg_periksa.no_rawat',
                 'reg_periksa.status_lanjut',
@@ -33,7 +35,6 @@ class Pasien extends Component
                 'reg_periksa.kd_poli',
                 'catatan_pasien.catatan',
                 'personal_pasien.gambar',
-                'pasien.*',
             )
             ->first();
     }
