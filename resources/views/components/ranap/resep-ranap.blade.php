@@ -37,12 +37,19 @@
                                     fgroup-class="col-md-5" placeholder="Aturan Pakai" />
                             </div>
                         </div>
-                        <div class="row justify-content-end">
-                            <x-adminlte-select2 id="dokter" name="dokter" fgroup-class="col-md-6 my-auto"
+                        <div class="row justify-content-end" style="gap: 10px">
+                            <x-adminlte-select2 id="dokter" name="dokter" fgroup-class="col-md-6 col-sm-6 my-auto"
                                 data-placeholder="Pilih Dokter">
                                 <option value="">Pilih Dokter ......</option>
                                 @foreach($dokters as $dokter)
                                 <option value="{{$dokter->kd_dokter}}">{{$dokter->nm_dokter}}</option>
+                                @endforeach
+                            </x-adminlte-select2>
+                            <x-adminlte-select2 id="depo" name="depo" fgroup-class="col-md-3 col-sm-5 my-auto"
+                                data-placeholder="Pilih Depo">
+                                <option value="">Pilih Depo ......</option>
+                                @foreach($depos as $depo)
+                                    <option value="{{$depo->kd_bangsal}}" @if($depo->kd_bangsal == $bangsal) selected @endif>{{$depo->nm_bangsal}}</option>
                                 @endforeach
                             </x-adminlte-select2>
                             <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
@@ -290,6 +297,12 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    let bangsal = $('#depo').val() ?? '{{$bangsal}}';
+    $('#depo').on('change', function(e){
+        bangsal = $(this).val();
+        console.log(bangsal);
+    });
+
     $(document).on("select2:open", () => {
         document.querySelector(".select2-container--open .select2-search__field").focus()
     })
@@ -430,8 +443,6 @@
             $(".jml-"+index).val(jml.toFixed(2));
         }
 
-</script>
-<script>
     var wrapper = $(".containerResep");
         var add_button = $("#addFormResep");
         var x = 0;
@@ -476,7 +487,9 @@
             $('#'+'obat'+x, wrapper).select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url:'/api/ranap/'+"{{$bangsal}}"+'/obat',
+                    url: function (params) {
+                        return '/api/ranap/'+bangsal+'/obat';
+                    },
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -497,72 +510,70 @@
             $(this).closest('.row').remove();
         })
 
-        $(document).ready(function() {
-            $('.obat').select2({
-                placeholder: 'Pilih obat',
-                ajax: {
-                    url: '/api/ranap/'+"{{$bangsal}}"+'/obat',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function (data) {
-                    return {
-                        results: data
-                    };
-                    },
-                    cache: true
+        $('.obat').select2({
+            placeholder: 'Pilih obat',
+            ajax: {
+                url: function (params) {
+                    return '/api/ranap/'+bangsal+'/obat';
                 },
-                templateResult: formatData,
-                minimumInputLength: 3
-            });
-
-            $('.obat-racikan').select2({
-                placeholder: 'Pilih obat racikan',
-                ajax: {
-                    url: '/api/ranap/'+"{{$bangsal}}"+'/obat',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function (data) {
-                    return {
-                        results: data
-                    };
-                    },
-                    cache: true
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                return {
+                    results: data
+                };
                 },
-                templateResult: formatData,
-                minimumInputLength: 3
-            }).on("select2:select", function(e){
-                var data = e.params.data;
-                var jmlRacikan = $('#jumlah_racikan').val();
-                $.ajax({
-                    url: '/api/obat/'+data.id,
-                    data:{
-                        status:'ranap',
-                        kode:"{{$bangsal}}"
-                    },
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        console.log(data);
-                        $('#stok').val(data.stok_akhir);
-                        $('#kps').val(data.kapasitas);
-                        $('#p1').val('1');
-                        $('#p2').val('1');
-                        $('#kandungan').val(data.kapasitas);
-                        $('#jml').val(jmlRacikan);
-                    }
-                });
-            });
-
-            function formatData (data) {
-                    var $data = $(
-                        '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
-                    );
-                    return $data;
-            };
+                cache: true
+            },
+            templateResult: formatData,
+            minimumInputLength: 3
         });
-</script>
 
-<script>
+        $('.obat-racikan').select2({
+            placeholder: 'Pilih obat racikan',
+            ajax: {
+                url: '/api/ranap/'+"{{$bangsal}}"+'/obat',
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                return {
+                    results: data
+                };
+                },
+                cache: true
+            },
+            templateResult: formatData,
+            minimumInputLength: 3
+        }).on("select2:select", function(e){
+            var data = e.params.data;
+            var jmlRacikan = $('#jumlah_racikan').val();
+            $.ajax({
+                url: '/api/obat/'+data.id,
+                data:{
+                    status:'ranap',
+                    kode:"{{$bangsal}}"
+                },
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    console.log(data);
+                    $('#stok').val(data.stok_akhir);
+                    $('#kps').val(data.kapasitas);
+                    $('#p1').val('1');
+                    $('#p2').val('1');
+                    $('#kandungan').val(data.kapasitas);
+                    $('#jml').val(jmlRacikan);
+                }
+            });
+        });
+
+        function formatData (data) {
+                var $data = $(
+                    '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
+                );
+                return $data;
+        };
+
     function getValue(name) {
             var data = [];
             var doc = document.getElementsByName(name);
@@ -819,7 +830,7 @@
                 jumlah:jumlah,
                 aturan_pakai:aturan,
                 status:'Ranap',
-                kode:"{{$bangsal}}",
+                kode:bangsal,
                 dokter:dokter,
                 _token:_token,
             };

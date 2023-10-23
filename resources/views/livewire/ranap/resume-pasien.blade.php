@@ -322,9 +322,9 @@
                         <td>{{ $item->diagnosa_utama }}</td>
                         <td>{{ $item->obat_pulang }}</td>
                         <td>
-                            {{-- <button class="btn btn-primary btn-sm" wire:click="edit({{ $item->id }})">
+                            <button class="btn btn-primary btn-sm" wire:click="edit">
                                 <i class="fas fa-edit"></i>
-                            </button> --}}
+                            </button>
                             <button class="btn btn-danger btn-sm" wire:click="hapusResume('{{ $item->no_rawat }}')">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -572,9 +572,9 @@
                 <div class="table-responsive">
                     @forelse ($listObat as $i => $item)  
                         <div class="custom-control custom-checkbox">
-                            <input id="obatCheck-{{ $i }}" wire:key='obatCheck-{{ $i }}' class="custom-control-input" wire:model.defer='checkObat' value="{{ $item->nama_brng }} : {{ $item->jml }}  {{ $item->kode_sat }}" type="checkbox" name="obatCheck[]">
+                            <input id="obatCheck-{{ $i }}" wire:key='obatCheck-{{ $i }}' class="custom-control-input" wire:model.defer='checkObat' value="{{ $item->nama_brng }} : {{ $item->jml }}  {{ $item->kode_sat }} [ {{ $item->aturan_pakai }} ]" type="checkbox" name="obatCheck[]">
                             <label for="obatCheck-{{ $i }}" class="custom-control-label">
-                                {{ $item->nama_brng }} : {{ $item->jml }}  {{ $item->kode_sat }}
+                                {{ $item->nama_brng }} : {{ $item->jml }}  {{ $item->kode_sat }} [ {{ $item->aturan_pakai }} ]
                             </label>
                         </div> 
                     @empty

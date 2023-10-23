@@ -3,6 +3,7 @@
 namespace App\Http\Livewire\Ranap;
 
 use App\Traits\SwalResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Livewire\Component;
@@ -74,6 +75,61 @@ class ResumePasien extends Component
         $this->isCollapsed = !$this->isCollapsed;
     }
 
+    public function edit()
+    {
+        try {
+            $data = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->first();
+            if ($data) {
+                $this->diagnosa_awal = $data->diagnosa_awal ?? '';
+                $this->alasan = $data->alasan ?? '';
+                $this->keluhan = $data->keluhan_utama ?? '';
+                $this->fisik = $data->pemeriksaan_fisik ?? '';
+                $this->perawatan = $data->jalannya_penyakit ?? '';
+                $this->penunjang = $data->pemeriksaan_penunjang ?? '';
+                $this->lab = $data->hasil_laborat ?? '';
+                $this->obat = $data->obat_di_rs ?? '';
+                $this->diagnosa = $data->diagnosa_utama ?? '';
+                $this->diagnosa1 = $data->diagnosa_sekunder ?? '';
+                $this->diagnosa2 = $data->diagnosa_sekunder2 ?? '';
+                $this->diagnosa3 = $data->diagnosa_sekunder3 ?? '';
+                $this->diagnosa4 = $data->diagnosa_sekunder4 ?? '';
+                $this->kdDiagnosa = $data->kd_diagnosa_utama ?? '';
+                $this->kdDiagnosa1 = $data->kd_diagnosa_sekunder ?? '';
+                $this->kdDiagnosa2 = $data->kd_diagnosa_sekunder2 ?? '';
+                $this->kdDiagnosa3 = $data->kd_diagnosa_sekunder3 ?? '';
+                $this->kdDiagnosa4 = $data->kd_diagnosa_sekunder4 ?? '';
+                $this->prosedur = $data->prosedur_utama ?? '';
+                $this->prosedur1 = $data->prosedur_sekunder ?? '';
+                $this->prosedur2 = $data->prosedur_sekunder2 ?? '';
+                $this->prosedur3 = $data->prosedur_sekunder3 ?? '';
+                $this->kdProsedur = $data->kd_prosedur_utama ?? '';
+                $this->kdProsedur1 = $data->kd_prosedur_sekunder ?? '';
+                $this->kdProsedur2 = $data->kd_prosedur_sekunder2 ?? '';
+                $this->kdProsedur3 = $data->kd_prosedur_sekunder3 ?? '';
+                $this->alergi = $data->alergi ?? '';
+                $this->diet = $data->diet ?? '';
+                $this->labPending = $data->lab_belum ?? '';
+                $this->instruksi = $data->edukasi ?? '';
+                $this->caraKeluar = $data->cara_keluar ?? '';
+                $this->caraKeluarKet = $data->ket_keluar ?? '';
+                $this->keadaanPulang = $data->keadaan ?? '';
+                $this->keadaanPulangKet = $data->ket_keadaan ?? '';
+                $this->dilanjutkan = $data->dilanjutkan ?? '';
+                $this->dilanjutkanKet = $data->ket_dilanjutkan ?? '';
+                $this->obatPulang = $data->obat_pulang ?? '';
+            }
+        } catch (\Exception $e) {
+            $this->alert('error', $e->getMessage(), [
+                'position' =>  'center',
+                'toast' =>  false,
+                'text' =>  '',
+                'confirmButtonText' =>  'Ok',
+                'showCancelButton' =>  false,
+                'showConfirmButton' =>  true,
+            ]);
+        }
+    }
+
     public function getProsedur()
     {
         $prosedur = DB::table('prosedur_pasien')
@@ -135,12 +191,23 @@ class ResumePasien extends Component
 
     public function getObat()
     {
-        $data = DB::table('detail_pemberian_obat')
-            ->join('databarang', 'detail_pemberian_obat.kode_brng', '=', 'databarang.kode_brng')
-            ->where('detail_pemberian_obat.no_rawat', $this->noRawat)
-            ->orderBy('detail_pemberian_obat.tgl_perawatan', 'desc')
-            ->orderBy('detail_pemberian_obat.jam', 'desc')
-            ->select('detail_pemberian_obat.tgl_perawatan', 'detail_pemberian_obat.jam', 'databarang.nama_brng', 'detail_pemberian_obat.jml', 'databarang.kode_sat')
+        // $data = DB::table('detail_pemberian_obat')
+        //     ->join('databarang', 'detail_pemberian_obat.kode_brng', '=', 'databarang.kode_brng')
+        //     ->join('resep_obat', 'resep_obat.no_rawat', '=', 'detail_pemberian_obat.no_rawat')
+        //     ->join('resep_dokter', 'resep_dokter.no_resep', '=', 'resep_obat.no_resep')
+        //     ->where('detail_pemberian_obat.no_rawat', $this->noRawat)
+        //     ->where('resep_dokter.aturan_pakai', '<>', '')
+        //     ->orderBy('detail_pemberian_obat.tgl_perawatan', 'desc')
+        //     ->orderBy('detail_pemberian_obat.jam', 'desc')
+        //     ->groupBy('databarang.nama_brng')
+        //     ->select('detail_pemberian_obat.tgl_perawatan', 'detail_pemberian_obat.jam', 'databarang.nama_brng', 'detail_pemberian_obat.jml', 'databarang.kode_sat', 'resep_dokter.aturan_pakai')
+        //     ->get();
+
+        $data = DB::table('resep_obat')
+            ->join('resep_dokter', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
+            ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+            ->where('resep_obat.no_rawat', $this->noRawat)
+            ->select('databarang.nama_brng', 'databarang.kode_sat', 'resep_dokter.jml', 'resep_dokter.aturan_pakai')
             ->get();
 
         $this->listObat = $data;
@@ -184,11 +251,11 @@ class ResumePasien extends Component
     public function getDiet()
     {
         $this->listDiet = DB::table('detail_beri_diet')
-            ->join('diet', 'detail_beri_diet.kd_diet', '=', 'diet.kd_diet')
+            ->join('diet_jenis', 'detail_beri_diet.kd_jenis', '=', 'diet_jenis.kd_jenis')
             ->where('detail_beri_diet.no_rawat', $this->noRawat)
             ->orderBy('detail_beri_diet.tanggal', 'desc')
             ->orderBy('detail_beri_diet.waktu', 'desc')
-            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet.nama_diet')
+            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet_jenis.nama_jenis as nama_diet')
             ->get();
         $this->emit('openDietModal');
     }
@@ -411,7 +478,13 @@ class ResumePasien extends Component
 
         try {
             DB::beginTransaction();
-            DB::table('resume_pasien_ranap')->insert($data);
+            $cek = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->first();
+            if ($cek) {
+                $data = Arr::except($data, ['no_rawat']);
+                DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->update($data);
+            } else {
+                DB::table('resume_pasien_ranap')->insert($data);
+            }
             DB::commit();
             $this->listResume = DB::table('resume_pasien_ranap')->where('no_rawat', $this->noRawat)->get();
             // $this->dispatchBrowserEvent('swal', $this->toastResponse("Resume pasien berhasil disimpan"));
