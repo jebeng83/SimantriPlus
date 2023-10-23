@@ -69,12 +69,18 @@ class ResepRanap extends Component
             'resepRacikan' => $this->getResepRacikan($this->noRawat, session()->get('username')),
             'dokters' => $this->dokters,
             'depos' => $this->getDepo(),
+            'setBangsal' => $this->getBangsal($this->bangsal),
         ]);
     }
 
     public function getDepo()
     {
         return DB::table('bangsal')->where('status', '1')->get();
+    }
+
+    public static function getBangsal($depo)
+    {
+        return DB::table('set_depo_ranap')->where('kd_bangsal', $depo)->first();
     }
 
     public static function getResepObat($noResep)

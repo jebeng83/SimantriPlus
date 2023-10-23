@@ -49,7 +49,7 @@
                                 data-placeholder="Pilih Depo">
                                 <option value="">Pilih Depo ......</option>
                                 @foreach($depos as $depo)
-                                    <option value="{{$depo->kd_bangsal}}" @if($depo->kd_bangsal == $bangsal) selected @endif>{{$depo->nm_bangsal}}</option>
+                                    <option value="{{$depo->kd_bangsal}}" @if($depo->kd_bangsal == $setBangsal->kd_depo) selected @endif>{{$depo->nm_bangsal}}</option>
                                 @endforeach
                             </x-adminlte-select2>
                             <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
@@ -297,7 +297,7 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
-    let bangsal = $('#depo').val() ?? '{{$bangsal}}';
+    let bangsal = $('#depo').val() ?? '{{$setBangsal->kd_depo}}';
     $('#depo').on('change', function(e){
         bangsal = $(this).val();
         console.log(bangsal);

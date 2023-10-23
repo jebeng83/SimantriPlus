@@ -16,15 +16,15 @@ class ResepController extends Controller
         $q = $request->get('q');
         $que = '%' . $q . '%';
 
-        $depo = DB::table('set_depo_ranap')
-            ->where('kd_bangsal', $bangsal)
-            ->first();
+        // $depo = DB::table('set_depo_ranap')
+        //     ->where('kd_bangsal', $bangsal)
+        //     ->first();
 
         $obat = DB::table('databarang')
             ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
             ->where('status', '1')
             ->where('gudangbarang.stok', '>', '0')
-            ->where('gudangbarang.kd_bangsal', $depo->kd_depo)
+            ->where('gudangbarang.kd_bangsal', $bangsal)
             ->where(function ($query) use ($que) {
                 $query->where('databarang.kode_brng', 'like', $que)
                     ->orWhere('databarang.nama_brng', 'like', $que);
@@ -217,8 +217,9 @@ class ResepController extends Controller
 
         try {
             DB::beginTransaction();
-            $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
-            $bangsal = $db->kd_depo;
+            // $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
+            // $bangsal = $db->kd_depo;
+            $bangsal = $kode;
 
             $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
             $maxNo = substr($no->resep, 0, 4);
