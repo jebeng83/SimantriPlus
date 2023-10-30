@@ -253,8 +253,8 @@ class ResepController extends Controller
 
                 }
 
-                $maxTglResep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->max('jam_peresepan');
-                $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->where('jam_peresepan', $maxTglResep)->first();
+                $maxTglResep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->where('kd_dokter', $dokter)->max('jam_peresepan');
+                $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->where('kd_dokter', $dokter)->where('jam_peresepan', $maxTglResep)->first();
 
                 if (!empty($resep) && $resep->tgl_perawatan != '0000-00-00') {
                     //resep sudah divalidasi
