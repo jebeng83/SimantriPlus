@@ -47,6 +47,7 @@
                                         <td>RR(/menit)</td>
                                         <td>Tinggi(Cm)</td>
                                         <td>Berat(Kg)</td>
+                                        <td>SPO2</td>
                                         <td>GCS(E,V,M)</td>
                                         <td>Kesadaran</td>
                                     </tr>
@@ -58,37 +59,46 @@
                                         <td>{{ $pemeriksaan->respirasi ?? '-' }}</td>
                                         <td>{{ $pemeriksaan->tinggi ?? '-' }}</td>
                                         <td>{{ $pemeriksaan->berat ?? '-' }}</td>
+                                        <td>{{ $pemeriksaan->spo2 ?? '-' }}</td>
                                         <td>{{ $pemeriksaan->gcs ?? '-' }}</td>
                                         <td>{{ $pemeriksaan->kesadaran ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Alergi</b></td>
-                                        <td colspan="8">{{ $pemeriksaan->alergi ?? '-' }}</td>
+                                        <td colspan="9">{{ $pemeriksaan->alergi ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Subjek</b></td>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             <pre>{{ $pemeriksaan->keluhan ?? '' }}</pre>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Objek</b></td>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             <pre>{{ $pemeriksaan->pemeriksaan ?? '' }}</pre>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Asesmen</b></td>
-                                        <td colspan="8">{{ $pemeriksaan->penilaian ?? '' }}</td>
+                                        <td colspan="9">{{ $pemeriksaan->penilaian ?? '' }}</td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Plan</b></td>
-                                        <td colspan="8">{{ $pemeriksaan->rtl ?? '' }}</td>
+                                        <td colspan="9">{{ $pemeriksaan->rtl ?? '' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><b>Instruksi</b></td>
+                                        <td colspan="9">{{ $pemeriksaan->instruksi ?? '' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2"><b>Evaluasi</b></td>
+                                        <td colspan="9">{{ $pemeriksaan->evaluasi ?? '' }}</td>
                                     </tr>
                                     @if($tono)
                                     <tr>
                                         <td colspan="2"><b>Pemeriksaan Tonometri</b></td>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             <ul>
                                                 <li>Suhu : {{$tono->suhu}}</li>
                                                 <li>Tensi : {{$tono->tensi}}</li>
@@ -102,7 +112,7 @@
                                     @endif
                                     <tr>
                                         <td colspan="2"><b>Resume Medis</b></td>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             @if(isset($resume))
                                             <ul>
                                                 <li>
@@ -110,6 +120,30 @@
                                                         <div>Keluhan Utama :</div>
                                                         <div>
                                                             {{$resume->keluhan_utama}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Jalannya Penyakit :</div>
+                                                        <div>
+                                                            {{$resume->jalannya_penyakit ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Pemeriksaan Penunjang :</div>
+                                                        <div>
+                                                            {{$resume->pemeriksaan_penunjang ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Hasil Laborat :</div>
+                                                        <div>
+                                                            {{$resume->hasil_laborat ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -145,7 +179,7 @@
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Diagnosa</b></td>
-                                        <td colspan="8">
+                                        <td colspan="9">
                                             <ol>
                                                 @forelse($diagnosa as $diag)
                                                 <li>{{$diag->nm_penyakit}} ({{$diag->kd_penyakit}})</li>
