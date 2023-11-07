@@ -151,7 +151,47 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Utama :</div>
                                                         <div>
-                                                            {{$resume->diagnosa_utama}}
+                                                            {{$resume->diagnosa_utama ?? ''}} - {{$resume->kd_diagnosa_utama ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Sekunder 1:</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_sekunder ?? ''}} - {{$resume->kd_diagnosa_sekunder ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Sekunder 2:</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_sekunder1 ?? ''}} - {{$resume->kd_diagnosa_sekunder1 ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Sekunder 3:</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_sekunder2 ?? ''}} - {{$resume->kd_diagnosa_sekunder2 ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Sekunder 4:</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_sekunder3 ?? ''}} - {{$resume->kd_diagnosa_sekunder3 ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Diagnosa Sekunder 5:</div>
+                                                        <div>
+                                                            {{$resume->diagnosa_sekunder4 ?? ''}} - {{$resume->kd_diagnosa_sekunder4 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -159,7 +199,39 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Utama :</div>
                                                         <div>
-                                                            {{$resume->prosedur_utama}}
+                                                            {{$resume->prosedur_utama ?? ''}} - {{$resume->kd_prosedur_utama ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Prosedur Sekunder 1:</div>
+                                                        <div>
+                                                            {{$resume->prosedur_sekunder ?? ''}} - {{$resume->kd_prosedur_sekunder ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Prosedur Sekunder 2:</div>
+                                                        <div>
+                                                            {{$resume->prosedur_sekunder1 ?? ''}} - {{$resume->kd_prosedur_sekunder1 ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Prosedur Sekunder 3:</div>
+                                                        <div>
+                                                            {{$resume->prosedur_sekunder2 ?? ''}} - {{$resume->kd_prosedur_sekunder2 ?? ''}}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li>
+                                                    <div class="d-flex flex-row">
+                                                        <div>Prosedur Sekunder 4:</div>
+                                                        <div>
+                                                            {{$resume->prosedur_sekunder3 ?? ''}} - {{$resume->kd_prosedur_sekunder3 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
