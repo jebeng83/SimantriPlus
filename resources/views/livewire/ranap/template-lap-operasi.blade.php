@@ -1,4 +1,4 @@
-<div wire:ignore.self id="modal-template-operasi" class="modal fade" role="dialog" aria-labelledby="my-modal-title" aria-hidden="true">
+<div wire:ignore.self id="modal-template-operasi" data-backdrop="false" class="modal fade" role="dialog" aria-labelledby="my-modal-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
