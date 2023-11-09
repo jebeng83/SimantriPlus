@@ -21,6 +21,7 @@
             <livewire:ranap.permintaan-radiologi :no-rawat="request()->get('no_rawat')" />
             <x-adminlte-card title="Laporan Operasi" theme="info" maximizable collapsible="collapsed">
                 <livewire:ranap.lap-operasi :no-rawat="request()->get('no_rawat')" />
+                <livewire:ranap.template-lap-operasi />
             </x-adminlte-card>
         </div>
     </div>

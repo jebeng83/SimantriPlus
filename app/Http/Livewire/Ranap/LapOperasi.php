@@ -14,7 +14,7 @@ class LapOperasi extends Component
     public $no_rawat, $tanggal_operasi, $tanggal_selesai, $kd_dokter, $diagnosa_pra_bedah, $diagnosa_pasca_bedah, $uraian_bedah;
     public $tglOperasi, $tglSelesai;
     public $data = [], $modeEdit = false;
-    protected $listeners = ['hapusLapOperasi' => 'hapus'];
+    protected $listeners = ['hapusLapOperasi' => 'hapus', 'pilihTemplateOperasi' => 'pilihTemplateOperasi'];
     public function render()
     {
         return view('livewire.ranap.lap-operasi');
@@ -38,6 +38,18 @@ class LapOperasi extends Component
         $this->data = DB::table('laporan_operasi_detail')
                         ->where('no_rawat', $this->no_rawat)
                         ->get();
+    }
+
+    public function pilihTemplateOperasi($id)
+    {
+        $data = DB::table('template_laporan_operasi')
+                    ->where('no_template', $id)
+                    ->first();
+        $this->diagnosa_pra_bedah = $data->diagnosa_preop;
+        $this->diagnosa_pasca_bedah = $data->diagnosa_postop;
+        $this->uraian_bedah = $data->laporan_operasi;
+
+        $this->dispatchBrowserEvent('closeModalTemplateOperasi');
     }
 
     public function confirmHapus($tglOperasi, $tglSelesai)

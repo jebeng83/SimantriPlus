@@ -52,10 +52,15 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-6 col-sm-6">
-                <button wire:click='resetInput' type="reset" class="btn btn-block btn-default">Reset</button>
+            <div class="col-4 col-md-4">
+                <button type="button" class="btn btn-block btn-warning" data-toggle="modal" data-target="#modal-template-operasi">
+                    Template Laporan Operasi
+                </button>
             </div>
-            <div class="col-6 col-sm-6">
+            <div class="col-4 col-sm-4">
+                <button wire:click='resetInput' type="reset" class="btn btn-block btn-danger">Reset</button>
+            </div>
+            <div class="col-4 col-sm-4">
                 <button type="submit" class="btn btn-block @if($modeEdit) btn-info @else btn-primary @endif">@if($modeEdit) Ubah @else Simpan @endif</button>
             </div>
         </div>
