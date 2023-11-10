@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 class LapOperasi extends Component
 {
     use LivewireAlert;
-    public $no_rawat, $tanggal_operasi, $tanggal_selesai, $kd_dokter, $diagnosa_pra_bedah, $diagnosa_pasca_bedah, $uraian_bedah;
+    public $no_rawat, $tanggal_operasi, $tanggal_selesai, $kd_dokter, $diagnosa_pra_bedah, $diagnosa_pasca_bedah, $uraian_bedah, $tindakan_bedah;
     public $tglOperasi, $tglSelesai;
     public $data = [], $modeEdit = false;
     protected $listeners = ['hapusLapOperasi' => 'hapus', 'pilihTemplateOperasi' => 'pilihTemplateOperasi'];
@@ -57,10 +57,31 @@ class LapOperasi extends Component
     {
         $this->tglOperasi = $tglOperasi;
         $this->tglSelesai = $tglSelesai;
-        $this->confirm('Apakah anda yakin ingin menghapus data ini?', [
-            'onConfirmed' => 'hapusLapOperasi',
-            'cancelButtonText' => 'Batal',
-        ]);
+        $data = DB::table('laporan_operasi_detail')
+                    ->where('no_rawat', $this->no_rawat)
+                    ->where('tanggal_operasi', $tglOperasi)
+                    ->where('tanggal_selesai', $tglSelesai)
+                    ->first();
+        if($data->kd_dokter_bedah != session()->get('username')){
+
+            $this->alert('warning', 'Gagal', [
+                'position' =>  'center',
+                'timer' =>  '', 
+                'toast' =>  false, 
+                'text' =>  'Anda tidak memiliki akses untuk menghapus data ini', 
+                'confirmButtonText' =>  'Ok', 
+                'showConfirmButton' =>  true,
+            ]);
+            return;
+
+        }else{
+
+            $this->confirm('Apakah anda yakin ingin menghapus data ini?', [
+                'onConfirmed' => 'hapusLapOperasi',
+                'cancelButtonText' => 'Batal',
+            ]);
+
+        }
     }
 
     public function hapus(){
@@ -110,39 +131,54 @@ class LapOperasi extends Component
         $data = DB::table('laporan_operasi_detail')
                     ->where('no_rawat', $this->no_rawat)
                     ->where('tanggal_operasi', $tglOperasi)
-                    ->where('tanggal_selesai', $tglSelesai)
-                    ->where('kd_dokter_bedah', session()->get('username'))
                     ->first();
         
-        $this->tanggal_operasi = $data->tanggal_operasi;
-        $this->tanggal_selesai = $data->tanggal_selesai;
-        $this->diagnosa_pra_bedah = $data->diagnosa_pra_bedah;
-        $this->diagnosa_pasca_bedah = $data->diagnosa_pasca_bedah;
-        $this->uraian_bedah = $data->uraian_bedah;
+        if($data->kd_dokter_bedah == session()->get('username')){
 
-        $this->modeEdit = true;
+            $this->tanggal_operasi = $data->tanggal_operasi;
+            $this->tanggal_selesai = $data->tanggal_selesai;
+            $this->diagnosa_pra_bedah = $data->diagnosa_pra_bedah;
+            $this->diagnosa_pasca_bedah = $data->diagnosa_pasca_bedah;
+            $this->uraian_bedah = $data->uraian_bedah;
+            $this->tindakan_bedah = $data->tindakan_bedah;
+
+            $this->modeEdit = true;
+        }else{
+
+            $this->alert('warning', 'Gagal', [
+                'position' =>  'center',
+                'timer' =>  '', 
+                'toast' =>  false, 
+                'text' =>  'Anda tidak memiliki akses untuk mengubah data ini', 
+                'confirmButtonText' =>  'Ok', 
+                'showConfirmButton' =>  true,
+            ]);
+        }
     }
 
     public function resetInput()
     {
-        $this->reset(['tanggal_operasi', 'tanggal_selesai', 'diagnosa_pra_bedah', 'diagnosa_pasca_bedah', 'uraian_bedah']);
+        $this->reset(['tanggal_operasi', 'tanggal_selesai', 'diagnosa_pra_bedah', 'diagnosa_pasca_bedah', 'uraian_bedah', 'tindakan_bedah']);
         $this->modeEdit = false;
     }
 
     public function simpan()
     {
+        // dd($this->tanggal_operasi);
         $this->validate([
             'tanggal_operasi' => 'required',
             'tanggal_selesai' => 'required',
             'diagnosa_pra_bedah' => 'required',
             'diagnosa_pasca_bedah' => 'required',
             'uraian_bedah' => 'required',
+            'tindakan_bedah' => 'required',
         ],[
             'tanggal_operasi.required' => 'Tanggal Operasi tidak boleh kosong!',
             'tanggal_selesai.required' => 'Tanggal Selesai tidak boleh kosong!',
             'diagnosa_pra_bedah.required' => 'Diagnosa Pra Bedah tidak boleh kosong!',
             'diagnosa_pasca_bedah.required' => 'Diagnosa Pasca Bedah tidak boleh kosong!',
             'uraian_bedah.required' => 'Uraian Bedah tidak boleh kosong!',
+            'tindakan_bedah.required' => 'Tindakan Bedah tidak boleh kosong!',
         ]);
 
         $start = Carbon::parse($this->tanggal_operasi);
@@ -157,6 +193,7 @@ class LapOperasi extends Component
             'diagnosa_pasca_bedah' => $this->diagnosa_pasca_bedah,
             'uraian_bedah' => $this->uraian_bedah,
             'lama_operasi' => $diff + 1,
+            'tindakan_bedah' => $this->tindakan_bedah,
         ];
 
         try{
@@ -169,15 +206,14 @@ class LapOperasi extends Component
                     ->where('kd_dokter_bedah', $this->kd_dokter)
                     ->update($dataEdit);
 
-                $this->reset(['tanggal_operasi', 'tanggal_selesai', 'diagnosa_pra_bedah', 'diagnosa_pasca_bedah', 'uraian_bedah']);
-                $this->modeEdit = false;
+                $this->resetInput();
                 $this->getData();
                 $this->alert('success', 'Berhasil ubah laporan operasi');
             }else{
                 DB::table('laporan_operasi_detail')
                 ->insert($data);
 
-                $this->reset(['tanggal_operasi', 'tanggal_selesai', 'diagnosa_pra_bedah', 'diagnosa_pasca_bedah', 'uraian_bedah']);
+                $this->resetInput();
                 $this->getData();
                 $this->alert('success', 'Berhasil input laporan operasi');
             }

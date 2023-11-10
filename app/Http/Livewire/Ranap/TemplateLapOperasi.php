@@ -15,7 +15,9 @@ class TemplateLapOperasi extends Component
     public function mount()
     {
         $this->search = '';
-        $this->datas = [];
+        $this->datas = DB::table('template_laporan_operasi')
+                        ->limit(5)
+                        ->get();
     }
 
     public function loadDatas()

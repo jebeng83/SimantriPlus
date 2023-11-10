@@ -78,8 +78,8 @@
             <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed"
                 maximizable>
                 <x-ralan.resep />
+                {{-- <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')"> --}}
             </x-adminlte-card>
-            {{-- <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')"> --}}
                 {{--
                 <x-ralan.resume /> --}}
                 <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
@@ -99,6 +99,11 @@
                 {{--
                 <x-ralan.permintaan-radiologi :no-rawat="request()->get('no_rawat')" /> --}}
                 <livewire:ralan.permintaan-radiologi :no-rawat="request()->get('no_rawat')" />
+
+                <x-adminlte-card title="Laporan Operasi" icon='fas fa-stethoscope' theme="info" maximizable collapsible="collapsed">
+                    <livewire:ranap.lap-operasi :no-rawat="request()->get('no_rawat')" />
+                    <livewire:ranap.template-lap-operasi />
+                </x-adminlte-card>
     </div>
 </div>
 
