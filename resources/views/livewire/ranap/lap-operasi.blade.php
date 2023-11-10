@@ -5,7 +5,7 @@
                 <div class="form-group">
                     <label for="tanggal_operasi">Tanggal Operasi</label>
                     <div wire:ignore.self class="input-group date" id="tanggal_operasi" data-target-input="nearest">
-                        <input wire:model.defer='tanggal_operasi' type="text" class="form-control datetimepicker-input" data-target="#tanggal_operasi"/>
+                        <input wire:model.defer='tanggal_operasi' type="text" class="form-control datetimepicker-input" data-target="#tanggal_operasi" @if($modeEdit) disabled @endif/>
                         <div class="input-group-append" data-target="#tanggal_operasi" data-toggle="datetimepicker">
                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                         </div>
@@ -17,7 +17,7 @@
                 <div class="form-group">
                     <label for="tanggal_selesai">Tanggal Selesai</label>
                     <div wire:ignore.self class="input-group date" id="tanggal_selesai" data-target-input="nearest">
-                        <input wire:model.defer='tanggal_selesai' type="text" class="form-control datetimepicker-input" data-target="#tanggal_selesai"/>
+                        <input wire:model.defer='tanggal_selesai' type="text" class="form-control datetimepicker-input" data-target="#tanggal_selesai" @if($modeEdit) disabled @endif/>
                         <div class="input-group-append" data-target="#tanggal_selesai" data-toggle="datetimepicker">
                             <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                         </div>
@@ -152,12 +152,28 @@
                 }
             });
 
+            
             $('#tanggal_operasi').on('change.datetimepicker', function(e) {
-                @this.set('tanggal_operasi', e.date.format('YYYY-MM-DD HH:mm:ss'), true);
+                console.log(e.date);
+                if(!e.date){
+                    @this.set('tanggal_operasi', '', true);
+                }else{
+                    @this.set('tanggal_operasi', e.date.format('YYYY-MM-DD HH:mm:ss'), true);
+                    console.log(@this.tanggal_operasi);
+                }
             });
 
             $('#tanggal_selesai').on('change.datetimepicker', function(e) {
-                @this.set('tanggal_selesai', e.date.format('YYYY-MM-DD HH:mm:ss'), true);
+                if(!e.date){
+                    @this.set('tanggal_selesai', '', true);
+                }else{
+                    @this.set('tanggal_selesai', e.date.format('YYYY-MM-DD HH:mm:ss'), true);
+                }
+            });
+
+            Livewire.on('resetInput', e => {
+                $('#tanggal_operasi').datetimepicker('clear');
+                $('#tanggal_selesai').datetimepicker('clear');
             });
         });
     </script>

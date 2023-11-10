@@ -143,6 +143,7 @@ class LapOperasi extends Component
             $this->tindakan_bedah = $data->tindakan_bedah;
 
             $this->modeEdit = true;
+            $this->emit('editLapOperasi');
         }else{
 
             $this->alert('warning', 'Gagal', [
@@ -160,6 +161,7 @@ class LapOperasi extends Component
     {
         $this->reset(['tanggal_operasi', 'tanggal_selesai', 'diagnosa_pra_bedah', 'diagnosa_pasca_bedah', 'uraian_bedah', 'tindakan_bedah']);
         $this->modeEdit = false;
+        $this->emit('resetInput');
     }
 
     public function simpan()
