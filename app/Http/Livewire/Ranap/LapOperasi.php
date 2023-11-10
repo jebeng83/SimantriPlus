@@ -33,6 +33,7 @@ class LapOperasi extends Component
         $this->getData();
     }
 
+
     public function getData()
     {
         $this->data = DB::table('laporan_operasi_detail')
@@ -105,13 +106,14 @@ class LapOperasi extends Component
 
     public function edit($tglOperasi, $tglSelesai)
     {
+        // dd($tglOperasi, $tglSelesai);
         $data = DB::table('laporan_operasi_detail')
                     ->where('no_rawat', $this->no_rawat)
                     ->where('tanggal_operasi', $tglOperasi)
                     ->where('tanggal_selesai', $tglSelesai)
                     ->where('kd_dokter_bedah', session()->get('username'))
                     ->first();
-
+        
         $this->tanggal_operasi = $data->tanggal_operasi;
         $this->tanggal_selesai = $data->tanggal_selesai;
         $this->diagnosa_pra_bedah = $data->diagnosa_pra_bedah;

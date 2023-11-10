@@ -30,14 +30,14 @@
             <div class="col-sm-6">
                 <div class="form-group">
                     <label for="diagnosa_pra_bedah">Diagnosa Pra Bedah</label>
-                    <input wire:model.defer='diagnosa_pra_bedah' id="diagnosa_pra_bedah" class="form-control @error('diagnosa_pra_bedah') is-invalid @enderror" type="text" name="diagnosa_pra_bedah">
+                    <textarea wire:model.defer='diagnosa_pra_bedah' rows="3" id="diagnosa_pra_bedah" class="form-control @error('diagnosa_pra_bedah') is-invalid @enderror" type="text" name="diagnosa_pra_bedah"></textarea>
                     @error('diagnosa_pra_bedah') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
             <div class="col-sm-6">
                 <div class="form-group">
                     <label for="diagnosa_pasca_bedah">Diagnosa Pasca Bedah</label>
-                    <input wire:model.defer='diagnosa_pasca_bedah' id="diagnosa_pasca_bedah" class="form-control @error('diagnosa_pasca_bedah') is-invalid @enderror" type="text" name="diagnosa_pasca_bedah">
+                    <textarea wire:model.defer='diagnosa_pasca_bedah' id="diagnosa_pasca_bedah" class="form-control @error('diagnosa_pasca_bedah') is-invalid @enderror" type="text" name="diagnosa_pasca_bedah" rows="3"></textarea>
                     @error('diagnosa_pasca_bedah') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -45,7 +45,7 @@
         <div class="row">
             <div class="col-sm-12">
                 <div class="form-group">
-                  <label for="uraian_bedah">Uraian Bedah</label>
+                  <label for="uraian_bedah">Tindakan Bedah</label>
                   <textarea wire:model.defer='uraian_bedah' class="form-control @error('uraian_bedah') is-invalid @enderror" name="uraian_bedah" id="uraian_bedah" rows="3"></textarea>
                     @error('uraian_bedah') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
@@ -75,7 +75,7 @@
                     <th scope="col">Tgl Selesai</th>
                     <th scope="col">Diagnosa Pra Bedah</th>
                     <th scope="col">Diagnosa Pasca Bedah</th>
-                    <th scope="col">Uraian Bedah</th>
+                    <th scope="col">Tindakan Bedah</th>
                     <th scope="col">Aksi</th>
                 </tr>
             </thead>
@@ -90,7 +90,7 @@
                     <td>{{ $item->uraian_bedah }}</td>
                     <td>
                         <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                            <button wire:click='edit("{{$item->tanggal_operasi}}","{{$item->tanggal_selesai}}","{{$item->diagnosa_pra_bedah}}","{{$item->diagnosa_pasca_bedah}}","{{$item->uraian_bedah}}")' type="button" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
+                            <button wire:click='edit("{{$item->tanggal_operasi}}","{{$item->tanggal_selesai}}")' type="button" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
                             <button wire:click='confirmHapus("{{$item->tanggal_operasi}}","{{$item->tanggal_selesai}}")' type="button" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
@@ -119,13 +119,13 @@
                 allowInputToggle: true,
             });
 
-            // $('#tanggal_operasi').on('change.datetimepicker', function(e) {
-            //     @this.set('tanggal_operasi', e.date.format('YYYY-MM-DD HH:mm:ss'));
-            // });
+            $('#tanggal_operasi').on('change.datetimepicker', function(e) {
+                @this.set('tanggal_operasi', e.date.format('YYYY-MM-DD HH:mm:ss'));
+            });
 
-            // $('#tanggal_selesai').on('change.datetimepicker', function(e) {
-            //     @this.set('tanggal_selesai', e.date.format('YYYY-MM-DD HH:mm:ss'));
-            // });
+            $('#tanggal_selesai').on('change.datetimepicker', function(e) {
+                @this.set('tanggal_selesai', e.date.format('YYYY-MM-DD HH:mm:ss'));
+            });
         });
     </script>
 @endpush
