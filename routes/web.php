@@ -183,6 +183,10 @@ Route::post('/diagnosa', [
     'simpanDiagnosa',
 ])->name('diagnosa.simpan');
 
+Route::get('/master-operasi', fn () => view('master-laporan-operasi'))->name(
+    'master-operasi'
+)->middleware('loginauth');
+
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });

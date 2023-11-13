@@ -283,6 +283,11 @@ return [
             'url'        => '/ranap/pasien',
         ],
         [
+            'text'        => 'Template Operasi',
+            'url'         => '/master-operasi',
+            'icon'        => 'fas fa-fw fa-stethoscope',
+        ],
+        [
             'text'        => 'Master Obat',
             'url'         => '/master_obat',
             'icon'        => 'fas fa-fw fa-pills',
