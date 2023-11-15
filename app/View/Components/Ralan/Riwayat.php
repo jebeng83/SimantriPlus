@@ -108,7 +108,7 @@ class Riwayat extends Component
                     ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
                     ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
                     ->where('no_rkm_medis', $noRM)
-                    ->where('reg_periksa.stts', 'Sudah')
+                    ->where('reg_periksa.stts', '<>', 'Batal')
                     ->select('reg_periksa.tgl_registrasi', 'reg_periksa.no_rawat', 'dokter.nm_dokter', 
                             'reg_periksa.status_lanjut', 'poliklinik.nm_poli', 'reg_periksa.no_reg')
                     ->orderBy('reg_periksa.tgl_registrasi', 'desc')
