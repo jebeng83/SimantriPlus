@@ -1,5 +1,5 @@
 <div>
-    <x-adminlte-modal id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered
+    <x-adminlte-modal wire:ignore.self id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered
         static-backdrop scrollable>
         <div class="timeline">
             @foreach($data as $row)
@@ -330,6 +330,10 @@
                             </div>
                         </x-adminlte-card>
                         @endif
+
+                        <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
+                            <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
+                        </x-adminlte-card>
 
                         {{--
                         <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
