@@ -45,11 +45,13 @@
                 <button class="btn btn-primary" type="submit">Simpan</button>
                 <button wire:ignore class="btn btn-success" wire:click='tambahForm' type="reset">+</button>
                 <button class="btn btn-danger" wire:click='kurangiForm' type="reset">-</button>
-                <select wire:ignore id="iter" class="form-control" name="iter">
-                    <option value="-">Pilih jumlah iter</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                </select>
+                <div wire:ignore.self>
+                    <select id="iter" class="form-control" name="iter">
+                        <option value="-">Pilih jumlah iter</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
             </div>
             </form>
         </div>
@@ -68,7 +70,7 @@
             return $data;
         };
 
-        document.addEventListener('livewire:load', function () {
+        window.addEventListener('livewire:load', function () {
             poli = @this.poli;
             console.log(poli);
             $('.obat-1').select2({

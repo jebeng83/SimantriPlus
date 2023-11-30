@@ -31,7 +31,9 @@ class SendBPJS extends Command
      */
     public function handle()
     {
-        $response = $this->requestPostBpjs('/ihs/api/rs/validate');
+        $data['param'] = "0002613483279";
+        $data['kodedokter'] = 14062;
+        $response = $this->requestPostBpjs('api/rs/validate', $data);
         $this->info($response);
     }
 }
