@@ -78,8 +78,12 @@
             <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed"
                 maximizable>
                 <x-ralan.resep />
-                {{-- <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')"> --}}
             </x-adminlte-card>
+            {{-- <x-adminlte-card title="Resep Luar" id="resepLuarCard" theme="info" icon="fas fa-lg fa-pills" collapsible="collapsed"
+                maximizable>
+                <livewire:ralan.resep :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')">
+                <livewire:component.resep-luar.table-resep :noRawat="request()->get('no_rawat')" />
+            </x-adminlte-card> --}}
                 {{--
                 <x-ralan.resume /> --}}
                 <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
