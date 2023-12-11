@@ -21,7 +21,16 @@
         <x-adminlte-profile-row-item title="Agama" icon="fas fa-fw fa-book" text="{{$data->agama  ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-clock" title="Umur" text="{{$data->umur ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-wallet" title="Cara Bayar" text="{{$data->png_jawab ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}" />
+        {{-- <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}" button="btn-phone" /> --}}
+        <div class="p-0 col-12">
+            <span class="nav-link">
+                <i class="fas fa-fw fa-phone"></i>No Telp <span class="float-right"><span id="data-phone">{{$data->no_tlp ?? '-'}}</span>
+                    <button id="btn-phone" class="btn btn-sm btn-success">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </span>
+            </span>
+        </div>
         <x-adminlte-profile-row-item icon="fas fa-fw fa-building" title="Pekerjaan"
             text="{{$data->pekerjaan ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No Peserta"
@@ -83,6 +92,8 @@
     </div>
 </x-adminlte-modal>
 
+<livewire:component.change-phone />
+
 @push('css')
 <style>
     @media (min-width: 992px) {
@@ -96,6 +107,19 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    $('#btn-phone').on('click', function(event){
+        event.preventDefault();
+        var phone = $('#data-phone').text();
+        Livewire.emit('setRmPhone', "{{$data->no_rkm_medis}}", phone.trim());
+        $('#change-phone').modal('show');
+    });
+
+    Livewire.on('refreshPhone', function(event){
+        $('#change-phone').modal('hide');
+        console.log(event);
+        $('#data-phone').text(event);
+    });
+
     function uploadFile() {
             var file_data = $('#fileupload').prop('files')[0];
             var form_data = new FormData();
