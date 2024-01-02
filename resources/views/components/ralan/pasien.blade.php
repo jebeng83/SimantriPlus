@@ -4,27 +4,32 @@
         img="https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}">
         <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat"
             text="{{$data->no_rawat ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP"
-            text="{{$data->no_ktp ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP" text="{{$data->no_ktp ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-user" title="Jns Kelamin"
             text="{{$data->jk == 'L' ? 'Laki - Laki' : 'Perempuan' }}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tempat, Tgl Lahir"
             text="{{$data->tmp_lahir ?? '-'}}, {{\Carbon\Carbon::parse($data->tgl_lahir)->isoFormat('LL')  ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Pendidikan" text="{{$data->pnd ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Nama Ibu" icon="fas fa-fw fa-user"  text="{{$data->nm_ibu  ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Nama Ibu" icon="fas fa-fw fa-user" text="{{$data->nm_ibu  ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Nama Keluarga" icon="fas fa-fw fa-user"  text="{{$data->namakeluarga  ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-briefcase" title="Pekerjaan PJ" text="{{$data->pekerjaanpj ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Nama Keluarga" icon="fas fa-fw fa-user"
+            text="{{$data->namakeluarga  ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-briefcase" title="Pekerjaan PJ"
+            text="{{$data->pekerjaanpj ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat PJ" text="{{$data->alamatpj ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Gol Darah" icon="fas fa-fw fa-droplet" text="{{$data->gol_darah  ?? '-'}}" />
+        <x-adminlte-profile-row-item title="Gol Darah" icon="fas fa-fw fa-droplet"
+            text="{{$data->gol_darah  ?? '-'}}" />
         <x-adminlte-profile-row-item title="Stts Nikah" icon="fas fa-fw fa-ring" text="{{$data->stts_nikah  ?? '-'}}" />
         <x-adminlte-profile-row-item title="Agama" icon="fas fa-fw fa-book" text="{{$data->agama  ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-clock" title="Umur" text="{{$data->umur ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-wallet" title="Cara Bayar" text="{{$data->png_jawab ?? '-'}}" />
-        {{-- <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}" button="btn-phone" /> --}}
+        {{--
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}"
+            button="btn-phone" /> --}}
         <div class="p-0 col-12">
             <span class="nav-link">
-                <i class="fas fa-fw fa-phone"></i>No Telp <span class="float-right"><span id="data-phone">{{$data->no_tlp ?? '-'}}</span>
+                <i class="fas fa-fw fa-phone"></i>No Telp <span class="float-right"><span
+                        id="data-phone">{{$data->no_tlp ?? '-'}}</span>
                     <button id="btn-phone" class="btn btn-sm btn-success">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -39,15 +44,15 @@
         <div class="p-0 col-12">
             <span class="nav-link">
                 <div class="d-flex flex-row justify-content-between" style="gap:10px">
-                <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
-                    data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
-                <x-adminlte-button label="I-Care BPJS" id="icare-button" theme="success" />
+                    <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
+                        data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
+                    <x-adminlte-button label="I-Care BPJS" id="icare-button" theme="success" />
                 </div>
             </span>
             <span class="nav-link">
                 <div class="d-flex flex-row justify-content-between" style="gap:10px">
-                    <x-adminlte-button icon="fas fa-folder" label="Berkas RM Digital" onclick="getBerkasRM()"
-                        theme="success" />
+                    <x-adminlte-button icon="fas fa-folder" id="btn-rm" data-rm="{{$data->no_rkm_medis}}"
+                        label="Berkas RM Digital" theme="success" />
                     <x-adminlte-button icon="fas fa-folder" label="Berkas RM Retensi" theme="secondary"
                         onclick="getBerkasRetensi()" />
                 </div>
@@ -69,8 +74,8 @@
     </x-adminlte-profile-widget>
 </div>
 
-<x-adminlte-modal id="modalBerkasRM" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
-    static-backdrop scrollable>
+<x-adminlte-modal id="modalBerkasRM" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell"
+    v-centered static-backdrop scrollable>
     <div class="body-modal-berkasrm" style="gap:20px">
         {{-- <div class="row row-cols-auto body-modal-berkasrm" style="gap:20px">
             <div class="body-modal-berkasrm">
@@ -79,10 +84,15 @@
     </div>
 </x-adminlte-modal>
 
+<x-adminlte-modal id="modal-rm" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
+    scrollable>
+    <livewire:component.berkas-rm />
+</x-adminlte-modal>
+
 <x-adminlte-modal id="icare-modal" title="I-Care BPJS" size="lg" theme="info" icon="fas fa-bell" v-centered
     static-backdrop scrollable>
     <div class="container-fluid container-icare">
-        
+
     </div>
 </x-adminlte-modal>
 
@@ -282,11 +292,7 @@
             });
         }
 </script>
-<script>
-    $(document).on('click', '[data-toggle="lightbox"]', function(event) {
-                event.preventDefault();
-                $(this).ekkoLightbox();
-                $('#modalBerkasRM').modal('hide');
-            });
-</script>
+{{-- <script>
+
+</script> --}}
 @endpush
