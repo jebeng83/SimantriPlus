@@ -77,7 +77,7 @@
                     results: data.map(function (item) {
                         return {
                             id: item.kd_penyakit,
-                            text: item.kd_penyakit+' - '+item.nm_penyakit
+                            text: item.kd_penyakit+' - '+item.nm_penyakit+' - '+item.ciri_ciri
                         }
                     })
                 };
