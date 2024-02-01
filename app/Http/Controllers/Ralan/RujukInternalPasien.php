@@ -17,6 +17,7 @@ class RujukInternalPasien extends Controller
         $this->encryptNoRawat = $request->get('no_rawat');
         $this->noRawat = $this->decryptData($request->get('no_rawat'));
         $this->noRM = $this->decryptData($request->get('no_rm'));
+        // dd($this->noRM);
     }
     
     public function index()

@@ -206,6 +206,12 @@
                         </div>
                     </div>
                     <div class="row justify-content-end">
+                        <div class="col-md-3 mr-auto">
+                            <div class="form-group form-check">
+                                <input type="checkbox" class="form-check-input" id="satu-resep">
+                                <label for="satu-resep">Jadikan Satu Resep</label>
+                            </div>
+                        </div>
                         <x-adminlte-button id="deleteRacikan" onclick="deleteRowRacikan()"
                             class="md:col-md-1 sm:col-sm-6 delete-form-racikan mr-1" theme="danger" label="-" />
                         <x-adminlte-button id="addRacikan" class="md:col-md-1 sm:col-sm-6 add-form-racikan"
@@ -931,6 +937,7 @@
             let p2 = getValue('p2[]');
             let kandungan = getValue('kandungan[]');
             let jml = getValue('jml[]');
+            let satu_resep = $('#satu-resep').is(":checked") ? 1 : 0;
             $.ajax({
                 type: 'POST',
                 url: '/api/resep/racikan/'+"{{$encryptNoRawat}}",
@@ -945,6 +952,7 @@
                     p2:p2,
                     kandungan:kandungan,
                     jml:jml,
+                    satu_resep:satu_resep,
                     _token:_token,
                 },
                 dataType: 'json',

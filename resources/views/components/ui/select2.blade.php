@@ -5,11 +5,11 @@
     'ajax' => null,
 ])
 
-<div class="form-group">
+<div wire:ignore class="form-group">
     @if($label)
         <label for="{{$id}}">{{$label}}</label>
     @endif
-    <select 
+    <select
         {{ $attributes->merge(['class' => 'form-control']) }}
         id="{{$id}}"
         name="{{$id}}" 
@@ -27,6 +27,7 @@
         $(document).ready(function() {
             $('#{{$id}}').select2({
                 theme: 'bootstrap4',
+                placeholder: 'Pilih {{$label}}',
                 ajax: {
                     url: '{{$ajax}}',
                     dataType: 'json',
@@ -36,7 +37,8 @@
                             results: data
                         };
                     },
-                    cache: true
+                    cache: true,
+                    minimumInputLength: 3
                 }
             });
         });

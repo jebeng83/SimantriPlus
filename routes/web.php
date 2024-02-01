@@ -187,6 +187,8 @@ Route::get('/master-operasi', fn () => view('master-laporan-operasi'))->name(
     'master-operasi'
 )->middleware('loginauth');
 
+Route::get('/pegawai', [App\Http\Controllers\API\PemeriksaanController::class, 'getPegawai'])->name('pegawai');
+
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });

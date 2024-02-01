@@ -57,6 +57,22 @@ class ResepController extends Controller
         return response()->json($obat, 200);
     }
 
+    public function getObatLuar(Request $request)
+    {
+        $q = $request->get('q');
+        $que = '%' . $q . '%';
+
+        $obat = DB::table('databarang')
+            ->where('status', '1')
+            ->where(function ($query) use ($que) {
+                $query->where('databarang.kode_brng', 'like', $que)
+                    ->orWhere('databarang.nama_brng', 'like', $que);
+            })
+            ->selectRaw('databarang.kode_brng AS id, databarang.nama_brng AS text')
+            ->get();
+        return response()->json($obat, 200);
+    }
+
     public function getDataObat(Request $request, $kdObat)
     {
         $input = $request->all();
@@ -329,6 +345,7 @@ class ResepController extends Controller
         $jumlahRacikan = $input['jumlah_racikan'];
         $metodeRacikan = $input['metode_racikan'];
         $keteranganRacikan = $input['keterangan_racikan'];
+        $satu_resep = $input['satu_resep'] ?? 0;
 
         $kdObat = $input['kd_obat'];
         $p1 = $input['p1'];
@@ -371,25 +388,54 @@ class ResepController extends Controller
 
         try {
             DB::beginTransaction();
-            $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-            $maxNo = substr($no->resep, 0, 4);
-            $nextNo = sprintf('%04s', ($maxNo + 1));
-            $tgl = date('Ymd');
-            $noResep = $tgl . '' . $nextNo;
+            $noResep = '';
 
-            DB::table('resep_obat')
-                ->insert([
-                    'no_resep' => $noResep,
-                    'tgl_perawatan' => '0000-00-00',
-                    'jam' => '00:00:00',
-                    'no_rawat' => $no_rawat,
-                    'kd_dokter' => $dokter,
-                    'tgl_peresepan' => date('Y-m-d'),
-                    'jam_peresepan' => date('H:i:s'),
-                    'status' => 'ralan',
-                    'tgl_penyerahan' => '0000-00-00',
-                    'jam_penyerahan' => '00:00:00',
-                ]);
+            if ($satu_resep == 0) {
+                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+                $maxNo = substr($no->resep, 0, 4);
+                $nextNo = sprintf('%04s', ($maxNo + 1));
+                $tgl = date('Ymd');
+                $noResep = $tgl . '' . $nextNo;
+
+                DB::table('resep_obat')
+                    ->insert([
+                        'no_resep' => $noResep,
+                        'tgl_perawatan' => '0000-00-00',
+                        'jam' => '00:00:00',
+                        'no_rawat' => $no_rawat,
+                        'kd_dokter' => $dokter,
+                        'tgl_peresepan' => date('Y-m-d'),
+                        'jam_peresepan' => date('H:i:s'),
+                        'status' => 'ralan',
+                        'tgl_penyerahan' => '0000-00-00',
+                        'jam_penyerahan' => '00:00:00',
+                    ]);
+            } else {
+                $resep = DB::table('resep_obat')->where('no_rawat', $no_rawat)->where('tgl_peresepan', date('Y-m-d'))->first();
+                if (!empty($resep)) {
+                    $noResep = $resep->no_resep;
+                } else {
+                    $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+                    $maxNo = substr($no->resep, 0, 4);
+                    $nextNo = sprintf('%04s', ($maxNo + 1));
+                    $tgl = date('Ymd');
+                    $noResep = $tgl . '' . $nextNo;
+
+                    DB::table('resep_obat')
+                        ->insert([
+                            'no_resep' => $noResep,
+                            'tgl_perawatan' => '0000-00-00',
+                            'jam' => '00:00:00',
+                            'no_rawat' => $no_rawat,
+                            'kd_dokter' => $dokter,
+                            'tgl_peresepan' => date('Y-m-d'),
+                            'jam_peresepan' => date('H:i:s'),
+                            'status' => 'ralan',
+                            'tgl_penyerahan' => '0000-00-00',
+                            'jam_penyerahan' => '00:00:00',
+                        ]);
+                }
+            }
 
             DB::table('resep_dokter_racikan')
                 ->insert([
