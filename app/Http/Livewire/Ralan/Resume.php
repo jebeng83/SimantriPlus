@@ -119,7 +119,7 @@ class Resume extends Component
             ->where('prosedur_pasien.no_rawat', $this->noRawat)
             ->where('prosedur_pasien.prioritas', '1')
             ->where('prosedur_pasien.status', 'Ralan')
-            ->select('icd9.deskripsi_panjang')
+            ->select('icd9.deskripsi_panjang', 'icd9.kode')
             ->first();
         $this->prosedur = $prosedur->deskripsi_panjang ?? '';
         $this->kdProsedur = $prosedur->kode ?? '';
