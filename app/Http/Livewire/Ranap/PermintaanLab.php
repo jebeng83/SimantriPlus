@@ -50,39 +50,39 @@ class PermintaanLab extends Component
     {
         $this->validate();
 
-        try{
+        try {
             DB::beginTransaction();
             $getNumber = DB::table('permintaan_lab')
-                            ->where('tgl_permintaan', date('Y-m-d'))
-                            ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
-                            ->first();
+                ->where('tgl_permintaan', date('Y-m-d'))
+                ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
+                ->first();
 
             $lastNumber = substr($getNumber->no, 0, 4);
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
-            $noOrder = 'PL'.date('Ymd').$getNextNumber;
+            $noOrder = 'PL' . date('Ymd') . $getNextNumber;
 
             DB::table('permintaan_lab')
+                ->insert([
+                    'noorder' => $noOrder,
+                    'no_rawat' => $this->noRawat,
+                    'tgl_permintaan' => date('Y-m-d'),
+                    'jam_permintaan' => date('H:i:s'),
+                    'dokter_perujuk' => session()->get('username'),
+                    'diagnosa_klinis' =>  $this->klinis,
+                    'informasi_tambahan' =>  $this->info,
+                    'status' => 'ranap'
+                ]);
+
+            foreach ($this->jns_pemeriksaan as $pemeriksaan) {
+                DB::table('permintaan_pemeriksaan_lab')
                     ->insert([
                         'noorder' => $noOrder,
-                        'no_rawat' => $this->noRawat,
-                        'tgl_permintaan' => date('Y-m-d'),
-                        'jam_permintaan' => date('H:i:s'),
-                        'dokter_perujuk' => session()->get('username'),
-                        'diagnosa_klinis' =>  $this->klinis,
-                        'informasi_tambahan' =>  $this->info,
-                        'status' => 'ralan'
+                        'kd_jenis_prw' => $pemeriksaan,
+                        'stts_bayar' => 'Belum'
                     ]);
 
-            foreach($this->jns_pemeriksaan as $pemeriksaan){
-                DB::table('permintaan_pemeriksaan_lab')
-                        ->insert([
-                            'noorder' => $noOrder,
-                            'kd_jenis_prw' => $pemeriksaan,
-                            'stts_bayar' => 'Belum'
-                        ]);
-                
                 $template = DB::table('template_laboratorium')->where('kd_jenis_prw', $pemeriksaan)->select('id_template')->get();
-                foreach($template as $temp){
+                foreach ($template as $temp) {
                     DB::table('permintaan_detail_permintaan_lab')->insert([
                         'noorder'   =>  $noOrder,
                         'kd_jenis_prw'  =>  $pemeriksaan,
@@ -95,20 +95,18 @@ class PermintaanLab extends Component
             $this->getPermintaanLab();
             $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil ditambahkan'));
             $this->emit('select2Lab');
-
-        }catch(\Illuminate\Database\QueryException $ex){
+        } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
 
             $this->dispatchBrowserEvent('swal', $this->toastResponse($ex->getMessage() ?? 'Permintaan Lab gagal ditambahkan', 'error'));
         }
-
     }
 
     public function getPermintaanLab()
     {
         $this->permintaanLab = DB::table('permintaan_lab')
-                                    ->where('no_rawat', $this->noRawat)
-                                    ->get();
+            ->where('no_rawat', $this->noRawat)
+            ->get();
     }
 
     public function collapsed()
@@ -119,10 +117,10 @@ class PermintaanLab extends Component
     public function getDetailPemeriksaan($noOrder)
     {
         return DB::table('permintaan_pemeriksaan_lab')
-                    ->join('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
-                    ->where('permintaan_pemeriksaan_lab.noorder', $noOrder)
-                    ->select('jns_perawatan_lab.*')
-                    ->get();
+            ->join('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
+            ->where('permintaan_pemeriksaan_lab.noorder', $noOrder)
+            ->select('jns_perawatan_lab.*')
+            ->get();
     }
 
     public function konfirmasiHapus($id)
@@ -140,7 +138,7 @@ class PermintaanLab extends Component
 
     public function deletePermintaanLab($noOrder)
     {
-        try{
+        try {
             DB::beginTransaction();
             DB::table('permintaan_lab')
                 ->where('noorder', $noOrder)
@@ -149,8 +147,7 @@ class PermintaanLab extends Component
             $this->getPermintaanLab();
             DB::commit();
             $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil dihapus'));
-            
-        }catch(\Illuminate\Database\QueryException $ex){
+        } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
             $this->dispatchBrowserEvent('swal', $this->toastResponse($ex->getMessage() ?? 'Permintaan Lab gagal dihapus', 'error'));
         }
