@@ -57,25 +57,27 @@
 
     {{-- Favicon --}}
     @if(config('adminlte.use_ico_only'))
-    <link rel="shortcut icon" href="{{ asset('favicons/favicon.ico') }}" />
+    <link rel="shortcut icon" href="{{ asset('epasien/YASKI.png') }}" />
     @elseif(config('adminlte.use_full_favicon'))
-    <link rel="shortcut icon" href="{{ asset('favicons/favicon.ico') }}" />
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('favicons/apple-icon-57x57.png') }}">
-    <link rel="apple-touch-icon" sizes="60x60" href="{{ asset('favicons/apple-icon-60x60.png') }}">
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ asset('favicons/apple-icon-72x72.png') }}">
-    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('favicons/apple-icon-76x76.png') }}">
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ asset('favicons/apple-icon-114x114.png') }}">
-    <link rel="apple-touch-icon" sizes="120x120" href="{{ asset('favicons/apple-icon-120x120.png') }}">
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ asset('favicons/apple-icon-144x144.png') }}">
-    <link rel="apple-touch-icon" sizes="152x152" href="{{ asset('favicons/apple-icon-152x152.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('favicons/apple-icon-180x180.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicons/favicon-16x16.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicons/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicons/favicon-96x96.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('favicons/android-icon-192x192.png') }}">
-    <link rel="manifest" crossorigin="use-credentials" href="{{ asset('favicons/manifest.json') }}">
+    <link rel="shortcut icon" href="{{ asset('epasien/YASKI.png') }}" />
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('epasien/YASKI.png') }}">
+    <link rel="manifest" crossorigin="use-credentials" href="{{ asset('/manifest.json') }}">
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="{{ asset('favicon/ms-icon-144x144.png') }}">
+    <meta name="msapplication-TileImage" content="{{ asset('epasien/YASKI.png') }}">
+    @else
+    <link rel="icon" type="image/png" href="{{ asset('epasien/YASKI.png') }}">
     @endif
     {{-- @laravelPWA --}}
 </head>
@@ -110,14 +112,21 @@
     @endif
     <x-livewire-alert::scripts />
 
-    <script src="{{ asset('/sw.js') }}"></script>
+    <!-- Service Worker Script -->
     <script>
-        if (!navigator.serviceWorker.controller) {
-            navigator.serviceWorker.register("/sw.js").then(function (reg) {
-                console.log("Service worker has been registered for scope: " + reg.scope);
-            });
+        // Hanya mendaftarkan service worker jika protokol HTTPS atau localhost
+        if (('https:' === window.location.protocol || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 'serviceWorker' in navigator) {
+            // Gunakan hanya satu service worker (dari LaravelPWA)
+            navigator.serviceWorker.register('/serviceworker.js')
+                .then(function(registration) {
+                    console.log('Service worker berhasil didaftarkan dengan scope:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.error('Pendaftaran Service Worker gagal:', error);
+                });
         }
     </script>
+
     {{-- Custom Scripts --}}
     @yield('adminlte_js')
 </body>

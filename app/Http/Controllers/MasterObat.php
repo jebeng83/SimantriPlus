@@ -18,7 +18,7 @@ class MasterObat extends Controller
                     ->join('gudangbarang', 'gudangbarang.kode_brng', '=', 'databarang.kode_brng')
                     ->where('status', '1')
                     ->where('gudangbarang.stok', '>', 0)
-                    ->where('gudangbarang.kd_bangsal', 'DPF')
+                    ->where('gudangbarang.kd_bangsal', 'B0021')
                     ->select('gudangbarang.kode_brng', 'databarang.nama_brng', 'gudangbarang.stok')
                     ->get();
         $heads = ['Kode', 'Nama', 'Stok'];

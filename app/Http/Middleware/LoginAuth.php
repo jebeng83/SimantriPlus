@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class LoginAuth
 {
@@ -16,9 +17,35 @@ class LoginAuth
      */
     public function handle(Request $request, Closure $next)
     {
-        if($request->session()->has('username') && $request->session()->has('password')) {
+        // Log untuk debugging
+        Log::info('LoginAuth: Checking session', [
+            'session_id' => session()->getId(),
+            'has_username' => session()->has('username'),
+            'has_logged_in' => session()->has('logged_in'),
+            'path' => $request->path(),
+            'session_data' => session()->all()
+        ]);
+
+        // Jika ini adalah rute login, biarkan lewat
+        if ($request->routeIs('login') || $request->routeIs('customlogin')) {
             return $next($request);
         }
-        return redirect()->route('login');
+
+        if (!session()->has('username') || !session()->has('logged_in') || session()->get('logged_in') !== true) {
+            // Jika ini adalah request AJAX, kembalikan response JSON
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sesi login tidak valid atau telah berakhir',
+                    'redirect' => route('login')
+                ], 401);
+            }
+            
+            // Redirect ke halaman login dengan pesan error
+            return redirect()->route('login')
+                ->with('error', 'Sesi login tidak valid atau telah berakhir. Silakan login kembali.');
+        }
+
+        return $next($request);
     }
 }

@@ -5,19 +5,31 @@
                 <div class="row">
                     <x-adminlte-textarea name="keluhan" label="Subjek" fgroup-class="col-md-6" rows="4">                        
                     </x-adminlte-textarea>
-                    <x-adminlte-textarea name="pemeriksaan" label="Objek" fgroup-class="col-md-6" rows="4">  
+                    <x-adminlte-textarea name="pemeriksaan" label="Objek" fgroup-class="col-md-6" rows="4">
+                        {{ old('pemeriksaan', 
+                            'KU : Composmentis, Baik 
+Thorax : Cor S1-2 intensitas normal, reguler, bising (-)
+Pulmo : SDV +/+ ST -/-
+Abdomen : Supel, NT(-), peristaltik (+) normal.
+EXT : Oedem -/-') }}  
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
                     <x-adminlte-textarea name="penilaian" label="Asesmen" fgroup-class="col-md-6" rows="2">
+                         {{ old('penilaian', '- ') }}
                     </x-adminlte-textarea>
                     <x-adminlte-textarea name="instruksi" label="Instruksi" fgroup-class="col-md-6" rows="2">
+                        {{ old('instruksi', 'Istirahat Cukup, PHBS ') }}
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
                     <x-adminlte-textarea name="rtl" label="Plan" fgroup-class="col-md-6" rows="2">
+                        {{ old('rtl', 'Edukasi Kesehatan') }}
                     </x-adminlte-textarea>
+                    <!--<x-adminlte-textarea name="alergi" label="Alergi" fgroup-class="col-md-6" rows="2" value="Tidak Ada">-->
+                    <!--</x-adminlte-textarea>-->
                     <x-adminlte-textarea name="alergi" label="Alergi" fgroup-class="col-md-6" rows="2">
+                         {{ old('alergi', 'Tidak Ada') }}
                     </x-adminlte-textarea>
                 </div>
                 <div class="row">
@@ -41,6 +53,7 @@
                     </x-adminlte-select-bs>            
                 </div>
                 <x-adminlte-textarea name="evaluasi" label="Evaluasi" fgroup-class="col-md-12" rows="2">
+                     {{ old('evaluasi', 'Evaluasi Keadaan Umum Tiap 6 Jam') }}
                 </x-adminlte-textarea>
                 <div class="row justify-content-end">
                     <x-adminlte-button id="copyPemeriksaanButton" class="col-2" theme="warning" label="Copy" icon="fas fa-sign-in"/>
@@ -314,21 +327,21 @@
                     console.log(response);
                     $("select[name=kesadaran]").val(response.data.kesadaran);
                     $("textarea[name=keluhan]").val(response.data.keluhan);
-                    $("textarea[name=pemeriksaan]").val(response.data.pemeriksaan);
-                    $("textarea[name=penilaian]").val(response.data.penilaian);
-                    $("input[name=suhu]").val(response.data.suhu);
+                   // $("textarea[name=pemeriksaan]").val(response.data.pemeriksaan);
+                    //$("textarea[name=penilaian]").val(response.data.penilaian);
+                    $("input[name=suhu]").val(response.data.suhu_tubuh);
                     $("input[name=berat]").val(response.data.berat);
                     $("input[name=tinggi]").val(response.data.tinggi);
                     $("input[name=tensi]").val(response.data.tensi);
                     $("input[name=nadi]").val(response.data.nadi);
                     $("input[name=respirasi]").val(response.data.respirasi);
-                    $("textarea[name=instruksi]").val(response.data.instruksi);
-                    $("textarea[name=alergi]").val(response.data.alergi);
-                    $("textarea[name=rtl]").val(response.data.rtl);
+                  //  $("textarea[name=instruksi]").val(response.data.instruksi);
+                  //  $("textarea[name=alergi]").val(response.data.alergi);
+                  //  $("textarea[name=rtl]").val(response.data.rtl);
                     $("input[name=gcs]").val(response.data.gcs);
                     $("input[name=spo2]").val(response.data.spo2);
                     // $("textarea[name=edievaluasi]").val(response.data.evaluasi);
-                    $("input[name=spo2]").val(response.data.spo2);
+                    //$("input[name=spo2]").val(response.data.spo2);
                 },
                 error:function(error){
                     console.log(error);

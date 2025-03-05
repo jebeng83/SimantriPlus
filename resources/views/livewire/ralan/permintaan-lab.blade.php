@@ -15,14 +15,14 @@
             <div class="form-group row">
                 <label for="klinis" class="col-sm-4 col-form-label">Klinis</label>
                 <div class="col-sm-8">
-                <input type="text" class="form-control" wire:model.defer="klinis" id="klinis" name="klinis" />
+                <input type="text" class="form-control" wire:model.defer="klinis" id="klinis" name="klinis" {{ old('klinis', $klinis ?? '-') }} />
                 @error('klinis') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
             <div class="form-group row">
                 <label for="info" class="col-sm-4 col-form-label">Info Tambahan</label>
                 <div class="col-sm-8">
-                <input type="text" class="form-control" wire:model.defer="info" id="info" name="info" />
+                <input type="text" class="form-control" wire:model.defer="info" id="info" name="info" {{ old('info', $info ?? '-') }} />
                 @error('info') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>

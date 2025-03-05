@@ -12,6 +12,8 @@
             $resume = App\Http\Controllers\Ranap\PemeriksaanRanapController::getResume($row->no_rawat);
             $radiologi = App\Http\Controllers\Ranap\PemeriksaanRanapController::getRadiologi($row->no_rawat);
             $gambarRadiologi = App\Http\Controllers\Ranap\PemeriksaanRanapController::getFotoRadiologi($row->no_rawat);
+            $obatRalan = App\Http\Controllers\Ranap\PemeriksaanRanapController::getobatRalan($row->no_rawat);
+            $obatRanap = App\Http\Controllers\Ranap\PemeriksaanRanapController::getobatRanap($row->no_rawat);
             $tgl = date_create($row->tgl_registrasi ?? '0000-00-00');
             $date = date_format($tgl,"d M Y");
             @endphp
@@ -184,6 +186,81 @@
                             </div>
                         </x-adminlte-card>
                         @endisset --}}
+                        
+                        @if(count($obatRalan)>0)
+                        <x-adminlte-card theme="dark" title="Obat Ralan" collapsible="collapsed">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <td class="font-weight-bold">Nama Obat</td>
+                                        <td class="font-weight-bold">Jumlah</td>
+                                        <td class="font-weight-bold">Aturan Pakai</td>
+                                    </tr>
+                                    @foreach($obatRalan as $obat)
+                                    <tr><td>{{$obat->nama_brng}}</td><td>{{$obat->jml}}</td><td>{{$obat->aturan}}</td></tr>
+                                    @endforeach
+                                </table>
+                            </div>
+                        </x-adminlte-card>
+                        @endif
+
+                        @if(count($obatRanap)>0)
+                        <x-adminlte-card theme="dark" title="Obat Ranap" collapsible="collapsed">
+                            @php
+                                // Kelompokkan data berdasarkan tanggal
+                                $obatByDate = $obatRanap->groupBy('tgl_perawatan');
+                            @endphp
+                            
+                            <div class="card card-primary card-outline card-tabs">
+                                <div class="card-header p-0 pt-1 border-bottom-0">
+                                    <ul class="nav nav-tabs" role="tablist">
+                                        @foreach($obatByDate as $tanggal => $obatList)
+                                            <li class="nav-item">
+                                                <a class="nav-link {{ $loop->first ? 'active' : '' }}" 
+                                                   data-toggle="pill" 
+                                                   href="#tab_{{ \Carbon\Carbon::parse($tanggal)->format('Y-m-d') }}" 
+                                                   role="tab">
+                                                    {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                                <div class="card-body">
+                                    <div class="tab-content">
+                                        @foreach($obatByDate as $tanggal => $obatList)
+                                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" 
+                                                 id="tab_{{ \Carbon\Carbon::parse($tanggal)->format('Y-m-d') }}" 
+                                                 role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="font-weight-bold">Jam</th>
+                                                                <th class="font-weight-bold">Nama Obat</th>
+                                                                <th class="font-weight-bold">Jumlah</th>
+                                                                <th class="font-weight-bold">Aturan Pakai</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach($obatList as $obat)
+                                                                <tr>
+                                                                    <td>{{ $obat->jam }}</td>
+                                                                    <td>{{ $obat->nama_brng }}</td>
+                                                                    <td>{{ $obat->jml }}</td>
+                                                                    <td>{{ $obat->aturan }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </x-adminlte-card>
+                        @endif
 
                         @if(count($radiologi)>0)
                         <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed">
@@ -215,43 +292,74 @@
 
                         @if(count($laboratorium)>0)
                         <x-adminlte-card theme="dark" title="Laboratorium" collapsible="collapsed">
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Nama Pemeriksaan</th>
-                                            <th>Tgl Periksa</th>
-                                            <th>Jam</th>
-                                            <th>Hasil</th>
-                                            <th>Satuan</th>
-                                            <th>Nilai Rujukan</th>
-                                            <th>Keterangan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($laboratorium as $lab)
-                                        <tr
-                                            class="@if($lab->keterangan == 'T' || $lab->keterangan == 'H') bg-danger @endif">
-                                            <td>{{$loop->iteration}}</td>
-                                            <td>{{$lab->Pemeriksaan}}</td>
-                                            <td>{{$lab->tgl_periksa}}</td>
-                                            <td>{{$lab->jam}}</td>
-                                            <td>{{$lab->nilai}}</td>
-                                            <td>{{$lab->satuan}}</td>
-                                            <td>{{$lab->nilai_rujukan}}</td>
-                                            <td>{{$lab->keterangan}}</td>
-                                        </tr>
+                            @php
+                                // Kelompokkan data berdasarkan tanggal
+                                $labByDate = $laboratorium->groupBy('tgl_periksa');
+                            @endphp
+                            
+                            <div class="card card-primary card-outline card-tabs">
+                                <div class="card-header p-0 pt-1 border-bottom-0">
+                                    <ul class="nav nav-tabs" role="tablist">
+                                        @foreach($labByDate as $tanggal => $labList)
+                                            <li class="nav-item">
+                                                <a class="nav-link {{ $loop->first ? 'active' : '' }}" 
+                                                   data-toggle="pill" 
+                                                   href="#lab_{{ \Carbon\Carbon::parse($tanggal)->format('Y-m-d') }}" 
+                                                   role="tab">
+                                                    {{ \Carbon\Carbon::parse($tanggal)->format('d-m-Y') }}
+                                                </a>
+                                            </li>
                                         @endforeach
-                                    </tbody>
-                                </table>
+                                    </ul>
+                                </div>
+                                <div class="card-body">
+                                    <div class="tab-content">
+                                        @foreach($labByDate as $tanggal => $labList)
+                                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" 
+                                                 id="lab_{{ \Carbon\Carbon::parse($tanggal)->format('Y-m-d') }}" 
+                                                 role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Nama Pemeriksaan</th>
+                                                                <th>Jam</th>
+                                                                <th>Hasil</th>
+                                                                <th>Satuan</th>
+                                                                <th>Nilai Rujukan</th>
+                                                                <th>Keterangan</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach($labList as $lab)
+                                                            <tr class="@if($lab->keterangan == 'H') bg-danger @elseif($lab->keterangan == 'L') bg-blue  @endif">
+                                                                    <td>{{ $loop->iteration }}</td>
+                                                                    <td>{{ $lab->Pemeriksaan }}</td>
+                                                                    <td>{{ $lab->jam }}</td>
+                                                                    <td>{{ $lab->nilai }}</td>
+                                                                    <td>{{ $lab->satuan }}</td>
+                                                                    <td>{{ $lab->nilai_rujukan }}</td>
+                                                                    <td>{{ $lab->keterangan }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </x-adminlte-card>
                         @endif
+                        
+                        
+                        
 
-                        <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
+                        {{-- <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
                             <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
-                        </x-adminlte-card>
+                        </x-adminlte-card> --}}
                         
                     </div>
                 </div>

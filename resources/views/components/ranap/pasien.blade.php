@@ -1,31 +1,40 @@
-<div>
+@php
+function maskKtp($ktp) {
+if (!$ktp || $ktp === '-') return '-';
+$ktpLength = strlen($ktp);
+if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr($ktp, -1); $masked=str_repeat('x',
+    $ktpLength - 5); return $firstFour . $masked . $lastOne; } @endphp <div>
     <x-adminlte-profile-widget name="{{$data->nm_pasien ?? '-'}}" desc="{{$data->no_rkm_medis ?? '-'}}"
-        theme="lightblue" img="https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}" layout-type="classic">
+        theme="lightblue" img="https://kerjo.simkeskhanza.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}"
+        layout-type="classic">
         <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat"
             text="{{$data->no_rawat ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KK" text="{{$data->no_kk ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP"
-            text="{{$data->no_ktp ?? '-'}}" />
+            text="{{maskKtp($data->no_ktp ?? '-')}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-user" title="Jns Kelamin"
             text="{{$data->jk == 'L' ? 'Laki - Laki' : 'Perempuan' }}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tempat, Tgl Lahir"
-            text="{{$data->tmp_lahir ?? '-'}}, {{\Carbon\Carbon::parse($data->tgl_lahir)->isoFormat('LL')  ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Pendidikan" text="{{$data->pnd ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Nama Ibu" icon="fas fa-fw fa-user"  text="{{$data->nm_ibu  ?? '-'}}" />
+        <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tempat, Tgl Lahir"-->
+        <!--    text="{{$data->tmp_lahir ?? '-'}}, {{\Carbon\Carbon::parse($data->tgl_lahir)->isoFormat('LL')  ?? '-'}}" -->
+        <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Pendidikan" text="{{$data->pnd ?? '-'}}" -->
+        <!--<x-adminlte-profile-row-item title="Nama Ibu" icon="fas fa-fw fa-user"  text="{{$data->nm_ibu  ?? '-'}}" -->
         <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat" text="{{$data->alamat ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Nama Keluarga" icon="fas fa-fw fa-user"  text="{{$data->namakeluarga  ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-briefcase" title="Pekerjaan PJ" text="{{$data->pekerjaanpj ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat PJ" text="{{$data->alamatpj ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Gol Darah" icon="fas fa-fw fa-droplet" text="{{$data->gol_darah  ?? '-'}}" />
+        <!--<x-adminlte-profile-row-item title="Nama Keluarga" icon="fas fa-fw fa-user"  text="{{$data->namakeluarga  ?? '-'}}" -->
+        <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-briefcase" title="Pekerjaan PJ" text="{{$data->pekerjaanpj ?? '-'}}" -->
+        <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-map" title="Alamat PJ" text="{{$data->alamatpj ?? '-'}}" -->
+        <!--<x-adminlte-profile-row-item title="Gol Darah" icon="fas fa-fw fa-droplet" text="{{$data->gol_darah  ?? '-'}}" -->
         <x-adminlte-profile-row-item title="Stts Nikah" icon="fas fa-fw fa-ring" text="{{$data->stts_nikah  ?? '-'}}" />
-        <x-adminlte-profile-row-item title="Agama" icon="fas fa-fw fa-book" text="{{$data->agama  ?? '-'}}" />
+        <!--<x-adminlte-profile-row-item title="Agama" icon="fas fa-fw fa-book" text="{{$data->agama  ?? '-'}}" -->
         <x-adminlte-profile-row-item icon="fas fa-fw fa-clock" title="Umur" text="{{$data->umur ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-wallet" title="Cara Bayar" text="{{$data->png_jawab ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-phone" title="No Telp" text="{{$data->no_tlp ?? '-'}}" />
-        <x-adminlte-profile-row-item icon="fas fa-fw fa-building" title="Pekerjaan"
-            text="{{$data->pekerjaan ?? '-'}}" />
+        <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-building" title="Pekerjaan"-->
+        <!--    text="{{$data->pekerjaan ?? '-'}}" -->
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No Peserta"
             text="{{$data->no_peserta ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan" text="{{$data->catatan ?? '-'}}" />
+        <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Posyandu"
+            text="{{$data->data_posyandu ?? '-'}}" />
         <span class="nav-link">
             <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
                 data-target="#modalRiwayatPemeriksaanRanap" class="bg-primary justify-content-end" />
@@ -62,19 +71,19 @@
             </div>
         </div>
     </x-adminlte-modal>
-</div>
+    </div>
 
-@push('js')
-{{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
-<script>
-    function uploadFile() {
+    @push('js')
+    {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+    <script>
+        function uploadFile() {
             var file_data = $('#fileupload').prop('files')[0];
             var form_data = new FormData();
             form_data.append('file', file_data);
             form_data.append('no_rawat', '{{$data->no_rawat}}');
             form_data.append('url', '{{url()->current()}}');
             $.ajax({
-                url: "https://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
+                url: "https://kerjo.simkeskhanza.com/webapps/edokterfile.php",
                 type: "POST",
                 data: form_data,
                 contentType: false,
@@ -130,7 +139,7 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<iframe src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
+                            html += '<iframe src="https://kerjo.simkeskhanza.com/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
                             
                         });
                         $('.body-modal-berkasrm').html(html);
@@ -186,5 +195,5 @@
                 }
             });
         }
-</script>
-@endpush
+    </script>
+    @endpush

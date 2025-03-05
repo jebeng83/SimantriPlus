@@ -1,23 +1,18 @@
-
 @props([
-    'label' => null,
-    'id' => null,
-    'rows' => '3',
-    'model' => null,
+'label' => null,
+'id' => null,
+'rows' => '3',
+'model' => null,
 ])
 
 {{-- @php $wireModel = $attributes->get('wire:model'); @endphp --}}
 
 <div class="form-group">
     @if ($label)
-        <label for="{{ $id }}" class="form-label">{{ $label }}</label>
+    <label for="{{ $id }}" class="form-label">{{ $label }}</label>
     @endif
 
-    <textarea
-        id="{{ $id }}"
-        name="{{ $id }}"
-        rows="{{ $rows }}"
-        {{ $attributes->merge(['class' => 'form-control']) }}
+    <textarea id="{{ $id }}" name="{{ $id }}" rows="{{ $rows }}" {{ $attributes->merge(['class' => 'form-control']) }}
         @if ($model)
             @if($attributes->has('live'))
             wire:model="{{ $model }}"
@@ -32,6 +27,6 @@
     </textarea>
 
     @error($id)
-        <span class="text-danger">{{ $message }}</span>
+    <span class="text-danger">{{ $message }}</span>
     @enderror
 </div>

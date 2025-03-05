@@ -29,7 +29,7 @@ class PasienRanapController extends Controller
         $kd_dokter = session()->get('username');
         $heads = ['Nama', 'No. RM', 'Kamar', 'Bed', 'Tanggal Masuk', 'Cara Bayar'];
 
-        if ($kd_dokter == '86062112' || $kd_dokter == 'SP0000005' || $kd_dokter == 'SP0000002') {
+        if ($kd_dokter == '002' || $kd_dokter == '176' || $kd_dokter == '174') {
 
             $data = DB::table('kamar_inap')
                 ->join('reg_periksa', 'reg_periksa.no_rawat', '=', 'kamar_inap.no_rawat')
