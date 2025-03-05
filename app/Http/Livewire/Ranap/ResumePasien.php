@@ -53,10 +53,10 @@ class ResumePasien extends Component
         $this->kondisi = 'Hidup';
         $this->keadaanPulang = 'Membaik';
         $this->caraKeluar = 'Atas Izin Dokter';
-        $this->dilanjutkan = 'Kembali Ke RS';
+        $this->dilanjutkan = 'Puskesmes';
         $this->getProsedur();
         $this->getDiagnosa();
-        // $this->getPerawatan();
+        $this->getPerawatan();
         $this->getDiagnosaAwal();
     }
 
@@ -128,6 +128,17 @@ class ResumePasien extends Component
                 'showConfirmButton' =>  true,
             ]);
         }
+    }
+    
+    public function getPerawatan()
+    {
+        $data = DB::table('pemeriksaan_ranap')
+            ->where('no_rawat', $this->noRawat)
+            ->orderByDesc('jam_rawat')
+            ->orderByDesc('tgl_perawatan')
+            ->first();
+        $this->perawatan = "Subjek: " . ($data->keluhan ?? 'Tidak tersedia') . 
+                           ", \nObjek: " . ($data->pemeriksaan ?? 'Tidak tersedia');
     }
 
     public function getProsedur()
@@ -419,15 +430,6 @@ class ResumePasien extends Component
         $this->emit('closePemeriksaanLabModal');
     }
 
-    public function getPerawatan()
-    {
-        $data = DB::table('pemeriksaan_ranap')
-            ->where('no_rawat', $this->noRawat)
-            ->orderByDesc('jam_rawat')
-            ->orderByDesc('tgl_perawatan')
-            ->first();
-        $this->perawatan = $data->pemeriksaan ?? '';
-    }
 
     public function simpanResume()
     {

@@ -142,9 +142,9 @@ return [
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-primary elevation-4',
+    'classes_sidebar' => 'sidebar-dark-success elevation-4',
     'classes_sidebar_nav' => '',
-    'classes_topnav' => 'navbar-primary navbar-dark',
+    'classes_topnav' => 'navbar-success navbar-dark',
     'classes_topnav_nav' => 'navbar-expand',
     'classes_topnav_container' => 'container',
 
@@ -240,7 +240,19 @@ return [
     */
 
     'menu' => [
-        // Navbar items:
+        //Navbar items:
+        [
+            'text'        => 'Skrining',
+            'url'         => '/skriningbpjs',
+            'icon'        => 'fas fa-fw fa-tags',
+            'topnav_right' => true,
+        ],
+        // [
+        //     'text'        => 'Award 2025',
+        //     'url'         => '/kerjo-award',
+        //     'icon'        => 'fas fa-fw fa-book',
+        //     'topnav_right' => true,
+        // ],
         [
             'type'         => 'navbar-search',
             'text'         => 'search',
@@ -267,8 +279,14 @@ return [
             'label_color' => 'success',
         ],
         [
-            'text'        => 'Booking',
-            'url'         => '/booking',
+            'text'        => 'Pasien',
+            'url'         => '/data-pasien',
+            'icon'        => 'fas fa-fw fa-user',
+            'label_color' => 'success',
+        ],
+        [
+            'text'        => 'Registrasi',
+            'url'         => '/register',
             'icon'        => 'fas fa-fw fa-book',
             'label_color' => 'success',
         ],
@@ -282,16 +300,48 @@ return [
             'icon'       => 'fas fa-fw fa-bed',
             'url'        => '/ranap/pasien',
         ],
+        // [
+        //     'text'        => 'Master Obat',
+        //     'url'         => '/master_obat',
+        //     'icon'        => 'fas fa-fw fa-pills',
+        //     'label_color' => 'success',
+        // ],
         [
-            'text'        => 'Template Operasi',
-            'url'         => '/master-operasi',
-            'icon'        => 'fas fa-fw fa-stethoscope',
+            'text'    => 'ILP',
+            'icon'    => 'fas fa-fw fa-heartbeat',
+            'submenu' => [
+                [
+                    'text' => 'Dashboard',
+                    'url'  => '/ilp/dashboard',
+                    'icon' => 'fas fa-fw fa-chart-line',
+                ],
+                [
+                    'text' => 'Pendaftaran',
+                    'url'  => '/ilp/pendaftaran',
+                    'icon' => 'fas fa-fw fa-user-plus',
+                ],
+                [
+                    'text' => 'Pelayanan',
+                    'url'  => '/ilp/pelayanan',
+                    'icon' => 'fas fa-fw fa-clipboard-list',
+                ],
+                [
+                    'text' => 'Faktor Resiko',
+                    'url'  => '/ilp/faktor-resiko',
+                    'icon' => 'fas fa-fw fa-flask',
+                ],
+                [
+                    'text' => 'Sasaran CKG',
+                    'url'  => '/ilp/sasaran-ckg',
+                    'icon' => 'fas fa-fw fa-birthday-cake',
+                ],
+            ],
         ],
         [
-            'text'        => 'Master Obat',
-            'url'         => '/master_obat',
-            'icon'        => 'fas fa-fw fa-pills',
-            'label_color' => 'success',
+            'text'        => 'KYC (Verifikasi SSM)',
+            'url'         => '/kyc',
+            'icon'        => 'fas fa-fw fa-id-card',
+            'label_color' => 'primary',
         ],
         [
             'text'        => 'Keluar',

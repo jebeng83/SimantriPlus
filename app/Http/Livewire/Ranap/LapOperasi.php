@@ -36,9 +36,9 @@ class LapOperasi extends Component
 
     public function getData()
     {
-        $this->data = DB::table('laporan_operasi_detail')
-                        ->where('no_rawat', $this->no_rawat)
-                        ->get();
+        // $this->data = DB::table('laporan_operasi_detail')
+        //                 ->where('no_rawat', $this->no_rawat)
+        //                 ->get();
     }
 
     public function pilihTemplateOperasi($id)

@@ -112,6 +112,8 @@ class Riwayat extends Component
                     ->select('reg_periksa.tgl_registrasi', 'reg_periksa.no_rawat', 'dokter.nm_dokter', 
                             'reg_periksa.status_lanjut', 'poliklinik.nm_poli', 'reg_periksa.no_reg')
                     ->orderBy('reg_periksa.tgl_registrasi', 'desc')
+                    ->skip(0)
+                    ->take(3)
                     ->get();
                     
         return $data;

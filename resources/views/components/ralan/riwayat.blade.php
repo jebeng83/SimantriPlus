@@ -7,7 +7,6 @@
             $pemeriksaan =
             App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
             $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat);
-            $tono = App\Http\Controllers\Ralan\PemeriksaanRalanController::getTono($row->no_rawat);
             $laboratorium = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanLab($row->no_rawat);
             $resume = App\Http\Controllers\Ralan\PemeriksaanRalanController::getResume($row->no_rawat);
             $radiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getRadiologi($row->no_rawat);
@@ -95,21 +94,6 @@
                                         <td colspan="2"><b>Evaluasi</b></td>
                                         <td colspan="9">{{ $pemeriksaan->evaluasi ?? '' }}</td>
                                     </tr>
-                                    @if($tono)
-                                    <tr>
-                                        <td colspan="2"><b>Pemeriksaan Tonometri</b></td>
-                                        <td colspan="9">
-                                            <ul>
-                                                <li>Suhu : {{$tono->suhu}}</li>
-                                                <li>Tensi : {{$tono->tensi}}</li>
-                                                <li>RR : {{$tono->respirasi}}</li>
-                                                <li>Nadi : {{$tono->nadi}}</li>
-                                                <li>Kanan : {{$tono->tonokanan}}</li>
-                                                <li>Kiri : {{$tono->tonokiri}}</li>
-                                            </ul>
-                                        </td>
-                                    </tr>
-                                    @endif
                                     <tr>
                                         <td colspan="2"><b>Resume Medis</b></td>
                                         <td colspan="9">
@@ -331,15 +315,15 @@
                         </x-adminlte-card>
                         @endif
 
-                        {{-- <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
+                        <!-- {{-- <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
                             <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
-                        </x-adminlte-card> --}}
+                        </x-adminlte-card> --}} -->
 
-                        {{--
-                        <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
+                        
+                        <!-- <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
                         <x-ralan.penilaian-awal-keperawatan-gigi-mulut :no-rawat="$row->no_rawat" />
                         <x-ralan.penilaian-awal-keperawatan-kebidanan :no-rawat="$row->no_rawat" />
-                        <x-ralan.penilaian-awal-keperawatan-bayi :no-rawat="$row->no_rawat" /> --}}
+                        <x-ralan.penilaian-awal-keperawatan-bayi :no-rawat="$row->no_rawat" /> -->
                     </div>
                 </div>
             </div>

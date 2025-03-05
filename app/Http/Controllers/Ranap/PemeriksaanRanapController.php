@@ -202,9 +202,9 @@ class PemeriksaanRanapController extends Controller
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0007')->max('tanggal');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0007')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0007')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if ($maxStok < 1) {
                     $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
@@ -362,7 +362,7 @@ class PemeriksaanRanapController extends Controller
             ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
             ->where('status', '1')
             ->where('gudangbarang.stok', '>', '0')
-            ->where('gudangbarang.kd_bangsal', 'DPF')
+            ->where('gudangbarang.kd_bangsal', 'B0007')
             ->where(function ($query) use ($que) {
                 $query->where('databarang.kode_brng', 'like', $que)
                     ->orWhere('databarang.nama_brng', 'like', $que);
@@ -370,6 +370,49 @@ class PemeriksaanRanapController extends Controller
             ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
             ->get();
         return response()->json($obat, 200);
+    }
+    
+    
+    public static function getobatRalan($noRM)
+    {
+        
+        $dataobat = DB::table('detail_pemberian_obat')
+            ->join('databarang', 'detail_pemberian_obat.kode_brng', '=', 'databarang.kode_brng')
+            ->where('detail_pemberian_obat.no_rawat', $noRM)
+            ->where('detail_pemberian_obat.status', 'Ralan')
+            ->select('databarang.nama_brng', 'detail_pemberian_obat.jml','detail_pemberian_obat.kode_brng','detail_pemberian_obat.tgl_perawatan','detail_pemberian_obat.jam')
+            ->get();
+
+        foreach($dataobat as $obat) {
+            $aturan = DB::table('aturan_pakai')
+                ->where('kode_brng', $obat->kode_brng)
+                ->where('no_rawat', $noRM)
+                ->value('aturan');
+            $obat->aturan = $aturan ?? '-';
+        }
+
+        return $dataobat;
+    }
+
+    public static function getobatRanap($noRM)
+    {
+        $dataobat = DB::table('detail_pemberian_obat')
+            ->join('databarang', 'detail_pemberian_obat.kode_brng', '=', 'databarang.kode_brng')
+            ->where('detail_pemberian_obat.no_rawat', $noRM)
+            ->where('detail_pemberian_obat.status', 'Ranap')
+            ->select('databarang.nama_brng', 'detail_pemberian_obat.jml','detail_pemberian_obat.kode_brng','detail_pemberian_obat.tgl_perawatan','detail_pemberian_obat.jam')
+            ->orderBy('detail_pemberian_obat.tgl_perawatan', 'desc')
+            ->get();
+
+        foreach($dataobat as $obat) {
+            $aturan = DB::table('aturan_pakai')
+                ->where('kode_brng', $obat->kode_brng)
+                ->where('no_rawat', $noRM)
+                ->value('aturan');
+            $obat->aturan = $aturan ?? '-';
+        }
+
+        return $dataobat;
     }
 
     public static function getPemeriksaanRanap($noRawat, $status)
@@ -557,6 +600,7 @@ class PemeriksaanRanapController extends Controller
     {
         return DB::table('resume_pasien')
             ->where('no_rawat', $noRM)
+            ->limit(5)
             ->first();
     }
 

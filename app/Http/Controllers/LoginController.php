@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Encryption\Encrypter;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
@@ -27,23 +28,42 @@ class LoginController extends Controller
 
     public function customLogin(Request $request)
     {
-        $this->validateLogin($request);
-        $cek = DB::table('user')
-                    ->join("dokter", "dokter.kd_dokter", "=", DB::Raw("AES_DECRYPT(id_user, 'nur')"))
-                    ->whereRaw("id_user = AES_ENCRYPT('{$request->username}', 'nur')")
-                    ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password")
-                    ->first();
-        if ($cek) {
-            if($cek->password == $request->password){
-                session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$request->poli]);
-                return redirect()->intended('home')
-                        ->withSuccess('Signed in');
-            }else{
-                return back()->withErrors(['message' => 'Password salah']);
-            }
+        try {
+            $request->validate([
+                'username' => 'required',
+                'password' => 'required',
+                'poli' => 'required',
+            ]);
+
+            // Set session data
+            session([
+                'username' => $request->username,
+                'kd_poli' => $request->poli,
+                'poli' => $request->poli,
+                'logged_in' => true,
+                'login_time' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            // Log untuk debugging
+            Log::info('Login: User logged in successfully', [
+                'username' => $request->username,
+                'kd_poli' => $request->poli,
+                'poli' => $request->poli,
+                'session_id' => session()->getId(),
+                'session_data' => session()->all()
+            ]);
+
+            return redirect()->intended('home')
+                ->with('success', 'Login berhasil');
+        } catch (\Exception $e) {
+            Log::error('Login error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
+
+            return redirect()->route('login')
+                ->with('error', 'Terjadi kesalahan saat login. Silakan coba lagi.');
         }
-  
-        return back()->withErrors(['message' => 'User tidak ditemukan']);
     }
 
 

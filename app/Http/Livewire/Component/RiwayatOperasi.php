@@ -22,12 +22,12 @@ class RiwayatOperasi extends Component
 
     public function render()
     {
-        return view('livewire.component.riwayat-operasi', [
-            'operasi' => $this->readyToLoad ? DB::table('laporan_operasi_detail')
-                            ->join('dokter', 'laporan_operasi_detail.kd_dokter_bedah', '=', 'dokter.kd_dokter')
-                            ->where('no_rawat', $this->noRawat)
-                            ->select('laporan_operasi_detail.*', 'dokter.nm_dokter')
-                            ->get() : []
-        ]);
+        // return view('livewire.component.riwayat-operasi', [
+        //     'operasi' => $this->readyToLoad ? DB::table('laporan_operasi_detail')
+        //                     ->join('dokter', 'laporan_operasi_detail.kd_dokter_bedah', '=', 'dokter.kd_dokter')
+        //                     ->where('no_rawat', $this->noRawat)
+        //                     ->select('laporan_operasi_detail.*', 'dokter.nm_dokter')
+        //                     ->get() : []
+        // ]);
     }
 }

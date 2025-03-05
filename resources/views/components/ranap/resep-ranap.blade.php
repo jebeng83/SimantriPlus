@@ -532,7 +532,7 @@
         $('.obat-racikan').select2({
             placeholder: 'Pilih obat racikan',
             ajax: {
-                url: '/api/ranap/'+"{{$bangsal}}"+'/obat',
+                url: '/api/ranap/B0007/obat',
                 dataType: 'json',
                 delay: 250,
                 processResults: function (data) {
@@ -551,7 +551,7 @@
                 url: '/api/obat/'+data.id,
                 data:{
                     status:'ranap',
-                    kode:"{{$bangsal}}"
+                    kode:'B0007'
                 },
                 type: 'GET',
                 dataType: 'json',

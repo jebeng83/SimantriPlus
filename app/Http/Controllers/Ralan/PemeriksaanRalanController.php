@@ -205,9 +205,9 @@ class PemeriksaanRalanController extends Controller
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->max('tanggal');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0009')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if ($maxStok < $jml) {
                     continue;
@@ -291,9 +291,9 @@ class PemeriksaanRalanController extends Controller
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'DPF')->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'DPF')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->max('tanggal');
+                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0009')->max('jam');
+                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
 
                 if ($maxStok < 1) {
                     return response()->json([
@@ -365,7 +365,7 @@ class PemeriksaanRalanController extends Controller
             ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
             ->where('status', '1')
             ->where('gudangbarang.stok', '>', '0')
-            ->where('gudangbarang.kd_bangsal', 'DPF')
+            ->where('gudangbarang.kd_bangsal', 'B0009')
             ->where(function ($query) use ($que) {
                 $query->where('databarang.kode_brng', 'like', $que)
                     ->orWhere('databarang.nama_brng', 'like', $que);
@@ -759,8 +759,8 @@ class PemeriksaanRalanController extends Controller
         }
     }
 
-    public static function getTono($noRawat)
-    {
-        return DB::table('pemeriksaan_tono')->where('no_rawat', $noRawat)->first();
-    }
+    //  public static function getTono($noRawat)
+    //  {
+    //      return DB::table('pemeriksaan_tono')->where('no_rawat', $noRawat)->first();
+    //  }
 }

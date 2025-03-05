@@ -43,7 +43,8 @@
         $('#modal-rm').modal('show');
     });
 
-    $.once(function(){
+    if (typeof window.lightboxInitialized === 'undefined') {
+        window.lightboxInitialized = true;
         $(document).on('click', '[data-toggle="lightbox"]', function(event) {
             event.preventDefault();
             $(this).ekkoLightbox({
@@ -58,6 +59,6 @@
                 }
             });
         });
-    });
+    }
 </script>
 @endpush

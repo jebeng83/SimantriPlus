@@ -21,6 +21,23 @@ class Pemeriksaan extends Component
         if (!$this->isCollapsed) {
             $this->getPemeriksaan();
             $this->getListPemeriksaan();
+            $this->pemeriksaan = $this->pemeriksaan ?? 'KU Baik, Composmentis
+Thorax : Cor S1-2 intensitas normal, reguler, bising (-)
+Pulmo : SDV +/+ ST -/-
+Abdomen : Supel, NT(-), peristaltik (+) normal.
+EXT : Oedem -/-';
+            $this->keluhan = $this->keluhan ?? 'Pasien datang dengan keluhan';
+            $this->penilaian = $this->penilaian ?? '-';
+            $this->instruksi = $this->instruksi ?? 'Istirahat Cukup, PHBS';
+            $this->rtl = $this->rtl ?? 'Edukasi Kesehatan';
+            $this->alergi = $this->alergi ?? 'Tidak Ada';
+            $this->suhu = $this->suhu ?? '36.5';
+            $this->lingkar = $this->lingkar ?? '72';
+            $this->nadi = $this->nadi ?? '82';
+            $this->respirasi = $this->respirasi ?? '20';
+            $this->spo2 = $this->spo2 ?? '96';
+            $this->gcs = $this->gcs ?? '15';
+            $this->evaluasi = $this->evaluasi ?? 'Kontrol Ulang Jika belum Ada Perubahan';
         }
     }
 

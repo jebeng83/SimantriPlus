@@ -3,37 +3,51 @@
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="">Subjek</label>
-                <textarea wire:model.defer='keluhan' class="form-control" name="" id="" rows="2"></textarea>
+                <textarea wire:model.defer='keluhan' class="form-control" name="" id="" rows="2">
+                    {{ old('keluhan', $keluhan ?? 'Pasien datang dengan keluhan') }}
+                </textarea>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Objek</label>
-                <textarea wire:model.defer='pemeriksaan' class="form-control" name="" id="" rows="2"></textarea>
+                <textarea wire:model.defer='pemeriksaan' class="form-control" name="" id="" rows="2"> {{ old('pemeriksaan', $pemeriksaan ?? 'KU Baik, Composmentis
+Thorax : Cor S1-2 intensitas normal, reguler, bising (-)
+Pulmo : SDV +/+ ST -/-
+Abdomen : Supel, NT(-), peristaltik (+) normal.
+EXT : Oedem -/-') }} </textarea>
             </div>
         </div>
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="">Asesmen</label>
-                <textarea wire:model.defer='penilaian' class="form-control" name="" id="" rows="2"></textarea>
+                <textarea wire:model.defer='penilaian' class="form-control" name="" id="" rows="2">
+                    {{ old('penilaian', $penilaian ?? '-') }}
+                </textarea>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Instruksi</label>
-                <textarea wire:model.defer='instruksi' class="form-control" name="" id="" rows="2"></textarea>
+                <textarea wire:model.defer='instruksi' class="form-control" name="" id="" rows="2">
+                    {{ old('instruksi', $instruksi ?? 'Istirahat Cukup, PHBS') }}
+                </textarea>
             </div>
         </div>
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="">Plan</label>
-                <textarea wire:model.defer='rtl' class="form-control" name="" id="" rows="1"></textarea>
+                <textarea wire:model.defer='rtl' class="form-control" name="" id="" rows="1">
+                   {{ old('rtl', $rtl ?? 'Edukasi Kesehatan') }} 
+                </textarea>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Alergi</label>
-                <textarea wire:model.defer='alergi' class="form-control" name="" id="" rows="1"></textarea>
+                <textarea wire:model.defer='alergi' class="form-control" name="" id="" rows="1">
+                    {{ old('alergi', $alergi ?? 'Tidak Ada') }}
+                </textarea>
             </div>
         </div>
         <div class="row">
             <div class="form-group col-md-3">
-                <label for="">Suhu</label>
-                <input type="text" wire:model.defer='suhu' class="form-control" name="" id="" aria-describedby="helpId"
+                <label for="">Tensi</label>
+                <input type="text" wire:model.defer='tensi' class="form-control" name="" id="" aria-describedby="helpId"
                     placeholder="">
             </div>
             <div class="form-group col-md-3">
@@ -49,36 +63,37 @@
             <div class="form-group col-md-3">
                 <label for="">Lingkar Perut</label>
                 <input type="text" wire:model.defer='lingkar' class="form-control" name="" id=""
-                    aria-describedby="helpId" placeholder="">
+                    aria-describedby="helpId" placeholder="" {{ old('lingkar', $lingkar ?? '72') }} >
             </div>
         </div>
         <div class="row">
-            <div class="form-group col-md-4">
-                <label for="">Tensi</label>
-                <input type="text" wire:model.defer='tensi' class="form-control" name="" id="" aria-describedby="helpId"
-                    placeholder="">
+           
+             <div class="form-group col-md-4">
+                <label for="">Suhu</label>
+                <input type="text" wire:model.defer='suhu' class="form-control" name="" id="" aria-describedby="helpId"
+                    placeholder="" {{ old('suhu', $suhu ?? '36.5') }} >
             </div>
             <div class="form-group col-md-4">
                 <label for="">Nadi (per Menit)</label>
                 <input type="text" wire:model.defer='nadi' class="form-control" name="" id="" aria-describedby="helpId"
-                    placeholder="">
+                    placeholder="" {{ old('nadi', $nadi ?? '82') }} >
             </div>
             <div class="form-group col-md-4">
                 <label for="">Respirasi</label>
                 <input type="text" wire:model.defer='respirasi' class="form-control" name="" id=""
-                    aria-describedby="helpId" placeholder="">
+                    aria-describedby="helpId" placeholder="" {{ old('respirasi', $respirasi ?? '20') }} >
             </div>
         </div>
         <div class="row">
             <div class="form-group col-md-4">
                 <label for="">SPO2</label>
                 <input type="text" wire:model.defer='spo2' class="form-control" name="" id="" aria-describedby="helpId"
-                    placeholder="">
+                    placeholder="" {{ old('spo2', $spo2 ?? '96') }}  >
             </div>
             <div class="form-group col-md-4">
                 <label for="">GCS (E, V, M)</label>
                 <input type="text" wire:model.defer='gcs' class="form-control" name="" id="" aria-describedby="helpId"
-                    placeholder="">
+                    placeholder="" {{ old('gcs', $gcs ?? '15') }} >
             </div>
             <div class="form-group col-md-4">
                 <label for="">Kesadaran</label>
@@ -95,7 +110,9 @@
         </div>
         <div class="form-group">
             <label for="">Evaluasi</label>
-            <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="1"></textarea>
+            <textarea wire:model.defer='evaluasi' class="form-control" name="" id="" rows="1">
+                 {{ old('evaluasi', $evaluasi ?? 'Kontrol Ulang Jika belum Ada Perubahan') }}
+            </textarea>
         </div>
         <div class="d-flex flex-row-reverse">
             <button type="submit" class="btn btn-primary">Simpan</button>

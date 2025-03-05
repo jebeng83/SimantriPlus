@@ -4,10 +4,17 @@
     </IfModule>
 
     RewriteEngine On
-
+    
+    # Allow encoded slashes
+    AllowEncodedSlashes On
+    
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect encoded URLs to decoded versions
+    RewriteCond %{THE_REQUEST} ^[A-Z]+\s/ilp/dewasa/([^/]+)%2F([^/]+)%2F([^/]+)%2F([^\s]+)\s
+    RewriteRule ^ /ilp/dewasa/%1/%2/%3/%4? [R=301,L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

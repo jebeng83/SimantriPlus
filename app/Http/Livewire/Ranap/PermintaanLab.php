@@ -29,6 +29,8 @@ class PermintaanLab extends Component
     public function mount($noRawat)
     {
         $this->noRawat = $noRawat;
+        $this->klinis = $this->klinis ?? '-';
+        $this->info = $this->info ?? '-';
     }
 
     public function hydrate()
