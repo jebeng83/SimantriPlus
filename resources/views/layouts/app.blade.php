@@ -82,6 +82,22 @@
 
     <!-- Page Specific CSS -->
     @yield('css')
+
+    <script>
+        // Fungsi untuk memperbarui CSRF token secara berkala
+        function refreshCsrfToken() {
+            fetch('/refresh-csrf')
+                .then(response => response.text())
+                .then(token => {
+                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', token);
+                    console.log('CSRF token diperbarui');
+                })
+                .catch(error => console.error('Gagal memperbarui CSRF token:', error));
+        }
+        
+        // Perbarui CSRF token setiap 5 menit
+        setInterval(refreshCsrfToken, 300000);
+    </script>
 </head>
 
 <body>

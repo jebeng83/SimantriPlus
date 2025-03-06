@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use App\Models\Poliklinik;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Illuminate\Support\Facades\Session;
 
 class FormPendaftaran extends Component
 {
@@ -17,6 +18,7 @@ class FormPendaftaran extends Component
     public $tgl_registrasi;
     public $no_rawat;
     public $no_rkm_medis;
+    public $no_rkm_medis_old;
     public $dokter;
     public $nm_dokter;
     public $nm_pasien;
@@ -30,10 +32,20 @@ class FormPendaftaran extends Component
     public $poliklinik = [];
     public $umur;
 
-    protected $listeners = ['resetError' => 'resetError', 'bukaModalPendaftaran' => 'bukaModalPendaftaran'];
+    protected $listeners = [
+        'resetError' => 'resetError', 
+        'bukaModalPendaftaran' => 'bukaModalPendaftaran',
+        'initFormPendaftaran' => 'initFormPendaftaran',
+        'refreshComponent' => '$refresh'
+    ];
 
     public function mount()
     {
+        // Pastikan session aktif dan valid
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
         $this->tgl_registrasi = date('Y-m-d H:i:s');
         $this->listPenjab = $this->getPenjab();
         $this->poliklinik = $this->getPoliklinik();
@@ -41,23 +53,52 @@ class FormPendaftaran extends Component
 
     public function hydrate()
     {
+        // Pastikan session aktif setiap kali komponen di-hydrate
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
         $this->resetErrorBag();
         $this->resetValidation();
     }
 
+    public function dehydrate()
+    {
+        // Pastikan session aktif setiap kali komponen di-dehydrate
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+    }
+
     public function updatedNoRkmMedis()
     {
-        $pasien = DB::table('pasien')->where('no_rkm_medis', $this->no_rkm_medis)->first();
-        $cek = DB::table('reg_periksa')->where('no_rkm_medis', $this->no_rkm_medis)->where('stts', 'Sudah')->first();
-        $this->pj = $pasien->namakeluarga ?? '';
-        $this->alamat_pj = $pasien->alamatpj ?? '';
-        $this->hubungan_pj = $pasien->keluarga ?? '';
-        $this->status = $cek ? 'Lama' : 'Baru';
-        $this->penjab = $pasien->kd_pj ?? '';
+        try {
+            $pasien = DB::table('pasien')->where('no_rkm_medis', $this->no_rkm_medis)->first();
+            if (!$pasien) {
+                $this->addError('no_rkm_medis', 'Pasien tidak ditemukan');
+                return;
+            }
+            
+            $cek = DB::table('reg_periksa')->where('no_rkm_medis', $this->no_rkm_medis)->where('stts', 'Sudah')->first();
+            $this->pj = $pasien->namakeluarga ?? '';
+            $this->alamat_pj = $pasien->alamatpj ?? '';
+            $this->hubungan_pj = $pasien->keluarga ?? '';
+            $this->status = $cek ? 'Lama' : 'Baru';
+            $this->penjab = $pasien->kd_pj ?? '';
+        } catch (\Exception $e) {
+            // Log error
+            \Log::error('Error saat mengambil data pasien: ' . $e->getMessage());
+            $this->addError('no_rkm_medis', 'Terjadi kesalahan saat mengambil data pasien');
+        }
     }
 
     public function render()
     {
+        // Pastikan session aktif setiap kali render
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
         return view('livewire.registrasi.form-pendaftaran');
     }
 
@@ -110,6 +151,11 @@ class FormPendaftaran extends Component
 
     public function bukaModalPendaftaran($no_rawat)
     {
+        // Pastikan session aktif
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
         $this->no_rawat = $no_rawat;
         $data = DB::table('reg_periksa')->where('no_rawat', $this->no_rawat)->first();
         if ($data) {
@@ -133,6 +179,11 @@ class FormPendaftaran extends Component
 
     public function simpan()
     {
+        // Pastikan session aktif
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
         $this->validate([
             'no_rkm_medis' => 'required',
             'dokter' => 'required',
@@ -200,6 +251,10 @@ class FormPendaftaran extends Component
             }
 
             DB::commit();
+            
+            // Regenerate session token setelah simpan berhasil
+            Session::regenerateToken();
+            
             $this->alert('success', 'Registrasi berhasil ditambahkan');
             $this->resetExcept(['listPenjab', 'poliklinik']);
             $this->emit('closeModalPendaftaran');
@@ -208,6 +263,78 @@ class FormPendaftaran extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             $this->alert('error', 'Registrasi gagal ditambahkan : ' . $e->getMessage());
+        }
+    }
+    
+    // Fungsi untuk mengatasi masalah session
+    public function resetError()
+    {
+        $this->resetErrorBag();
+        $this->resetValidation();
+    }
+    
+    // Metode khusus untuk menangani session expired
+    public function handleSessionExpired()
+    {
+        // Pastikan session aktif
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
+        // Regenerate CSRF token dan session ID
+        Session::regenerateToken();
+        Session::regenerate(true);
+        
+        // Kirim pesan ke frontend
+        $this->emit('sessionRefreshed');
+        
+        return true;
+    }
+    
+    // Metode untuk inisialisasi form pendaftaran
+    public function initFormPendaftaran()
+    {
+        // Pastikan session aktif
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
+        // Reset form
+        $this->reset(['no_rawat', 'no_rkm_medis', 'dokter', 'nm_dokter', 'nm_pasien', 'pj', 'kd_poli', 'hubungan_pj', 'alamat_pj', 'status']);
+        
+        // Set tanggal registrasi ke waktu sekarang
+        $this->tgl_registrasi = date('Y-m-d H:i:s');
+        
+        // Emit event bahwa form telah diinisialisasi
+        $this->emit('formInitialized');
+    }
+
+    // Metode khusus untuk menangani pemilihan pasien
+    public function setPasien($no_rkm_medis, $token = null)
+    {
+        // Pastikan session aktif
+        if (!Session::isStarted()) {
+            Session::start();
+        }
+        
+        // Jika token diberikan, gunakan token tersebut
+        if ($token) {
+            // Set CSRF token secara manual
+            Session::put('_token', $token);
+        } else {
+            // Regenerate CSRF token
+            Session::regenerateToken();
+        }
+        
+        try {
+            $this->no_rkm_medis = $no_rkm_medis;
+            $this->updatedNoRkmMedis();
+            
+            return ['success' => true];
+        } catch (\Exception $e) {
+            // Log error
+            \Log::error('Error saat set pasien: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 }

@@ -474,7 +474,7 @@
                      <div class="form-group">
                         <label><i class="fas fa-smoking mr-1"></i> Merokok:</label>
                         <select wire:model="merokok" class="form-control">
-                           <option value="">- Pilih -</option>
+                           <option value="">Tidak</option>
                            <option value="Ya">Ya</option>
                            <option value="Tidak">Tidak</option>
                         </select>
@@ -543,7 +543,7 @@
                      <div class="form-group">
                         <label><i class="fas fa-eye mr-1"></i> Metode Mata:</label>
                         <select wire:model="metode_mata" class="form-control">
-                           <option value="">- Pilih -</option>
+                           <option value="">Snelen Card</option>
                            <option value="hitungjari">Hitung Jari</option>
                            <option value="visus">Visus</option>
                            <option value="pinhole">Pinhole</option>

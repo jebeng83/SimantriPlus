@@ -20,10 +20,14 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('Opened cache');
-                return cache.addAll(urlsToCache);
+                return cache.addAll(urlsToCache).catch(err => {
+                    console.error('Error caching initial files:', err);
+                    // Lanjutkan instalasi meskipun ada error
+                    return Promise.resolve();
+                });
             })
             .catch(err => {
-                console.error('Error caching files:', err);
+                console.error('Error opening cache:', err);
             })
     );
 });
@@ -35,9 +39,26 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Hindari caching untuk URL yang berisi /ilp/dewasa/ atau /customlogin
-    if (event.request.url.includes('/ilp/dewasa/') || event.request.url.includes('/customlogin')) {
-        return fetch(event.request);
+    // Daftar URL yang harus diabaikan (tidak di-cache)
+    const ignoredUrls = [
+        '/ilp/dewasa/',
+        '/customlogin',
+        'serviceworker.js'
+    ];
+
+    // Periksa apakah URL harus diabaikan
+    const shouldIgnore = ignoredUrls.some(url => event.request.url.includes(url));
+    if (shouldIgnore) {
+        return fetch(event.request).catch(() => {
+            // Jika gagal fetch, tampilkan halaman offline untuk navigasi
+            if (event.request.mode === 'navigate') {
+                return caches.match('/offline.html');
+            }
+            return new Response('Network error', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain' }
+            });
+        });
     }
 
     event.respondWith(
@@ -61,30 +82,38 @@ self.addEventListener('fetch', event => {
                         // Clone the response
                         const responseToCache = response.clone();
 
+                        // Simpan ke cache secara asinkron
                         caches.open(CACHE_NAME)
                             .then(cache => {
-                                // Hanya cache permintaan GET dan HTTPS
-                                if (event.request.method === 'GET') {
-                                    try {
-                                        cache.put(event.request, responseToCache);
-                                    } catch (error) {
-                                        console.error('Error caching response:', error);
-                                    }
+                                try {
+                                    cache.put(event.request, responseToCache);
+                                } catch (error) {
+                                    console.error('Error caching response:', error);
                                 }
+                            })
+                            .catch(err => {
+                                console.error('Error opening cache:', err);
                             });
 
                         return response;
                     })
                     .catch(error => {
+                        console.error('Fetch error:', error);
                         // Jika terjadi error, coba tampilkan halaman offline
                         if (event.request.mode === 'navigate') {
                             return caches.match('/offline.html');
                         }
+                        
+                        // Untuk request lain yang gagal
                         return new Response('Network error happened', {
-                            status: 408,
+                            status: 503,
                             headers: { 'Content-Type': 'text/plain' }
                         });
                     });
+            })
+            .catch(error => {
+                console.error('Cache match error:', error);
+                return caches.match('/offline.html');
             })
     );
 });
@@ -102,8 +131,12 @@ self.addEventListener('activate', event => {
                         console.log('Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
+                    return Promise.resolve();
                 })
             );
         })
     );
+    
+    // Klaim klien langsung setelah aktivasi
+    return self.clients.claim();
 });

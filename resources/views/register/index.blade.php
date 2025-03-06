@@ -45,6 +45,7 @@
 @section('plugins.Sweetalert2', true)
 
 @section('css')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
     /* Animasi loading yang lebih ringan */
     @keyframes fadeIn {
@@ -171,6 +172,13 @@
 @section('js')
 <script>
     $(document).ready(function() {
+        // Set CSRF token untuk semua permintaan AJAX
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+        
         // Preload resources
         function preloadResources() {
             // Preload Select2 resources
@@ -198,20 +206,10 @@
             });
         }
         
-        // Add preloader to page
-        $('body').append('<div class="preloader"><div class="text-center"><div class="spinner-border text-primary mb-3" style="width: 2rem; height: 2rem;" role="status"><span class="sr-only">Loading...</span></div><h5 class="text-primary font-weight-bold">Memuat Aplikasi</h5></div></div>');
+        // Call preload function
+        preloadResources();
         
-        // Remove preloader after page loads
-        $(window).on('load', function() {
-            setTimeout(function() {
-                $('.preloader').addClass('fade-out');
-                setTimeout(function() {
-                    $('.preloader').remove();
-                }, 300);
-            }, 300);
-        });
-        
-        // Optimize modal loading
+        // Handle modal loading
         $('.btn-register').on('click', function() {
             $('#form-container').hide();
             $('#modal-loading').show();
@@ -224,71 +222,37 @@
         });
         
         // Initialize Livewire hooks for smoother transitions
-        document.addEventListener('livewire:load', function() {
+        document.addEventListener('livewire:load', function () {
             Livewire.hook('message.sent', () => {
-                $('#table-container').hide();
-                $('#loading-container').show();
+                // Show loading state
+                $('#form-container').css('opacity', '0.5');
             });
             
             Livewire.hook('message.processed', () => {
-                $('#loading-container').hide();
-                $('#table-container').show();
+                // Hide loading state
+                $('#form-container').css('opacity', '1');
             });
-        });
-        
-        // Preload resources in background
-        setTimeout(preloadResources, 500);
-        
-        // Add confirmation for actions with SweetAlert2
-        $(document).on('click', '.btn-action', function(e) {
-            e.preventDefault();
-            const action = $(this).data('action');
-            const id = $(this).data('id');
             
-            Swal.fire({
-                title: 'Konfirmasi',
-                text: 'Apakah Anda yakin ingin melakukan tindakan ini?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#4e73df',
-                cancelButtonColor: '#e74a3b',
-                confirmButtonText: 'Ya, Lanjutkan',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                focusConfirm: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Proceed with action
-                    if (action === 'delete') {
-                        Livewire.emit('deleteRecord', id);
-                    } else if (action === 'edit') {
-                        Livewire.emit('editRecord', id);
-                    }
+            // Handle session expired errors
+            Livewire.hook('message.failed', (message, component) => {
+                console.log('Message failed:', message);
+                
+                if (message.response && message.response.includes('This page has expired')) {
+                    // If session expired, refresh the page
+                    Swal.fire({
+                        title: 'Sesi Telah Berakhir',
+                        text: 'Halaman akan dimuat ulang untuk memperbarui sesi.',
+                        icon: 'warning',
+                        showCancelButton: false,
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'Muat Ulang'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.reload();
+                        }
+                    });
                 }
             });
-        });
-        
-        // Optimize table rendering with IntersectionObserver
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            
-            document.querySelectorAll('.card, .table').forEach(el => {
-                observer.observe(el);
-            });
-        }
-        
-        // Tambahkan efek hover pada baris tabel
-        $(document).on('mouseenter', '.table tbody tr', function() {
-            $(this).addClass('row-hover');
-        }).on('mouseleave', '.table tbody tr', function() {
-            $(this).removeClass('row-hover');
         });
     });
 </script>
