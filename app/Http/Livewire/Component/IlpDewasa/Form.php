@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\IlpDewasa;
+use App\Helpers\UrlHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
@@ -88,8 +89,10 @@ class Form extends Component
             return;
         }
         
-        // Decode parameter noRawat jika perlu
-        $this->noRawat = urldecode($noRawat);
+        // Simpan noRawat
+        $this->noRawat = $noRawat;
+        
+        Log::info('Mengakses ILP Dewasa dengan noRawat: ' . $this->noRawat);
         
         // Ambil NIP dari user yang login
         $this->nip = Auth::user()->pegawai->nip ?? null;
@@ -648,15 +651,16 @@ class Form extends Component
     }
     
     /**
-     * Set nomor rawat dan load data
+     * Set no_rawat dari event
      */
     public function setNoRawat($noRawat)
     {
+        // Simpan noRawat
         $this->noRawat = $noRawat;
-        $this->loadData();
         
-        // Debug untuk memeriksa nilai noRawat
-        Log::info('setNoRawat dipanggil dengan nilai: ' . $noRawat);
+        Log::info('setNoRawat dipanggil dengan nilai: ' . $this->noRawat);
+        
+        $this->loadData();
     }
     
     /**
@@ -665,13 +669,10 @@ class Form extends Component
     public function hapusRalanIlpDewasa()
     {
         try {
-            // Decode parameter noRawat jika perlu
-            $noRawat = urldecode($this->noRawat);
-            
             // Log untuk debugging
-            Log::info('Menghapus ILP Dewasa dengan no_rawat: ' . $noRawat);
+            Log::info('Menghapus ILP Dewasa dengan no_rawat: ' . $this->noRawat);
             
-            $ilpDewasa = IlpDewasa::where('no_rawat', $noRawat)->first();
+            $ilpDewasa = IlpDewasa::where('no_rawat', $this->noRawat)->first();
             
             if ($ilpDewasa) {
                 $ilpDewasa->delete();
@@ -679,10 +680,10 @@ class Form extends Component
                 // Update status di tabel reg_periksa menjadi 'Belum'
                 try {
                     DB::table('reg_periksa')
-                        ->where('no_rawat', $noRawat)
+                        ->where('no_rawat', $this->noRawat)
                         ->update(['stts' => 'Belum']);
                     
-                    Log::info('Status reg_periksa berhasil diupdate menjadi Belum untuk no_rawat: ' . $noRawat);
+                    Log::info('Status reg_periksa berhasil diupdate menjadi Belum untuk no_rawat: ' . $this->noRawat);
                 } catch (\Exception $e) {
                     Log::error('Gagal mengupdate status reg_periksa: ' . $e->getMessage());
                     // Tidak perlu throw exception di sini, karena kita masih ingin melanjutkan proses
@@ -692,7 +693,7 @@ class Form extends Component
                 Log::info('ILP Dewasa berhasil dihapus');
             } else {
                 $this->alert('error', 'Data ILP Dewasa tidak ditemukan');
-                Log::warning('ILP Dewasa tidak ditemukan untuk no_rawat: ' . $noRawat);
+                Log::warning('ILP Dewasa tidak ditemukan untuk no_rawat: ' . $this->noRawat);
             }
         } catch (\Exception $e) {
             Log::error('Error pada hapusRalanIlpDewasa: ' . $e->getMessage());

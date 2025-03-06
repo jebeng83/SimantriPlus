@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BPJSTestController;
+use Illuminate\Support\Facades\Session;
 
 /*
 |--------------------------------------------------------------------------
@@ -152,13 +153,20 @@ Route::middleware(['loginauth'])->group(function () {
         Route::get('/sasaran-ckg/kirim-wa/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'kirimWA'])->name('sasaran-ckg.kirim-wa');
         
         // Route untuk ILP Dewasa - dengan penanganan URL yang di-encode
-        Route::get('/ilp/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
+        Route::get('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
             ->name('dewasa.form')
             ->where('noRawat', '.*');
         
-        Route::post('/ilp/dewasa', [App\Http\Controllers\ILP\IlpDewasaController::class, 'store'])->name('dewasa.store');
-        Route::delete('/ilp/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'destroy'])
+        Route::post('/dewasa', [App\Http\Controllers\ILP\IlpDewasaController::class, 'store'])->name('dewasa.store');
+        Route::delete('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'destroy'])
             ->name('dewasa.destroy')
             ->where('noRawat', '.*');
     });
+
+    // Route untuk refresh CSRF token
+    Route::get('/refresh-csrf', function() {
+        // Regenerate session ID dan CSRF token
+        Session::regenerate(true);
+        return csrf_token();
+    })->name('refresh-csrf');
 });

@@ -4,6 +4,8 @@
     </div>
     <div class="card-body">
         <form wire:submit.prevent='simpan'>
+            @csrf
+            <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <div class="row">
                 <div class="col-md-6 animate__animated animate__fadeInLeft" style="animation-delay: 0.1s">
                     <div class="form-group">
@@ -20,7 +22,7 @@
                 </div>
                 <div class="col-md-6 animate__animated animate__fadeInRight" style="animation-delay: 0.1s">
                     <div wire:ignore class="form-group">
-                        <label for="no_rm" class="font-weight-bold text-primary">No. KTP</label>
+                        <label for="no_rm" class="font-weight-bold text-primary">Cari Nama</label>
                         <div class="d-flex align-items-center">
                             <div class="icon-container mr-2">
                                 <span class="icon-circle bg-primary">
@@ -30,6 +32,7 @@
                             <select id="no_rm" class="form-control form-control-lg select2-rm" type="text" name="no_rm">
                             </select>
                         </div>
+                        @error('no_rkm_medis') <span class="text-danger">{{ $message }}</span> @enderror
                     </div>
                 </div>
             </div>
@@ -94,8 +97,11 @@
                                     <i class="fas fa-info-circle text-white"></i>
                                 </span>
                             </div>
-                            <input id="status" class="form-control form-control-lg" type="text" name="status"
-                                wire:model='status'>
+                            <select id="status" class="form-control form-control-lg" name="status" wire:model='status'>
+                                <option value="">Pilih Status</option>
+                                <option value="Baru">Baru</option>
+                                <option value="Lama">Lama</option>
+                            </select>
                         </div>
                         @error('status') <span class="text-danger">{{ $message }}</span> @enderror
                     </div>
@@ -177,112 +183,37 @@
 @section('plugins.TempusDominusBs4', true)
 @push('js')
 <script>
-    // Fungsi untuk mengoptimalkan performa Select2
-    function optimizeSelect2Performance() {
-        // Batasi frekuensi event scroll untuk mengurangi beban CPU
-        let scrollTimeout;
-        $('.select2-results__options').on('scroll', function() {
-            if (!scrollTimeout) {
-                scrollTimeout = setTimeout(function() {
-                    scrollTimeout = null;
-                }, 100);
-            }
-        });
-        
-        // Gunakan IntersectionObserver untuk lazy-load item yang terlihat
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
+    document.addEventListener('livewire:load', function () {
+        // Tangani error Livewire
+        Livewire.hook('message.failed', (message, component) => {
+            console.log('Message failed:', message);
+            
+            if (message.response && message.response.includes('This page has expired')) {
+                // Jika session expired, refresh halaman
+                Swal.fire({
+                    title: 'Sesi Telah Berakhir',
+                    text: 'Halaman akan dimuat ulang untuk memperbarui sesi.',
+                    icon: 'warning',
+                    showCancelButton: false,
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'Muat Ulang'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.reload();
                     }
                 });
-            }, { threshold: 0.1 });
-            
-            setTimeout(() => {
-                document.querySelectorAll('.select2-result-pasien, .select2-result-dokter').forEach(el => {
-                    observer.observe(el);
-                });
-            }, 500);
-        }
-    }
+            }
+        });
+    });
 
     $(document).ready(function() {
-        // Fungsi untuk animasi elemen form
-        function animateFormElements() {
-            // Reset animasi terlebih dahulu
-            $('.animate__animated').removeClass('animate__fadeInLeft animate__fadeInRight animate__fadeInUp')
-                .css('opacity', 0);
-            
-            // Terapkan animasi dengan delay bertahap
-            setTimeout(function() {
-                $('.animate__animated').each(function(index) {
-                    const $this = $(this);
-                    const delay = index * 100;
-                    
-                    setTimeout(function() {
-                        if ($this.hasClass('col-md-6') && index % 2 === 0) {
-                            $this.addClass('animate__fadeInLeft');
-                        } else if ($this.hasClass('col-md-6')) {
-                            $this.addClass('animate__fadeInRight');
-                        } else {
-                            $this.addClass('animate__fadeInUp');
-                        }
-                        $this.css('opacity', 1);
-                    }, delay);
-                });
-            }, 100);
-        }
-        
-        // Fungsi debounce untuk membatasi frekuensi permintaan AJAX
-        function debounce(func, wait) {
-            let timeout;
-            return function() {
-                const context = this, args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    func.apply(context, args);
-                }, wait);
-            };
-        }
-
-        // Cache untuk menyimpan hasil pencarian
-        const searchCache = {
-            pasien: {},
-            dokter: {}
-        };
-        
-        // Preload data saat halaman dimuat
-        function preloadData() {
-            // Preload data pasien populer
-            $.ajax({
-                url: '{{ url('/api/pasien') }}',
-                data: { q: '', preload: true, limit: 10 },
-                dataType: 'json',
-                cache: true
-            });
-            
-            // Preload data dokter
-            $.ajax({
-                url: '{{ route('dokter') }}',
-                data: { q: '', preload: true, limit: 10 },
-                dataType: 'json',
-                cache: true
-            });
-        }
-        
-        // Panggil preload data segera
-        preloadData();
-
-        // Inisialisasi Select2 untuk pencarian pasien dengan optimasi
+        // Inisialisasi Select2 untuk pencarian pasien dengan mode sederhana
         $('#no_rm').select2({
             placeholder: 'Cari Nama / No. KTP Pasien',
             ajax: {
                 url: '{{ url('/api/pasien') }}',
                 dataType: 'json',
                 delay: 250,
-                minimalTextLength: 3,
                 data: function (params) {
                     return {
                         q: params.term,
@@ -292,12 +223,6 @@
                 },
                 processResults: function(data, params) {
                     params.page = params.page || 1;
-                    
-                    // Simpan hasil ke cache
-                    if (params.term) {
-                        searchCache.pasien[params.term] = data;
-                    }
-                    
                     return {
                         results: data.items || data,
                         pagination: {
@@ -305,35 +230,7 @@
                         }
                     };
                 },
-                transport: function(params, success, failure) {
-                    // Cek cache terlebih dahulu
-                    const term = params.data.q;
-                    if (term && searchCache.pasien[term]) {
-                        return success(searchCache.pasien[term]);
-                    }
-                    
-                    // Jika tidak ada di cache, lakukan request AJAX
-                    const $request = $.ajax(params);
-                    $request.then(success);
-                    $request.fail(failure);
-                    
-                    return $request;
-                },
-                cache: true,
-                language: {
-                    searching: function() {
-                        return '<div class="d-flex align-items-center justify-content-center py-2"><div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div><span>Mencari data pasien...</span></div>';
-                    },
-                    inputTooShort: function() {
-                        return '<div class="text-center py-2"><i class="fas fa-info-circle text-info mr-1"></i> Masukkan minimal 3 karakter untuk mencari</div>';
-                    },
-                    noResults: function() {
-                        return '<div class="text-center py-3"><i class="fas fa-search text-muted mr-1"></i> Tidak ada hasil yang ditemukan</div>';
-                    },
-                    loadingMore: function() {
-                        return '<div class="d-flex align-items-center justify-content-center py-2"><div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div><span>Memuat data tambahan...</span></div>';
-                    }
-                }
+                cache: true
             },
             theme: 'bootstrap4',
             allowClear: true,
@@ -342,50 +239,17 @@
             templateResult: formatPasien,
             templateSelection: formatPasienSelection,
             width: '100%',
-            escapeMarkup: function (markup) { return markup; }
-        });
-
-        function formatPasien(pasien) {
-            if (!pasien.id) {
-                return pasien.text;
-            }
-            
-            // Tambahkan animasi dan styling yang lebih baik
-            var $pasien = $(
-                '<div class="select2-result-pasien animate__animated animate__fadeIn">' +
-                '<div class="select2-result-pasien__icon"><i class="fas fa-user-circle text-primary"></i></div>' +
-                '<div class="select2-result-pasien__meta">' +
-                '<div class="select2-result-pasien__title">' + pasien.text + '</div>' +
-                (pasien.kelurahanpj ? '<div class="select2-result-pasien__kelurahan"><i class="fas fa-map-marker-alt text-info mr-1"></i> Kelurahan: ' + pasien.kelurahanpj + '</div>' : '') +
-                '</div>' +
-                '</div>'
-            );
-            
-            return $pasien;
-        }
-
-        function formatPasienSelection(pasien) {
-            return pasien.text || pasien.id;
-        }
-
-        $('#no_rm').on('select2:select', function(e) {
-            var data = e.params.data;
-            @this.set('no_rkm_medis', data.id);
+            escapeMarkup: function (markup) { return markup; },
+            dropdownCssClass: 'select2-dropdown-custom'
         });
         
-        // Event handler untuk optimasi saat dropdown dibuka
-        $('#no_rm').on('select2:open', function() {
-            setTimeout(optimizeSelect2Performance, 100);
-        });
-
-        // Inisialisasi Select2 untuk pencarian dokter dengan optimasi
+        // Inisialisasi Select2 untuk pencarian dokter dengan mode sederhana
         $('#dokter').select2({
             placeholder: 'Cari Nama Dokter',
             ajax: {
                 url: '{{ route('dokter') }}',
                 dataType: 'json',
-                delay: 350, // Meningkatkan delay untuk mengurangi jumlah request
-                minimalTextLength: 3,
+                delay: 350,
                 data: function (params) {
                     return {
                         q: params.term,
@@ -395,12 +259,6 @@
                 },
                 processResults: function(data, params) {
                     params.page = params.page || 1;
-                    
-                    // Simpan hasil ke cache
-                    if (params.term) {
-                        searchCache.dokter[params.term] = data;
-                    }
-                    
                     return {
                         results: data.items || data,
                         pagination: {
@@ -408,35 +266,7 @@
                         }
                     };
                 },
-                transport: function(params, success, failure) {
-                    // Cek cache terlebih dahulu
-                    const term = params.data.q;
-                    if (term && searchCache.dokter[term]) {
-                        return success(searchCache.dokter[term]);
-                    }
-                    
-                    // Jika tidak ada di cache, lakukan request AJAX
-                    const $request = $.ajax(params);
-                    $request.then(success);
-                    $request.fail(failure);
-                    
-                    return $request;
-                },
-                cache: true,
-                language: {
-                    searching: function() {
-                        return '<div class="d-flex align-items-center justify-content-center py-2"><div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div><span>Mencari data dokter...</span></div>';
-                    },
-                    inputTooShort: function() {
-                        return '<div class="text-center py-2"><i class="fas fa-info-circle text-info mr-1"></i> Masukkan minimal 3 karakter untuk mencari</div>';
-                    },
-                    noResults: function() {
-                        return '<div class="text-center py-3"><i class="fas fa-search text-muted mr-1"></i> Tidak ada hasil yang ditemukan</div>';
-                    },
-                    loadingMore: function() {
-                        return '<div class="d-flex align-items-center justify-content-center py-2"><div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div><span>Memuat data tambahan...</span></div>';
-                    }
-                }
+                cache: true
             },
             theme: 'bootstrap4',
             allowClear: true,
@@ -445,59 +275,21 @@
             templateResult: formatDokter,
             templateSelection: formatDokterSelection,
             width: '100%',
-            escapeMarkup: function (markup) { return markup; }
+            escapeMarkup: function (markup) { return markup; },
+            dropdownCssClass: 'select2-dropdown-custom'
         });
-
-        function formatDokter(dokter) {
-            if (!dokter.id) {
-                return dokter.text;
-            }
-            
-            var $dokter = $(
-                '<div class="select2-result-dokter animate__animated animate__fadeIn">' +
-                '<div class="select2-result-dokter__icon"><i class="fas fa-user-md text-primary"></i></div>' +
-                '<div class="select2-result-dokter__meta">' +
-                '<div class="select2-result-dokter__title">' + dokter.text + '</div>' +
-                '</div>' +
-                '</div>'
-            );
-            
-            return $dokter;
-        }
-
-        function formatDokterSelection(dokter) {
-            return dokter.text || dokter.id;
-        }
-
+        
+        // Event handlers dengan mode sederhana
+        $('#no_rm').on('select2:select', function(e) {
+            var data = e.params.data;
+            @this.set('no_rkm_medis', data.id);
+        });
+        
         $('#dokter').on('select2:select', function(e) {
             var data = e.params.data;
             @this.set('dokter', data.id);
         });
         
-        // Event handler untuk optimasi saat dropdown dibuka
-        $('#dokter').on('select2:open', function() {
-            setTimeout(optimizeSelect2Performance, 100);
-        });
-
-        // Preload data saat modal dibuka
-        function preloadSelect2Data() {
-            // Preload data pasien populer
-            $.ajax({
-                url: '{{ url('/api/pasien') }}',
-                data: { q: '', preload: true, limit: 10 },
-                dataType: 'json',
-                cache: true
-            });
-            
-            // Preload data dokter
-            $.ajax({
-                url: '{{ route('dokter') }}',
-                data: { q: '', preload: true, limit: 10 },
-                dataType: 'json',
-                cache: true
-            });
-        }
-
         $('#modalPendaftaran').on('shown.bs.modal', function() {
             $(this).find('.modal-dialog').css({
                 'max-width': '800px',
@@ -506,104 +298,65 @@
             
             var date = moment().format('YYYY-MM-DD HH:mm:ss');
             @this.set('tgl_registrasi', date);
-            
-            // Preload data untuk Select2
-            preloadSelect2Data();
-            
-            // Inisialisasi Select2 dengan animasi
-            setTimeout(function() {
-                $('#no_rm').select2('open');
-                $('#no_rm').select2('close');
-                $('#dokter').select2('open');
-                $('#dokter').select2('close');
-            }, 100);
-            
-            // Animasi elemen form
-            animateFormElements();
         });
-
+        
         $('#modalPendaftaran').on('hidden.bs.modal', function() {
             $('#no_rm').val(null).trigger('change');
             $('#dokter').val(null).trigger('change');
         });
-
+        
         Livewire.on('closeModalPendaftaran', () => {
             $('#modalPendaftaran').modal('hide');
         });
-
+        
         Livewire.on('openModalPendaftaran', () => {
             $('#dokter').append(new Option(@this.nm_dokter, @this.dokter, true, true)).trigger('change');
             $('#no_rm').append(new Option(@this.nm_pasien, @this.no_rkm_medis, true, true)).trigger('change');
             $('#modalPendaftaran').modal('show');
         });
-
-        // Styling untuk Select2
-        $('.select2-container--bootstrap4 .select2-selection--single').css({
-            'height': 'calc(2.875rem + 2px)',
-            'border-radius': '5px',
-            'border-color': '#d1d3e2',
-            'transition': 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out'
-        });
         
-        $('.select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered').css({
-            'line-height': '2.5',
-            'padding-left': '0.75rem',
-            'color': '#6e707e'
-        });
-        
-        $('.select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow').css('height', '2.5rem');
-        
-        // Tambahkan event listener untuk fokus pada Select2
-        $(document).on('focus', '.select2-selection', function() {
-            $(this).css({
-                'border-color': '#4e73df',
-                'box-shadow': '0 0 0 0.2rem rgba(78, 115, 223, 0.25)'
-            });
-        });
-        
-        $(document).on('blur', '.select2-selection', function() {
-            $(this).css({
-                'border-color': '#d1d3e2',
-                'box-shadow': 'none'
-            });
-        });
-        
-        // Optimasi untuk input lainnya
-        $('input, select').on('focus', function() {
-            $(this).closest('.form-group').addClass('focused');
-        }).on('blur', function() {
-            $(this).closest('.form-group').removeClass('focused');
-        });
-        
-        // Tambahkan efek ripple pada tombol
-        $('.btn').on('mousedown', function(e) {
-            const $btn = $(this);
-            const offset = $btn.offset();
-            const x = e.pageX - offset.left;
-            const y = e.pageY - offset.top;
-            
-            const $ripple = $('<span class="btn-ripple"></span>');
-            $ripple.css({
-                top: y,
-                left: x
-            });
-            
-            $btn.append($ripple);
-            
-            setTimeout(function() {
-                $ripple.remove();
-            }, 700);
-        });
-        
-        // Tambahkan animasi hover pada form group
-        $('.form-group').hover(
-            function() {
-                $(this).addClass('form-group-hover');
-            },
-            function() {
-                $(this).removeClass('form-group-hover');
+        function formatPasien(pasien) {
+            if (!pasien.id) {
+                return pasien.text;
             }
-        );
+            
+            var $pasien = $(
+                '<div class="select2-result-pasien animate__animated animate__fadeIn">' +
+                '<div class="select2-result-pasien__icon"><i class="fas fa-user-circle"></i></div>' +
+                '<div class="select2-result-pasien__meta">' +
+                '<div class="select2-result-pasien__title">' + pasien.text + '</div>' +
+                (pasien.kelurahanpj ? '<div class="select2-result-pasien__kelurahan"><i class="fas fa-map-marker-alt mr-1"></i> Kelurahan: ' + pasien.kelurahanpj + '</div>' : '') +
+                '</div>' +
+                '</div>'
+            );
+            
+            return $pasien;
+        }
+        
+        function formatPasienSelection(pasien) {
+            return pasien.text || pasien.id;
+        }
+        
+        function formatDokter(dokter) {
+            if (!dokter.id) {
+                return dokter.text;
+            }
+            
+            var $dokter = $(
+                '<div class="select2-result-dokter animate__animated animate__fadeIn">' +
+                '<div class="select2-result-dokter__icon"><i class="fas fa-user-md"></i></div>' +
+                '<div class="select2-result-dokter__meta">' +
+                '<div class="select2-result-dokter__title">' + dokter.text + '</div>' +
+                '</div>' +
+                '</div>'
+            );
+            
+            return $dokter;
+        }
+        
+        function formatDokterSelection(dokter) {
+            return dokter.text || dokter.id;
+        }
     });
 </script>
 @endpush
@@ -611,19 +364,6 @@
 @push('css')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 <style>
-    /* Animasi untuk hasil pencarian */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
     .animate__animated {
         animation-duration: 0.5s;
         animation-fill-mode: both;
@@ -643,6 +383,18 @@
 
     .animate__fadeInUp {
         animation-name: fadeInUp;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @keyframes fadeInLeft {
@@ -681,99 +433,11 @@
         }
     }
 
-    /* Efek ripple untuk tombol */
-    .btn {
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-ripple {
-        position: absolute;
-        border-radius: 50%;
-        background-color: rgba(255, 255, 255, 0.4);
-        width: 100px;
-        height: 100px;
-        margin-top: -50px;
-        margin-left: -50px;
-        animation: ripple 0.7s linear infinite;
-        transform: scale(0);
-        opacity: 1;
-        pointer-events: none;
-    }
-
-    @keyframes ripple {
-        to {
-            transform: scale(3);
-            opacity: 0;
-        }
-    }
-
-    /* Efek fokus untuk form group */
-    .form-group.focused label {
-        color: #4e73df;
-        transform: translateY(-2px);
-        transition: all 0.2s ease;
-    }
-
-    /* Efek hover untuk form group */
-    .form-group {
-        transition: all 0.3s ease;
-        border-radius: 5px;
-    }
-
-    .form-group-hover {
-        background-color: rgba(78, 115, 223, 0.03);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Animasi untuk icon */
-    .icon-circle {
-        transition: all 0.3s ease;
-    }
-
-    .form-group:hover .icon-circle {
-        transform: scale(1.1);
-        box-shadow: 0 5px 15px rgba(78, 115, 223, 0.2);
-    }
-
     .card {
         border-radius: 10px;
         overflow: hidden;
         border: none;
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        width: 100%;
-    }
-
-    .modal-content {
-        border-radius: 10px;
-        overflow: hidden;
-        border: none;
-    }
-
-    .modal-header {
-        background-color: #4e73df;
-        color: white;
-        border-bottom: 0;
-        padding: 1rem 1.5rem;
-    }
-
-    .modal-title {
-        font-weight: 600;
-    }
-
-    .modal-body {
-        padding: 0;
-    }
-
-    .card-header {
-        border-bottom: 0;
-        padding: 1rem 1.5rem;
-        background-color: #4e73df !important;
-    }
-
-    .card-body {
-        padding: 1.5rem;
     }
 
     .form-control {
@@ -804,28 +468,21 @@
         box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
     }
 
-    .bg-primary {
-        background-color: #4e73df !important;
-    }
-
-    label.font-weight-bold {
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .select2-container {
-        width: 100% !important;
+    .icon-circle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
     }
 
     .select2-container--bootstrap4 .select2-selection--single {
         height: calc(2.875rem + 2px) !important;
         border-color: #d1d3e2;
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-
-    .select2-container--bootstrap4 .select2-selection--single:focus {
-        border-color: #4e73df;
-        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
     }
 
     .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
@@ -836,19 +493,6 @@
 
     .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
         height: 2.5rem !important;
-    }
-
-    .select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] {
-        background-color: rgba(78, 115, 223, 0.1) !important;
-        color: #333 !important;
-        border-left: 3px solid #4e73df;
-        transition: all 0.2s ease;
-    }
-
-    .select2-container--bootstrap4 .select2-results__option[aria-selected=true] {
-        background-color: rgba(78, 115, 223, 0.2) !important;
-        color: #333 !important;
-        border-left: 3px solid #4e73df;
     }
 
     .select2-result-pasien,
@@ -882,116 +526,128 @@
         color: #858796;
     }
 
+    /* Styling untuk dropdown hasil pencarian pasien */
+    .select2-container--open .select2-dropdown {
+        border-color: #4e73df;
+    }
+
+    /* Mengubah warna teks pada dropdown hasil pencarian menjadi putih */
+    .select2-results__option--highlighted[aria-selected] {
+        background-color: #4e73df !important;
+        color: white !important;
+    }
+
+    /* Styling untuk item yang dipilih */
+    .select2-results__option[aria-selected=true] {
+        background-color: #4e73df !important;
+        color: white !important;
+    }
+
+    /* Styling untuk teks pada dropdown dengan background biru */
+    .select2-container--bootstrap4 .select2-results__option--highlighted,
+    .select2-container--bootstrap4 .select2-results__option--highlighted.select2-results__option[aria-selected=true] {
+        background-color: #4e73df;
+        color: white !important;
+    }
+
+    /* Memastikan teks pada dropdown dengan background biru terlihat jelas */
+    .select2-results__option {
+        padding: 8px 12px;
+    }
+
+    /* Styling khusus untuk dropdown pasien dengan background biru */
+    .select2-result-pasien__title,
+    .select2-result-pasien__kelurahan,
+    .select2-result-dokter__title {
+        color: inherit;
+    }
+
+    /* Memastikan ikon pada dropdown dengan background biru juga terlihat */
+    .select2-results__option--highlighted .select2-result-pasien__icon i,
+    .select2-results__option--highlighted .select2-result-dokter__icon i,
+    .select2-results__option[aria-selected=true] .select2-result-pasien__icon i,
+    .select2-results__option[aria-selected=true] .select2-result-dokter__icon i {
+        color: white !important;
+    }
+
+    /* Memastikan ikon pada dropdown dengan background biru juga terlihat */
+    .select2-results__option--highlighted .fas,
+    .select2-results__option[aria-selected=true] .fas {
+        color: white !important;
+    }
+
+    /* Styling khusus untuk dropdown custom */
+    .select2-dropdown-custom .select2-results__option {
+        color: #333;
+    }
+
+    .select2-dropdown-custom .select2-results__option--highlighted[aria-selected],
+    .select2-dropdown-custom .select2-results__option[aria-selected=true] {
+        background-color: #4e73df !important;
+        color: white !important;
+    }
+
+    .select2-dropdown-custom .select2-results__option--highlighted .select2-result-pasien__title,
+    .select2-dropdown-custom .select2-results__option--highlighted .select2-result-pasien__kelurahan,
+    .select2-dropdown-custom .select2-results__option--highlighted .select2-result-dokter__title,
+    .select2-dropdown-custom .select2-results__option[aria-selected=true] .select2-result-pasien__title,
+    .select2-dropdown-custom .select2-results__option[aria-selected=true] .select2-result-pasien__kelurahan,
+    .select2-dropdown-custom .select2-results__option[aria-selected=true] .select2-result-dokter__title {
+        color: white !important;
+    }
+
+    .select2-dropdown-custom .select2-results__option--highlighted .fas,
+    .select2-dropdown-custom .select2-results__option[aria-selected=true] .fas {
+        color: white !important;
+    }
+
+    /* Styling untuk dropdown yang sudah terbuka dengan background biru */
     .select2-container--bootstrap4 .select2-dropdown {
-        border-color: #d1d3e2;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         border-radius: 5px;
         overflow: hidden;
-        animation: fadeIn 0.3s ease-out;
     }
 
-    .select2-container--bootstrap4 .select2-search--dropdown .select2-search__field {
-        border-radius: 5px;
-        border: 1px solid #d1d3e2;
-        padding: 0.5rem;
-        margin: 5px;
-        width: calc(100% - 10px);
-        transition: all 0.2s ease;
+    /* Styling untuk hasil pencarian dengan background biru */
+    .select2-container--bootstrap4 .select2-results {
+        padding: 0;
     }
 
-    .select2-container--bootstrap4 .select2-search--dropdown .select2-search__field:focus {
-        border-color: #4e73df;
-        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-        outline: none;
-    }
-
-    .select2-container--bootstrap4 .select2-results>.select2-results__options {
+    /* Styling untuk item hasil pencarian dengan background biru */
+    .select2-container--bootstrap4 .select2-results__options {
         max-height: 250px;
         overflow-y: auto;
-        padding: 5px;
-        scrollbar-width: thin;
-        scrollbar-color: #d1d3e2 #f8f9fc;
     }
 
-    .select2-container--bootstrap4 .select2-results>.select2-results__options::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .select2-container--bootstrap4 .select2-results>.select2-results__options::-webkit-scrollbar-track {
-        background: #f8f9fc;
-        border-radius: 10px;
-    }
-
-    .select2-container--bootstrap4 .select2-results>.select2-results__options::-webkit-scrollbar-thumb {
-        background: #d1d3e2;
-        border-radius: 10px;
-    }
-
-    .select2-container--bootstrap4 .select2-results>.select2-results__options::-webkit-scrollbar-thumb:hover {
-        background: #a8aab9;
-    }
-
-    .select2-container--bootstrap4 .select2-results__option {
-        padding: 8px 10px;
-        margin-bottom: 2px;
-        border-radius: 3px;
-        transition: all 0.2s ease;
-    }
-
+    /* Styling untuk item hasil pencarian dengan background biru saat di-hover */
     .select2-container--bootstrap4 .select2-results__option:hover {
-        background-color: rgba(78, 115, 223, 0.05);
+        background-color: #eaecf4;
     }
 
-    .select2-container--bootstrap4 .select2-results__message {
-        padding: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* Styling untuk item hasil pencarian dengan background biru saat dipilih */
+    .select2-container--bootstrap4 .select2-results__option[aria-selected=true]:hover {
+        background-color: #4e73df !important;
+        color: white !important;
     }
 
-    .spinner-border {
-        display: inline-block;
-        width: 1rem;
-        height: 1rem;
-        vertical-align: text-bottom;
-        border: 0.2em solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner-border .75s linear infinite;
+    /* Styling khusus untuk item aktif pada dropdown */
+    .select2-results__option.select2-results__option--highlighted {
+        background-color: #4e73df !important;
+        color: white !important;
     }
 
-    @keyframes spinner-border {
-        to {
-            transform: rotate(360deg);
-        }
+    /* Styling untuk teks pada item aktif */
+    .select2-results__option.select2-results__option--highlighted * {
+        color: white !important;
     }
 
-    .icon-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* Styling untuk dropdown dengan background biru */
+    .select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] {
+        background-color: #4e73df !important;
     }
 
-    .icon-circle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 5px;
-        font-size: 1.2rem;
-        transition: all 0.3s ease;
-    }
-
-    .icon-circle:hover {
-        transform: scale(1.05);
-    }
-
-    @media (min-width: 768px) {
-        .modal-dialog {
-            max-width: 800px;
-            margin: 1.75rem auto;
-        }
+    /* Styling untuk teks pada dropdown dengan background biru */
+    .select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] * {
+        color: white !important;
     }
 </style>
 @endpush

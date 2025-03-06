@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\IlpDewasa;
+use App\Helpers\UrlHelper;
 use Carbon\Carbon;
 
 class IlpDewasaController extends Controller
@@ -20,17 +21,8 @@ class IlpDewasaController extends Controller
     public function index($noRawat)
     {
         try {
-            // Decode parameter noRawat jika perlu
-            $originalNoRawat = $noRawat;
-            $noRawat = urldecode($noRawat);
-            
-            // Jika masih ada karakter %2F, decode lagi
-            if (strpos($noRawat, '%2F') !== false) {
-                $noRawat = str_replace('%2F', '/', $noRawat);
-            }
-            
             // Log untuk debugging
-            Log::info('Accessing ILP Dewasa with noRawat: ' . $noRawat . ' (original: ' . $originalNoRawat . ')');
+            Log::info('Mengakses ILP Dewasa dengan noRawat: ' . $noRawat);
             
             // Ambil data pasien dan reg_periksa
             $pasien = DB::table('reg_periksa')
@@ -181,7 +173,7 @@ class IlpDewasaController extends Controller
                 Log::info('Data ILP Dewasa berhasil dibuat untuk no_rawat: ' . $request->no_rawat);
             }
             
-            return redirect()->route('ralan.pasien')->with('success', 'Data ILP Dewasa berhasil disimpan');
+            return redirect()->route('ilp.pelayanan')->with('success', 'Data ILP Dewasa berhasil disimpan');
         } catch (\Exception $e) {
             Log::error('Error pada IlpDewasaController@store: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -197,30 +189,22 @@ class IlpDewasaController extends Controller
     public function destroy($noRawat)
     {
         try {
-            // Decode parameter noRawat jika perlu
-            $originalNoRawat = $noRawat;
-            $noRawat = urldecode($noRawat);
-            
-            // Jika masih ada karakter %2F, decode lagi
-            if (strpos($noRawat, '%2F') !== false) {
-                $noRawat = str_replace('%2F', '/', $noRawat);
-            }
-            
-            Log::info('Menghapus ILP Dewasa dengan noRawat: ' . $noRawat . ' (original: ' . $originalNoRawat . ')');
+            // Log untuk debugging
+            Log::info('Menghapus ILP Dewasa dengan noRawat: ' . $noRawat);
             
             $ilpDewasa = IlpDewasa::where('no_rawat', $noRawat)->first();
             
             if ($ilpDewasa) {
                 $ilpDewasa->delete();
                 Log::info('Data ILP Dewasa berhasil dihapus untuk no_rawat: ' . $noRawat);
-                return redirect()->route('ralan.pasien')->with('success', 'Data ILP Dewasa berhasil dihapus');
+                return redirect()->route('ilp.pelayanan')->with('success', 'Data ILP Dewasa berhasil dihapus');
             }
             
             Log::warning('Data ILP Dewasa tidak ditemukan untuk no_rawat: ' . $noRawat);
-            return redirect()->route('ralan.pasien')->with('error', 'Data ILP Dewasa tidak ditemukan');
+            return redirect()->route('ilp.pelayanan')->with('error', 'Data ILP Dewasa tidak ditemukan');
         } catch (\Exception $e) {
             Log::error('Error pada IlpDewasaController@destroy: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return redirect()->route('ralan.pasien')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->route('ilp.pelayanan')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 }
