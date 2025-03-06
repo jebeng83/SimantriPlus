@@ -9,7 +9,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#6777ef" />
-    <link rel="apple-touch-icon" href="{{ asset('logo.PNG') }}">
+
+    {{-- Favicon --}}
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicons/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicons/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('favicons/android-icon-192x192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicons/android-icon-192x192.png') }}">
     <link rel="manifest" href="{{ asset('/manifest.json') }}">
 
     {{-- Custom Meta Tags --}}
@@ -55,30 +63,7 @@
     {{-- Custom Stylesheets (post AdminLTE) --}}
     @yield('adminlte_css')
 
-    {{-- Favicon --}}
-    @if(config('adminlte.use_ico_only'))
-    <link rel="shortcut icon" href="{{ asset('epasien/YASKI.png') }}" />
-    @elseif(config('adminlte.use_full_favicon'))
-    <link rel="shortcut icon" href="{{ asset('epasien/YASKI.png') }}" />
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="60x60" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="120x120" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="152x152" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="manifest" crossorigin="use-credentials" href="{{ asset('/manifest.json') }}">
-    <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="{{ asset('epasien/YASKI.png') }}">
-    @else
-    <link rel="icon" type="image/png" href="{{ asset('epasien/YASKI.png') }}">
-    @endif
+    {{-- Removing conflicting favicon settings --}}
     {{-- @laravelPWA --}}
 </head>
 

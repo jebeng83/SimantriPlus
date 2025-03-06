@@ -3,14 +3,21 @@
 
 <head>
     <meta name="theme-color" content="#2e5cb8" />
-    <link rel="apple-touch-icon" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="icon" type="image/png" href="{{ asset('epasien/YASKI.png') }}">
-    <link rel="manifest" href="{{ asset('/manifest.json') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicons/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicons/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('favicons/android-icon-192x192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicons/android-icon-192x192.png') }}">
+    <link rel="manifest" href="{{ asset('/manifest.json') }}">
 
     <title>@yield('title', config('app.name', 'Laravel'))</title>
 

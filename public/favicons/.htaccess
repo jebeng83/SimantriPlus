@@ -1,0 +1,17 @@
+# Favicon specific settings
+<IfModule mod_headers.c>
+    Header set Cache-Control "max-age=31536000, public"
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 year"
+</IfModule>
+
+# Disable PHP processing for this file
+<FilesMatch "favicon\.ico$">
+    SetHandler None
+    <IfModule mod_php8.c>
+        php_flag engine off
+    </IfModule>
+</FilesMatch> 

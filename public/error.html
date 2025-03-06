@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - Simantri PLUS</title>
+    <title>Terjadi Kesalahan - Simantri PLUS</title>
     
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -32,7 +32,7 @@
             margin: 20px;
         }
         h1 {
-            color: #0056b3;
+            color: #dc3545;
             margin-bottom: 20px;
         }
         p {
@@ -42,7 +42,7 @@
         .icon {
             font-size: 64px;
             margin-bottom: 20px;
-            color: #0056b3;
+            color: #dc3545;
         }
         .btn {
             display: inline-block;
@@ -61,24 +61,17 @@
 </head>
 <body>
     <div class="container">
-        <div class="icon">📶</div>
-        <h1>Anda Sedang Offline</h1>
-        <p>Maaf, Anda tidak dapat mengakses halaman ini karena tidak ada koneksi internet.</p>
-        <p>Silakan periksa koneksi internet Anda dan coba lagi.</p>
-        <a href="/" class="btn">Coba Lagi</a>
+        <div class="icon">⚠️</div>
+        <h1>Terjadi Kesalahan</h1>
+        <p>Maaf, sistem sedang mengalami gangguan teknis.</p>
+        <p>Tim kami sedang bekerja untuk memperbaiki masalah ini. Silakan coba lagi nanti.</p>
+        <a href="/" class="btn">Kembali ke Beranda</a>
     </div>
     <script>
-        // Cek koneksi internet secara berkala
-        window.addEventListener('online', function() {
+        // Coba reload halaman setelah 30 detik
+        setTimeout(function() {
             window.location.reload();
-        });
-        
-        document.querySelector('.btn').addEventListener('click', function(e) {
-            if (!navigator.onLine) {
-                e.preventDefault();
-                alert('Anda masih offline. Silakan periksa koneksi internet Anda.');
-            }
-        });
+        }, 30000);
     </script>
 </body>
 </html> 

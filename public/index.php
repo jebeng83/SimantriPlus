@@ -1,5 +1,62 @@
 <?php
 
+// Aktifkan tampilan error untuk debugging (hapus atau ubah menjadi 0 setelah masalah teratasi)
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+
+// Menetapkan zona waktu
+date_default_timezone_set('Asia/Jakarta');
+
+// Menetapkan batas waktu eksekusi
+set_time_limit(300);
+
+// Menetapkan batas memori
+ini_set('memory_limit', '256M');
+
+// Fungsi penanganan error kustom
+function handleError($errno, $errstr, $errfile, $errline) {
+    $logFile = __DIR__ . '/../storage/logs/php-error.log';
+    $message = date('Y-m-d H:i:s') . " - Error [$errno]: $errstr in $errfile on line $errline\n";
+    error_log($message, 3, $logFile);
+    
+    // Jangan tampilkan error di produksi
+    if (getenv('APP_DEBUG') !== 'true') {
+        return true;
+    }
+    
+    return false;
+}
+
+// Daftarkan penanganan error kustom
+set_error_handler('handleError');
+
+// Fungsi penanganan exception kustom
+function handleException($exception) {
+    $logFile = __DIR__ . '/../storage/logs/php-error.log';
+    $message = date('Y-m-d H:i:s') . " - Exception: " . $exception->getMessage() . 
+               " in " . $exception->getFile() . " on line " . $exception->getLine() . 
+               "\nStack trace: " . $exception->getTraceAsString() . "\n";
+    error_log($message, 3, $logFile);
+    
+    // Jangan tampilkan error di produksi
+    if (getenv('APP_DEBUG') !== 'true') {
+        http_response_code(500);
+        include __DIR__ . '/error.html';
+        exit;
+    }
+}
+
+// Daftarkan penanganan exception kustom
+set_exception_handler('handleException');
+
+// Penanganan khusus untuk favicon.ico
+if (strpos($_SERVER['REQUEST_URI'], 'favicon.ico') !== false) {
+    header('Content-Type: image/x-icon');
+    readfile(__DIR__ . '/favicon.ico');
+    exit;
+}
+
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 

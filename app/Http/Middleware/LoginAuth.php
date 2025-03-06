@@ -23,15 +23,27 @@ class LoginAuth
             'has_username' => session()->has('username'),
             'has_logged_in' => session()->has('logged_in'),
             'path' => $request->path(),
-            'session_data' => session()->all()
+            'session_data' => session()->all(),
+            'cookies' => $request->cookies->all(),
+            'headers' => $request->headers->all(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
         ]);
 
         // Jika ini adalah rute login, biarkan lewat
         if ($request->routeIs('login') || $request->routeIs('customlogin')) {
+            Log::info('LoginAuth: Allowing login route');
             return $next($request);
         }
 
         if (!session()->has('username') || !session()->has('logged_in') || session()->get('logged_in') !== true) {
+            Log::warning('LoginAuth: Invalid session', [
+                'has_username' => session()->has('username'),
+                'has_logged_in' => session()->has('logged_in'),
+                'logged_in_value' => session()->get('logged_in'),
+                'session_id' => session()->getId()
+            ]);
+            
             // Jika ini adalah request AJAX, kembalikan response JSON
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -46,6 +58,7 @@ class LoginAuth
                 ->with('error', 'Sesi login tidak valid atau telah berakhir. Silakan login kembali.');
         }
 
+        Log::info('LoginAuth: Valid session, proceeding');
         return $next($request);
     }
 }
