@@ -152,12 +152,12 @@ Route::middleware(['loginauth'])->group(function () {
         Route::get('/sasaran-ckg/kirim-wa/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'kirimWA'])->name('sasaran-ckg.kirim-wa');
         
         // Route untuk ILP Dewasa - dengan penanganan URL yang di-encode
-        Route::get('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
+        Route::get('/ilp/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
             ->name('dewasa.form')
             ->where('noRawat', '.*');
         
-        Route::post('/dewasa', [App\Http\Controllers\ILP\IlpDewasaController::class, 'store'])->name('dewasa.store');
-        Route::delete('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'destroy'])
+        Route::post('/ilp/dewasa', [App\Http\Controllers\ILP\IlpDewasaController::class, 'store'])->name('dewasa.store');
+        Route::delete('/ilp/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'destroy'])
             ->name('dewasa.destroy')
             ->where('noRawat', '.*');
     });

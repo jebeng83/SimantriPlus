@@ -1,2 +1,8 @@
 User-agent: *
-Disallow:
+Disallow: /login
+Disallow: /logout
+Disallow: /register
+Disallow: /password
+Disallow: /customlogin
+Disallow: /ilp/dewasa/
+Allow: /

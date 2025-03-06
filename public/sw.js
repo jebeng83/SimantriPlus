@@ -6,15 +6,12 @@ const preLoad = function () {
             '/offline.html', 
             '/favicon.ico', 
             '/favicon.png',
-            '/epasien/YASKI.png',
+            '/favicons/favicon-16x16.png',
+            '/favicons/favicon-32x32.png',
+            '/favicons/favicon-96x96.png',
+            '/favicons/android-icon-192x192.png',
             '/css/app.css',
-            '/js/app.js',
-            '/images/icons/icon-72x72.png',
-            '/images/icons/icon-96x96.png',
-            '/images/icons/icon-128x128.png',
-            '/images/icons/icon-144x144.png',
-            '/images/icons/icon-152x152.png',
-            '/images/icons/icon-192x192.png'
+            '/js/app.js'
         ];
         
         return Promise.allSettled(
@@ -64,6 +61,26 @@ const handleAvatarRequest = function(request) {
     );
 };
 
+// Fungsi untuk memeriksa apakah permintaan dapat di-cache
+const canCacheRequest = function(request) {
+    // Hanya cache permintaan GET
+    if (request.method !== 'GET') {
+        return false;
+    }
+    
+    // Jangan cache permintaan ke /ilp/dewasa/
+    if (request.url.includes('/ilp/dewasa/')) {
+        return false;
+    }
+    
+    // Jangan cache permintaan ke /customlogin
+    if (request.url.includes('/customlogin')) {
+        return false;
+    }
+    
+    return true;
+};
+
 const checkResponse = function (request) {
     return new Promise(function (fulfill, reject) {
         fetch(request).then(function (response) {
@@ -77,6 +94,16 @@ const checkResponse = function (request) {
 };
 
 const addToCache = function (request) {
+    // Hanya cache permintaan GET
+    if (request.method !== 'GET') {
+        return Promise.resolve();
+    }
+    
+    // Jangan cache permintaan ke /ilp/dewasa/ atau /customlogin
+    if (request.url.includes('/ilp/dewasa/') || request.url.includes('/customlogin')) {
+        return Promise.resolve();
+    }
+    
     return caches.open("offline").then(function (cache) {
         return fetch(request).then(function (response) {
             return cache.put(request, response);
@@ -112,6 +139,16 @@ self.addEventListener("install", function (event) {
 });
 
 self.addEventListener("fetch", function (event) {
+    // Jangan tangani permintaan non-GET
+    if (event.request.method !== 'GET') {
+        return;
+    }
+    
+    // Jangan tangani permintaan ke /ilp/dewasa/ atau /customlogin
+    if (event.request.url.includes('/ilp/dewasa/') || event.request.url.includes('/customlogin')) {
+        return;
+    }
+    
     // Tangani permintaan CSS secara khusus
     if (event.request.url.endsWith('.css') || event.request.url.includes('/css/')) {
         event.respondWith(
@@ -194,6 +231,11 @@ self.addEventListener("fetch", function (event) {
     if (event.request.url.startsWith(self.location.origin) || 
         (event.request.url.startsWith('https://') && !event.request.url.includes('faskesku.com/sw.js'))) {
         
+        // Jangan cache permintaan ke /ilp/dewasa/ atau /customlogin
+        if (event.request.url.includes('/ilp/dewasa/') || event.request.url.includes('/customlogin')) {
+            return;
+        }
+        
         // Jangan cache permintaan media (gambar besar, video, audio)
         if (event.request.url.match(/\.(mp4|webm|ogg|mp3|avi|mov|wmv)$/i)) {
             event.respondWith(checkResponse(event.request).catch(function () {
@@ -205,7 +247,10 @@ self.addEventListener("fetch", function (event) {
         // Untuk permintaan non-media, coba cache
         event.respondWith(
             checkResponse(event.request).then(function (response) {
-                event.waitUntil(addToCache(event.request));
+                // Hanya cache permintaan GET
+                if (event.request.method === 'GET') {
+                    event.waitUntil(addToCache(event.request));
+                }
                 return response;
             }).catch(function () {
                 return returnFromCache(event.request).catch(function() {

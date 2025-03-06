@@ -4,6 +4,8 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -44,7 +46,37 @@ class Handler extends ExceptionHandler
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            //
+            Log::error('Exception: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        });
+        
+        $this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->is('favicon.ico')) {
+                return response()->file(public_path('favicon.ico'), [
+                    'Content-Type' => 'image/x-icon'
+                ]);
+            }
+        });
+        
+        $this->renderable(function (Throwable $e, $request) {
+            if (!config('app.debug')) {
+                if ($request->is('api/*')) {
+                    return response()->json([
+                        'message' => 'Server Error'
+                    ], 500);
+                }
+                
+                if ($request->is('favicon.ico')) {
+                    return response()->file(public_path('favicon.ico'), [
+                        'Content-Type' => 'image/x-icon'
+                    ]);
+                }
+                
+                return response()->view('errors.500', [], 500);
+            }
         });
     }
 }

@@ -1,21 +1,21 @@
-const CACHE_NAME = 'edokter-cache-v1';
+const CACHE_NAME = 'simantri-cache-v1';
 const urlsToCache = [
     '/',
+    '/offline.html',
     '/css/app.css',
     '/js/app.js',
     '/js/chart-config.js',
-    '/images/icons/icon-72x72.png',
-    '/images/icons/icon-96x96.png',
-    '/images/icons/icon-128x128.png',
-    '/images/icons/icon-144x144.png',
-    '/images/icons/icon-152x152.png',
-    '/images/icons/icon-192x192.png',
-    '/images/icons/icon-384x384.png',
-    '/images/icons/icon-512x512.png'
+    '/favicon.ico',
+    '/favicon.png',
+    '/favicons/favicon-16x16.png',
+    '/favicons/favicon-32x32.png',
+    '/favicons/favicon-96x96.png',
+    '/favicons/android-icon-192x192.png'
 ];
 
 // Install Service Worker
 self.addEventListener('install', event => {
+    console.log('Service Worker installing...');
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -30,6 +30,16 @@ self.addEventListener('install', event => {
 
 // Fetch Event
 self.addEventListener('fetch', event => {
+    // Hanya tangani permintaan GET
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
+    // Hindari caching untuk URL yang berisi /ilp/dewasa/ atau /customlogin
+    if (event.request.url.includes('/ilp/dewasa/') || event.request.url.includes('/customlogin')) {
+        return fetch(event.request);
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {
@@ -53,13 +63,27 @@ self.addEventListener('fetch', event => {
 
                         caches.open(CACHE_NAME)
                             .then(cache => {
-                                // Hanya cache permintaan HTTPS
-                                if (event.request.url.startsWith('https://')) {
-                                    cache.put(event.request, responseToCache);
+                                // Hanya cache permintaan GET dan HTTPS
+                                if (event.request.method === 'GET') {
+                                    try {
+                                        cache.put(event.request, responseToCache);
+                                    } catch (error) {
+                                        console.error('Error caching response:', error);
+                                    }
                                 }
                             });
 
                         return response;
+                    })
+                    .catch(error => {
+                        // Jika terjadi error, coba tampilkan halaman offline
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('/offline.html');
+                        }
+                        return new Response('Network error happened', {
+                            status: 408,
+                            headers: { 'Content-Type': 'text/plain' }
+                        });
                     });
             })
     );
@@ -67,6 +91,7 @@ self.addEventListener('fetch', event => {
 
 // Activate Event - Clean up old caches
 self.addEventListener('activate', event => {
+    console.log('Service Worker activating...');
     const cacheWhitelist = [CACHE_NAME];
 
     event.waitUntil(
@@ -74,6 +99,7 @@ self.addEventListener('activate', event => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        console.log('Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })

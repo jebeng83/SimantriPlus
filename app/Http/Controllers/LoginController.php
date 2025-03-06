@@ -44,13 +44,20 @@ class LoginController extends Controller
                 'login_time' => now()->format('Y-m-d H:i:s')
             ]);
 
+            // Pastikan session disimpan
+            session()->save();
+
             // Log untuk debugging
             Log::info('Login: User logged in successfully', [
                 'username' => $request->username,
                 'kd_poli' => $request->poli,
                 'poli' => $request->poli,
                 'session_id' => session()->getId(),
-                'session_data' => session()->all()
+                'session_data' => session()->all(),
+                'cookies' => $request->cookies->all(),
+                'headers' => $request->headers->all(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
             ]);
 
             return redirect()->intended('home')
@@ -58,7 +65,8 @@ class LoginController extends Controller
         } catch (\Exception $e) {
             Log::error('Login error: ' . $e->getMessage(), [
                 'exception' => $e,
-                'request' => $request->all()
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return redirect()->route('login')
