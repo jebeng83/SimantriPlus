@@ -9,7 +9,7 @@
             <i class="fas fa-user-injured text-primary animated-icon"></i>
             <span class="text-gradient">DATA PASIEN</span>
             <div class="badge badge-pill badge-primary ml-2 pulse-badge">
-                {{ DB::table('pasien')->count() }} <small>Pasien</small>
+                {{ $totalPasien ?? 0 }} <small>Pasien</small>
             </div>
         </h1>
         <p class="text-muted header-subtitle">Kelola data pasien dengan mudah dan efisien</p>
@@ -72,7 +72,7 @@
                 <span class="info-box-icon"><i class="fas fa-users"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Total Pasien</span>
-                    <span class="info-box-number">{{ DB::table('pasien')->count() }}</span>
+                    <span class="info-box-number">{{ $totalPasien ?? 0 }}</span>
                     <div class="progress">
                         <div class="progress-bar" style="width: 100%"></div>
                     </div>
@@ -87,8 +87,7 @@
                 <span class="info-box-icon"><i class="fas fa-user-plus"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Pasien Baru</span>
-                    <span class="info-box-number">{{ DB::table('pasien')->orderBy('no_rkm_medis',
-                        'desc')->limit(10)->count() }}</span>
+                    <span class="info-box-number">{{ $pasienBaru ?? 0 }}</span>
                     <div class="progress">
                         <div class="progress-bar" style="width: 100%"></div>
                     </div>
@@ -103,8 +102,7 @@
                 <span class="info-box-icon"><i class="fas fa-procedures"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Kunjungan</span>
-                    <span class="info-box-number">{{ DB::table('reg_periksa')->whereDate('tgl_registrasi',
-                        date('Y-m-d'))->count() }}</span>
+                    <span class="info-box-number">{{ $kunjunganHariIni ?? 0 }}</span>
                     <div class="progress">
                         <div class="progress-bar" style="width: 100%"></div>
                     </div>
@@ -119,7 +117,7 @@
                 <span class="info-box-icon"><i class="fas fa-heartbeat"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Pasien BPJS</span>
-                    <span class="info-box-number">{{ DB::table('pasien')->where('kd_pj', 'BPJ')->count() }}</span>
+                    <span class="info-box-number">{{ $pasienBPJS ?? 0 }}</span>
                     <div class="progress">
                         <div class="progress-bar" style="width: 100%"></div>
                     </div>
@@ -412,6 +410,25 @@
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
     }
 
+    /* Empty state styling */
+    .empty-state-container {
+        padding: 40px 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .empty-state-container i {
+        color: #6c757d;
+    }
+
+    .empty-state-container h4 {
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
     /* Responsif */
     @media (max-width: 768px) {
         .page-title {
@@ -458,216 +475,119 @@
             }, 800);
         });
         
-        // Membuat baris tabel pasien dapat diklik untuk menuju ke halaman edit
-        $(document).on('click', '.patient-row', function(e) {
-            // Jika yang diklik adalah tombol atau link di dalam baris, biarkan event default berjalan
-            if ($(e.target).closest('button, a').length > 0) {
-                return;
-            }
-            
-            // Ambil ID pasien dari atribut data-id
-            var patientId = $(this).data('id');
-            
-            // Redirect ke halaman edit
-            window.location.href = '/data-pasien/' + patientId + '/edit';
-        });
-        
-        // Tambahkan style cursor pointer pada baris tabel
-        $('.patient-row').css('cursor', 'pointer');
-        
-        // Variabel untuk menyimpan no_rkm_medis pasien yang sedang dilihat
-        let currentPatientRM = '';
-        
-        // Fungsi untuk menampilkan data pasien di modal quick view
-        window.showPatientDetails = function(patientData) {
-            // Simpan no_rkm_medis pasien yang sedang dilihat
-            currentPatientRM = patientData.no_rkm_medis;
-            
-            // Update href tombol edit
-            $('#btnEditPasien').attr('href', '/data-pasien/' + currentPatientRM + '/edit');
-            
-            // Isi data pasien ke dalam modal
-            $('#patientName').text(patientData.nm_pasien || 'Nama Tidak Tersedia');
-            $('#patientRM').text('No. RM: ' + patientData.no_rkm_medis);
-            $('#patientKTP').text(patientData.no_ktp || '-');
-            $('#patientPhone').text(patientData.no_tlp || '-');
-            $('#patientDOB').text(patientData.tgl_lahir || '-');
-            
-            // Tentukan jenis kelamin
-            let jenisKelamin = '-';
-            if (patientData.jk === 'L') {
-                jenisKelamin = 'Laki-laki';
-            } else if (patientData.jk === 'P') {
-                jenisKelamin = 'Perempuan';
-            }
-            $('#patientGender').text(jenisKelamin);
-            
-            // Alamat
-            $('#patientAddress').text(patientData.alamat || '-');
-            
-            // Tambahkan informasi tambahan jika tersedia
-            if ($('#patientMaritalStatus').length) {
-                $('#patientMaritalStatus').text(patientData.stts_nikah || '-');
-            }
-            
-            if ($('#patientJob').length) {
-                $('#patientJob').text(patientData.pekerjaan || '-');
-            }
-            
-            if ($('#patientReligion').length) {
-                $('#patientReligion').text(patientData.agama || '-');
-            }
-            
-            if ($('#patientAge').length) {
-                $('#patientAge').text(patientData.umur || '-');
-            }
-            
-            // Tampilkan modal
-            $('#quickViewModal').modal('show');
-        }
-        
         // Fungsi untuk melihat detail pasien
-        window.viewPatient = function(noRM) {
-            // Tampilkan loading spinner
-            Swal.fire({
-                title: 'Memuat Data...',
-                html: 'Mohon tunggu sebentar',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+        window.viewPatient = function(patientId) {
+            // Tampilkan indikator loading di dalam modal sebelum AJAX request
+            $('#quickViewModal').modal('show');
+            $('#patientName').html('<i class="fas fa-spinner fa-spin"></i> Memuat data...');
+            $('#patientRM').text('Mohon tunggu...');
             
-            // Ambil data pasien dari server
-            fetch(`/pasien/search?term=${noRM}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Tutup loading spinner
-                    Swal.close();
+            // AJAX untuk mendapatkan data pasien
+            $.ajax({
+                url: '/pasien/' + patientId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Isi modal dengan data pasien
+                    populatePatientModal(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching patient data:', error);
                     
-                    if (data && data.length > 0) {
-                        const pasien = data[0];
-                        
-                        // Siapkan data pasien untuk modal
-                        const patientData = {
-                            no_rkm_medis: pasien.no_rkm_medis,
-                            nm_pasien: pasien.nm_pasien,
-                            no_ktp: pasien.no_ktp || '-',
-                            no_tlp: pasien.no_tlp || '-',
-                            tgl_lahir: pasien.tgl_lahir || '-',
-                            jk: pasien.jk || '-',
-                            alamat: pasien.alamat || '-',
-                            stts_nikah: pasien.stts_nikah || '-',
-                            pekerjaan: pasien.pekerjaan || '-',
-                            agama: pasien.agama || '-',
-                            umur: pasien.umur || '-',
-                            kd_pj: pasien.kd_pj || '-'
-                        };
-                        
-                        // Panggil fungsi untuk menampilkan modal dengan data pasien
-                        window.showPatientDetails(patientData);
-                    } else {
-                        // Tampilkan pesan error jika data tidak ditemukan
+                    // Tampilkan pesan error yang lebih informatif dalam modal
+                    $('#patientName').text('Error');
+                    $('#patientRM').text('Gagal memuat data pasien');
+                    $('#patientKTP').text('-');
+                    $('#patientPhone').text('-');
+                    $('#patientDOB').text('-');
+                    $('#patientGender').text('-');
+                    $('#patientMaritalStatus').text('-');
+                    $('#patientJob').text('-');
+                    $('#patientReligion').text('-');
+                    $('#patientAddress').text('-');
+                    $('#patientAge').text('-');
+                    
+                    // Tampilkan detail error jika tersedia
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
                         Swal.fire({
                             title: 'Error!',
-                            text: 'Data pasien tidak ditemukan',
+                            text: xhr.responseJSON.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Gagal memuat data pasien. Silakan coba lagi.',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
                     }
-                })
-                .catch(error => {
-                    // Tutup loading spinner
-                    Swal.close();
-                    
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Terjadi kesalahan saat mengambil data pasien',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                });
+                }
+            });
         }
         
-        // Notifikasi saat menambahkan pasien baru
-        window.addEventListener('pasien-saved', event => {
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Data pasien berhasil disimpan',
-                icon: 'success',
-                confirmButtonText: 'OK'
-            });
-        });
-        
-        // Listen for search results from Livewire
-        window.addEventListener('searchResults', event => {
-            if (event.detail.count > 0) {
-                Swal.fire({
-                    title: 'Hasil Pencarian',
-                    text: 'Ditemukan ' + event.detail.count + ' data pasien',
-                    icon: 'info',
-                    confirmButtonText: 'OK'
-                });
+        // Fungsi untuk mengisi data di modal
+        function populatePatientModal(patient) {
+            $('#patientName').text(patient.nm_pasien || '-');
+            $('#patientRM').text('No. RM: ' + patient.no_rkm_medis || '-');
+            $('#patientKTP').text(patient.no_ktp || '-');
+            $('#patientPhone').text(patient.no_tlp || '-');
+            $('#patientDOB').text(patient.tgl_lahir || '-');
+            $('#patientGender').text(patient.jk === 'L' ? 'Laki-laki' : (patient.jk === 'P' ? 'Perempuan' : '-'));
+            $('#patientMaritalStatus').text(patient.stts_nikah || '-');
+            $('#patientJob').text(patient.pekerjaan || '-');
+            $('#patientReligion').text(patient.agama || '-');
+            $('#patientAddress').text(patient.alamat || '-');
+            
+            // Hitung dan tampilkan umur
+            if (patient.tgl_lahir) {
+                const birthDate = new Date(patient.tgl_lahir);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                $('#patientAge').text(age + ' tahun');
             } else {
-                Swal.fire({
-                    title: 'Hasil Pencarian',
-                    text: 'Tidak ada data pasien yang ditemukan',
-                    icon: 'warning',
-                    confirmButtonText: 'OK'
-                });
+                $('#patientAge').text('-');
             }
+            
+            // Set RM untuk tombol edit
+            $('#btnEditPasien').attr('href', '/data-pasien/' + patient.no_rkm_medis + '/edit');
+        }
+        
+        // Mencegah event propagation dari tombol-tombol aksi
+        $(document).on('click', '.btn-group button, .btn-group a', function(e) {
+            e.stopPropagation();
         });
     });
-
-    // Fungsi untuk export data ke Excel
+    
+    // Fungsi untuk export data
     function exportData() {
-        let name = document.querySelector('input[name="name"]')?.value || '';
-        let rm = document.querySelector('input[name="rm"]')?.value || '';
-        let address = document.querySelector('input[name="address"]')?.value || '';
-        
-        let url = "{{ route('pasien.export') }}?name=" + encodeURIComponent(name) + 
-                  "&rm=" + encodeURIComponent(rm) + 
-                  "&address=" + encodeURIComponent(address);
-        
-        window.location.href = url;
+        window.location.href = '/data-pasien/export';
     }
-
+    
     // Fungsi untuk cetak data
     function cetakData() {
-        let name = document.querySelector('input[name="name"]')?.value || '';
-        let rm = document.querySelector('input[name="rm"]')?.value || '';
-        let address = document.querySelector('input[name="address"]')?.value || '';
-        
-        let url = "{{ route('pasien.cetak') }}?name=" + encodeURIComponent(name) + 
-                  "&rm=" + encodeURIComponent(rm) + 
-                  "&address=" + encodeURIComponent(address);
-        
-        window.open(url, '_blank');
+        Swal.fire({
+            title: 'Cetak Data Pasien',
+            text: 'Untuk menghindari masalah memori, hanya 100 data teratas yang akan dicetak.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Lanjutkan',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Kirim parameter kosong untuk menghindari error "property name on null"
+                window.open('/data-pasien/cetak?name=&rm=&address=', '_blank');
+            }
+        });
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto refresh data pasien setelah ada data baru
-        window.addEventListener('pasien-saved', event => {
-            // Refresh component Livewire
-            Livewire.emit('refresh');
-            
-            // Tampilkan notifikasi
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: event.detail.message,
-                timer: 3000,
-                showConfirmButton: false
-            });
-        });
-        
-        // Listen to Livewire refresh event
-        Livewire.on('refreshPasienList', () => {
-            // Trigger component refresh
-            Livewire.emit('refresh');
-            console.log('Daftar pasien diperbarui.');
-        });
-    });
 </script>
 @stop

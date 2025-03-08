@@ -23,7 +23,7 @@ class FormPendaftaran extends Component
     public $no_rkm_medis;
     public $nm_pasien;
     public $no_ktp;
-    public $jk = 'LAKI-LAKI';
+    public $jk = 'L';
     public $tmp_lahir;
     public $tgl_lahir;
     public $nm_ibu;
@@ -44,12 +44,12 @@ class FormPendaftaran extends Component
     public $no_peserta;
     public $pekerjaanpj;
     public $alamatpj = 'ALAMAT';
-    public $suku_bangsa = 'JAWA';
-    public $bahasa_pasien = 'JAWA';
+    public $suku_bangsa = 5;
+    public $bahasa_pasien = 11;
     public $perusahaan_pasien = '-';
     public $email = 'pedot@gmail.com';
-    public $cacat_fisik = 'TIDAK ADA';
-    public $kd_pj;
+    public $cacat_fisik = 5;
+    public $kd_pj = '-';
     public $kelurahan = 'KELURAHAN';
     public $kecamatan = 'KECAMATAN';
     public $kabupaten = 'KABUPATEN';
@@ -162,6 +162,15 @@ public function generateNoRekamMedis()
             $this->tgl_daftar = date('Y-m-d');
             $this->tgl_lahir = date('Y-m-d');
             $this->nip = '0';
+            
+            // Set nilai default sesuai permintaan
+            $this->no_tlp = '081';
+            $this->no_peserta = '0000';
+            $this->no_kk = '0';
+            $this->kd_pj = '-'; // Nilai default untuk kd_pj
+            $this->suku_bangsa = 5; // ID untuk JAWA
+            $this->bahasa_pasien = 11; // ID untuk JAWA
+            $this->cacat_fisik = 5; // ID untuk TIDAK ADA
 
             // Initialize lists sebagai array kosong
             $this->penjab_list = [];
@@ -198,30 +207,33 @@ public function generateNoRekamMedis()
 
             $this->suku_bangsa_list = DB::table('suku_bangsa')
                 ->select('id', 'nama_suku_bangsa')
+                ->orderBy('nama_suku_bangsa')
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->id,
+                        'id' => (int)$item->id,
                         'nama_suku_bangsa' => $item->nama_suku_bangsa
                     ];
                 })->toArray();
 
             $this->bahasa_list = DB::table('bahasa_pasien')
                 ->select('id', 'nama_bahasa')
+                ->orderBy('nama_bahasa')
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->id,
+                        'id' => (int)$item->id,
                         'nama_bahasa' => $item->nama_bahasa
                     ];
                 })->toArray();
 
             $this->cacat_fisik_list = DB::table('cacat_fisik')
                 ->select('id', 'nama_cacat')
+                ->orderBy('nama_cacat')
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->id,
+                        'id' => (int)$item->id,
                         'nama_cacat' => $item->nama_cacat
                     ];
                 })->toArray();
@@ -425,9 +437,6 @@ public function generateNoRekamMedis()
                 'namakeluarga' => 'required'
             ]);
 
-            // Konversi JK
-            $jk_value = $this->jk === 'LAKI-LAKI' ? 'L' : 'P';
-
             // Hitung umur
             $this->hitungUmur();
             $umur = $this->umur_tahun . " Th " . 
@@ -439,7 +448,7 @@ public function generateNoRekamMedis()
                 'no_rkm_medis' => $this->no_rkm_medis,
                 'nm_pasien' => strtoupper($this->nm_pasien),
                 'no_ktp' => $this->no_ktp,
-                'jk' => $jk_value,
+                'jk' => $this->jk,
                 'tmp_lahir' => strtoupper($this->tmp_lahir),
                 'tgl_lahir' => $this->tgl_lahir,
                 'nm_ibu' => strtoupper($this->nm_ibu),
@@ -467,9 +476,9 @@ public function generateNoRekamMedis()
                 'kabupatenpj' => strtoupper($this->kabupatenpj),
                 'propinsipj' => strtoupper($this->propinsipj),
                 'perusahaan_pasien' => $this->perusahaan_pasien,
-                'suku_bangsa' => $this->suku_bangsa,
-                'bahasa_pasien' => $this->bahasa_pasien,
-                'cacat_fisik' => $this->cacat_fisik,
+                'suku_bangsa' => (int)$this->suku_bangsa,
+                'bahasa_pasien' => (int)$this->bahasa_pasien,
+                'cacat_fisik' => (int)$this->cacat_fisik,
                 'email' => strtolower($this->email),
                 'nip' => $this->nip ?: '0',
                 'no_kk' => $this->no_kk,

@@ -88,6 +88,9 @@
                                 <button id="manualRefreshBtn" class="btn btn-sm btn-success ml-2">
                                     <i class="fas fa-sync-alt"></i> Refresh Data
                                 </button>
+                                <a href="/register" class="btn btn-sm btn-info ml-2">
+                                    <i class="fas fa-user-plus"></i> Registrasi
+                                </a>
                             </div>
                         </div>
                     </div>

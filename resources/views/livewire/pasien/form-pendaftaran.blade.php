@@ -89,7 +89,6 @@
                                 <label><i class="fas fa-heartbeat"></i> Asuransi</label>
                                 @if(!empty($penjab_list))
                                 <select class="form-control" wire:model="kd_pj">
-                                    <option value="">- Pilih Asuransi -</option>
                                     @foreach($penjab_list as $penjab)
                                     <option value="{{ $penjab['kd_pj'] }}">{{ $penjab['png_jawab'] }}</option>
                                     @endforeach
@@ -101,7 +100,6 @@
                             <div class="form-group">
                                 <label><i class="fas fa-building"></i> Instansi</label>
                                 <select class="form-control" wire:model="perusahaan_pasien">
-                                    <option value="">- Pilih Instansi -</option>
                                     @foreach($perusahaan_list as $perusahaan)
                                     <option value="{{ $perusahaan['kode_perusahaan'] }}">{{
                                         $perusahaan['nama_perusahaan']
@@ -126,8 +124,8 @@
                             <div class="form-group">
                                 <label><i class="fas fa-venus-mars"></i> Jenis Kelamin</label>
                                 <select class="form-control" wire:model="jk">
-                                    <option value="LAKI-LAKI">LAKI-LAKI</option>
-                                    <option value="PEREMPUAN">PEREMPUAN</option>
+                                    <option value="L">LAKI-LAKI</option>
+                                    <option value="P">PEREMPUAN</option>
                                 </select>
                             </div>
                         </div>
@@ -265,7 +263,6 @@
                             <div class="form-group">
                                 <label><i class="fas fa-globe-asia"></i> Suku/Bangsa</label>
                                 <select class="form-control" wire:model="suku_bangsa">
-                                    <option value="">- Pilih Suku Bangsa -</option>
                                     @foreach($suku_bangsa_list as $suku)
                                     <option value="{{ $suku['id'] }}">{{ $suku['nama_suku_bangsa'] }}</option>
                                     @endforeach
@@ -276,7 +273,6 @@
                             <div class="form-group">
                                 <label><i class="fas fa-language"></i> Bahasa</label>
                                 <select class="form-control" wire:model="bahasa_pasien">
-                                    <option value="">- Pilih Bahasa -</option>
                                     @foreach($bahasa_list as $bahasa)
                                     <option value="{{ $bahasa['id'] }}">{{ $bahasa['nama_bahasa'] }}</option>
                                     @endforeach
@@ -287,7 +283,6 @@
                             <div class="form-group">
                                 <label><i class="fas fa-wheelchair"></i> Cacat Fisik</label>
                                 <select class="form-control" wire:model="cacat_fisik">
-                                    <option value="">- Pilih Cacat Fisik -</option>
                                     @foreach($cacat_fisik_list as $cacat)
                                     <option value="{{ $cacat['id'] }}">{{ $cacat['nama_cacat'] }}</option>
                                     @endforeach
