@@ -76,6 +76,9 @@ Route::middleware(['loginauth'])->group(function () {
         Route::get('/cetak', [App\Http\Controllers\PasienController::class, 'cetak'])->name('pasien.cetak');
     });
     
+    // Route untuk detail pasien (diluar prefix data-pasien agar tidak bentrok)
+    Route::get('/pasien/{no_rkm_medis}', [App\Http\Controllers\PasienController::class, 'show'])->name('pasien.show');
+    
     // Route untuk register
     Route::get('/register', [App\Http\Controllers\RegisterController::class, 'index'])->name('register');
     

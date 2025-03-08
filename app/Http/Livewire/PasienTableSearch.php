@@ -3,25 +3,57 @@
 namespace App\Http\Livewire;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\Pasien;
 use Illuminate\Support\Facades\DB;
 
 class PasienTableSearch extends Component
 {
+    use WithPagination;
+    
+    protected $paginationTheme = 'bootstrap';
+    
     public $searchName = '';
     public $searchRM = '';
     public $searchAddress = '';
-    public $results = [];
-    public $resultCount = 0;
+    public $perPage = 20;
     
-    protected $listeners = ['refresh' => '$refresh', 'refreshPasienList' => 'resetSearch'];
+    protected $listeners = ['refresh' => '$refresh'];
     
-    public function mount()
+    public function updatingSearchName()
     {
-        $this->resetSearch();
+        $this->resetPage();
+    }
+    
+    public function updatingSearchRM()
+    {
+        $this->resetPage();
+    }
+    
+    public function updatingSearchAddress()
+    {
+        $this->resetPage();
     }
     
     public function search()
+    {
+        // Pencarian akan otomatis dilakukan saat render()
+    }
+    
+    public function resetFilters()
+    {
+        $this->searchName = '';
+        $this->searchRM = '';
+        $this->searchAddress = '';
+        $this->resetPage();
+    }
+    
+    public function mount()
+    {
+        // Tidak perlu melakukan apa-apa, data akan otomatis dimuat di render()
+    }
+    
+    public function render()
     {
         $query = Pasien::query();
         
@@ -37,26 +69,10 @@ class PasienTableSearch extends Component
             $query->where('alamat', 'like', '%' . $this->searchAddress . '%');
         }
         
-        $this->results = $query->orderBy('tgl_daftar', 'desc')->limit(100)->get();
-        $this->resultCount = $this->results->count();
+        $pasien = $query->orderBy('tgl_daftar', 'desc')->paginate($this->perPage);
         
-        $this->dispatchBrowserEvent('searchResults', ['count' => $this->resultCount]);
-    }
-    
-    public function resetSearch()
-    {
-        $this->searchName = '';
-        $this->searchRM = '';
-        $this->searchAddress = '';
-        
-        $this->results = Pasien::orderBy('tgl_daftar', 'desc')->limit(100)->get();
-        $this->resultCount = $this->results->count();
-        
-        $this->dispatchBrowserEvent('searchResults', ['count' => $this->resultCount]);
-    }
-    
-    public function render()
-    {
-        return view('livewire.pasien-table-search');
+        return view('livewire.pasien-table-search', [
+            'pasien' => $pasien
+        ]);
     }
 }

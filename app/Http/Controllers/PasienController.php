@@ -14,8 +14,18 @@ class PasienController extends Controller
 {
     public function index()
     {
+        // Mengambil data dari database untuk menghindari kueri langsung di tampilan
+        $totalPasien = DB::table('pasien')->count();
+        $pasienBaru = DB::table('pasien')->orderBy('no_rkm_medis', 'desc')->limit(10)->count();
+        $kunjunganHariIni = DB::table('reg_periksa')->whereDate('tgl_registrasi', date('Y-m-d'))->count();
+        $pasienBPJS = DB::table('pasien')->where('kd_pj', 'BPJ')->count();
 
-        return view('pasien.index');
+        return view('pasien.index', [
+            'totalPasien' => $totalPasien,
+            'pasienBaru' => $pasienBaru,
+            'kunjunganHariIni' => $kunjunganHariIni,
+            'pasienBPJS' => $pasienBPJS
+        ]);
     }
 
     public function edit($no_rkm_medis)
@@ -209,17 +219,87 @@ class PasienController extends Controller
             $query->where('alamat', 'like', '%' . $search['address'] . '%');
         }
         
-        $pasien = $query->orderBy('tgl_daftar', 'desc')->limit(1000)->get();
+        // Batasi jumlah data yang diambil untuk menghindari memory exhausted
+        $pasien = $query->orderBy('tgl_daftar', 'desc')->limit(100)->get();
+        
+        // Hanya ambil kolom yang diperlukan untuk mengurangi penggunaan memori
+        $pasienData = $pasien->map(function($item) {
+            return [
+                'no_rkm_medis' => $item->no_rkm_medis,
+                'nm_pasien' => $item->nm_pasien,
+                'no_ktp' => $item->no_ktp,
+                'tgl_lahir' => $item->tgl_lahir,
+                'alamat' => $item->alamat,
+                'status' => $item->status
+            ];
+        });
+        
+        // Tingkatkan batas memori untuk proses PDF
+        ini_set('memory_limit', '512M');
         
         $pdf = PDF::loadView('pasien.cetak', [
-            'pasien' => $pasien,
+            'pasien' => $pasienData,
             'tanggal' => date('d-m-Y'),
-            'filter' => $search
+            'filter' => $search,
+            'user' => auth()->user() ?? (object)['name' => 'Admin'] // Memberikan fallback jika user tidak ada
         ]);
         
         // Mengatur ukuran kertas dan orientasi
         $pdf->setPaper('a4', 'landscape');
         
+        // Opsi untuk mengoptimalkan PDF
+        $pdf->setOption('isPhpEnabled', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', false);
+        
         return $pdf->stream('data-pasien-' . date('Y-m-d') . '.pdf');
+    }
+    
+    /**
+     * Menampilkan detail pasien berdasarkan nomor rekam medis
+     * 
+     * @param string $no_rkm_medis
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show($no_rkm_medis)
+    {
+        try {
+            // Log request untuk debugging
+            \Log::info('PasienController - show: Mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis
+            ]);
+            
+            $pasien = DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->first();
+            
+            if (!$pasien) {
+                // Log jika pasien tidak ditemukan
+                \Log::warning('PasienController - show: Pasien tidak ditemukan', [
+                    'no_rkm_medis' => $no_rkm_medis
+                ]);
+                
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Data pasien tidak ditemukan'
+                ], 404);
+            }
+            
+            // Log sukses
+            \Log::info('PasienController - show: Berhasil mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis
+            ]);
+            
+            return response()->json($pasien);
+        } catch (\Exception $e) {
+            // Log error
+            \Log::error('PasienController - show: Gagal mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'error' => true,
+                'message' => 'Gagal mengambil data pasien: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
