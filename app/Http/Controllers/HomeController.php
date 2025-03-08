@@ -121,6 +121,6 @@ class HomeController extends Controller
     public function logout()
     {
         Session::flush();
-        return redirect()->route('login');
+        return response()->view('logout_cleanup');
     }
 }

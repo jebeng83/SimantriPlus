@@ -101,6 +101,8 @@ Route::middleware(['loginauth'])->group(function () {
     // Route Menu Ralan
     Route::prefix('ralan')->group(function () {
         Route::get('/pasien', [App\Http\Controllers\Ralan\PasienRalanController::class, 'index'])->name('ralan.pasien');
+        Route::get('/refresh-data', [App\Http\Controllers\Ralan\PasienRalanController::class, 'getDataForRefresh'])->name('ralan.refresh-data');
+        Route::get('/listen-new-patients', [App\Http\Controllers\Ralan\PasienRalanController::class, 'listenForNewPatients'])->name('ralan.listen-new-patients');
         Route::get('/pemeriksaan', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'index'])->name('ralan.pemeriksaan');
         Route::get('/rujuk-internal', [App\Http\Controllers\Ralan\RujukInternalPasien::class, 'index'])->name('ralan.rujuk-internal');
         Route::get('/obat', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getObat'])->name('ralan.obat');

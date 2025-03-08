@@ -1,0 +1,110 @@
+/* Blue theme for navbar and sidebar */
+:root {
+    --blue-primary: #2196F3;
+    --blue-secondary: #1976D2;
+    --blue-accent: #64B5F6;
+    --blue-light: #BBDEFB;
+    --blue-gradient: linear-gradient(to right, #2196F3, #1976D2);
+    --blue-gradient-vertical: linear-gradient(180deg, #2196F3 0%, #1976D2 100%);
+}
+
+/* Override navbar colors */
+.navbar-primary,
+.bg-primary,
+.navbar-dark,
+.bg-gradient-primary,
+.main-header,
+.main-header .navbar {
+    background: var(--blue-gradient) !important;
+    border: none !important;
+}
+
+/* Override sidebar colors */
+.sidebar-dark-primary,
+.bg-gradient-primary,
+.sidebar,
+.main-sidebar,
+[class*="sidebar-dark"] {
+    background: var(--blue-gradient-vertical) !important;
+}
+
+/* Override AdminLTE specific classes */
+.navbar-white {
+    background: var(--blue-gradient) !important;
+    color: white !important;
+}
+
+.navbar-white .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-white .navbar-nav .nav-link:hover {
+    color: white !important;
+}
+
+/* Style buttons */
+.btn-primary {
+    background: var(--blue-primary) !important;
+    border-color: var(--blue-primary) !important;
+}
+
+.btn-primary:hover {
+    background: var(--blue-secondary) !important;
+    border-color: var(--blue-secondary) !important;
+}
+
+/* Style links */
+a {
+    color: var(--blue-primary);
+}
+
+a:hover {
+    color: var(--blue-secondary);
+}
+
+/* Page headers */
+.content-header h1 {
+    color: var(--blue-secondary);
+}
+
+/* Force all navbar links to be white */
+.navbar-dark .navbar-nav .nav-link,
+.navbar-primary .navbar-nav .nav-link,
+.bg-primary .navbar-nav .nav-link,
+.main-header .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-primary .navbar-nav .nav-link:hover,
+.bg-primary .navbar-nav .nav-link:hover,
+.main-header .navbar-nav .nav-link:hover {
+    color: white !important;
+}
+
+/* Force sidebar links to be white */
+.sidebar a,
+.main-sidebar a,
+.sidebar-dark-primary a,
+[class*="sidebar-dark"] a {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.sidebar a:hover,
+.main-sidebar a:hover,
+.sidebar-dark-primary a:hover,
+[class*="sidebar-dark"] a:hover {
+    color: white !important;
+}
+
+/* Style brand logo area */
+.brand-link,
+.main-sidebar .brand-link {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Force brand text to be white */
+.brand-text,
+.brand-link .brand-text {
+    color: white !important;
+} 

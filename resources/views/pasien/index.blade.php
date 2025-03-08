@@ -645,5 +645,29 @@
         
         window.open(url, '_blank');
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto refresh data pasien setelah ada data baru
+        window.addEventListener('pasien-saved', event => {
+            // Refresh component Livewire
+            Livewire.emit('refresh');
+            
+            // Tampilkan notifikasi
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: event.detail.message,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        });
+        
+        // Listen to Livewire refresh event
+        Livewire.on('refreshPasienList', () => {
+            // Trigger component refresh
+            Livewire.emit('refresh');
+            console.log('Daftar pasien diperbarui.');
+        });
+    });
 </script>
 @stop

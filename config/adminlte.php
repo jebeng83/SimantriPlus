@@ -137,14 +137,14 @@ return [
     */
 
     'classes_body' => '',
-    'classes_brand' => '',
+    'classes_brand' => 'bg-primary',
     'classes_brand_text' => '',
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-success elevation-4',
+    'classes_sidebar' => 'sidebar-dark-primary elevation-4',
     'classes_sidebar_nav' => '',
-    'classes_topnav' => 'navbar-success navbar-dark',
+    'classes_topnav' => 'navbar-primary navbar-dark',
     'classes_topnav_nav' => 'navbar-expand',
     'classes_topnav_container' => 'container',
 
@@ -639,4 +639,19 @@ return [
     */
 
     'livewire' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | CSS Stylesheets
+    |--------------------------------------------------------------------------
+    |
+    | Here you can specify the CSS stylesheets that should be loaded along with
+    | AdminLTE. Feel free to add your own styles, or customize the default ones.
+    |
+    */
+
+    'css' => [
+        'css/adminlte-premium.css',
+        'css/blue-theme.css',
+    ],
 ];

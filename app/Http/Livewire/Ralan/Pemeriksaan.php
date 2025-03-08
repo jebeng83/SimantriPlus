@@ -12,7 +12,7 @@ class Pemeriksaan extends Component
     use SwalResponse, LivewireAlert;
     public $listPemeriksaan, $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
     public $tgl, $jam;
-    public $listeners = ['refreshData' => '$refresh', 'hapusPemeriksaan' => 'hapus'];
+    public $listeners = ['refreshData' => '$refresh', 'hapusPemeriksaan' => 'hapus', 'updateStatus' => 'updateStatusPasien'];
 
     public function mount($noRawat, $noRm)
     {
@@ -138,10 +138,21 @@ EXT : Oedem -/-';
                     'jam_rawat' => date('H:i:s'),
                     'nip' => session()->get('username'),
                 ]);
+            
+            DB::table('reg_periksa')
+                ->where('no_rawat', $this->noRawat)
+                ->update(['stts' => 'Sudah']);
 
             DB::commit();
             $this->getListPemeriksaan();
-            // $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Pemeriksaan berhasil ditambahkan'));
+            
+            $this->alert('success', 'Pemeriksaan berhasil disimpan dan status pasien telah diupdate', [
+                'position' =>  'center',
+                'timer' =>  3000,
+                'toast' =>  false,
+            ]);
+            
+            $this->emit('refreshData');
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
@@ -182,6 +193,33 @@ EXT : Oedem -/-';
                 'timer' =>  3000,
                 'toast' =>  false,
                 'text' =>  $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Update status pasien menjadi "Sudah"
+     * Dapat dipanggil dari komponen lain
+     * 
+     * @return void
+     */
+    public function updateStatusPasien()
+    {
+        try {
+            DB::table('reg_periksa')
+                ->where('no_rawat', $this->noRawat)
+                ->update(['stts' => 'Sudah']);
+            
+            $this->alert('success', 'Status pasien berhasil diupdate menjadi Sudah', [
+                'position' =>  'center',
+                'timer' =>  3000,
+                'toast' =>  false,
+            ]);
+        } catch (\Exception $e) {
+            $this->alert('error', 'Gagal mengupdate status pasien: ' . $e->getMessage(), [
+                'position' =>  'center',
+                'timer' =>  3000,
+                'toast' =>  false,
             ]);
         }
     }

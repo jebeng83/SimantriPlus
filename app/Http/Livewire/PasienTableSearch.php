@@ -14,7 +14,7 @@ class PasienTableSearch extends Component
     public $results = [];
     public $resultCount = 0;
     
-    protected $listeners = ['refresh' => '$refresh'];
+    protected $listeners = ['refresh' => '$refresh', 'refreshPasienList' => 'resetSearch'];
     
     public function mount()
     {
