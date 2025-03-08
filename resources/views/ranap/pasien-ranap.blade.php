@@ -6,21 +6,32 @@
 <div class="ranap-header premium-header">
     <div class="header-content">
         <h1 class="ranap-title">Pasien Rawat Inap</h1>
-        <p class="ranap-subtitle">Daftar Pasien yang Sedang Dirawat</p>
+        <p class="ranap-subtitle">
+            Daftar Pasien yang Sedang Dirawat
+            @if(isset($dokter_login))
+            <span class="dokter-login-badge"><i class="fas fa-user-md mr-1"></i> Dr. {{ $dokter_login->nm_dokter
+                }}</span>
+            @endif
+        </p>
     </div>
     <div class="header-actions">
         <div class="quick-stats">
-            <div class="stat-item">
+            <div class="stat-item stat-item-total">
                 <span class="stat-value">{{ count($data) }}</span>
                 <span class="stat-label">Total Pasien</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value">{{ collect($data)->where('nm_bangsal', 'MELATI')->count() }}</span>
-                <span class="stat-label">Bangsal Melati</span>
+            <!-- Statistik Pembayaran -->
+            <div class="stat-item stat-item-bpjs">
+                <span class="stat-value">{{ $bpjs_count }}</span>
+                <span class="stat-label">BPJS</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value">{{ collect($data)->where('nm_bangsal', '!=', 'MELATI')->count() }}</span>
-                <span class="stat-label">Bangsal Lain</span>
+            <div class="stat-item stat-item-umum">
+                <span class="stat-value">{{ $umum_count }}</span>
+                <span class="stat-label">Umum</span>
+            </div>
+            <div class="stat-item stat-item-lain">
+                <span class="stat-value">{{ $lain_count }}</span>
+                <span class="stat-label">Asuransi Lain</span>
             </div>
         </div>
     </div>
@@ -65,9 +76,6 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="room-number">{{$row->kd_kamar}}</span>
-                            </td>
-                            <td>
                                 <span class="date-badge">
                                     <i class="fas fa-calendar-check mr-1"></i>
                                     {{$row->tgl_masuk}}
@@ -79,6 +87,12 @@
                                         @elseif($row->png_jawab == 'UMUM') umum 
                                         @else other @endif">
                                     {{$row->png_jawab}}
+                                </span>
+                            </td>
+                            <td class="nowrap">
+                                <span class="los-badge @if($row->lama_dirawat > 5) long-stay @endif">
+                                    <i class="fas fa-hourglass-half mr-1"></i>
+                                    <strong>{{$row->lama_dirawat}} hari</strong>
                                 </span>
                             </td>
                         </tr>
@@ -96,6 +110,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap"
     rel="stylesheet">
 <style>
+    /* Variables */
     :root {
         --premium-gradient: linear-gradient(135deg, #233292 0%, #4F5BDA 100%);
         --premium-shadow: 0 10px 30px rgba(35, 50, 146, 0.15);
@@ -103,18 +118,20 @@
         --premium-font-heading: 'Playfair Display', serif;
     }
 
+    /* Base */
     body {
         background-color: #f7f9fc;
     }
 
-    /* Premium Header */
+    /* Header */
     .premium-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 1rem 0;
-        margin-bottom: 2rem;
+        align-items: flex-start;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
         position: relative;
+        flex-wrap: wrap;
     }
 
     .premium-header::before {
@@ -129,13 +146,15 @@
         z-index: -1;
     }
 
-    .premium-header .header-content {
+    .header-content {
         position: relative;
+        margin-bottom: 1rem;
+        width: 100%;
     }
 
     .ranap-title {
         font-family: var(--premium-font-heading);
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 600;
         color: #233292;
         margin-bottom: 0.3rem;
@@ -155,15 +174,33 @@
     }
 
     .ranap-subtitle {
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: #4a5568;
         font-weight: 400;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
-    /* Quick Stats */
+    .dokter-login-badge {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 15px;
+        background: rgba(79, 91, 218, 0.1);
+        color: #233292;
+        padding: 0.3rem 0.7rem;
+        border-radius: 30px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* Stats */
     .quick-stats {
         display: flex;
-        gap: 1.5rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .stat-item {
@@ -171,9 +208,11 @@
         flex-direction: column;
         align-items: center;
         background: white;
-        padding: 0.75rem 1.5rem;
+        padding: 0.6rem 1rem;
         border-radius: 10px;
-        min-width: 120px;
+        min-width: 100px;
+        flex: 1;
+        max-width: calc(50% - 0.5rem);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         transition: all 0.3s ease;
     }
@@ -184,24 +223,51 @@
     }
 
     .stat-value {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: 700;
         color: #2d3748;
         font-family: var(--premium-font-heading);
     }
 
     .stat-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #718096;
         font-weight: 500;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
-    /* Premium Container */
+    .stat-item-total {
+        background: var(--premium-gradient);
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .stat-item-total .stat-value,
+    .stat-item-total .stat-label {
+        color: white;
+    }
+
+    .stat-item-bpjs .stat-value {
+        color: #38A169;
+    }
+
+    .stat-item-umum .stat-value {
+        color: #E65A2C;
+    }
+
+    .stat-item-lain .stat-value {
+        color: #3182CE;
+    }
+
+    /* Container & Card */
     .premium-container {
-        padding: 0 1.5rem 2rem;
+        padding: 0 1rem 1.5rem;
     }
 
-    /* Premium Card */
     .premium-card {
         border-radius: var(--premium-border-radius);
         box-shadow: var(--premium-shadow);
@@ -223,22 +289,24 @@
     }
 
     .ranap-card-body {
-        padding: 2rem;
+        padding: 1rem;
     }
 
-    /* Table Styles */
+    /* Table */
     .ranap-table-wrapper {
-        padding: 1.5rem;
+        padding: 1rem;
+        overflow-x: auto;
     }
 
     .ranap-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        min-width: 650px;
     }
 
     .ranap-table thead th {
-        background-color: rgba(247, 250, 252, 0.8);
+        background-color: #f0f3fa;
         color: #233292;
         font-weight: 600;
         text-transform: uppercase;
@@ -281,7 +349,7 @@
         border-bottom: none;
     }
 
-    /* Patient Name Styling */
+    /* Patient Name */
     .patient-name {
         display: flex;
         align-items: center;
@@ -321,12 +389,7 @@
         color: white;
     }
 
-    .patient-fullname {
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-
-    /* Medical Record Styling */
+    /* Medical Record */
     .medical-record {
         font-family: 'Courier New', monospace;
         font-weight: 600;
@@ -337,7 +400,7 @@
         border: 1px solid #edf2f7;
     }
 
-    /* Ward Badge Styling */
+    /* Ward Badge */
     .ward-badge {
         display: inline-flex;
         align-items: center;
@@ -349,13 +412,13 @@
         font-size: 0.85rem;
     }
 
-    /* Room Number Styling */
+    /* Room Number */
     .room-number {
         font-weight: 600;
         color: #4a5568;
     }
 
-    /* Date Badge Styling */
+    /* Date Badge */
     .date-badge {
         display: inline-flex;
         align-items: center;
@@ -368,7 +431,35 @@
         margin-right: 0.35rem;
     }
 
-    /* Insurance Badge Styling */
+    /* Length of Stay Badge */
+    .los-badge {
+        display: inline-flex;
+        align-items: center;
+        color: #718096;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        font-weight: 500;
+        background-color: rgba(79, 91, 218, 0.1);
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+
+    .los-badge i {
+        color: #4F5BDA;
+        margin-right: 0.35rem;
+    }
+
+    .los-badge.long-stay {
+        color: #e53e3e;
+        font-weight: 600;
+        background-color: rgba(229, 62, 62, 0.1);
+    }
+
+    .los-badge.long-stay i {
+        color: #e53e3e;
+    }
+
+    /* Insurance Badge */
     .insurance-badge {
         display: inline-block;
         padding: 0.35rem 0.75rem;
@@ -395,6 +486,22 @@
         color: white;
     }
 
+    /* Utility */
+    .nowrap {
+        white-space: nowrap !important;
+        text-align: center !important;
+    }
+
+    /* DataTables customization */
+    .dataTable {
+        width: 100% !important;
+    }
+
+    .dataTable th,
+    .dataTable td {
+        display: table-cell !important;
+    }
+
     /* Animations */
     @keyframes fadeInUp {
         from {
@@ -413,38 +520,132 @@
     }
 
     .stat-item:nth-child(1) {
-        animation: fadeInUp 0.4s ease forwards;
+        animation: fadeInUp 0.42s ease forwards;
     }
 
     .stat-item:nth-child(2) {
-        animation: fadeInUp 0.5s ease forwards;
+        animation: fadeInUp 0.44s ease forwards;
     }
 
     .stat-item:nth-child(3) {
-        animation: fadeInUp 0.6s ease forwards;
+        animation: fadeInUp 0.46s ease forwards;
     }
 
-    /* Responsive Styles */
-    @media (max-width: 768px) {
+    .stat-item:nth-child(4) {
+        animation: fadeInUp 0.48s ease forwards;
+    }
+
+    .stat-item:nth-child(5) {
+        animation: fadeInUp 0.50s ease forwards;
+    }
+
+    /* Responsive */
+    @media (min-width: 768px) {
         .premium-header {
+            flex-wrap: nowrap;
+            align-items: center;
+            padding: 1rem 1.5rem;
+        }
+
+        .header-content {
+            margin-bottom: 0;
+            width: auto;
+        }
+
+        .quick-stats {
+            justify-content: flex-end;
+        }
+
+        .stat-item {
+            max-width: 120px;
+        }
+
+        .stat-item-total {
+            max-width: 150px;
+            width: auto;
+        }
+
+        .ranap-table-wrapper {
+            padding: 1.5rem;
+        }
+
+        .ranap-card-body {
+            padding: 1.5rem;
+        }
+
+        .premium-container {
+            padding: 0 1.5rem 2rem;
+        }
+
+        .ranap-title {
+            font-size: 2.2rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter {
+            width: auto;
+            margin-bottom: 0;
+        }
+
+        .dataTables_wrapper .dataTables_length {
+            width: auto;
+            margin-bottom: 0;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .premium-header {
+            padding: 1rem;
+        }
+
+        .dokter-login-badge {
+            margin-left: 0;
+            margin-top: 0.5rem;
+        }
+
+        .ranap-subtitle {
             flex-direction: column;
             align-items: flex-start;
         }
 
-        .quick-stats {
-            margin-top: 1.5rem;
-            width: 100%;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-        }
-
-        .stat-item {
-            min-width: 110px;
-        }
-
         .ranap-table thead th,
         .ranap-table tbody td {
-            padding: 0.75rem;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .patient-name {
+            padding: 0.25rem;
+        }
+
+        .patient-name i {
+            width: 28px;
+            height: 28px;
+            margin-right: 0.5rem;
+        }
+
+        .insurance-badge,
+        .ward-badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .d-flex.justify-content-between {
+            flex-direction: column;
+        }
+
+        .d-flex.justify-content-between>* {
+            margin-bottom: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stat-item {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .dataTables_paginate .paginate_button {
+            padding: 0.3em 0.6em !important;
         }
     }
 </style>
@@ -459,7 +660,7 @@
             $('#tablePasienRanap').DataTable().destroy();
         }
         
-        // Initialize DataTable with premium settings
+        // Initialize DataTable
         $('#tablePasienRanap').DataTable({
             responsive: true,
             language: {
@@ -479,8 +680,28 @@
             dom: '<"d-flex justify-content-between align-items-center mb-4"fl>t<"d-flex justify-content-between align-items-center mt-4"ip>',
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
+            order: [[2, 'asc']], // Urutkan berdasarkan kamar (kolom indeks 2)
+            columnDefs: [
+                {
+                    targets: 5, // Index kolom Lama Dirawat
+                    className: 'dt-body-center dt-head-center',
+                    visible: true,
+                    type: 'num',
+                    render: function(data, type, row) {
+                        // Ekstrak angka dari string "XX hari"
+                        if (type === 'sort' || type === 'type') {
+                            var match = $(data).text().match(/(\d+)/);
+                            return match ? parseInt(match[1]) : 0;
+                        }
+                        return data;
+                    }
+                },
+                {
+                    targets: 2, // Index kolom Kamar
+                    className: 'dt-body-center dt-head-center'
+                }
+            ],
             drawCallback: function() {
-                // Animate table rows
                 animateTableRows();
             },
             initComplete: function() {
@@ -526,12 +747,6 @@
             setInterval(function() {
                 refreshData();
             }, 30000); // 30 detik
-            
-            // Listen untuk event pasien-saved dari halaman lain
-            window.addEventListener('pasien-saved', function(event) {
-                console.log('Mendeteksi pasien baru disimpan, memperbarui daftar...');
-                refreshData();
-            });
         }
         
         // Fungsi untuk memperbarui data tabel
@@ -552,6 +767,14 @@
                     // Update tbody tanpa merender ulang seluruh tabel
                     $('#tablePasienRanap tbody').html(newHtml);
                     
+                    // Pastikan kolom lama dirawat mendapatkan styling yang benar
+                    $('#tablePasienRanap .los-badge').each(function() {
+                        const lamaDirawat = parseInt($(this).text().match(/\d+/)[0]);
+                        if (lamaDirawat > 5) {
+                            $(this).addClass('long-stay');
+                        }
+                    });
+                    
                     // Terapkan kembali pencarian dan pagination
                     const dataTable = $('#tablePasienRanap').DataTable();
                     dataTable.search(currentSearch).draw();
@@ -559,6 +782,9 @@
                     
                     // Terapkan kembali animasi
                     animateTableRows();
+                    
+                    // Update juga informasi statistik
+                    updateStats();
                     
                     console.log('Data telah diperbarui');
                 },
@@ -568,18 +794,37 @@
             });
         }
         
+        // Fungsi untuk memperbarui statistik
+        function updateStats() {
+            $.ajax({
+                url: window.location.href,
+                method: 'GET',
+                dataType: 'html',
+                success: function(response) {
+                    // Update total pasien
+                    const totalPasien = $(response).find('.stat-item-total .stat-value').text();
+                    $('.stat-item-total .stat-value').text(totalPasien);
+                    
+                    // Update cara bayar
+                    const bpjsCount = $(response).find('.stat-item-bpjs .stat-value').text();
+                    const umumCount = $(response).find('.stat-item-umum .stat-value').text();
+                    const lainCount = $(response).find('.stat-item-lain .stat-value').text();
+                    
+                    $('.stat-item-bpjs .stat-value').text(bpjsCount);
+                    $('.stat-item-umum .stat-value').text(umumCount);
+                    $('.stat-item-lain .stat-value').text(lainCount);
+                    
+                    // Update dokter login badge juga
+                    const dokterLoginBadge = $(response).find('.dokter-login-badge').html();
+                    if (dokterLoginBadge) {
+                        $('.dokter-login-badge').html(dokterLoginBadge);
+                    }
+                }
+            });
+        }
+        
         // Inisialisasi auto refresh
         setupAutoRefresh();
-        
-        // Add hover effects to patient rows
-        $('.ranap-table tbody tr').hover(
-            function() {
-                $(this).find('.patient-name i').css('transform', 'scale(1.1)');
-            },
-            function() {
-                $(this).find('.patient-name i').css('transform', 'scale(1)');
-            }
-        );
     });
 </script>
 @stop
