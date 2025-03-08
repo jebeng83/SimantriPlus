@@ -1,0 +1,503 @@
+/* Ralan Premium Styles */
+:root {
+    --primary-color: #233292;
+    --secondary-color: #1a2570;
+    --accent-color: #4f5bda;
+    --success-color: #28a745;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --white-color: #ffffff;
+    --border-radius: 8px;
+    --card-shadow: 0 0.25rem 1.5rem rgba(0, 0, 0, 0.1);
+    --hover-transition: all 0.3s ease;
+}
+
+/* Container styles */
+.ralan-container {
+    padding: 1.5rem;
+    background-color: #f7f9fc;
+    overflow: visible !important;
+}
+
+/* Header styles */
+.ralan-header {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.ralan-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.ralan-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 60px;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 10px;
+}
+
+.ralan-subtitle {
+    color: #718096;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+/* Card styles */
+.ralan-card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    border: none;
+    transition: var(--hover-transition);
+    overflow: visible !important;
+}
+
+.ralan-card:hover {
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.15);
+}
+
+.ralan-card-header {
+    padding: 1.25rem 1.5rem;
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ralan-card-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.ralan-card-body {
+    padding: 1.5rem;
+    overflow: visible !important;
+}
+
+/* Tab styles */
+.ralan-tabs {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.ralan-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.ralan-tab {
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    color: #718096;
+    position: relative;
+    cursor: pointer;
+    transition: var(--hover-transition);
+    white-space: nowrap;
+}
+
+.ralan-tab:hover {
+    color: var(--primary-color);
+}
+
+.ralan-tab.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.ralan-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background-color: var(--primary-color);
+}
+
+/* Table styles */
+.ralan-table-wrapper {
+    border-radius: var(--border-radius);
+    overflow: visible !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.ralan-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 0;
+}
+
+.ralan-table thead th {
+    background-color: #f8fafc;
+    color: var(--primary-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #edf2f7;
+    position: relative;
+}
+
+.ralan-table thead th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent-color) 0%, rgba(237, 242, 247, 0) 100%);
+    opacity: 0.5;
+}
+
+.ralan-table tbody tr {
+    transition: var(--hover-transition);
+}
+
+.ralan-table tbody tr:hover {
+    background-color: rgba(247, 250, 252, 0.7);
+}
+
+.ralan-table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #edf2f7;
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+.ralan-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Add these status modifier classes for rows */
+.ralan-table tbody tr.completed {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.ralan-table tbody tr.completed:hover {
+    background-color: rgba(40, 167, 69, 0.15);
+}
+
+.ralan-table tbody tr.completed td {
+    color: #2f855a;
+}
+
+/* Buttons styles */
+.ralan-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--hover-transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ralan-btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.ralan-btn-primary:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ralan-btn-outline {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.ralan-btn-outline:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.ralan-btn-icon {
+    margin-right: 0.5rem;
+}
+
+/* Date picker styles */
+.ralan-date-picker {
+    position: relative;
+    max-width: 300px;
+}
+
+.ralan-date-picker .input-group {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.ralan-date-picker input {
+    border: 1px solid #e2e8f0;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    color: #4a5568;
+    transition: var(--hover-transition);
+    border-top-left-radius: var(--border-radius);
+    border-bottom-left-radius: var(--border-radius);
+    border-right: none;
+}
+
+.ralan-date-picker input:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: var(--primary-color);
+}
+
+.ralan-date-picker .input-group-append .btn {
+    border-top-right-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+    border: 1px solid var(--primary-color);
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.6rem 1rem;
+}
+
+/* Dropdown styling */
+.ralan-dropdown {
+    position: relative;
+    z-index: 5;
+}
+
+.ralan-dropdown-toggle {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.6rem 1rem;
+    border-radius: var(--border-radius);
+    color: #4a5568;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--hover-transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 160px;
+    position: relative;
+}
+
+.ralan-dropdown-toggle:hover,
+.ralan-dropdown-toggle:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(79, 91, 218, 0.1);
+}
+
+.ralan-dropdown-toggle::after {
+    content: "";
+    display: inline-block;
+    margin-left: 0.5rem;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+}
+
+.ralan-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    transform: translateY(10px);
+    overflow: visible;
+}
+
+.ralan-dropdown.show .ralan-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.ralan-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    clear: both;
+    font-weight: 400;
+    color: #4a5568;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--hover-transition);
+}
+
+.ralan-dropdown-item:hover {
+    background-color: #f8fafc;
+    color: var(--primary-color);
+}
+
+/* Patient name styling */
+.patient-name {
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.patient-name:hover {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+tr.completed .patient-name {
+    color: #2f855a;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-badge.pending {
+    background-color: rgba(237, 137, 54, 0.15);
+    color: #c05621;
+}
+
+.status-badge.completed {
+    background-color: rgba(72, 187, 120, 0.15);
+    color: #2f855a;
+}
+
+/* Modal styles */
+.ralan-modal .modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ralan-modal .modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border-bottom: 0;
+    padding: 1.25rem 1.5rem;
+}
+
+.ralan-modal .modal-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+
+.ralan-modal .modal-body {
+    padding: 1.5rem;
+}
+
+.ralan-modal .modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.5rem;
+}
+
+/* DataTable specific fixes */
+.dataTables_wrapper {
+    position: static !important;
+}
+
+.dataTables_wrapper .row {
+    position: relative;
+}
+
+/* Fix table overflow issues */
+.ralan-table-wrapper {
+    border-radius: var(--border-radius);
+    overflow: visible !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.ralan-card-body {
+    overflow: visible !important;
+}
+
+/* Memastikan semua container memiliki overflow yang benar */
+.ralan-container, 
+.ralan-card,
+.tab-content,
+.tab-pane {
+    overflow: visible !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .ralan-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+    
+    .ralan-tab {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .ralan-table-wrapper {
+        overflow-x: auto;
+    }
+    
+    .ralan-date-picker {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Memastikan dropdown tetap terlihat pada tampilan mobile */
+    .ralan-dropdown-menu {
+        z-index: 1060;
+        position: fixed;
+        left: 50%;
+        transform: translateY(10px) translateX(-50%);
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    .ralan-dropdown.show .ralan-dropdown-menu {
+        transform: translateY(0) translateX(-50%);
+    }
+} 

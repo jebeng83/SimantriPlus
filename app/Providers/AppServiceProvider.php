@@ -27,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Menambahkan CSS premium secara global
+        \Illuminate\Support\Facades\View::composer('adminlte::page', function ($view) {
+            $view->with('adminlte_css', 'layouts.global-styles');
+        });
+        
+        // Kode boot yang sudah ada
     }
 }

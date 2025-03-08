@@ -6,10 +6,8 @@
         <div class="input-group">
 
             {{-- Search input --}}
-            <input class="form-control form-control-sidebar" type="search"
-                @isset($item['id']) id="{{ $item['id'] }}" @endisset
-                name="{{ $item['input_name'] }}"
-                placeholder="{{ $item['text'] }}"
+            <input class="form-control form-control-sidebar" type="search" @isset($item['id']) id="{{ $item['id'] }}"
+                @endisset name="{{ $item['input_name'] }}" placeholder="{{ $item['text'] }}"
                 aria-label="{{ $item['text'] }}">
 
             {{-- Search button --}}

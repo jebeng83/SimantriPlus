@@ -23,7 +23,7 @@ class LoginController extends Controller
             "actionsBox" => true,
         ];
         $poli = DB::table('poliklinik')->where('status', '1')->get();
-        return view('auth.login',['poli'=>$poli, 'config'=>$config]);
+        return view('auth.login-premium',['poli'=>$poli, 'config'=>$config]);
     }
 
     public function customLogin(Request $request)

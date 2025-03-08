@@ -491,6 +491,13 @@ public function generateNoRekamMedis()
             
             session()->flash('message', 'Data pasien berhasil disimpan.');
             $this->emit('showNotification');
+            
+            // Emit event untuk memperbarui daftar pasien
+            $this->emit('refreshPasienList');
+            $this->emit('refresh');
+            
+            // Dispatch browser event untuk refresh data jika menggunakan Alpine.js atau JavaScript murni
+            $this->dispatchBrowserEvent('pasien-saved', ['message' => 'Data pasien berhasil disimpan']);
 
         } catch (\Exception $e) {
             DB::rollback();

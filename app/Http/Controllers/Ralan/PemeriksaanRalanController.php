@@ -31,6 +31,7 @@ class PemeriksaanRalanController extends Controller
         $dokter = session()->get('username');
         $noRawat = Request::get('no_rawat');
         $noRM = Request::get('no_rm');
+        
         return view('ralan.pemeriksaan-ralan');
     }
 
