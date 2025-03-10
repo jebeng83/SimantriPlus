@@ -57,11 +57,44 @@ EXT : Oedem -/-';
         $this->getListPemeriksaan();
     }
 
+    /**
+     * Helper untuk mendekode no_rawat
+     *
+     * @param string $noRawat
+     * @return string
+     */
+    private function decodeNoRawat($noRawat)
+    {
+        // Jika tidak ada parameter atau tidak ada karakter %, kembalikan nilai asli
+        if (!$noRawat || strpos($noRawat, '%') === false) {
+            return $noRawat;
+        }
+        
+        $decodedNoRawat = $noRawat;
+        $urlDecoded = urldecode($noRawat);
+        
+        // Coba base64 decode
+        try {
+            $base64Decoded = base64_decode($urlDecoded);
+            if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
+                $decodedNoRawat = $base64Decoded;
+                \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode: ' . $decodedNoRawat);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat: ' . $e->getMessage());
+        }
+        
+        return $decodedNoRawat;
+    }
+
     public function getListPemeriksaan()
     {
+        // Dekode no_rawat
+        $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
+    
         $this->listPemeriksaan = DB::table('pemeriksaan_ralan')
             ->join('pegawai', 'pemeriksaan_ralan.nip', '=', 'pegawai.nik')
-            ->where('no_rawat', $this->noRawat)
+            ->where('no_rawat', $decodedNoRawat)
             ->select('pemeriksaan_ralan.*', 'pegawai.nama')
             ->get();
     }
@@ -78,6 +111,9 @@ EXT : Oedem -/-';
 
     public function getPemeriksaan()
     {
+        // Dekode no_rawat
+        $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
+    
         $data = DB::table('pasien')
             ->join('pemeriksaan_ralan', 'pasien.no_rkm_medis', '=', 'pemeriksaan_ralan.no_rawat')
             ->where('pasien.no_rkm_medis', $this->noRm)
@@ -86,7 +122,7 @@ EXT : Oedem -/-';
             ->first();
 
         $pemeriksaan = DB::table('pemeriksaan_ralan')
-            ->where('no_rawat', $this->noRawat)
+            ->where('no_rawat', $decodedNoRawat)
             ->orderBy('jam_rawat', 'desc')
             ->first();
         if ($pemeriksaan) {
@@ -113,10 +149,23 @@ EXT : Oedem -/-';
     public function simpanPemeriksaan()
     {
         try {
+            // Dekode no_rawat
+            $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
+            
+            // Verifikasi apakah no_rawat ada di tabel reg_periksa
+            $cekReg = DB::table('reg_periksa')
+                ->where('no_rawat', $decodedNoRawat)
+                ->first();
+                
+            if (!$cekReg) {
+                \Illuminate\Support\Facades\Log::error('No Rawat tidak ditemukan di reg_periksa: ' . $decodedNoRawat);
+                throw new \Exception('Data registrasi pasien tidak ditemukan. Hubungi administrator.');
+            }
+            
             DB::beginTransaction();
             DB::table('pemeriksaan_ralan')
                 ->insert([
-                    'no_rawat' => $this->noRawat,
+                    'no_rawat' => $decodedNoRawat, // Gunakan no_rawat yang sudah didekode
                     'keluhan' => $this->keluhan ?? '-',
                     'pemeriksaan' => $this->pemeriksaan ?? '-',
                     'penilaian' => $this->penilaian ?? '-',
@@ -139,8 +188,9 @@ EXT : Oedem -/-';
                     'nip' => session()->get('username'),
                 ]);
             
+            // Update status pasien juga menggunakan no_rawat yang sudah didekode
             DB::table('reg_periksa')
-                ->where('no_rawat', $this->noRawat)
+                ->where('no_rawat', $decodedNoRawat)
                 ->update(['stts' => 'Sudah']);
 
             DB::commit();
@@ -155,7 +205,17 @@ EXT : Oedem -/-';
             $this->emit('refreshData');
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollback();
+            \Illuminate\Support\Facades\Log::error('Error QueryException saat simpan pemeriksaan: ' . $ex->getMessage(), [
+                'no_rawat_original' => $this->noRawat,
+                'decoded' => $decodedNoRawat ?? 'not_decoded',
+                'code' => $ex->getCode(),
+                'sql' => $ex->getSql() ?? 'undefined'
+            ]);
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($ex->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Illuminate\Support\Facades\Log::error('Error Exception saat simpan pemeriksaan: ' . $e->getMessage());
+            $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($e->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
         }
     }
 
@@ -176,8 +236,11 @@ EXT : Oedem -/-';
     public function hapus()
     {
         try {
+            // Dekode no_rawat jika perlu
+            $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
+            
             DB::table('pemeriksaan_ralan')
-                ->where('no_rawat', $this->noRawat)
+                ->where('no_rawat', $decodedNoRawat)
                 ->where('tgl_perawatan', $this->tgl)
                 ->where('jam_rawat', $this->jam)
                 ->delete();
@@ -188,6 +251,12 @@ EXT : Oedem -/-';
                 'toast' =>  false,
             ]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error saat hapus pemeriksaan: ' . $e->getMessage(), [
+                'no_rawat' => $this->noRawat,
+                'decoded' => $decodedNoRawat ?? 'not_decoded',
+                'tgl' => $this->tgl,
+                'jam' => $this->jam
+            ]);
             $this->alert('error', 'Gagal', [
                 'position' =>  'center',
                 'timer' =>  3000,

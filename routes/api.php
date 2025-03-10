@@ -34,8 +34,9 @@ Route::post('/obat/{noResep}/{kdObat}/{noRawat}', [ResepController::class, 'hapu
 Route::delete('/obat-batch', [ResepController::class, 'hapusObatBatch']);
 
 Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
-Route::post('/permintaanlab/{noRawat}', [LabController::class, 'postPermintaanLab']);
-Route::post('/hapus/permintaanlab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
+Route::post('/permintaan-lab/{noRawat}', [LabController::class, 'postPermintaanLab']);
+Route::post('/hapus/permintaan-lab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
+Route::get('/template-lab/{kd_jenis_prw}', [LabController::class, 'getTemplateByJenisPemeriksaan']);
 
 Route::get('/hasil/rad/{noRawat}', [RadiologiController::class, 'getPermintaanRadiologi']);
 Route::post('/permintaanrad/{noRawat}', [RadiologiController::class, 'postPermintaanRadiologi']);

@@ -1,9 +1,10 @@
 @php
+if (!function_exists('maskKtp')) {
 function maskKtp($ktp) {
 if (!$ktp || $ktp === '-') return '-';
 $ktpLength = strlen($ktp);
 if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr($ktp, -1); $masked=str_repeat('x',
-    $ktpLength - 5); return $firstFour . $masked . $lastOne; } @endphp @if(!$data) <div class="alert alert-warning">
+    $ktpLength - 5); return $firstFour . $masked . $lastOne; } } @endphp @if(!$data) <div class="alert alert-warning">
     <h5><i class="icon fas fa-exclamation-triangle"></i> Peringatan!</h5>
     Data pasien tidak ditemukan atau terjadi kesalahan saat memuat data pasien.
     </div>
@@ -27,7 +28,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                 </span>
             </div>
             <x-adminlte-profile-row-item icon="fas fa-fw fa-user" title="Jns Kelamin"
-                text="{{$data->jk == 'L' ? 'Laki - Laki' : 'Perempuan' }}" />
+                text="{{($data->jk ?? '') == 'L' ? 'Laki - Laki' : 'Perempuan' }}" />
             <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-calendar" title="Tempat, Tgl Lahir"-->
             <!--    text="{{$data->tmp_lahir ?? '-'}}, {{\Carbon\Carbon::parse($data->tgl_lahir)->isoFormat('LL')  ?? '-'}}" -->
             <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Pendidikan" text="{{$data->pnd ?? '-'}}" -->
@@ -75,8 +76,9 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
 
             <x-adminlte-profile-row-item icon="fas fa-fw fa-sticky-note" title="Catatan"
                 text="{{$data->catatan ?? '-'}}" />
-            <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Posyandu"
-                text="{{$data->data_posyandu ?? '-'}}" />
+            <!-- Kolom data_posyandu tidak tersedia di database -->
+            <!-- <x-adminlte-profile-row-item icon="fas fa-fw fa-school" title="Posyandu"
+                text="{{$data->data_posyandu ?? '-'}}" /> -->
             <div class="p-0 col-12">
                 <span class="nav-link">
                     <div class="d-flex flex-row justify-content-between" style="gap:10px">
@@ -275,7 +277,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
 
         function getBerkasRetensi(){
             $.ajax({
-                url: "/berkas-retensi/{{$data->no_rkm_medis}}",
+                url: "/berkas-retensi/{{$data->no_rkm_medis ?? ''}}",
                 type: "GET",
                 beforeSend:function() {
                 Swal.fire({
@@ -312,7 +314,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
 
         function getBerkasRM() {
             $.ajax({
-                url: "/berkas/{{$data->no_rawat}}/{{$data->no_rkm_medis}}",
+                url: "/berkas/{{$data->no_rawat ?? ''}}/{{$data->no_rkm_medis ?? ''}}",
                 type: "GET",
                 beforeSend:function() {
                 Swal.fire({

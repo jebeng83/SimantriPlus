@@ -17,10 +17,37 @@ class Riwayat extends Component
     public function __construct($noRawat)
     {
         $this->noRawat = $noRawat;
-        $pasien = $this->getPasien($noRawat);
-        $this->noRM = $pasien->no_rkm_medis;
-        $this->data = $this->getRiwayatPemeriksaan($pasien->no_rkm_medis);
-        $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];                        
+        
+        try {
+            // Log untuk debugging
+            \Illuminate\Support\Facades\Log::info('Konstruktor Riwayat Component - no_rawat: ' . $noRawat);
+            
+            // Dapatkan data pasien
+            $pasien = $this->getPasien($noRawat);
+            
+            // Periksa apakah data pasien ditemukan
+            if (!$pasien) {
+                \Illuminate\Support\Facades\Log::warning('Pasien tidak ditemukan untuk no_rawat: ' . $noRawat);
+                // Set default values untuk mencegah error
+                $this->noRM = null;
+                $this->data = collect();
+                $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];
+                return;
+            }
+            
+            // Jika pasien ditemukan, lanjutkan seperti biasa
+            $this->noRM = $pasien->no_rkm_medis;
+            $this->data = $this->getRiwayatPemeriksaan($pasien->no_rkm_medis);
+            $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];
+        } catch (\Exception $e) {
+            // Log error
+            \Illuminate\Support\Facades\Log::error('Error pada Riwayat Component: ' . $e->getMessage());
+            
+            // Set default values untuk mencegah error
+            $this->noRM = null;
+            $this->data = collect();
+            $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];
+        }
     }
 
     /**
