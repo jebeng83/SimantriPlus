@@ -1,6 +1,9 @@
 <div>
     <form id="simpan-diagnosa" wire:submit.prevent='simpan'>
         @csrf
+        <input type="hidden" wire:model.defer="diagnosa" id="hidden-diagnosa">
+        <input type="hidden" wire:model.defer="prosedur" id="hidden-prosedur">
+        <input type="hidden" wire:model.defer="prioritas" id="hidden-prioritas">
         <div wire:ignore class="form-group">
             <label for="diagnosa">Diagnosa</label>
             <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
@@ -13,7 +16,7 @@
         </div>
         <div class="form-group">
             <label for="prioritas">Prioritas</label>
-            <select id="prioritas" wire:model.defer='prioritas' class="form-control" name="prioritas">
+            <select id="prioritas-select" class="form-control" name="prioritas">
                 <option value="">Pilih Prioritas</option>
                 <option value="1">Diagnosa Ke-1</option>
                 <option value="2">Diagnosa Ke-2</option>
@@ -28,7 +31,7 @@
             </select>
             @error('prioritas') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
-        <button class="btn btn-primary btn-block">Simpan</button>
+        <button id="btn-simpan-diagnosa" class="btn btn-primary btn-block">Simpan</button>
     </form>
     <div class="table-responsive mt-4">
         <table class="table table-bordered table-striped">
@@ -49,8 +52,7 @@
                     <td>{{$item->deskripsi_pendek}}</td>
                     <td>{{$item->prioritas}}</td>
                     <td>
-                        <button
-                            wire:click='confirmDelete("{{$item->kd_penyakit}}","{{$item->prioritas}}","{{$item->kode}}")'
+                        <button wire:click='confirmDelete("{{$item->kd_penyakit}}","{{$item->prioritas}}","")'
                             class="btn btn-danger btn-sm">Hapus</button>
                     </td>
                 </tr>
@@ -66,64 +68,130 @@
 
 @push('js')
 <script>
-    $('#diagnosa-select').select2({
-        placeholder: 'Pilih Diagnosa',
-        ajax: {
-            url: "{{ route('diagnosa') }}",
-            dataType: 'json',
-            delay: 250,
-            processResults: function (data) {
-                return {
-                    results: data.map(function (item) {
-                        return {
-                            id: item.kd_penyakit,
-                            text: item.kd_penyakit+' - '+item.nm_penyakit+' - '+item.ciri_ciri
-                        }
-                    })
-                };
+    document.addEventListener('livewire:load', function() {
+        // Inisialisasi Select2 untuk diagnosa
+        $('#diagnosa-select').select2({
+            placeholder: 'Pilih Diagnosa',
+            ajax: {
+                url: "{{ route('diagnosa') }}",
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(function (item) {
+                            return {
+                                id: item.kd_penyakit,
+                                text: item.kd_penyakit+' - '+item.nm_penyakit+' - '+item.ciri_ciri
+                            }
+                        })
+                    };
+                },
+                cache: true
             },
-            cache: true
-        },
-        minimumInputLength: 3
-    });
+            minimumInputLength: 3
+        });
 
-    $('#prosedur-select').select2({
-        placeholder: 'Pilih prosedur',
-        ajax: {
-            url: "{{ route('icd9') }}",
-            dataType: 'json',
-            delay: 250,
-            processResults: function (data) {
-                return {
-                    results: data.map(function (item) {
-                        return {
-                            id: item.kode,
-                            text: item.kode+' - '+item.deskripsi_pendek
-                        }
-                    })
-                };
+        // Inisialisasi Select2 untuk prosedur
+        $('#prosedur-select').select2({
+            placeholder: 'Pilih prosedur',
+            ajax: {
+                url: "{{ route('icd9') }}",
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(function (item) {
+                            return {
+                                id: item.kode,
+                                text: item.kode+' - '+item.deskripsi_pendek
+                            }
+                        })
+                    };
+                },
+                cache: true
             },
-            cache: true
-        },
-        minimumInputLength: 3
-    });
+            minimumInputLength: 3
+        });
 
-    $('#diagnosa-select').on('select2:select', function (e) {
-        var data = e.params.data;
-        @this.set('diagnosa', data.id);
-    });
+        // Event handler untuk diagnosa
+        $('#diagnosa-select').on('select2:select', function (e) {
+            var data = e.params.data;
+            $('#hidden-diagnosa').val(data.id);
+            @this.set('diagnosa', data.id);
+            document.getElementById('hidden-diagnosa').dispatchEvent(new Event('input'));
+            @this.call('setDiagnosa', data.id);
+        });
 
-    $('#prosedur-select').on('select2:select', function (e) {
-        var data = e.params.data;
-        @this.set('prosedur', data.id);
+        // Event handler untuk prosedur
+        $('#prosedur-select').on('select2:select', function (e) {
+            var data = e.params.data;
+            $('#hidden-prosedur').val(data.id);
+            @this.set('prosedur', data.id);
+            document.getElementById('hidden-prosedur').dispatchEvent(new Event('input'));
+            @this.call('setProsedur', data.id);
+        });
+        
+        // Event handler untuk prioritas
+        $('#prioritas-select').on('change', function() {
+            var prioritasValue = $(this).val();
+            $('#hidden-prioritas').val(prioritasValue);
+            @this.set('prioritas', prioritasValue);
+            document.getElementById('hidden-prioritas').dispatchEvent(new Event('input'));
+            @this.call('setPrioritas', prioritasValue);
+        });
+        
+        // Set prioritas default ke 1 jika belum dipilih
+        if (!$('#prioritas-select').val()) {
+            $('#prioritas-select').val('1').trigger('change');
+        }
     });
     
+    // Validasi sebelum submit form
+    document.getElementById('simpan-diagnosa').addEventListener('submit', function(e) {
+        var diagnosa = @this.get('diagnosa');
+        var prioritas = @this.get('prioritas');
+        
+        // Final check diagnosa
+        if (!diagnosa || diagnosa === '') {
+            e.preventDefault();
+            alert('Diagnosa harus dipilih!');
+            return false;
+        }
+        
+        // Final check prioritas
+        if (!prioritas || prioritas === '') {
+            e.preventDefault();
+            alert('Prioritas harus dipilih!');
+            return false;
+        }
+        
+        // Disable button untuk mencegah double submit
+        document.getElementById('btn-simpan-diagnosa').disabled = true;
+    });
+    
+    // Reset pilihan setelah berhasil menyimpan
     window.addEventListener('resetSelect2', event => {
         $('#diagnosa-select').val(null).trigger('change');
+        $('#hidden-diagnosa').val('');
     });
 
     window.addEventListener('resetSelect2Prosedur', event => {
         $('#prosedur-select').val(null).trigger('change');
+        $('#hidden-prosedur').val('');
+    });
+    
+    // Set prioritas default
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set prioritas jika ada
+        var prioritasValue = $('#prioritas-select').val();
+        if (prioritasValue) {
+            $('#hidden-prioritas').val(prioritasValue);
+            @this.set('prioritas', prioritasValue);
+            @this.call('setPrioritas', prioritasValue);
+        } else {
+            // Set default ke 1 jika tidak ada
+            $('#prioritas-select').val('1').trigger('change');
+        }
     });
 </script>
 @endpush

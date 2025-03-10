@@ -1,8 +1,9 @@
 <div>
     <x-adminlte-card title="Diagnosa" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed" maximizable>
-        <form id="simpan-diagnosa" method="POST"
-            action="{{ route('diagnosa.simpan', ['noRawat' => $noRawat, 'noRM' => $noRm]) }}">
+        <form id="simpan-diagnosa" method="POST" action="{{ route('diagnosa.simpan') }}">
             @csrf
+            <input type="hidden" name="noRawat" value="{{ $noRawat }}">
+            <input type="hidden" name="noRM" value="{{ $noRm }}">
             <div class="form-group">
                 <label for="diagnosa">Diagnosa</label>
                 <select id="diagnosa-select" class="form-control" name="diagnosa"></select>
@@ -26,7 +27,7 @@
                     <option value="10">Diagnosa Ke-10</option>
                 </select>
             </div>
-            <button class="btn btn-primary btn-block">Simpan</button>
+            <button type="submit" class="btn btn-primary btn-block">Simpan</button>
         </form>
         <div class="table-responsive mt-4">
             <table class="table table-bordered table-striped">
@@ -103,16 +104,74 @@
 
     $('#simpan-diagnosa').submit(function (e) {
         e.preventDefault();
-        var data = $(this).serialize();
+        
+        // Disable button to prevent double submission
+        var submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+        
+        // Collect form data
+        var formData = $(this).serialize();
+        
+        // Log the form data for debugging
+        console.log('Form data:', formData);
+        
+        // Perform the AJAX request
         $.ajax({
             url: $(this).attr('action'),
-            type: $(this).attr('method'),
-            data: data,
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
             success: function (response) {
-                console.log(response);
+                console.log('Success response:', response);
+                
+                if (response.status === 'sukses') {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: response.pesan,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Refresh halaman untuk menampilkan data terbaru
+                            location.reload();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: response.pesan || 'Terjadi kesalahan saat menyimpan diagnosa',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    
+                    // Enable the submit button again
+                    submitBtn.prop('disabled', false).html('Simpan');
+                }
             },
-            error: function (response) {
-                console.log(response);
+            error: function (xhr, status, error) {
+                console.error('Error:', xhr.responseText);
+                
+                let errorMessage = 'Terjadi kesalahan saat menyimpan diagnosa';
+                
+                if (xhr.responseJSON && xhr.responseJSON.pesan) {
+                    errorMessage = xhr.responseJSON.pesan;
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    // Handle validation errors
+                    const errors = xhr.responseJSON.errors;
+                    errorMessage = Object.values(errors).flat().join('<br>');
+                }
+                
+                Swal.fire({
+                    title: 'Gagal!',
+                    html: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                
+                // Enable the submit button again
+                submitBtn.prop('disabled', false).html('Simpan');
             }
         });
     });
