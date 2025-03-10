@@ -959,6 +959,9 @@
                 // Perbarui data pasien ralan
                 const newPasienData = response.pasienRalan;
                 
+                // Debug jumlah data
+                console.log('Menerima ' + newPasienData.length + ' data pasien');
+                
                 // Kosongkan tabel
                 $('#tablePasienRalan tbody').empty();
                 
@@ -1044,6 +1047,9 @@
                 if (currentFilter) {
                     filterAndDisplayPasien(currentFilter);
                 }
+                
+                // Update total data pada UI
+                $('#total-entries').text(pasienData.length);
             } else if (activeTab === 'rujuk') {
                 // Perbarui data rujukan internal
                 const newRujukData = response.rujukInternal;
@@ -1091,7 +1097,7 @@
                 }
             }
             
-            console.log('Tabel berhasil diperbarui. Tab aktif:', activeTab);
+            console.log('Tabel berhasil diperbarui. Tab aktif:', activeTab, 'Total data:', pasienData.length);
         }
         
         // Handler untuk tab changes
@@ -1102,17 +1108,31 @@
         
         // Tambahkan event listener untuk tombol refresh
         $('#manualRefreshBtn').on('click', function() {
-            refreshData();
+            refreshData(true); // force refresh
         });
         
-        // Set interval untuk auto-refresh data setiap 5 detik
-        setInterval(function() {
-            refreshData();
-        }, 5000);
+        // Variabel untuk menyimpan interval
+        let autoRefreshInterval;
+        
+        // Fungsi untuk mengatur auto-refresh
+        function setupAutoRefresh() {
+            // Hapus interval yang ada jika sudah diset
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            // Set interval untuk auto-refresh data setiap 3 detik
+            autoRefreshInterval = setInterval(function() {
+                refreshData(false); // regular refresh
+            }, 3000); // dipercepat menjadi 3 detik
+        }
+        
+        // Aktifkan auto refresh
+        setupAutoRefresh();
         
         // Initial refresh setelah halaman dimuat
         setTimeout(function() {
-            refreshData();
+            refreshData(true); // force initial refresh
         }, 1000);
         
         // Fungsi helper untuk menghasilkan URL pemeriksaan yang konsisten
@@ -1120,8 +1140,6 @@
             // Pastikan parameter tidak null
             noRawat = noRawat || '';
             noRM = noRM || '';
-            
-            console.log("Generating URL with:", { noRawat, noRM });
             
             // Bersihkan parameter dari karakter khusus yang mungkin menyebabkan masalah
             noRawat = noRawat.trim();
@@ -1131,14 +1149,6 @@
             // Metode 1: btoa + encodeURIComponent (yang biasa digunakan)
             const encodedNoRawat = encodeURIComponent(btoa(noRawat));
             const encodedNoRM = encodeURIComponent(btoa(noRM));
-            
-            // Log untuk debugging
-            console.log("Encoded values:", { 
-                original_no_rawat: noRawat,
-                encoded_no_rawat: encodedNoRawat,
-                original_no_rm: noRM,
-                encoded_no_rm: encodedNoRM
-            });
             
             // Daripada hanya mengandalkan URL dengan parameter,
             // kita tambahkan secara langsung untuk memastikan format yang benar
@@ -1151,16 +1161,16 @@
         }
         
         // Fungsi untuk refresh data
-        function refreshData() {
+        function refreshData(forceRefresh = false) {
             // Tambahkan indikator loading
             $('.quick-stats').addClass('loading-stats');
             $('#manualRefreshBtn').addClass('rotating');
             
-            // Simpan pencarian dan pagination saat ini
-            const currentSearch = $('.dataTables_filter input').val();
-            
             // Dapatkan tab aktif
             const activeTab = $('.tab-pane.active').attr('id');
+            
+            // Tandai waktu request untuk monitoring
+            const requestTime = new Date().getTime();
             
             // Lakukan AJAX request untuk mendapatkan data terbaru
             $.ajax({
@@ -1169,31 +1179,67 @@
                 data: {
                     tanggal: '{{ $tanggal }}',
                     _token: '{{ csrf_token() }}',
-                    sort: currentSortOption
+                    sort: currentSortOption,
+                    force: forceRefresh ? 1 : 0, // parameter untuk memaksa refresh
+                    last_count: pasienData.length, // kirim jumlah data saat ini untuk perbandingan di server
+                    request_time: requestTime
                 },
                 dataType: 'json',
                 success: function(response) {
-                    console.log('Menerima data refresh:', response);
+                    const responseTime = new Date().getTime();
+                    const elapsed = responseTime - requestTime;
+                    
+                    console.log(`Menerima data refresh dalam ${elapsed}ms:`, response);
                     
                     if (response.success) {
-                        // Update statistik
+                        // Update statistik - selalu dilakukan
                         $('#totalPasien .stat-value').text(response.statistik.total);
                         $('#selesaiPasien .stat-value').text(response.statistik.selesai);
                         $('#menungguPasien .stat-value').text(response.statistik.menunggu);
                         
-                        // Perbarui data tabel dengan data dari response
-                        updateTableWithNewData(response, activeTab);
-                        
-                        // Notifikasi sukses
-                        toastr.success('Data berhasil diperbarui. Total: ' + response.statistik.total + ' pasien');
+                        // Periksa apakah server mengembalikan data lengkap
+                        if (response.returnFullData) {
+                            // Jika server mengembalikan data lengkap, perbarui UI
+                            const newCount = response.dataCount;
+                            const currentCount = pasienData.length;
+                            
+                            console.log('Memperbarui UI: Data count changed from ' + currentCount + ' to ' + newCount);
+                            
+                            // Perbarui data tabel dengan data dari response
+                            updateTableWithNewData(response, activeTab);
+                            
+                            // Notifikasi sukses dengan animasi yang lebih halus
+                            if (forceRefresh) {
+                                toastr.success('Data berhasil diperbarui. Total: ' + response.statistik.total + ' pasien');
+                            } else if (newCount > currentCount) {
+                                toastr.info('Terdapat data pasien baru. Total: ' + response.statistik.total + ' pasien');
+                            } else if (newCount < currentCount) {
+                                toastr.warning('Jumlah pasien berkurang. Total: ' + response.statistik.total + ' pasien');
+                            }
+                            
+                            // Jika returnFullData benar tapi jumlah data tidak berubah, mungkin status pasien berubah
+                            if (newCount === currentCount && !forceRefresh) {
+                                toastr.info('Status pasien telah diperbarui');
+                            }
+                        } else {
+                            // Jika server tidak mengembalikan data lengkap, data tidak berubah
+                            console.log('Tidak ada perubahan data, hanya update statistik');
+                        }
                     } else {
                         console.error('Gagal memperbarui data: Response tidak sukses');
-                        toastr.error('Gagal memperbarui data');
+                        if (forceRefresh) {
+                            toastr.error('Gagal memperbarui data');
+                        }
                     }
                 },
                 error: function(error) {
                     console.error('Gagal memperbarui data:', error);
-                    toastr.error('Gagal memperbarui data: ' + error.statusText);
+                    if (forceRefresh) {
+                        toastr.error('Gagal memperbarui data: ' + error.statusText);
+                    }
+                    
+                    // Jika terjadi error, restart auto-refresh
+                    setupAutoRefresh();
                 },
                 complete: function() {
                     // Hapus indikator loading

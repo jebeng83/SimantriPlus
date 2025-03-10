@@ -65,20 +65,34 @@ EXT : Oedem -/-';
      */
     private function decodeNoRawat($noRawat)
     {
-        // Jika tidak ada parameter atau tidak ada karakter %, kembalikan nilai asli
-        if (!$noRawat || strpos($noRawat, '%') === false) {
-            return $noRawat;
+        // Pastikan input adalah string
+        if (!is_string($noRawat)) {
+            $noRawat = (string)$noRawat;
         }
         
-        $decodedNoRawat = $noRawat;
-        $urlDecoded = urldecode($noRawat);
+        // Bersihkan dari karakter non-printable
+        $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+        
+        // Jika hasil bersih kosong tapi nilai asli tidak kosong, gunakan nilai asli
+        if (empty($cleanNoRawat) && !empty($noRawat)) {
+            $cleanNoRawat = $noRawat;
+        }
+        
+        // Jika tidak ada parameter atau tidak ada karakter %, kembalikan nilai yang sudah dibersihkan
+        if (!$cleanNoRawat || strpos($cleanNoRawat, '%') === false) {
+            return $cleanNoRawat;
+        }
+        
+        $decodedNoRawat = $cleanNoRawat;
+        $urlDecoded = urldecode($cleanNoRawat);
         
         // Coba base64 decode
         try {
             $base64Decoded = base64_decode($urlDecoded);
             if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
                 $decodedNoRawat = $base64Decoded;
-                \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode: ' . $decodedNoRawat);
+                // Debug log dihapus untuk production
+                // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode: ' . $decodedNoRawat);
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat: ' . $e->getMessage());
@@ -94,7 +108,7 @@ EXT : Oedem -/-';
     
         $this->listPemeriksaan = DB::table('pemeriksaan_ralan')
             ->join('pegawai', 'pemeriksaan_ralan.nip', '=', 'pegawai.nik')
-            ->where('no_rawat', $decodedNoRawat)
+            ->where(DB::raw('BINARY pemeriksaan_ralan.no_rawat'), $decodedNoRawat)
             ->select('pemeriksaan_ralan.*', 'pegawai.nama')
             ->get();
     }
@@ -114,15 +128,22 @@ EXT : Oedem -/-';
         // Dekode no_rawat
         $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
     
+        // Sanitasi no_rm
+        $cleanNoRm = $this->noRm;
+        if (!is_string($cleanNoRm)) {
+            $cleanNoRm = (string)$cleanNoRm;
+        }
+        $cleanNoRm = preg_replace('/[[:^print:]]/', '', $cleanNoRm);
+    
         $data = DB::table('pasien')
             ->join('pemeriksaan_ralan', 'pasien.no_rkm_medis', '=', 'pemeriksaan_ralan.no_rawat')
-            ->where('pasien.no_rkm_medis', $this->noRm)
+            ->where('pasien.no_rkm_medis', $cleanNoRm)
             ->where('pemeriksaan_ralan.alergi', '<>', 'Tidak Ada')
             ->select('pemeriksaan_ralan.alergi')
             ->first();
 
         $pemeriksaan = DB::table('pemeriksaan_ralan')
-            ->where('no_rawat', $decodedNoRawat)
+            ->where(DB::raw('BINARY no_rawat'), $decodedNoRawat)
             ->orderBy('jam_rawat', 'desc')
             ->first();
         if ($pemeriksaan) {

@@ -19,121 +19,59 @@ class LabController extends Controller
      */
     private function safeDecodeNoRawat($encodedValue)
     {
-        \Illuminate\Support\Facades\Log::info('LabController: Mencoba mendekode no_rawat: ' . $encodedValue);
-        
-        if (empty($encodedValue)) {
-            return '';
-        }
-        
-        // Coba dekripsi dengan cara biasa
         try {
+            // Coba dekripsi dengan metode standar
             $decodedValue = $this->decryptData($encodedValue);
-            \Illuminate\Support\Facades\Log::info('LabController: Hasil dekripsi layer 1: ' . $decodedValue);
             
-            // Jika hasil dekripsi adalah base64 terenkode URL, dekode lagi
-            if (strpos($decodedValue, '%') !== false) {
-                $urlDecoded = urldecode($decodedValue);
-                \Illuminate\Support\Facades\Log::info('LabController: Hasil URL decode: ' . $urlDecoded);
-                
-                // Coba base64 decode
-                $base64Decoded = base64_decode($urlDecoded, true); // strict mode
-                
-                if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
-                    \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekode (double layer): ' . $base64Decoded);
-                    return $base64Decoded;
-                }
-            }
+            \Illuminate\Support\Facades\Log::info('safeDecodeNoRawat - Dekripsi standar berhasil', [
+                'encoded' => $encodedValue,
+                'decoded' => $decodedValue
+            ]);
             
-            // Validasi hasil dekripsi (harus memiliki format yang benar)
-            if (preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $decodedValue)) {
-                \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekripsi metode standar: ' . $decodedValue);
-                return $decodedValue;
-            }
+            return $decodedValue;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('LabController: Gagal decrypt no_rawat [metode 1]: ' . $e->getMessage());
-        }
-        
-        // Jika mengandung karakter % berarti URL encoded
-        if (strpos($encodedValue, '%') !== false) {
-            try {
-                // Dekode URL dulu
-                $urlDecoded = urldecode($encodedValue);
-                \Illuminate\Support\Facades\Log::info('LabController: URL decode result: ' . $urlDecoded);
-                
-                // Coba base64 dekode
-                $base64Decoded = base64_decode($urlDecoded, true); // strict mode
-                
-                if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
-                    \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekode dengan url+base64: ' . $base64Decoded);
-                    return $base64Decoded;
-                }
-                
-                // Jika masih mengandung % setelah urldecode, coba lagi
-                if (strpos($urlDecoded, '%') !== false) {
-                    $doubleUrlDecoded = urldecode($urlDecoded);
-                    $base64Decoded = base64_decode($doubleUrlDecoded, true);
-                    
-                    if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
-                        \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekode dengan double-url+base64: ' . $base64Decoded);
-                        return $base64Decoded;
-                    }
-                }
-                
-                // Cobalah menghapus %3D di akhir (=) secara manual jika ada
-                if (substr($encodedValue, -3) === '%3D') {
-                    $trimmedEncoded = substr($encodedValue, 0, -3);
-                    $urlDecodedTrimmed = urldecode($trimmedEncoded);
-                    
-                    // Tambahkan padding jika perlu
-                    $paddedBase64 = $urlDecodedTrimmed . str_repeat('=', 4 - (strlen($urlDecodedTrimmed) % 4));
-                    $base64DecodedTrimmed = base64_decode($paddedBase64, true);
-                    
-                    if ($base64DecodedTrimmed !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64DecodedTrimmed)) {
-                        \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekode dengan trim+padding+base64: ' . $base64DecodedTrimmed);
-                        return $base64DecodedTrimmed;
-                    }
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('LabController: Gagal mendekode no_rawat [metode url]: ' . $e->getMessage());
-            }
-        }
-        
-        // Jika merupakan data base64 biasa, coba decode langsung
-        if (preg_match('/^[A-Za-z0-9+\/]+={0,2}$/', $encodedValue)) {
-            try {
-                $directBase64Decoded = base64_decode($encodedValue, true);
-                
-                if ($directBase64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $directBase64Decoded)) {
-                    \Illuminate\Support\Facades\Log::info('LabController: No Rawat berhasil didekode dengan direct base64: ' . $directBase64Decoded);
-                    return $directBase64Decoded;
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('LabController: Gagal mendekode no_rawat [metode direct base64]: ' . $e->getMessage());
-            }
-        }
-        
-        // Jika sampai di sini dan belum berhasil, coba cari no_rawat di database berdasarkan tanggal
-        try {
-            // Gunakan tanggal hari ini sebagai fallback
-            $possibleDate = date('Y/m/d');
+            \Illuminate\Support\Facades\Log::warning('Gagal mendekripsi no_rawat dengan metode standar: ' . $e->getMessage(), [
+                'encoded_value' => $encodedValue
+            ]);
             
-            $cekRawat = DB::table('reg_periksa')
-                ->where('no_rawat', 'like', $possibleDate . '%')
-                ->where('kd_dokter', session()->get('username'))
-                ->orderBy('tgl_registrasi', 'desc')
-                ->orderBy('jam_reg', 'desc')
-                ->first();
+            // Jika gagal, coba dengan metode alternatif (base64 decode)
+            try {
+                $base64Decoded = base64_decode($encodedValue);
                 
-            if ($cekRawat) {
-                \Illuminate\Support\Facades\Log::info('LabController: Berhasil menemukan no_rawat berdasarkan tanggal: ' . $cekRawat->no_rawat);
-                return $cekRawat->no_rawat;
+                \Illuminate\Support\Facades\Log::info('safeDecodeNoRawat - Dekripsi base64 berhasil', [
+                    'encoded' => $encodedValue,
+                    'decoded' => $base64Decoded
+                ]);
+                
+                return $base64Decoded;
+            } catch (\Exception $e2) {
+                \Illuminate\Support\Facades\Log::warning('Gagal mendekripsi no_rawat dengan base64: ' . $e2->getMessage());
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('LabController: Gagal mencari no_rawat di database: ' . $e->getMessage());
+            
+            // Jika semua metode gagal, coba cari di database berdasarkan pola tertentu
+            try {
+                $possibleDate = date('Y/m/d');
+                $cekRawat = DB::table('reg_periksa')
+                    ->where('no_rawat', 'like', $possibleDate . '%')
+                    ->orderBy('jam_reg', 'desc')
+                    ->first();
+                
+                if ($cekRawat) {
+                    \Illuminate\Support\Facades\Log::info('safeDecodeNoRawat - Alternatif query berhasil', [
+                        'encoded' => $encodedValue,
+                        'found_no_rawat' => $cekRawat->no_rawat
+                    ]);
+                    
+                    return $cekRawat->no_rawat;
+                }
+            } catch (\Exception $e3) {
+                \Illuminate\Support\Facades\Log::warning('Gagal mencari alternatif no_rawat: ' . $e3->getMessage());
+            }
+            
+            // Jika semua metode gagal, kembalikan nilai asli
+            \Illuminate\Support\Facades\Log::warning('Mengembalikan nilai no_rawat asli karena semua metode dekripsi gagal');
+            return $encodedValue;
         }
-        
-        \Illuminate\Support\Facades\Log::warning('LabController: Tidak berhasil mendekode no_rawat, mengembalikan nilai asli: ' . $encodedValue);
-        return $encodedValue;
     }
 
     public function getPemeriksaanLab($noRawat)
@@ -189,7 +127,8 @@ class LabController extends Controller
         
         \Illuminate\Support\Facades\Log::info('Menerima request permintaan lab', [
             'no_rawat' => $noRawat,
-            'jenis_pemeriksaan' => count($jnsPemeriksaan)
+            'jenis_pemeriksaan' => count($jnsPemeriksaan),
+            'data_input' => $input
         ]);
         
         // Validasi input
@@ -203,6 +142,11 @@ class LabController extends Controller
         
         // Dekode no_rawat dengan helper method yang lebih aman
         $decodedNoRawat = $this->safeDecodeNoRawat($noRawat);
+        
+        \Illuminate\Support\Facades\Log::info('No Rawat yang digunakan:', [
+            'enkripsi' => $noRawat,
+            'hasil_dekripsi' => $decodedNoRawat
+        ]);
         
         // Verifikasi keberadaan no_rawat dalam database
         $cekRawat = DB::table('reg_periksa')
@@ -252,9 +196,13 @@ class LabController extends Controller
                 ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
                 ->first();
 
-            $lastNumber = substr($getNumber->no, 0, 4);
+            $lastNumber = isset($getNumber->no) ? substr($getNumber->no, 0, 4) : 0;
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
             $noOrder = 'PL'.date('Ymd').$getNextNumber;
+            
+            \Illuminate\Support\Facades\Log::info('Nomor Order dibuat:', [
+                'noorder' => $noOrder
+            ]);
 
             // Simpan permintaan lab
             DB::table('permintaan_lab')
@@ -268,6 +216,11 @@ class LabController extends Controller
                     'informasi_tambahan' => $info,
                     'status' => 'ralan'
                 ]);
+            
+            \Illuminate\Support\Facades\Log::info('Berhasil menyimpan permintaan lab', [
+                'noorder' => $noOrder,
+                'no_rawat' => $decodedNoRawat
+            ]);
 
             // Simpan jenis pemeriksaan
             foreach($jnsPemeriksaan as $pemeriksaan) {
@@ -277,27 +230,49 @@ class LabController extends Controller
                         'kd_jenis_prw' => $pemeriksaan,
                         'stts_bayar' => 'Belum'
                     ]);
+                    
+                \Illuminate\Support\Facades\Log::info('Jenis pemeriksaan disimpan:', [
+                    'noorder' => $noOrder,
+                    'kd_jenis_prw' => $pemeriksaan
+                ]);
             }
             
             // Simpan detail template yang dipilih
             if (!empty($templates)) {
                 foreach($templates as $template) {
-                    DB::table('permintaan_detail_permintaan_lab')
-                        ->insert([
+                    try {
+                        DB::table('permintaan_detail_permintaan_lab')
+                            ->insert([
+                                'noorder' => $noOrder,
+                                'kd_jenis_prw' => $template['kd_jenis_prw'],
+                                'id_template' => $template['id_template'],
+                                'stts_bayar' => 'Belum'
+                            ]);
+                        
+                        \Illuminate\Support\Facades\Log::info('Template pemeriksaan disimpan:', [
                             'noorder' => $noOrder,
                             'kd_jenis_prw' => $template['kd_jenis_prw'],
-                            'id_template' => $template['id_template'],
-                            'stts_bayar' => 'Belum'
+                            'id_template' => $template['id_template']
                         ]);
+                    } catch (\Exception $templateError) {
+                        \Illuminate\Support\Facades\Log::warning('Gagal menyimpan template:', [
+                            'error' => $templateError->getMessage(),
+                            'template' => $template
+                        ]);
+                        // Lanjutkan meskipun ada error template
+                    }
                 }
             }
 
             DB::commit();
-            return response()->json(['status' => 'sukses', 'message' => 'Permintaan lab berhasil disimpan'], 200);
+            \Illuminate\Support\Facades\Log::info('Transaksi permintaan lab berhasil commit');
+            return response()->json(['status' => 'sukses', 'message' => 'Permintaan lab berhasil disimpan', 'noorder' => $noOrder], 200);
 
         } catch(\Exception $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error saat simpan permintaan lab: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error saat simpan permintaan lab: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['status' => 'gagal', 'message' => $e->getMessage()], 200);
         }
     }
@@ -327,14 +302,63 @@ class LabController extends Controller
 
             DB::beginTransaction();
 
-            DB::table('permintaan_lab')
+            // Hitung total data sebelum dihapus untuk debugging
+            $detailCount = DB::table('permintaan_detail_permintaan_lab')
+                ->where('noorder', $noOrder)
+                ->count();
+                
+            $pemeriksaanCount = DB::table('permintaan_pemeriksaan_lab')
+                ->where('noorder', $noOrder)
+                ->count();
+                
+            \Illuminate\Support\Facades\Log::info('Data yang akan dihapus:', [
+                'noorder' => $noOrder,
+                'detail_count' => $detailCount,
+                'pemeriksaan_count' => $pemeriksaanCount
+            ]);
+
+            // Hapus detail template terlebih dahulu
+            try {
+                DB::table('permintaan_detail_permintaan_lab')
                     ->where('noorder', $noOrder)
                     ->delete();
+                
+                \Illuminate\Support\Facades\Log::info('Detail template berhasil dihapus', [
+                    'noorder' => $noOrder
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Gagal menghapus detail template:', [
+                    'noorder' => $noOrder,
+                    'error' => $e->getMessage()
+                ]);
+                // Teruskan proses meskipun ada error pada tahap ini
+            }
 
             // Hapus juga pemeriksaan terkait
-            DB::table('permintaan_pemeriksaan_lab')
+            try {
+                DB::table('permintaan_pemeriksaan_lab')
                     ->where('noorder', $noOrder)
                     ->delete();
+                
+                \Illuminate\Support\Facades\Log::info('Pemeriksaan lab berhasil dihapus', [
+                    'noorder' => $noOrder
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Gagal menghapus pemeriksaan lab:', [
+                    'noorder' => $noOrder,
+                    'error' => $e->getMessage()
+                ]);
+                // Teruskan proses meskipun ada error pada tahap ini
+            }
+
+            // Hapus permintaan lab
+            DB::table('permintaan_lab')
+                ->where('noorder', $noOrder)
+                ->delete();
+            
+            \Illuminate\Support\Facades\Log::info('Permintaan lab berhasil dihapus', [
+                'noorder' => $noOrder
+            ]);
 
             DB::commit();
             return response()->json(['status' => 'sukses', 'message' => 'Permintaan lab berhasil dihapus'], 200);
@@ -342,12 +366,16 @@ class LabController extends Controller
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Error saat hapus permintaan lab: ' . $ex->getMessage(), [
                 'noorder' => $noOrder,
-                'code' => $ex->getCode()
+                'code' => $ex->getCode(),
+                'trace' => $ex->getTraceAsString()
             ]);
             return response()->json(['status' => 'gagal', 'message' => $ex->getMessage()], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error Exception saat hapus permintaan lab: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error Exception saat hapus permintaan lab: ' . $e->getMessage(), [
+                'noorder' => $noOrder,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['status' => 'gagal', 'message' => $e->getMessage()], 200);
         }
     }
