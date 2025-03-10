@@ -967,8 +967,8 @@
                 
                 // Tambahkan data baru ke tabel
                 newPasienData.forEach(function(row) {
-                    const encNoRawat = encodeURIComponent(btoa(row.no_rawat));
-                    const encNoRM = encodeURIComponent(btoa(row.no_rkm_medis));
+                    // Gunakan fungsi helper untuk membuat URL
+                    const pemeriksaanUrl = generatePemeriksaanUrl(row.no_rawat, row.no_rkm_medis);
                     
                     // Tentukan ikon untuk nama pasien
                     let nameIcon = 'fa-user-circle';
@@ -986,7 +986,7 @@
                         <tr ${row.diagnosa_utama ? 'class="completed"' : ''}>
                             <td>${row.no_reg}</td>
                             <td>
-                                <a href="{{url('ralan/pemeriksaan')}}?no_rawat=${encNoRawat}&no_rm=${encNoRM}" class="patient-name">
+                                <a href="${pemeriksaanUrl}" class="patient-name">
                                     <i class="fas ${nameIcon} mr-1" id="icon-${row.no_reg}"></i>
                                     <span class="patient-fullname ${nameClass}">${row.nm_pasien}</span>
                                 </a>
@@ -1104,6 +1104,51 @@
         $('#manualRefreshBtn').on('click', function() {
             refreshData();
         });
+        
+        // Set interval untuk auto-refresh data setiap 5 detik
+        setInterval(function() {
+            refreshData();
+        }, 5000);
+        
+        // Initial refresh setelah halaman dimuat
+        setTimeout(function() {
+            refreshData();
+        }, 1000);
+        
+        // Fungsi helper untuk menghasilkan URL pemeriksaan yang konsisten
+        function generatePemeriksaanUrl(noRawat, noRM) {
+            // Pastikan parameter tidak null
+            noRawat = noRawat || '';
+            noRM = noRM || '';
+            
+            console.log("Generating URL with:", { noRawat, noRM });
+            
+            // Bersihkan parameter dari karakter khusus yang mungkin menyebabkan masalah
+            noRawat = noRawat.trim();
+            noRM = noRM.trim();
+            
+            // Gunakan encoding yang konsisten dengan sistem
+            // Metode 1: btoa + encodeURIComponent (yang biasa digunakan)
+            const encodedNoRawat = encodeURIComponent(btoa(noRawat));
+            const encodedNoRM = encodeURIComponent(btoa(noRM));
+            
+            // Log untuk debugging
+            console.log("Encoded values:", { 
+                original_no_rawat: noRawat,
+                encoded_no_rawat: encodedNoRawat,
+                original_no_rm: noRM,
+                encoded_no_rm: encodedNoRM
+            });
+            
+            // Daripada hanya mengandalkan URL dengan parameter,
+            // kita tambahkan secara langsung untuk memastikan format yang benar
+            let urlParams = new URLSearchParams();
+            urlParams.append('no_rawat', encodedNoRawat);
+            urlParams.append('no_rm', encodedNoRM);
+            
+            // Buat URL dengan parameter yang dienkripsi
+            return `{{url('ralan/pemeriksaan')}}?${urlParams.toString()}`;
+        }
         
         // Fungsi untuk refresh data
         function refreshData() {

@@ -1,25 +1,27 @@
 <x-adminlte-card title="Permintaan Lab" theme="info" icon="fas fa-lg fa-flask" collapsible="collapsed" maximizable>
-    <form id="formPermintaanLab">
+    <form id="form-lab">
         <div class="form-group row">
             <label for="klinis" class="col-sm-4 col-form-label">Klinis</label>
             <div class="col-sm-8">
-            <input type="text" class="form-control" id="klinis" name="klinis" />
+                <input type="text" class="form-control" id="klinis" name="klinis" />
             </div>
         </div>
         <div class="form-group row">
             <label for="info" class="col-sm-4 col-form-label">Info Tambahan</label>
             <div class="col-sm-8">
-            <input type="text" class="form-control" id="info" name="info" />
+                <input type="text" class="form-control" id="info" name="info" />
             </div>
         </div>
         <div class="form-group row">
             <label for="jenis" class="col-sm-4 col-form-label">Jenis Pemeriksaan</label>
             <div class="col-sm-8">
-            <select class="form-control jenis" id="jenis" name="jenis[]" multiple="multiple" ></select>
+                <select class="form-control jenis" id="jenis" name="jns_pemeriksaan[]" multiple="multiple"></select>
             </div>
         </div>
+        <!-- Container untuk template -->
+        <div id="template-area" class="mt-3"></div>
         <div class="d-flex flex-row-reverse pb-3">
-            <x-adminlte-button id="simpanPermintaanLab" class="ml-1" theme="primary" type="submit" label="Simpan" />
+            <x-adminlte-button id="btn-simpan" class="ml-1" theme="primary" type="submit" label="Simpan" />
         </div>
     </form>
     <x-adminlte-callout theme="info" title="Daftar Permintaan Lab">
@@ -36,20 +38,21 @@
                 </thead>
                 <tbody>
                     @foreach($pemeriksaan as $row)
-                        <tr>
-                            <td scope="row">{{$row->noorder}}</td>
-                            <td>{{$row->informasi_tambahan}}</td>
-                            <td>{{$row->diagnosa_klinis}}</td>
-                            <td>
-                                @php
-                                $pemeriksaan = App\View\Components\Ralan\PermintaanLab::getDetailPemeriksaan($row->noorder);
-                                @endphp
-                                @foreach($pemeriksaan as $p)
-                                    <li>{{$p->nm_perawatan}}</li>
-                                @endforeach
-                            </td>
-                            <td><button class="btn btn-danger btn-sm" onclick='hapusPermintaanLab("{{$row->noorder}}", event)'>Hapus</button></td>
-                        </tr>
+                    <tr>
+                        <td scope="row">{{$row->noorder}}</td>
+                        <td>{{$row->informasi_tambahan}}</td>
+                        <td>{{$row->diagnosa_klinis}}</td>
+                        <td>
+                            @php
+                            $pemeriksaan = App\View\Components\Ralan\PermintaanLab::getDetailPemeriksaan($row->noorder);
+                            @endphp
+                            @foreach($pemeriksaan as $p)
+                            <li>{{$p->nm_perawatan}}</li>
+                            @endforeach
+                        </td>
+                        <td><button class="btn btn-danger btn-sm"
+                                onclick='hapusPermintaanLab("{{$row->noorder}}", event)'>Hapus</button></td>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -58,10 +61,7 @@
 </x-adminlte-card>
 
 @push('js')
-    <script 
-        id="permintaanLab" 
-        src="{{ asset('js/ralan/permintaanLab.js') }}" 
-        data-encrypNoRawat="{{ $encrypNoRawat }}" 
-        data-token="{{ csrf_token() }}">
-    </script>
+<script id="permintaanLab" src="{{ asset('js/ralan/permintaanLab.js') }}" data-encrypNoRawat="{{ $encrypNoRawat }}"
+    data-token="{{ csrf_token() }}">
+</script>
 @endpush

@@ -1,16 +1,24 @@
 <div>
-    <x-adminlte-modal wire:ignore.self id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered
-        static-backdrop scrollable>
+    <x-adminlte-modal wire:ignore.self id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl"
+        theme="info" v-centered static-backdrop scrollable>
+        @if(empty($data) || $data->count() == 0)
+        <div class="alert alert-info">
+            Tidak ada riwayat pemeriksaan yang ditemukan atau data tidak dapat diakses.
+        </div>
+        @else
         <div class="timeline">
             @foreach($data as $row)
             @php
             $pemeriksaan =
-            App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat,$row->status_lanjut);
-            $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat);
-            $laboratorium = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanLab($row->no_rawat);
-            $resume = App\Http\Controllers\Ralan\PemeriksaanRalanController::getResume($row->no_rawat);
-            $radiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getRadiologi($row->no_rawat);
-            $gambarRadiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getFotoRadiologi($row->no_rawat);
+            App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanRalan($row->no_rawat ?? '',
+            $row->status_lanjut ?? '');
+            $diagnosa = App\Http\Controllers\Ralan\PemeriksaanRalanController::getDiagnosa($row->no_rawat ?? '');
+            $laboratorium = App\Http\Controllers\Ralan\PemeriksaanRalanController::getPemeriksaanLab($row->no_rawat ??
+            '');
+            $resume = App\Http\Controllers\Ralan\PemeriksaanRalanController::getResume($row->no_rawat ?? '');
+            $radiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getRadiologi($row->no_rawat ?? '');
+            $gambarRadiologi = App\Http\Controllers\Ralan\PemeriksaanRalanController::getFotoRadiologi($row->no_rawat ??
+            '');
             $tgl = date_create($row->tgl_registrasi ?? '0000-00-00');
             $date = date_format($tgl,"d M Y");
             @endphp
@@ -21,11 +29,11 @@
             <div>
                 <i class="fas fa-stethoscope bg-blue"></i>
                 <div class="timeline-item">
-                    <h3 class="timeline-header d-flex justify-content-between"><b>{{$row->no_rawat}}</b>
-                        <b>{{$row->nm_dokter}}</b>
+                    <h3 class="timeline-header d-flex justify-content-between"><b>{{$row->no_rawat ?? 'N/A'}}</b>
+                        <b>{{$row->nm_dokter ?? 'N/A'}}</b>
                     </h3>
                     <div class="timeline-body">
-                        @if(count($pemeriksaan)>0)
+                        @if(!empty($pemeriksaan))
                         <x-adminlte-card theme="dark" title="Pemeriksaan" collapsible maximizable>
                             <div class="table-responsive">
                                 @foreach($pemeriksaan as $pemeriksaan)
@@ -64,7 +72,8 @@
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Alergi</b></td>
-                                        <td colspan="9">{{ $pemeriksaan->alergi ?? '-' }}</td>
+                                        <td colspan="9">{{ isset($pemeriksaan->alergi) ? $pemeriksaan->alergi : '-' }}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td colspan="2"><b>Subjek</b></td>
@@ -135,7 +144,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Utama :</div>
                                                         <div>
-                                                            {{$resume->diagnosa_utama ?? ''}} - {{$resume->kd_diagnosa_utama ?? ''}}
+                                                            {{$resume->diagnosa_utama ?? ''}} -
+                                                            {{$resume->kd_diagnosa_utama ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -143,7 +153,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Sekunder 1:</div>
                                                         <div>
-                                                            {{$resume->diagnosa_sekunder ?? ''}} - {{$resume->kd_diagnosa_sekunder ?? ''}}
+                                                            {{$resume->diagnosa_sekunder ?? ''}} -
+                                                            {{$resume->kd_diagnosa_sekunder ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -151,7 +162,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Sekunder 2:</div>
                                                         <div>
-                                                            {{$resume->diagnosa_sekunder1 ?? ''}} - {{$resume->kd_diagnosa_sekunder1 ?? ''}}
+                                                            {{$resume->diagnosa_sekunder1 ?? ''}} -
+                                                            {{$resume->kd_diagnosa_sekunder1 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -159,7 +171,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Sekunder 3:</div>
                                                         <div>
-                                                            {{$resume->diagnosa_sekunder2 ?? ''}} - {{$resume->kd_diagnosa_sekunder2 ?? ''}}
+                                                            {{$resume->diagnosa_sekunder2 ?? ''}} -
+                                                            {{$resume->kd_diagnosa_sekunder2 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -167,7 +180,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Sekunder 4:</div>
                                                         <div>
-                                                            {{$resume->diagnosa_sekunder3 ?? ''}} - {{$resume->kd_diagnosa_sekunder3 ?? ''}}
+                                                            {{$resume->diagnosa_sekunder3 ?? ''}} -
+                                                            {{$resume->kd_diagnosa_sekunder3 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -175,7 +189,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Diagnosa Sekunder 5:</div>
                                                         <div>
-                                                            {{$resume->diagnosa_sekunder4 ?? ''}} - {{$resume->kd_diagnosa_sekunder4 ?? ''}}
+                                                            {{$resume->diagnosa_sekunder4 ?? ''}} -
+                                                            {{$resume->kd_diagnosa_sekunder4 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -183,7 +198,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Utama :</div>
                                                         <div>
-                                                            {{$resume->prosedur_utama ?? ''}} - {{$resume->kd_prosedur_utama ?? ''}}
+                                                            {{$resume->prosedur_utama ?? ''}} -
+                                                            {{$resume->kd_prosedur_utama ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -191,7 +207,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Sekunder 1:</div>
                                                         <div>
-                                                            {{$resume->prosedur_sekunder ?? ''}} - {{$resume->kd_prosedur_sekunder ?? ''}}
+                                                            {{$resume->prosedur_sekunder ?? ''}} -
+                                                            {{$resume->kd_prosedur_sekunder ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -199,7 +216,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Sekunder 2:</div>
                                                         <div>
-                                                            {{$resume->prosedur_sekunder1 ?? ''}} - {{$resume->kd_prosedur_sekunder1 ?? ''}}
+                                                            {{$resume->prosedur_sekunder1 ?? ''}} -
+                                                            {{$resume->kd_prosedur_sekunder1 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -207,7 +225,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Sekunder 3:</div>
                                                         <div>
-                                                            {{$resume->prosedur_sekunder2 ?? ''}} - {{$resume->kd_prosedur_sekunder2 ?? ''}}
+                                                            {{$resume->prosedur_sekunder2 ?? ''}} -
+                                                            {{$resume->kd_prosedur_sekunder2 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -215,7 +234,8 @@
                                                     <div class="d-flex flex-row">
                                                         <div>Prosedur Sekunder 4:</div>
                                                         <div>
-                                                            {{$resume->prosedur_sekunder3 ?? ''}} - {{$resume->kd_prosedur_sekunder3 ?? ''}}
+                                                            {{$resume->prosedur_sekunder3 ?? ''}} -
+                                                            {{$resume->kd_prosedur_sekunder3 ?? ''}}
                                                         </div>
                                                     </div>
                                                 </li>
@@ -251,7 +271,7 @@
                         </x-adminlte-card>
                         @endif
 
-                        @if(count($radiologi)>0)
+                        @if(!empty($radiologi) && count($radiologi)>0)
                         <x-adminlte-card theme="dark" title="Radiologi" collapsible="collapsed" maximizable>
                             <x-adminlte-card theme="dark" title="Gambar Radiologi" collapsible="collapsed">
                                 <div class="container">
@@ -279,7 +299,7 @@
                         </x-adminlte-card>
                         @endif
 
-                        @if(count($laboratorium)>0)
+                        @if(!empty($laboratorium) && count($laboratorium)>0)
                         <x-adminlte-card theme="dark" title="Laboratorium" collapsible="collapsed" maximizable>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
@@ -319,7 +339,7 @@
                             <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
                         </x-adminlte-card> --}} -->
 
-                        
+
                         <!-- <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
                         <x-ralan.penilaian-awal-keperawatan-gigi-mulut :no-rawat="$row->no_rawat" />
                         <x-ralan.penilaian-awal-keperawatan-kebidanan :no-rawat="$row->no_rawat" />
@@ -329,6 +349,7 @@
             </div>
             @endforeach
         </div>
+        @endif
         <x-slot name="footerSlot">
             <x-adminlte-button theme="danger" label="Tutup" data-dismiss="modal" />
         </x-slot>

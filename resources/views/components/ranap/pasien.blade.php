@@ -1,9 +1,10 @@
 @php
+if (!function_exists('maskKtp')) {
 function maskKtp($ktp) {
 if (!$ktp || $ktp === '-') return '-';
 $ktpLength = strlen($ktp);
 if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr($ktp, -1); $masked=str_repeat('x',
-    $ktpLength - 5); return $firstFour . $masked . $lastOne; } @endphp <div>
+    $ktpLength - 5); return $firstFour . $masked . $lastOne; } } @endphp <div>
     <x-adminlte-profile-widget name="{{$data->nm_pasien ?? '-'}}" desc="{{$data->no_rkm_medis ?? '-'}}"
         theme="lightblue" img="https://kerjo.simkeskhanza.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}"
         layout-type="classic">
