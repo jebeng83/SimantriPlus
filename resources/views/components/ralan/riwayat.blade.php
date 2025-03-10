@@ -318,7 +318,7 @@
                                     <tbody>
                                         @foreach($laboratorium as $lab)
                                         <tr
-                                            class="@if($lab->keterangan == 'T' || $lab->keterangan == 'H') bg-danger @endif">
+                                            class="@if(isset($lab->keterangan) && ($lab->keterangan == 'T' || $lab->keterangan == 'H')) bg-danger @endif">
                                             <td>{{$loop->iteration}}</td>
                                             <td>{{$lab->Pemeriksaan}}</td>
                                             <td>{{$lab->tgl_periksa}}</td>
@@ -326,7 +326,7 @@
                                             <td>{{$lab->nilai}}</td>
                                             <td>{{$lab->satuan}}</td>
                                             <td>{{$lab->nilai_rujukan}}</td>
-                                            <td>{{$lab->keterangan}}</td>
+                                            <td>{{$lab->keterangan ?? '-'}}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>

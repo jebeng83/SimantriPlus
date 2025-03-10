@@ -18,8 +18,17 @@ class Pemeriksaan extends Component
      */
     public function __construct($noRawat)
     {
-        $this->encryptNoRawat = $this->encryptData($noRawat);
         $this->noRawat = $noRawat;
+        
+        // Sanitasi input untuk mencegah masalah encoding
+        if (!is_string($this->noRawat)) {
+            $this->noRawat = (string)$this->noRawat;
+        }
+        
+        // Bersihkan karakter non-printable
+        $this->noRawat = preg_replace('/[[:^print:]]/', '', $this->noRawat);
+
+        $this->encryptNoRawat = $this->encryptData($noRawat);
         $this->data = $this->getRiwayat(Request::get('no_rm'));
     }
 
@@ -41,9 +50,17 @@ class Pemeriksaan extends Component
 
     public function getRiwayat($noRM)
     {
+        // Sanitasi input
+        if (!is_string($noRM)) {
+            $noRM = (string)$noRM;
+        }
+        
+        // Bersihkan karakter non-printable
+        $cleanNoRM = preg_replace('/[[:^print:]]/', '', $noRM);
+        
         $data = DB::table('pemeriksaan_ralan')
                             ->join('reg_periksa', 'reg_periksa.no_rawat', '=', 'pemeriksaan_ralan.no_rawat')
-                            ->where('reg_periksa.no_rkm_medis', $noRM)
+                            ->where('reg_periksa.no_rkm_medis', $cleanNoRM)
                             ->select('pemeriksaan_ralan.*')
                             ->orderBy('pemeriksaan_ralan.tgl_perawatan', 'DESC')
                             ->get();

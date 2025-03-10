@@ -184,7 +184,7 @@ class PasienRalanController extends Controller
             
         \Log::debug('Total record di reg_periksa: ' . $count);
         
-        // Query detail data pasien - Pastikan konsisten dengan hitung jumlah di atas
+        // Query detail data pasien - HINDARI JOIN YANG TIDAK PERLU untuk performa
         $query = DB::table('reg_periksa')
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
@@ -223,7 +223,7 @@ class PasienRalanController extends Controller
                 break;
         }
         
-        // Execute query untuk mendapatkan data
+        // Execute query untuk mendapatkan data dengan select yang jelas
         $data = $query->select(
                 'reg_periksa.no_reg', 
                 'pasien.nm_pasien', 
@@ -241,7 +241,59 @@ class PasienRalanController extends Controller
         
         // Verifikasi bahwa jumlah data sesuai dengan count awal
         if ($count !== $data->count()) {
-            \Log::warning('Inconsistency detected: count before query: ' . $count . ', data returned: ' . $data->count());
+            \Log::warning('Inkonsistensi terdeteksi: count before query: ' . $count . ', data returned: ' . $data->count());
+            
+            // Jika ada inkonsistensi, coba dengan query sederhana langsung tanpa join
+            $simplifiedData = DB::table('reg_periksa')
+                ->where('reg_periksa.kd_poli', $kd_poli)
+                ->where('tgl_registrasi', $tanggal)
+                ->where('reg_periksa.kd_dokter', $kd_dokter)
+                ->select('no_reg', 'no_rawat', 'no_rkm_medis', 'stts')
+                ->get();
+                
+            \Log::debug('Verifikasi dengan query sederhana: ' . $simplifiedData->count() . ' records');
+            
+            // Coba hubungkan kembali dengan data pasien dan dokter jika ada perbedaan
+            if ($simplifiedData->count() > $data->count()) {
+                \Log::warning('Melakukan recovery data, ditemukan ' . $simplifiedData->count() . ' records di query sederhana');
+                
+                // Rekonstruksi data dengan cara lain (per satu record)
+                $reconstructedData = collect();
+                
+                foreach ($simplifiedData as $simpleRecord) {
+                    $pasien = DB::table('pasien')
+                        ->where('no_rkm_medis', $simpleRecord->no_rkm_medis)
+                        ->first();
+                        
+                    $dokter = DB::table('dokter')
+                        ->where('kd_dokter', $kd_dokter)
+                        ->first();
+                        
+                    $resumePasien = DB::table('resume_pasien')
+                        ->where('no_rawat', $simpleRecord->no_rawat)
+                        ->first();
+                        
+                    // Rekonstruksi objek data
+                    $recordObj = (object)[
+                        'no_reg' => $simpleRecord->no_reg,
+                        'nm_pasien' => $pasien ? $pasien->nm_pasien : 'Unknown',
+                        'no_rawat' => $simpleRecord->no_rawat,
+                        'no_tlp' => $pasien ? $pasien->no_tlp : null,
+                        'nm_dokter' => $dokter ? $dokter->nm_dokter : 'Unknown',
+                        'stts' => $simpleRecord->stts,
+                        'keputusan' => null,
+                        'no_rkm_medis' => $simpleRecord->no_rkm_medis,
+                        'diagnosa_utama' => $resumePasien ? $resumePasien->diagnosa_utama : null
+                    ];
+                    
+                    $reconstructedData->push($recordObj);
+                }
+                
+                if ($reconstructedData->count() > $data->count()) {
+                    \Log::info('Menggunakan data hasil rekontruksi: ' . $reconstructedData->count() . ' records');
+                    $data = $reconstructedData;
+                }
+            }
         }
         
         // Cek statistik untuk debugging
@@ -270,8 +322,10 @@ class PasienRalanController extends Controller
         $kd_dokter = session()->get('username');
         $tanggal = $request->get('tanggal') ?? date('Y-m-d');
         
-        // Selalu refresh dari database untuk memastikan data konsisten
-        $forceRefresh = true;
+        // Mendapatkan parameter tambahan
+        $forceRefresh = (bool)$request->get('force', false);
+        $lastCount = (int)$request->get('last_count', 0);
+        $requestTime = $request->get('request_time');
         
         // Opsi pengurutan data
         $sortOption = $request->get('sort', 'no_reg_asc');
@@ -282,14 +336,30 @@ class PasienRalanController extends Controller
             'kd_dokter' => $kd_dokter,
             'tanggal' => $tanggal,
             'forceRefresh' => $forceRefresh,
+            'lastCount' => $lastCount,
             'sortOption' => $sortOption,
+            'requestTime' => $requestTime,
             'timestamp' => now()->format('Y-m-d H:i:s')
         ]);
         
         // Hapus semua cache terkait untuk memastikan data fresh
         $this->clearAllRelatedCaches($kd_poli, $kd_dokter, $tanggal);
         
-        // Query langsung ke database untuk mendapatkan data terbaru
+        // Hapus semua cache lainnya yang mungkin terkait
+        $cacheKeys = [
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_no_reg_asc",
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_no_reg_desc",
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_nm_pasien_asc",
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_nm_pasien_desc",
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_stts_asc",
+            "pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tanggal}_stts_desc",
+        ];
+        
+        foreach ($cacheKeys as $key) {
+            Cache::forget($key);
+        }
+        
+        // Query langsung ke database untuk mendapatkan data terbaru - SELALU BYPASS CACHE
         $data = $this->queryPasienRalanData($kd_poli, $kd_dokter, $tanggal, $sortOption);
         
         // Dapatkan data rujukan internal
@@ -300,17 +370,22 @@ class PasienRalanController extends Controller
         $selesai = $data->where('stts', 'Sudah')->count();
         $menunggu = $data->where('stts', 'Belum')->count();
         
+        // Jika jumlah data sama dengan lastCount dan ini bukan forceRefresh,
+        // kita bisa mengembalikan respons yang lebih ringan
+        $returnFullData = $forceRefresh || $totalPasien != $lastCount;
+        
         // Debug total data untuk memastikan konsistensi
         \Log::debug('Total data setelah getDataForRefresh', [
             'total' => $totalPasien,
             'selesai' => $selesai,
             'menunggu' => $menunggu,
-            'data_count' => $data->count()
+            'data_count' => $data->count(),
+            'lastCount' => $lastCount,
+            'returnFullData' => $returnFullData
         ]);
         
-        return response()->json([
-            'pasienRalan' => $data,
-            'rujukInternal' => $dataInternal,
+        // Respons dasar yang selalu dikembalikan
+        $response = [
             'statistik' => [
                 'total' => $totalPasien,
                 'selesai' => $selesai,
@@ -322,9 +397,20 @@ class PasienRalanController extends Controller
             'poli' => $this->getPoliklinik($kd_poli),
             'lastUpdated' => now()->timestamp,
             'success' => true,
-            'refreshForced' => $forceRefresh,
-            'dataCount' => $data->count() // Tambahkan info tambahan untuk debugging
-        ]);
+            'dataCount' => $data->count(),
+            'dataSource' => 'direct_query',
+            'requestTime' => $requestTime,
+            'responseTime' => now()->timestamp,
+            'returnFullData' => $returnFullData
+        ];
+        
+        // Tambahkan data lengkap jika diperlukan
+        if ($returnFullData) {
+            $response['pasienRalan'] = $data;
+            $response['rujukInternal'] = $dataInternal;
+        }
+        
+        return response()->json($response);
     }
     
     /**

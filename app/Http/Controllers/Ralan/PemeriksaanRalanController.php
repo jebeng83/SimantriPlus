@@ -35,22 +35,40 @@ class PemeriksaanRalanController extends Controller
      */
     private function safeDecodeNoRawat($encodedValue)
     {
-        \Illuminate\Support\Facades\Log::info('Mencoba mendekode no_rawat: ' . $encodedValue);
+        // Log kritis dihapus untuk production
+        // \Illuminate\Support\Facades\Log::info('Mencoba mendekode no_rawat: ' . $encodedValue);
         
         if (empty($encodedValue)) {
             return '';
         }
         
+        // Pastikan data yang kita terima adalah string yang valid
+        if (!is_string($encodedValue)) {
+            $encodedValue = (string)$encodedValue;
+        }
+        
+        // Hapus karakter non-printable
+        $cleanValue = preg_replace('/[[:^print:]]/', '', $encodedValue);
+        
+        // Jika hasilnya kosong setelah pembersihan, gunakan nilai asli
+        if (empty($cleanValue) && !empty($encodedValue)) {
+            $cleanValue = $encodedValue;
+        }
+        
+        // Log debug dihapus untuk production
+        // \Illuminate\Support\Facades\Log::info('Nilai setelah dibersihkan: ' . $cleanValue);
+        
         // Coba dekripsi dengan cara biasa
         try {
-            $decodedValue = $this->decryptData($encodedValue);
+            $decodedValue = $this->decryptData($cleanValue);
             // Validasi hasil dekripsi (harus memiliki format yang benar)
             if (preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $decodedValue)) {
-                \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekripsi metode standar: ' . $decodedValue);
+                // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekripsi metode standar: ' . $decodedValue);
                 return $decodedValue;
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Gagal decrypt no_rawat [metode 1]: ' . $e->getMessage());
+            // Simpan log warning untuk error penting
+            \Illuminate\Support\Facades\Log::warning('Gagal decrypt no_rawat: ' . $e->getMessage());
         }
         
         // Jika mengandung karakter % berarti URL encoded
@@ -58,13 +76,13 @@ class PemeriksaanRalanController extends Controller
             try {
                 // Dekode URL dulu
                 $urlDecoded = urldecode($encodedValue);
-                \Illuminate\Support\Facades\Log::info('URL decode result: ' . $urlDecoded);
+                // \Illuminate\Support\Facades\Log::info('URL decode result: ' . $urlDecoded);
                 
                 // Coba base64 dekode
                 $base64Decoded = base64_decode($urlDecoded, true); // strict mode
                 
                 if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
-                    \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan url+base64: ' . $base64Decoded);
+                    // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan url+base64: ' . $base64Decoded);
                     return $base64Decoded;
                 }
                 
@@ -74,7 +92,7 @@ class PemeriksaanRalanController extends Controller
                     $base64Decoded = base64_decode($doubleUrlDecoded, true);
                     
                     if ($base64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64Decoded)) {
-                        \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan double-url+base64: ' . $base64Decoded);
+                        // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan double-url+base64: ' . $base64Decoded);
                         return $base64Decoded;
                     }
                 }
@@ -89,12 +107,12 @@ class PemeriksaanRalanController extends Controller
                     $base64DecodedTrimmed = base64_decode($paddedBase64, true);
                     
                     if ($base64DecodedTrimmed !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $base64DecodedTrimmed)) {
-                        \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan trim+padding+base64: ' . $base64DecodedTrimmed);
+                        // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan trim+padding+base64: ' . $base64DecodedTrimmed);
                         return $base64DecodedTrimmed;
                     }
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat [metode url]: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat: ' . $e->getMessage());
             }
         }
         
@@ -104,11 +122,11 @@ class PemeriksaanRalanController extends Controller
                 $directBase64Decoded = base64_decode($encodedValue, true);
                 
                 if ($directBase64Decoded !== false && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $directBase64Decoded)) {
-                    \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan direct base64: ' . $directBase64Decoded);
+                    // \Illuminate\Support\Facades\Log::info('No Rawat berhasil didekode dengan direct base64: ' . $directBase64Decoded);
                     return $directBase64Decoded;
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat [metode direct base64]: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Gagal mendekode no_rawat: ' . $e->getMessage());
             }
         }
         
@@ -141,14 +159,14 @@ class PemeriksaanRalanController extends Controller
                 ->first();
                 
             if ($cekRawat) {
-                \Illuminate\Support\Facades\Log::info('Berhasil menemukan no_rawat berdasarkan tanggal: ' . $cekRawat->no_rawat);
+                // \Illuminate\Support\Facades\Log::info('Berhasil menemukan no_rawat berdasarkan tanggal: ' . $cekRawat->no_rawat);
                 return $cekRawat->no_rawat;
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Gagal mencari no_rawat di database: ' . $e->getMessage());
         }
         
-        \Illuminate\Support\Facades\Log::warning('Tidak berhasil mendekode no_rawat, mengembalikan nilai asli: ' . $encodedValue);
+        // \Illuminate\Support\Facades\Log::warning('Tidak berhasil mendekode no_rawat, mengembalikan nilai asli: ' . $encodedValue);
         return $encodedValue;
     }
 
@@ -158,26 +176,20 @@ class PemeriksaanRalanController extends Controller
         $noRawat = Request::get('no_rawat');
         $noRM = Request::get('no_rm');
         
-        // Tambahkan logging untuk debugging parameter
-        \Illuminate\Support\Facades\Log::info('PemeriksaanRalanController@index', [
-            'no_rawat' => $noRawat,
-            'no_rm' => $noRM,
-            'dokter' => $dokter
+        // Log minimalis
+        \Illuminate\Support\Facades\Log::info('Akses halaman pemeriksaan ralan', [
+            'no_rawat' => $noRawat
         ]);
         
-        // Coba dekode parameter no_rawat dengan metode yang lebih aman
+        // Dekode no_rawat
         $decodedNoRawat = $this->safeDecodeNoRawat($noRawat);
-        
-        // Aktifkan Query Log untuk debugging
-        \Illuminate\Support\Facades\DB::enableQueryLog();
         
         $dataFound = false;
         $fallbackTriggered = false;
         $sampleData = null;
         
-        // Verifikasi bahwa no_rawat didekode dan aman untuk query database
+        // Verifikasi parameter
         if (!empty($decodedNoRawat) && preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $decodedNoRawat)) {
-            // Periksa apakah ada data pasien di database
             try {
                 $pasienData = DB::table('reg_periksa')
                     ->where('no_rawat', $decodedNoRawat)
@@ -185,24 +197,14 @@ class PemeriksaanRalanController extends Controller
                     
                 if ($pasienData) {
                     $dataFound = true;
-                    $noRawat = $decodedNoRawat; // Gunakan nilai yang berhasil didekode
-                    
-                    \Illuminate\Support\Facades\Log::info('Data reg_periksa ditemukan', [
-                        'no_rawat' => $pasienData->no_rawat,
-                        'no_rkm_medis' => $pasienData->no_rkm_medis,
-                        'tgl_registrasi' => $pasienData->tgl_registrasi
-                    ]);
-                } else {
-                    \Illuminate\Support\Facades\Log::warning('Data reg_periksa tidak ditemukan untuk no_rawat yang sudah didekode: ' . $decodedNoRawat);
+                    $noRawat = $decodedNoRawat;
                 }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Error query database: ' . $e->getMessage());
             }
-        } else {
-            \Illuminate\Support\Facades\Log::warning('Nilai no_rawat tidak valid setelah dekode: ' . $decodedNoRawat);
         }
         
-        // Jika data masih tidak ditemukan, coba cari data pasien terbaru untuk contoh
+        // Jika data tidak ditemukan, gunakan data pasien terbaru
         if (!$dataFound) {
             try {
                 $recentPasien = DB::table('reg_periksa')
@@ -213,18 +215,13 @@ class PemeriksaanRalanController extends Controller
                 
                 if ($recentPasien) {
                     $sampleData = $recentPasien->no_rawat;
-                    \Illuminate\Support\Facades\Log::info('Menggunakan data contoh no_rawat: ' . $sampleData);
                 }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning('Gagal mendapatkan data contoh: ' . $e->getMessage());
             }
         }
         
-        // Ambil query yang dieksekusi
-        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
-        \Illuminate\Support\Facades\Log::info('Query Logs:', ['queries' => $queries]);
-        
-        // Struktur data untuk template view
+        // Data untuk view
         $viewData = [
             'no_rawat' => $noRawat,
             'no_rm' => $noRM,
@@ -242,7 +239,6 @@ class PemeriksaanRalanController extends Controller
             ]
         ];
         
-        // Tambahkan sample data jika diperlukan
         if ($sampleData && !$dataFound) {
             $viewData['sample_data'] = $sampleData;
         }
@@ -273,38 +269,87 @@ class PemeriksaanRalanController extends Controller
     public function postResepRacikan($noRawat)
     {
         $namaRacikan = Request::get('nama_racikan');
-        $aturanPakai = Request::get('aturan_racikan');
-        $jumlahRacikan = Request::get('jumlah_racikan');
         $metodeRacikan = Request::get('metode_racikan');
+        $jumlahRacikan = Request::get('jumlah_racikan');
+        $aturanPakai = Request::get('aturan_racikan');
         $keteranganRacikan = Request::get('keterangan_racikan');
-        $no_rawat = $this->decryptData($noRawat);
-        $dokter = session()->get('username');
-
-        $validate = Request::validate([
-            'nama_racikan' => 'required',
-            'aturan_racikan' => 'required',
-            'jumlah_racikan' => 'required',
-            'metode_racikan' => 'required',
-            'keterangan_racikan' => 'required',
-        ]);
-
+        
         try {
-            // $resep = DB::table('resep_obat')->where('no_rawat', $no_rawat)->first();
-            $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+            // Dekripsi dan sanitasi no_rawat
+            $originalNoRawat = $noRawat; // Simpan original untuk debugging jika diperlukan
+            $no_rawat = $this->decryptData($noRawat);
+            
+            // Pastikan data yang kita terima adalah string yang valid
+            if (!is_string($no_rawat)) {
+                $no_rawat = (string)$no_rawat;
+            }
+            
+            // Hapus karakter non-printable
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $no_rawat);
+            
+            // Jika hasilnya kosong setelah pembersihan, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($no_rawat)) {
+                $cleanNoRawat = $no_rawat;
+            }
+            
+            // Verifikasi format no_rawat
+            if (!preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $cleanNoRawat)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Format nomor rawat tidak valid: ' . $cleanNoRawat
+                ]);
+            }
+            
+            // Verifikasi no_rawat ada di database
+            $cekNoRawat = DB::table('reg_periksa')
+                ->where(DB::raw('BINARY no_rawat'), $cleanNoRawat)
+                ->first();
+                
+            if (!$cekNoRawat) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'No Rawat tidak ditemukan di database'
+                ]);
+            }
+            
+            $dokter = session()->get('username');
+
+            $validate = Request::validate([
+                'nama_racikan' => 'required',
+                'aturan_racikan' => 'required',
+                'jumlah_racikan' => 'required',
+                'metode_racikan' => 'required',
+                'keterangan_racikan' => 'required',
+            ]);
+
+            // Generate nomor resep
+            $no = DB::table('resep_obat')
+                ->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')
+                ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")
+                ->first();
+                
             $maxNo = substr($no->resep, 0, 4);
             $nextNo = sprintf('%04s', ($maxNo + 1));
-            $tgl = date('Ymd');
-            $noResep = $tgl . '' . $nextNo;
+            $tgl = date('Y-m-d'); // Format tanggal yang benar YYYY-MM-DD
+            $tglNoResep = date('Ymd'); // Format untuk nomor resep
+            $noResep = $tglNoResep . '' . $nextNo;
 
+            // Cek apakah sudah ada resep racikan dengan nomor rawat dan tanggal yang sama
             $cek = DB::table('resep_obat')
                 ->join('resep_dokter_racikan', 'resep_obat.no_resep', '=', 'resep_dokter_racikan.no_resep')
-                ->where('resep_obat.no_rawat', $no_rawat)->where('resep_obat.tgl_peresepan', date('Y-m-d'))
+                ->where(DB::raw('BINARY resep_obat.no_rawat'), $cleanNoRawat)
+                ->where('resep_obat.tgl_peresepan', date('Y-m-d'))
                 ->select('resep_obat.no_resep')
                 ->first();
 
             if (!empty($cek)) {
-                $noRacik = DB::table('resep_dokter_racikan')->where('no_resep', $cek->no_resep)->max('no_racik');
+                // Jika sudah ada, tambahkan racikan ke resep yang sudah ada
+                $noRacik = DB::table('resep_dokter_racikan')
+                    ->where('no_resep', $cek->no_resep)
+                    ->max('no_racik');
+                    
                 $nextNoRacik = $noRacik + 1;
+                
                 $insert = DB::table('resep_dokter_racikan')
                     ->insert([
                         'no_resep' => $cek->no_resep,
@@ -315,16 +360,21 @@ class PemeriksaanRalanController extends Controller
                         'aturan_pakai' => $aturanPakai,
                         'keterangan' => $keteranganRacikan,
                     ]);
+                    
                 if ($insert) {
-                    return response()->json(['status' => 'sukses', 'pesan' => 'Racikan berhasil ditambahkan']);
+                    return response()->json([
+                        'status' => 'sukses', 
+                        'pesan' => 'Racikan berhasil ditambahkan'
+                    ]);
                 }
             } else {
+                // Jika belum ada, buat resep baru
                 $insert = DB::table('resep_obat')
                     ->insert([
                         'no_resep' => $noResep,
                         'tgl_perawatan' => date('Y-m-d'),
                         'jam' => date('H:i:s'),
-                        'no_rawat' => $no_rawat,
+                        'no_rawat' => $cleanNoRawat, // Gunakan no_rawat yang sudah dibersihkan
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => date('Y-m-d'),
                         'jam_peresepan' => date('H:i:s'),
@@ -344,14 +394,23 @@ class PemeriksaanRalanController extends Controller
                             'keterangan' => $keteranganRacikan,
                         ]);
                     if ($insert) {
-                        return response()->json(['status' => 'sukses', 'pesan' => 'Racikan berhasil ditambahkan']);
+                        return response()->json([
+                            'status' => 'sukses',
+                            'pesan' => 'Racikan berhasil ditambahkan'
+                        ]);
                     }
                 } else {
-                    return response()->json(['status' => 'gagal', 'pesan' => 'Racikan gagal ditambahkan']);
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Racikan gagal ditambahkan'
+                    ]);
                 }
             }
         } catch (\Illuminate\Database\QueryException $ex) {
-            return response()->json(['status' => 'gagal', 'pesan' => $ex->getMessage()]);
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => $ex->getMessage()
+            ]);
         }
     }
 
@@ -484,29 +543,60 @@ class PemeriksaanRalanController extends Controller
         $resJml = Request::get('jumlah');
         $resAturan = Request::get('aturan_pakai');
         $iter = Request::get('iter');
-        $noRawat = $this->decryptData($noRawat);
-        // $validate = Request::validate([
-        //     'obat' => 'required',
-        //     'jumlah' => 'required',
-        //     'aturan_pakai' => 'required',
-        // ]);
-        // if ($validate->fails()) {    
-        //     return response()->json($validate->messages(), Response::HTTP_BAD_REQUEST);
-        // }
-
+        
         try {
+            // Dekripsi dan sanitasi no_rawat
+            $originalNoRawat = $noRawat; // Simpan original untuk debugging jika diperlukan
+            $noRawat = $this->decryptData($noRawat);
+            
+            // Pastikan data yang kita terima adalah string yang valid
+            if (!is_string($noRawat)) {
+                $noRawat = (string)$noRawat;
+            }
+            
+            // Hapus karakter non-printable
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+            
+            // Jika hasilnya kosong setelah pembersihan, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($noRawat)) {
+                $cleanNoRawat = $noRawat;
+            }
+            
+            // Verifikasi format no_rawat
+            if (!preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $cleanNoRawat)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Format nomor rawat tidak valid: ' . $cleanNoRawat
+                ]);
+            }
+            
+            // Verifikasi no_rawat ada di database
+            $cekNoRawat = DB::table('reg_periksa')
+                ->where(DB::raw('BINARY no_rawat'), $cleanNoRawat)
+                ->first();
+                
+            if (!$cekNoRawat) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'No Rawat tidak ditemukan di database'
+                ]);
+            }
+            
+            // Proses iter jika ada
             if ($iter != '-') {
                 $insert = DB::table('resep_iter')->upsert([
-                    'no_rawat' => $noRawat,
+                    'no_rawat' => $cleanNoRawat,
                     'catatan_iter' => $iter,
                 ], ['no_rawat'], ['catatan_iter']);
             }
 
+            // Looping untuk setiap obat
             for ($i = 0; $i < count($resObat); $i++) {
                 $obat = $resObat[$i];
                 $jml = $resJml[$i];
                 $aturan = $resAturan[$i];
 
+                // Cek stok
                 $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->max('tanggal');
                 $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal', 'B0009')->max('jam');
                 $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', 'B0009')->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
@@ -517,14 +607,27 @@ class PemeriksaanRalanController extends Controller
                         'pesan' => 'Stok obat ' . $obat . ' kosong'
                     ]);
                 }
-                $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->first();
-                $no = DB::table('resep_obat')->where('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
+                
+                // Cek apakah sudah ada resep
+                $resep = DB::table('resep_obat')
+                    ->where(DB::raw('BINARY no_rawat'), $cleanNoRawat)
+                    ->first();
+                    
+                // Generate nomor resep baru jika belum ada
+                $no = DB::table('resep_obat')
+                    ->where('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')
+                    ->orWhere('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')
+                    ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")
+                    ->first();
+                    
                 $maxNo = substr($no->resep, 0, 4);
                 $nextNo = sprintf('%04s', ($maxNo + 1));
-                $tgl = date('Ymd');
-                $noResep = $tgl . '' . $nextNo;
+                $tgl = date('Y-m-d'); // Format tanggal yang benar YYYY-MM-DD
+                $tglNoResep = date('Ymd'); // Format untuk nomor resep
+                $noResep = $tglNoResep . '' . $nextNo;
 
                 if ($resep) {
+                    // Jika sudah ada resep, tambahkan obat ke resep yang ada
                     DB::table('resep_dokter')->insert([
                         'no_resep' => $resep->no_resep,
                         'kode_brng' => $obat,
@@ -532,16 +635,19 @@ class PemeriksaanRalanController extends Controller
                         'aturan_pakai' => $aturan,
                     ]);
                 } else {
+                    // Jika belum ada resep, buat resep baru
                     DB::table('resep_obat')->insert([
                         'no_resep' => $noResep,
                         'tgl_perawatan' => '0000-00-00',
                         'jam' => '00:00:00',
-                        'no_rawat' => $noRawat,
+                        'no_rawat' => $cleanNoRawat, // Gunakan no_rawat yang sudah dibersihkan
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => $tgl,
                         'jam_peresepan' => date('H:i:s'),
                         'status' => 'Ralan',
                     ]);
+                    
+                    // Tambahkan obat ke resep
                     DB::table('resep_dokter')->insert([
                         'no_resep' => $noResep,
                         'kode_brng' => $obat,
@@ -550,14 +656,29 @@ class PemeriksaanRalanController extends Controller
                     ]);
                 }
             }
+            
             return response()->json([
                 'status' => 'sukses',
                 'pesan' => 'Input resep berhasil'
             ]);
         } catch (\Illuminate\Database\QueryException $ex) {
+            // Catat detail error untuk debugging
+            \Illuminate\Support\Facades\Log::error('Error saat menyimpan resep: ' . $ex->getMessage(), [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'no_rawat' => $noRawat ?? 'tidak tersedia'
+            ]);
+            
             return response()->json([
                 'status' => 'gagal',
-                'pesan' => $ex->getMessage()
+                'pesan' => 'Terjadi kesalahan saat menyimpan resep: ' . $ex->getMessage()
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error umum saat menyimpan resep: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => 'Terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
     }
@@ -593,23 +714,42 @@ class PemeriksaanRalanController extends Controller
 
     public static function getPemeriksaanRalan($noRawat, $status)
     {
-        // Log parameter untuk membantu debug
-        \Illuminate\Support\Facades\Log::info('getPemeriksaanRalan dipanggil dengan parameter', [
-            'no_rawat' => $noRawat,
-            'status' => $status
-        ]);
+        // Log parameter untuk membantu debug - dihapus untuk production
+        // \Illuminate\Support\Facades\Log::info('getPemeriksaanRalan dipanggil dengan parameter', [
+        //     'no_rawat' => $noRawat,
+        //     'status' => $status
+        // ]);
+        
+        // Sanitasi input untuk mencegah masalah encoding dan collation
+        if (!is_string($noRawat)) {
+            $noRawat = (string)$noRawat;
+        }
+        
+        // Hapus karakter non-printable jika ada
+        $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+        
+        // Jika setelah dibersihkan kosong, gunakan nilai asli
+        if (empty($cleanNoRawat) && !empty($noRawat)) {
+            $cleanNoRawat = $noRawat;
+        }
+        
+        // Log nilai yang sudah dibersihkan - dihapus untuk production
+        // \Illuminate\Support\Facades\Log::info('Nilai no_rawat setelah dibersihkan', [
+        //     'original' => $noRawat,
+        //     'cleaned' => $cleanNoRawat
+        // ]);
         
         try {
-        if ($status == 'Ralan') {
-                // Periksa dulu struktur tabel
-                $tableColumns = Schema::getColumnListing('pemeriksaan_ralan');
-                \Illuminate\Support\Facades\Log::info('Kolom-kolom tersedia di tabel pemeriksaan_ralan', [
-                    'columns' => $tableColumns
-                ]);
+            if ($status == 'Ralan') {
+                // Periksa dulu struktur tabel - dihapus untuk production
+                // $tableColumns = Schema::getColumnListing('pemeriksaan_ralan');
+                // \Illuminate\Support\Facades\Log::info('Kolom-kolom tersedia di tabel pemeriksaan_ralan', [
+                //     'columns' => $tableColumns
+                // ]);
                 
-            $data = DB::table('pemeriksaan_ralan')
+                $data = DB::table('pemeriksaan_ralan')
                     ->leftJoin('pegawai', 'pemeriksaan_ralan.nip', '=', 'pegawai.nik')
-                    ->where('pemeriksaan_ralan.no_rawat', $noRawat)
+                    ->where('pemeriksaan_ralan.no_rawat', $cleanNoRawat)
                     ->select(
                         'pemeriksaan_ralan.no_rawat',
                         'pemeriksaan_ralan.tgl_perawatan',
@@ -634,58 +774,136 @@ class PemeriksaanRalanController extends Controller
                         'pemeriksaan_ralan.nip',
                         'pegawai.nama'
                     )
-                ->get();
+                    ->orderBy('pemeriksaan_ralan.jam_rawat', 'desc')
+                    ->get();
                     
-                // Log hasil query untuk memastikan data ditemukan
-                \Illuminate\Support\Facades\Log::info('Hasil query pemeriksaan_ralan', [
-                    'found' => count($data),
-                    'sample' => count($data) > 0 ? get_object_vars($data[0]) : null
-                ]);
+                // Log hasil query - dihapus untuk production
+                // \Illuminate\Support\Facades\Log::info('Hasil query pemeriksaan_ralan', [
+                //     'found' => count($data),
+                //     'sample' => count($data) > 0 ? $data[0] : null
+                // ]);
+            } else {
+                // Periksa dulu struktur tabel - dihapus untuk production
+                // $tableColumns = Schema::getColumnListing('pemeriksaan_ranap');
+                // \Illuminate\Support\Facades\Log::info('Kolom-kolom tersedia di tabel pemeriksaan_ranap', [
+                //     'columns' => $tableColumns
+                // ]);
                 
-        } else {
-            $data = DB::table('pemeriksaan_ranap')
+                $data = DB::table('pemeriksaan_ranap')
                     ->leftJoin('pegawai', 'pemeriksaan_ranap.nip', '=', 'pegawai.nik')
-                    ->where('pemeriksaan_ranap.no_rawat', $noRawat)
+                    ->where('pemeriksaan_ranap.no_rawat', $cleanNoRawat)
                     ->select(
                         'pemeriksaan_ranap.*',
                         'pegawai.nama'
                     )
-                ->get();
-        }
-        return $data;
+                    ->orderBy('pemeriksaan_ranap.tgl_perawatan', 'desc')
+                    ->orderBy('pemeriksaan_ranap.jam_rawat', 'desc')
+                    ->get();
+                    
+                // Log hasil query - dihapus untuk production
+                // \Illuminate\Support\Facades\Log::info('Hasil query pemeriksaan_ranap', [
+                //     'found' => count($data),
+                //     'sample' => count($data) > 0 ? $data[0] : null
+                // ]);
+            }
+            return $data;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error di getPemeriksaanRalan: ' . $e->getMessage());
-            return collect(); // Mengembalikan koleksi kosong jika terjadi error
+            \Illuminate\Support\Facades\Log::error('Error pada getPemeriksaanRalan: ' . $e->getMessage());
+            return [];
         }
     }
 
     public static function getPemeriksaanLab($noRawat)
     {
-        $data = DB::table('detail_periksa_lab')
-            ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
-            ->where('detail_periksa_lab.no_rawat', $noRawat)
-            ->select('template_laboratorium.Pemeriksaan', 'detail_periksa_lab.tgl_periksa', 'detail_periksa_lab.jam', 'detail_periksa_lab.nilai', 'template_laboratorium.satuan', 'detail_periksa_lab.nilai_rujukan', 'detail_periksa_lab.keterangan')
-            ->orderBy('detail_periksa_lab.tgl_periksa', 'desc')
-            ->get();
-        return $data;
+        try {
+            // Sanitasi input untuk mencegah masalah encoding dan collation
+            if (!is_string($noRawat)) {
+                $noRawat = (string)$noRawat;
+            }
+            
+            // Hapus karakter non-printable jika ada
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+            
+            // Jika setelah dibersihkan kosong, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($noRawat)) {
+                $cleanNoRawat = $noRawat;
+            }
+            
+            // Query ke detail_periksa_lab untuk mendapatkan data hasil lab
+            $data = DB::table('detail_periksa_lab')
+                ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                ->where(DB::raw('BINARY detail_periksa_lab.no_rawat'), $cleanNoRawat)
+                ->select(
+                    'template_laboratorium.Pemeriksaan', 
+                    'detail_periksa_lab.tgl_periksa', 
+                    'detail_periksa_lab.jam', 
+                    'detail_periksa_lab.nilai', 
+                    'template_laboratorium.satuan', 
+                    'detail_periksa_lab.nilai_rujukan', 
+                    'detail_periksa_lab.keterangan'
+                )
+                ->orderBy('detail_periksa_lab.tgl_periksa', 'desc')
+                ->get();
+                
+            return $data;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error pada getPemeriksaanLab: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public static function getDiagnosa($noRawat)
     {
-        $data = DB::table('diagnosa_pasien')
-            ->join('penyakit', 'diagnosa_pasien.kd_penyakit', '=', 'penyakit.kd_penyakit')
-            ->where('diagnosa_pasien.no_rawat', $noRawat)
-            ->select('penyakit.kd_penyakit', 'penyakit.nm_penyakit')
-            ->get();
-        return $data;
+        try {
+            // Sanitasi input untuk mencegah masalah encoding dan collation
+            if (!is_string($noRawat)) {
+                $noRawat = (string)$noRawat;
+            }
+            
+            // Hapus karakter non-printable jika ada
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+            
+            // Jika setelah dibersihkan kosong, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($noRawat)) {
+                $cleanNoRawat = $noRawat;
+            }
+            
+            $data = DB::table('diagnosa_pasien')
+                ->join('penyakit', 'diagnosa_pasien.kd_penyakit', '=', 'penyakit.kd_penyakit')
+                ->where(DB::raw('BINARY diagnosa_pasien.no_rawat'), $cleanNoRawat)
+                ->select('penyakit.kd_penyakit', 'penyakit.nm_penyakit')
+                ->get();
+            return $data;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error pada getDiagnosa: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public static function getPemeriksaanObstetri($noRawat)
     {
-        $data = DB::table('pemeriksaan_obstetri_ralan')
-            ->where('no_rawat', $noRawat)
-            ->first();
-        return $data;
+        try {
+            // Sanitasi input untuk mencegah masalah encoding dan collation
+            if (!is_string($noRawat)) {
+                $noRawat = (string)$noRawat;
+            }
+            
+            // Hapus karakter non-printable jika ada
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $noRawat);
+            
+            // Jika setelah dibersihkan kosong, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($noRawat)) {
+                $cleanNoRawat = $noRawat;
+            }
+            
+            $data = DB::table('pemeriksaan_obstetri_ralan')
+                ->where(DB::raw('BINARY no_rawat'), $cleanNoRawat)
+                ->first();
+            return $data;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error pada getPemeriksaanObstetri: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**

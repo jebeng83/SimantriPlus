@@ -185,6 +185,10 @@ $('#simpanPermintaanLab').off('click');
 
 function hapusPermintaanLab(noOrder, event){
     event.preventDefault();
+    
+    // Tambahkan console log untuk debugging
+    console.log('Menghapus permintaan lab dengan noOrder:', noOrder);
+    
     Swal.fire({
         title: 'Apakah anda yakin?',
         text: "Data yang dihapus tidak dapat dikembalikan",
@@ -202,7 +206,7 @@ function hapusPermintaanLab(noOrder, event){
                 data: {
                     _token: token
                 },
-                format: 'json',
+                dataType: 'json',
                 beforeSend:function() {
                     Swal.fire({
                         title: 'Loading....',
@@ -214,34 +218,53 @@ function hapusPermintaanLab(noOrder, event){
                         });
                     },
                 success: function(response){
-                    // console.log(response);
+                    console.log('Respons hapus dari server:', response);
+                    
                     if(response.status == 'sukses'){
                         Swal.fire({
                             title: "Sukses",
-                            text: response.pesan ?? "Data berhasil dihapus",
+                            text: response.message ?? "Data berhasil dihapus",
                             icon: "success",
-                            button: "OK",
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                location.reload();
+                            confirmButtonText: "OK",
+                        }).then(() => {
+                            console.log('Menghapus baris dari tabel...');
+                            
+                            // Gunakan fungsi removeRowFromTable jika tersedia
+                            if (typeof window.removeRowFromTable === 'function') {
+                                window.removeRowFromTable(noOrder);
+                            } else {
+                                // Fallback ke reload halaman jika fungsi tidak tersedia
+                                console.log('Fungsi removeRowFromTable tidak ditemukan, reload halaman...');
+                                
+                                // Hapus cache browser lalu refresh
+                                const currentUrl = window.location.href.split('?')[0];
+                                const refreshUrl = currentUrl + '?nocache=' + new Date().getTime();
+                                window.location.href = refreshUrl;
                             }
                         });
                     }else{
+                        console.error('Error hapus dari server:', response.message);
                         Swal.fire({
                             title: "Gagal",
-                            text: response.pesan ?? "Data gagal dihapus",
+                            text: response.message ?? "Data gagal dihapus",
                             icon: "error",
-                            button: "OK",
+                            confirmButtonText: "OK",
                         });
                     }
                 },
-                error: function(response){
-                    // console.log(response);
+                error: function(xhr, status, error){
+                    console.error('Error AJAX hapus:', error);
+                    // Menampilkan informasi error yang lebih detail
+                    let errorMessage = "Data gagal dihapus";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
                     Swal.fire({
                         title: "Gagal",
-                        text: response.pesan ?? "Data gagal dihapus",
+                        text: errorMessage,
                         icon: "error",
-                        button: "OK",
+                        confirmButtonText: "OK",
                     });
                 }
             });
@@ -286,6 +309,20 @@ function simpanPermintaanLab(data) {
     const encrypNoRawat = document.getElementById('permintaanLab').getAttribute('data-encrypNoRawat');
     const token = document.getElementById('permintaanLab').getAttribute('data-token');
     
+    // Validasi data sebelum dikirim
+    if (!data.jns_pemeriksaan || data.jns_pemeriksaan.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Silakan pilih minimal satu jenis pemeriksaan'
+        });
+        return;
+    }
+    
+    // Tambahkan console log untuk debugging
+    console.log('Mengirim permintaan lab dengan data:', data);
+    console.log('Menggunakan no_rawat:', encrypNoRawat);
+    
     $.ajax({
         url: '/api/permintaan-lab/' + encrypNoRawat,
         type: 'POST',
@@ -299,27 +336,33 @@ function simpanPermintaanLab(data) {
             $('#btn-simpan').html('<i class="fas fa-spinner fa-spin"></i> Proses...');
         },
         success: function(response) {
+            console.log('Respons dari server:', response);
+            
             if (response.status === 'sukses') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil',
                     text: 'Permintaan lab berhasil disimpan',
-                    showConfirmButton: false,
-                    timer: 1500
-                }).then(() => {
-                    window.location.reload();
+                    showConfirmButton: true,
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    // Reload halaman dengan hard refresh
+                    console.log('Melakukan refresh halaman...');
+                    window.location.reload(true);
                 });
             } else {
+                console.error('Error dari server:', response.message);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: response.message
+                    text: response.message || 'Terjadi kesalahan saat menyimpan permintaan lab'
                 });
                 $('#btn-simpan').prop('disabled', false);
                 $('#btn-simpan').html('Simpan');
             }
         },
         error: function(xhr, status, error) {
+            console.error('Error AJAX:', xhr.responseText);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
