@@ -55,5 +55,6 @@ Route::get('/riwayat_pemeriksaan', [RiwayatController::class, 'getRiwayatPemerik
 Route::get('/pemeriksaan', [RiwayatController::class, 'getPemeriksaan']);
 
 Route::get('/pemeriksaan/{noRawat}', [PemeriksaanController::class, 'getPemeriksaan']);
+Route::get('/riwayat-pemeriksaan/{noRawat}', [PemeriksaanController::class, 'getRiwayatPemeriksaan']);
 
 Route::post('/icare', [App\Http\Controllers\API\BPJSController::class, 'icare']);
