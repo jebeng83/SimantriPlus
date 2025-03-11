@@ -21,23 +21,6 @@ class Pemeriksaan extends Component
         if (!$this->isCollapsed) {
             $this->getPemeriksaan();
             $this->getListPemeriksaan();
-            $this->pemeriksaan = $this->pemeriksaan ?? 'KU Baik, Composmentis
-Thorax : Cor S1-2 intensitas normal, reguler, bising (-)
-Pulmo : SDV +/+ ST -/-
-Abdomen : Supel, NT(-), peristaltik (+) normal.
-EXT : Oedem -/-';
-            $this->keluhan = $this->keluhan ?? 'Pasien datang dengan keluhan';
-            $this->penilaian = $this->penilaian ?? '-';
-            $this->instruksi = $this->instruksi ?? 'Istirahat Cukup, PHBS';
-            $this->rtl = $this->rtl ?? 'Edukasi Kesehatan';
-            $this->alergi = $this->alergi ?? 'Tidak Ada';
-            $this->suhu = $this->suhu ?? '36.5';
-            $this->lingkar = $this->lingkar ?? '72';
-            $this->nadi = $this->nadi ?? '82';
-            $this->respirasi = $this->respirasi ?? '20';
-            $this->spo2 = $this->spo2 ?? '96';
-            $this->gcs = $this->gcs ?? '15';
-            $this->evaluasi = $this->evaluasi ?? 'Kontrol Ulang Jika belum Ada Perubahan';
         }
     }
 
@@ -146,6 +129,8 @@ EXT : Oedem -/-';
             ->where(DB::raw('BINARY no_rawat'), $decodedNoRawat)
             ->orderBy('jam_rawat', 'desc')
             ->first();
+            
+        // Hanya isi nilai jika ada data pemeriksaan sebelumnya
         if ($pemeriksaan) {
             $this->keluhan = $pemeriksaan->keluhan;
             $this->pemeriksaan = $pemeriksaan->pemeriksaan;
@@ -164,26 +149,36 @@ EXT : Oedem -/-';
             $this->kesadaran = $pemeriksaan->kesadaran;
             $this->lingkar = $pemeriksaan->lingkar_perut;
             $this->spo2 = $pemeriksaan->spo2;
+        } else {
+            // Reset semua nilai jika tidak ada pemeriksaan sebelumnya
+            $this->keluhan = '';
+            $this->pemeriksaan = '';
+            $this->penilaian = '';
+            $this->instruksi = '';
+            $this->rtl = '';
+            $this->alergi = '';
+            $this->suhu = '';
+            $this->berat = '';
+            $this->tinggi = '';
+            $this->tensi = '';
+            $this->nadi = '';
+            $this->respirasi = '';
+            $this->evaluasi = '';
+            $this->gcs = '';
+            $this->kesadaran = 'Compos Mentis';
+            $this->lingkar = '';
+            $this->spo2 = '';
         }
     }
 
     public function simpanPemeriksaan()
     {
         try {
-            // Dekode no_rawat
+            DB::beginTransaction();
+            
+            // Dekode no_rawat jika perlu
             $decodedNoRawat = $this->decodeNoRawat($this->noRawat);
             
-            // Verifikasi apakah no_rawat ada di tabel reg_periksa
-            $cekReg = DB::table('reg_periksa')
-                ->where('no_rawat', $decodedNoRawat)
-                ->first();
-                
-            if (!$cekReg) {
-                \Illuminate\Support\Facades\Log::error('No Rawat tidak ditemukan di reg_periksa: ' . $decodedNoRawat);
-                throw new \Exception('Data registrasi pasien tidak ditemukan. Hubungi administrator.');
-            }
-            
-            DB::beginTransaction();
             DB::table('pemeriksaan_ralan')
                 ->insert([
                     'no_rawat' => $decodedNoRawat, // Gunakan no_rawat yang sudah didekode
@@ -217,6 +212,9 @@ EXT : Oedem -/-';
             DB::commit();
             $this->getListPemeriksaan();
             
+            // Reset form setelah penyimpanan berhasil
+            $this->resetForm();
+            
             $this->alert('success', 'Pemeriksaan berhasil disimpan dan status pasien telah diupdate', [
                 'position' =>  'center',
                 'timer' =>  3000,
@@ -238,6 +236,31 @@ EXT : Oedem -/-';
             \Illuminate\Support\Facades\Log::error('Error Exception saat simpan pemeriksaan: ' . $e->getMessage());
             $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse($e->getMessage() ?? 'Pemeriksaan gagal ditambahkan', 'error'));
         }
+    }
+
+    // Fungsi untuk reset form
+    public function resetForm()
+    {
+        $this->keluhan = '';
+        $this->pemeriksaan = '';
+        $this->penilaian = '';
+        $this->instruksi = '';
+        $this->rtl = '';
+        $this->alergi = '';
+        $this->suhu = '';
+        $this->berat = '';
+        $this->tinggi = '';
+        $this->tensi = '';
+        $this->nadi = '';
+        $this->respirasi = '';
+        $this->gcs = '';
+        $this->kesadaran = 'Compos Mentis';
+        $this->lingkar = '';
+        $this->spo2 = '';
+        $this->evaluasi = '';
+        
+        // Emit event untuk reset form di JavaScript
+        $this->dispatchBrowserEvent('formReset');
     }
 
     public function confirmHapus($noRawat, $tgl, $jam)
