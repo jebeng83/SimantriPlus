@@ -455,70 +455,105 @@ class PemeriksaanRanapController extends Controller
      */
     public function postPemeriksaan(Request $request)
     {
-        // return response()->json([
-        //                 'status' => 'success',
-        //                 'message' => Request::get('no_rawat')
-        //             ], 200);
-        $validate = Request::validate([
-            'tensi' => 'required',
-            'kesadaran' => 'required',
-            'penilaian' => 'required',
-            'instruksi' => 'required',
-        ]);
-        $cek = DB::table('pemeriksaan_ranap')
-            ->where('no_rawat', Request::get('no_rawat'))
-            ->where('tgl_perawatan', date('Y-m-d'))
-            ->where('jam_rawat', date('H:i:s'))
-            ->count();
-        $data = [
-            'no_rawat' => Request::get('no_rawat'),
-            'nip' => session()->get('username'),
-            'tgl_perawatan' => date('Y-m-d'),
-            'jam_rawat' => date('H:i:s'),
-            'suhu_tubuh' => Request::get('suhu'),
-            'tensi' => Request::get('tensi'),
-            'nadi' => Request::get('nadi'),
-            'respirasi' => Request::get('respirasi'),
-            'tinggi' => Request::get('tinggi'),
-            'berat' => Request::get('berat'),
-            'gcs' => Request::get('gcs'),
-            'kesadaran' => Request::get('kesadaran'),
-            'keluhan' => Request::get('keluhan'),
-            'pemeriksaan' => Request::get('pemeriksaan'),
-            'alergi' => Request::get('alergi'),
-            'rtl' => Request::get('rtl'),
-            'penilaian' => Request::get('penilaian'),
-            'instruksi' => Request::get('instruksi'),
-            'spo2' => Request::get('spo2'),
-            'evaluasi' => Request::get('evaluasi'),
-        ];
-        if ($cek > 0) {
-            $insert = DB::table('pemeriksaan_ranap')
-                ->where('no_rawat', Request::get('no_rawat'))
-                ->update($data);
-            if ($insert) {
+        try {
+            // Dekripsi no_rawat
+            $encryptedNoRawat = Request::get('no_rawat');
+            $decodedNoRawat = $this->decryptData($encryptedNoRawat);
+            
+            // Validasi input
+            $validate = Request::validate([
+                'tensi' => 'required',
+                'kesadaran' => 'required',
+                'penilaian' => 'required',
+                'instruksi' => 'required',
+            ]);
+            
+            // Generate unique timestamp untuk jam_rawat
+            // Ini akan memastikan setiap entri memiliki jam_rawat yang unik
+            // bahkan jika ada beberapa input dalam waktu yang sama
+            $timestamp = date('H:i:s');
+            
+            // Cek apakah sudah ada pemeriksaan hari ini dengan jam yang sama
+            $cek = DB::table('pemeriksaan_ranap')
+                ->where('no_rawat', $decodedNoRawat)
+                ->where('tgl_perawatan', date('Y-m-d'))
+                ->where('jam_rawat', $timestamp)
+                ->count();
+            
+            // Jika ada entri dengan timestamp yang sama, tambahkan beberapa milidetik
+            if ($cek > 0) {
+                $timestamp = date('H:i:s', strtotime('+1 second'));
+            }
+            
+            $data = [
+                'no_rawat' => $decodedNoRawat,
+                'nip' => session()->get('username'),
+                'tgl_perawatan' => date('Y-m-d'),
+                'jam_rawat' => $timestamp,
+                'suhu_tubuh' => Request::get('suhu'),
+                'tensi' => Request::get('tensi'),
+                'nadi' => Request::get('nadi'),
+                'respirasi' => Request::get('respirasi'),
+                'tinggi' => Request::get('tinggi'),
+                'berat' => Request::get('berat'),
+                'gcs' => Request::get('gcs'),
+                'kesadaran' => Request::get('kesadaran'),
+                'keluhan' => Request::get('keluhan'),
+                'pemeriksaan' => Request::get('pemeriksaan'),
+                'alergi' => Request::get('alergi'),
+                'rtl' => Request::get('rtl'),
+                'penilaian' => Request::get('penilaian'),
+                'instruksi' => Request::get('instruksi'),
+                'spo2' => Request::get('spo2'),
+                'evaluasi' => Request::get('evaluasi'),
+            ];
+            
+            DB::beginTransaction();
+            
+            try {
+                // Selalu insert data baru untuk menghindari konflik
+                $insert = DB::table('pemeriksaan_ranap')
+                    ->insert($data);
+                
+                DB::commit();
+                
+                // Ambil data yang baru saja dimasukkan untuk verifikasi
+                $newData = DB::table('pemeriksaan_ranap')
+                    ->where('no_rawat', $decodedNoRawat)
+                    ->where('tgl_perawatan', date('Y-m-d'))
+                    ->where('jam_rawat', $timestamp)
+                    ->first();
+                
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Data berhasil disimpan'
+                    'message' => 'Data berhasil disimpan',
+                    'timestamp' => now()->timestamp, // Tambahkan timestamp untuk memastikan data terbaru
+                    'data' => $newData ? [
+                        'tgl_perawatan' => $newData->tgl_perawatan,
+                        'jam_rawat' => $newData->jam_rawat
+                    ] : null
                 ], 200);
+                
+            } catch (\Exception $innerEx) {
+                DB::rollBack();
+                throw $innerEx;
             }
+            
+        } catch (\Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            
+            \Illuminate\Support\Facades\Log::error('Error menyimpan pemeriksaan: ' . $e->getMessage(), [
+                'exception' => $e,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'Data gagal disimpan'
-            ], 500);
-        } else {
-            $insert = DB::table('pemeriksaan_ranap')
-                ->insert($data);
-
-            if ($insert) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Data berhasil disimpan'
-                ], 200);
-            }
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Data gagal disimpan'
+                'message' => 'Terjadi kesalahan saat menyimpan data',
+                'error_details' => env('APP_DEBUG') ? $e->getMessage() : null
             ], 500);
         }
     }
