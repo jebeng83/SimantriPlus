@@ -262,11 +262,11 @@ class ResumePasien extends Component
     public function getDiet()
     {
         $this->listDiet = DB::table('detail_beri_diet')
-            ->join('diet_jenis', 'detail_beri_diet.kd_jenis', '=', 'diet_jenis.kd_jenis')
+            ->join('diet', 'detail_beri_diet.kd_diet', '=', 'diet.kd_diet')
             ->where('detail_beri_diet.no_rawat', $this->noRawat)
             ->orderBy('detail_beri_diet.tanggal', 'desc')
             ->orderBy('detail_beri_diet.waktu', 'desc')
-            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet_jenis.nama_jenis as nama_diet')
+            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet.nama_diet')
             ->get();
         $this->emit('openDietModal');
     }

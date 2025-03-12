@@ -36,6 +36,10 @@
                     <option value="batuk">Batuk</option>
                     <option value="gatal">Gatal-gatal/Alergi</option>
                     <option value="jantung">Penyakit Jantung</option>
+                    <option value="visite">Visite Dokter</option>
+                    <option value="visite-hari1">Visite Hari 1</option>
+                    <option value="visite-hari2">Visite Hari 2</option>
+                    <option value="visite-hari3">Visite Hari 3</option>
                 </select>
             </div>
 
@@ -1103,6 +1107,82 @@
             $("input[name=respirasi]").val("26");
             $("input[name=gcs]").val("456");
             $("input[name=spo2]").val("94");
+            $("select[name=kesadaran]").val("Compos Mentis").change();
+        }
+        // Template untuk visite dokter
+        else if (templateType === 'visite') {
+            $("textarea[name=keluhan]").val("Pasien menjalani perawatan hari ke-... untuk diagnosis... \n\nKeluhan saat ini: \n- Status keluhan utama: membaik/tetap/memburuk \n- Keluhan tambahan: ... \n- Riwayat pengobatan: ...");
+            $("textarea[name=pemeriksaan]").val("Keadaan Umum : Baik, Composmentis\n\nVital Sign:\n- Tekanan darah: stabil/tidak stabil\n- Suhu: normal/febris\n- Respirasi: normal/tidak normal\n\nThorax : \n- Cor: S1-2 intensitas normal, reguler, bising (-)\n- Pulmo: SDV +/+ ST -/-\n\nAbdomen : Supel, NT(-), peristaltik (+) normal\n\nEXT : Akral hangat, CRT < 2 detik\n\nStatus Lokalis: \n- Luka: ...\n- Drain: ...\n- Kateter: ...");
+            $("textarea[name=penilaian]").val("1. Diagnosis utama: ...\n2. Diagnosis sekunder: ...\n\nProgres: membaik/stabil/memburuk");
+            $("textarea[name=instruksi]").val("1. Tirah baring: total/parsial/mobilisasi\n2. Diet: sesuai penyakit/normal\n3. Intake cairan: cukup (minimal 2L/hari)\n4. Kontrol nyeri: sesuai kebutuhan\n5. Perawatan luka: ...");
+            $("textarea[name=rtl]").val("1. Pemeriksaan Laboratorium: ...\n2. Pemeriksaan Radiologi: ...\n3. Terapi:\n   - Obat 1: ...\n   - Obat 2: ...\n   - Obat 3: ...\n4. Rencana observasi: ...\n5. Rencana tindakan: ...\n6. Kemungkinan pulang: dalam ... hari");
+            $("textarea[name=alergi]").val("Tidak Ada");
+            $("textarea[name=evaluasi]").val("1. Evaluasi tanda vital tiap 6 jam\n2. Evaluasi keluhan tiap shift\n3. Evaluasi respons terhadap terapi\n4. Evaluasi kondisi luka bila ada");
+            $("input[name=suhu]").val("36.5");
+            $("input[name=berat]").val("");
+            $("input[name=tinggi]").val("");
+            $("input[name=tensi]").val("120/80");
+            $("input[name=nadi]").val("80");
+            $("input[name=respirasi]").val("20");
+            $("input[name=gcs]").val("456");
+            $("input[name=spo2]").val("98");
+            $("select[name=kesadaran]").val("Compos Mentis").change();
+        }
+        // Template untuk visite dokter hari pertama
+        else if (templateType === 'visite-hari1') {
+            $("textarea[name=keluhan]").val("Pasien menjalani perawatan HARI PERTAMA untuk diagnosis... \n\nKeluhan utama saat masuk: \n- Onset: ... \n- Lokasi: ... \n- Kualitas: ... \n- Faktor yang memperberat/memperingan: ... \n\nRiwayat penyakit:\n- Riwayat penyakit serupa: ...\n- Riwayat penyakit dahulu: ...\n- Riwayat pengobatan sebelumnya: ...\n- Riwayat alergi: ...");
+            $("textarea[name=pemeriksaan]").val("Keadaan Umum : Tampak Sakit Sedang/Berat, Kesadaran Compos Mentis\n\nVital Sign:\n- Tekanan darah: .../... mmHg\n- Suhu: ... °C\n- Nadi: ... x/menit, reguler/ireguler\n- Respirasi: ... x/menit\n- SpO2: ...%\n\nThorax : \n- Cor: S1-2 normal/abnormal, bising: ada/tidak ada\n- Pulmo: Suara nafas vesikular +/+, ronkhi +/-, wheezing -/-\n\nAbdomen : Tampak datar/distensi, nyeri tekan ada/tidak ada, bising usus normal/tidak\n\nEXT : Akral hangat/dingin, CRT < 2 detik/> 2 detik, edema +/-\n\nStatus Lokalis:\n- Kelainan yang ditemukan: ...\n- Tanda-tanda patologis: ...");
+            $("textarea[name=penilaian]").val("1. Diagnosis utama: ... (ICD-10: ...)\n2. Diagnosis banding: ...\n3. Diagnosis sekunder: ...\n\nDerajat penyakit: ringan/sedang/berat\nKomplikasi: ada/tidak ada");
+            $("textarea[name=instruksi]").val("1. Tirah baring: total/parsial\n2. Diet: lunak/biasa/khusus ... \n3. Intake cairan: 2-2,5L/hari\n4. Terapi non-farmakologis: ...\n5. Pemantauan tanda vital tiap 4 jam\n6. Monitor ketat tanda-tanda perburukan");
+            $("textarea[name=rtl]").val("1. Pemeriksaan Laboratorium:\n   - Darah lengkap\n   - Fungsi ginjal\n   - Elektrolit\n   - Lainnya: ...\n\n2. Pemeriksaan Radiologi:\n   - Rontgen ...\n   - USG ...\n   - Lainnya: ...\n\n3. Terapi:\n   - Cairan intravena: ...\n   - Antibiotik: ...\n   - Simptomatik: ...\n   - Lainnya: ...\n\n4. Konsultasi ke spesialis bila perlu\n\n5. Evaluasi respons terapi dalam 24 jam");
+            $("textarea[name=alergi]").val("Tidak Ada");
+            $("textarea[name=evaluasi]").val("1. Evaluasi tanda vital tiap 4 jam\n2. Evaluasi respons terhadap terapi awal\n3. Pemantauan tanda kegawatan\n4. Evaluasi hasil pemeriksaan penunjang");
+            $("input[name=suhu]").val("37.5");
+            $("input[name=berat]").val("");
+            $("input[name=tinggi]").val("");
+            $("input[name=tensi]").val("130/80");
+            $("input[name=nadi]").val("88");
+            $("input[name=respirasi]").val("22");
+            $("input[name=gcs]").val("456");
+            $("input[name=spo2]").val("96");
+            $("select[name=kesadaran]").val("Compos Mentis").change();
+        }
+        // Template untuk visite dokter hari kedua
+        else if (templateType === 'visite-hari2') {
+            $("textarea[name=keluhan]").val("Pasien menjalani perawatan HARI KEDUA untuk diagnosis... \n\nPerkembangan keluhan: \n- Keluhan utama: membaik/tetap/memburuk \n- Gejala yang membaik: ... \n- Gejala yang menetap: ... \n- Gejala baru: ... \n\nRiwayat pengobatan hari pertama:\n- Terapi yang diberikan: ...\n- Respons terhadap terapi: ...");
+            $("textarea[name=pemeriksaan]").val("Keadaan Umum : Tampak Sakit Sedang/Ringan, Kesadaran Compos Mentis\n\nVital Sign:\n- Tekanan darah: .../... mmHg (↑/↓/tetap dibanding hari sebelumnya)\n- Suhu: ... °C (↑/↓/tetap dibanding hari sebelumnya)\n- Nadi: ... x/menit (↑/↓/tetap dibanding hari sebelumnya)\n- Respirasi: ... x/menit (↑/↓/tetap dibanding hari sebelumnya)\n- SpO2: ...% (↑/↓/tetap dibanding hari sebelumnya)\n\nThorax : \n- Cor: Perubahan dibanding hari sebelumnya: ...\n- Pulmo: Perubahan dibanding hari sebelumnya: ...\n\nAbdomen : Perubahan dibanding hari sebelumnya: ...\n\nEXT : Perubahan dibanding hari sebelumnya: ...\n\nStatus Lokalis:\n- Perubahan dibanding hari sebelumnya: ...\n- Perkembangan tanda patologis: ...");
+            $("textarea[name=penilaian]").val("1. Diagnosis kerja: ... (ICD-10: ...)\n2. Diagnosis sekunder: ...\n\nProgres penyakit: membaik/stabil/memburuk\nKomplikasi: ada/tidak ada\n\nHasil pemeriksaan penunjang:\n- Lab: ...\n- Radiologi: ...");
+            $("textarea[name=instruksi]").val("1. Tirah baring: parsial/mobilisasi terbatas\n2. Diet: lunak/biasa/khusus ... \n3. Intake cairan: tetap 2-2,5L/hari\n4. Aktivitas: mulai mobilisasi bertahap sesuai toleransi\n5. Terapi non-farmakologis: dilanjutkan/dimodifikasi");
+            $("textarea[name=rtl]").val("1. Evaluasi pemeriksaan laboratorium:\n   - Pemeriksaan ulang: ...\n   - Pemeriksaan tambahan: ...\n\n2. Evaluasi pemeriksaan radiologi:\n   - Follow up jika diperlukan: ...\n\n3. Terapi:\n   - Terapi dilanjutkan: ...\n   - Terapi dimodifikasi: ...\n   - Terapi dihentikan: ...\n   - Terapi baru: ...\n\n4. Monitoring respons terapi\n\n5. Edukasi pasien dan keluarga\n\n6. Evaluasi kemungkinan pemulangan dalam 1-2 hari jika kondisi membaik");
+            $("textarea[name=alergi]").val("Tidak Ada / Alergi terhadap: ...");
+            $("textarea[name=evaluasi]").val("1. Evaluasi tanda vital tiap 6 jam\n2. Evaluasi respons terhadap terapi yang sudah dimodifikasi\n3. Evaluasi perkembangan kondisi pasien\n4. Persiapan pemulangan pasien jika kondisi membaik");
+            $("input[name=suhu]").val("37.0");
+            $("input[name=berat]").val("");
+            $("input[name=tinggi]").val("");
+            $("input[name=tensi]").val("120/80");
+            $("input[name=nadi]").val("82");
+            $("input[name=respirasi]").val("20");
+            $("input[name=gcs]").val("456");
+            $("input[name=spo2]").val("97");
+            $("select[name=kesadaran]").val("Compos Mentis").change();
+        }
+        // Template untuk visite dokter hari ketiga
+        else if (templateType === 'visite-hari3') {
+            $("textarea[name=keluhan]").val("Pasien menjalani perawatan HARI KETIGA untuk diagnosis... \n\nPerkembangan kondisi: \n- Status keluhan utama: signifikan membaik/sedikit membaik/tetap/memburuk \n- Status keluhan lain: ... \n- Gejala baru: tidak ada/ada: ... \n\nRespons terhadap terapi:\n- Obat yang efektif: ...\n- Obat yang kurang efektif: ...\n- Efek samping obat: tidak ada/ada: ...");
+            $("textarea[name=pemeriksaan]").val("Keadaan Umum : Membaik, Tampak Sakit Ringan/Sedang, Kesadaran Compos Mentis\n\nVital Sign (Perkembangan selama 3 hari):\n- Tekanan darah: .../... mmHg (tren stabil/membaik)\n- Suhu: ... °C (tren stabil/membaik)\n- Nadi: ... x/menit (tren stabil/membaik)\n- Respirasi: ... x/menit (tren stabil/membaik)\n- SpO2: ...% (tren stabil/membaik)\n\nThorax : \n- Cor: Perkembangan: membaik/stabil/memburuk\n- Pulmo: Perkembangan: membaik/stabil/memburuk\n\nAbdomen : Perkembangan: membaik/stabil/memburuk\n\nEXT : Perkembangan: membaik/stabil/memburuk\n\nStatus Lokalis:\n- Perkembangan kondisi spesifik penyakit: membaik/stabil/memburuk\n- Status luka (jika ada): ...\n- Status pembengkakan (jika ada): ...");
+            $("textarea[name=penilaian]").val("1. Diagnosis akhir: ... (ICD-10: ...)\n2. Diagnosis sekunder: ...\n\nKesimpulan hasil pengobatan selama 3 hari: signifikan membaik/membaik/stabil/memburuk\n\nHasil pemeriksaan penunjang terbaru:\n- Lab: ...\n- Radiologi: ...\n\nProgres penyakit sesuai dengan perkiraan/lebih cepat/lebih lambat dari perkiraan");
+            $("textarea[name=instruksi]").val("1. Aktivitas: dapat mobilisasi normal/terbatas\n2. Diet: normal/khusus: ...\n3. Edukasi tanda kekambuhan dan kapan harus kembali ke RS\n4. Pentingnya kontrol rutin setelah pemulangan\n5. Tata cara penggunaan obat-obatan di rumah");
+            $("textarea[name=rtl]").val("1. Rencana pemulangan:\n   - Pasien dapat dipulangkan hari ini/besok\n   - Pasien belum dapat dipulangkan karena: ...\n\n2. Terapi lanjutan:\n   - Obat yang dilanjutkan: ...\n   - Obat yang dihentikan: ...\n   - Obat baru: ...\n\n3. Edukasi:\n   - Diberikan edukasi tentang penyakit\n   - Diberikan edukasi tentang pengobatan\n   - Diberikan edukasi tentang pencegahan kekambuhan\n\n4. Rencana kontrol:\n   - Kontrol ke Poli ... tanggal ...\n   - Pemeriksaan lanjutan yang diperlukan: ...\n\n5. Jika kondisi belum membaik, rencana perawatan hari keempat:");
+            $("textarea[name=alergi]").val("Tidak Ada / Alergi terhadap: ...");
+            $("textarea[name=evaluasi]").val("1. Evaluasi keseluruhan kondisi pasien setelah 3 hari perawatan\n2. Evaluasi kepatuhan terhadap terapi\n3. Evaluasi kesiapan pasien untuk pemulangan\n4. Evaluasi pemahaman pasien dan keluarga tentang penyakit dan tata cara pengobatan di rumah");
+            $("input[name=suhu]").val("36.7");
+            $("input[name=berat]").val("");
+            $("input[name=tinggi]").val("");
+            $("input[name=tensi]").val("120/80");
+            $("input[name=nadi]").val("80");
+            $("input[name=respirasi]").val("18");
+            $("input[name=gcs]").val("456");
+            $("input[name=spo2]").val("98");
             $("select[name=kesadaran]").val("Compos Mentis").change();
         }
         
