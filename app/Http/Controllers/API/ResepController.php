@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\EnkripsiData;
+use Illuminate\Support\Facades\Log;
 
 class ResepController extends Controller
 {
@@ -141,7 +142,7 @@ class ResepController extends Controller
             }
             
             // Log debug untuk tracking
-            \Illuminate\Support\Facades\Log::info('Proses no_rawat di ResepController', [
+            Log::info('Proses no_rawat di ResepController', [
                 'encrypted' => $encryptedNoRawat,
                 'decoded' => $noRawat,
                 'cleaned' => $cleanNoRawat
@@ -446,7 +447,7 @@ class ResepController extends Controller
             }
             
             // Log debug untuk tracking
-            \Illuminate\Support\Facades\Log::info('Proses no_rawat di postResepRacikan', [
+            Log::info('Proses no_rawat di postResepRacikan', [
                 'encrypted' => $encryptedNoRawat,
                 'decoded' => $no_rawat,
                 'cleaned' => $cleanNoRawat
@@ -582,7 +583,7 @@ class ResepController extends Controller
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
             // Log detail error untuk debugging
-            \Illuminate\Support\Facades\Log::error('Error saat menyimpan resep racikan: ' . $ex->getMessage(), [
+            Log::error('Error saat menyimpan resep racikan: ' . $ex->getMessage(), [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'trace' => $ex->getTraceAsString(),
@@ -595,7 +596,7 @@ class ResepController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error umum saat menyimpan resep racikan: ' . $e->getMessage());
+            Log::error('Error umum saat menyimpan resep racikan: ' . $e->getMessage());
             
             return response()->json([
                 'status' => 'gagal',
@@ -653,7 +654,7 @@ class ResepController extends Controller
             }
             
             // Log debug untuk tracking
-            \Illuminate\Support\Facades\Log::info('Proses no_rawat di postResepRacikanRanap', [
+            Log::info('Proses no_rawat di postResepRacikanRanap', [
                 'encrypted' => $encryptedNoRawat,
                 'decoded' => $no_rawat,
                 'cleaned' => $cleanNoRawat
@@ -765,7 +766,7 @@ class ResepController extends Controller
         } catch (\Illuminate\Database\QueryException $ex) {
             DB::rollBack();
             // Log detail error untuk debugging
-            \Illuminate\Support\Facades\Log::error('Error saat menyimpan resep racikan ranap: ' . $ex->getMessage(), [
+            Log::error('Error saat menyimpan resep racikan ranap: ' . $ex->getMessage(), [
                 'file' => __FILE__,
                 'line' => __LINE__,
                 'trace' => $ex->getTraceAsString(),
@@ -778,7 +779,7 @@ class ResepController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Error umum saat menyimpan resep racikan ranap: ' . $e->getMessage());
+            Log::error('Error umum saat menyimpan resep racikan ranap: ' . $e->getMessage());
             
             return response()->json([
                 'status' => 'gagal',
@@ -839,6 +840,53 @@ class ResepController extends Controller
         } catch (\Exception $ex) {
             DB::rollBack();
             return response()->json(['status' => 'gagal', 'pesan' => $ex->getMessage()]);
+        }
+    }
+
+    /**
+     * Mendapatkan detail resep untuk copy resep
+     */
+    public function getDetailResep($noResep)
+    {
+        try {
+            Log::info("Mengambil detail resep untuk noResep: {$noResep}");
+            
+            // Validasi nomor resep
+            if (empty($noResep)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Nomor resep tidak boleh kosong'
+                ], 400);
+            }
+            
+            // Ambil detail resep
+            $detailResep = DB::table('resep_dokter')
+                ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+                ->where('resep_dokter.no_resep', $noResep)
+                ->select(
+                    'resep_dokter.kode_brng',
+                    'databarang.nama_brng',
+                    'resep_dokter.jml',
+                    'resep_dokter.aturan_pakai'
+                )
+                ->get();
+            
+            Log::info("Berhasil mengambil " . count($detailResep) . " detail resep");
+            
+            if (count($detailResep) === 0) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Tidak ada detail resep yang ditemukan'
+                ], 404);
+            }
+            
+            return response()->json($detailResep);
+        } catch (\Exception $e) {
+            Log::error("Error saat mengambil detail resep: " . $e->getMessage());
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => 'Terjadi kesalahan saat mengambil detail resep: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

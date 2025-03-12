@@ -20,9 +20,6 @@
                         @csrf
                         <div class="containerResep">
                             <div class="row">
-                                {{--
-                                <x-adminlte-select2 id="obat" label="Nama Obat" class="obat" name="obat[]"
-                                    fgroup-class="col-md-5" data-placeholder="Pilih Obat" /> --}}
                                 <div class="col-md-5">
                                     <div class="form-group">
                                         <label class="visible-sm">Nama Obat</label>
@@ -49,7 +46,8 @@
                                 data-placeholder="Pilih Depo">
                                 <option value="">Pilih Depo ......</option>
                                 @foreach($depos as $depo)
-                                    <option value="{{$depo->kd_bangsal}}" @if($depo->kd_bangsal == $setBangsal->kd_depo) selected @endif>{{$depo->nm_bangsal}}</option>
+                                <option value="{{$depo->kd_bangsal}}" @if($depo->kd_bangsal == $setBangsal->kd_depo)
+                                    selected @endif>{{$depo->nm_bangsal}}</option>
                                 @endforeach
                             </x-adminlte-select2>
                             <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
@@ -95,49 +93,77 @@
                     @php
                     $config["responsive"] = true;
                     $config['order'] = [[1, 'desc']];
+                    $jumlahRiwayat = count($riwayatPeresepan);
+                    \Log::info("Jumlah riwayat peresepan di view: " . $jumlahRiwayat);
                     @endphp
+
+                    @if(config('app.debug'))
+                    <div class="alert alert-info">
+                        <p>Debug Info:</p>
+                        <ul>
+                            <li>Jumlah data riwayat: {{ $jumlahRiwayat }}</li>
+                            <li>No RM: {{ $encryptNoRM }}</li>
+                            <li>No Rawat: {{ $encryptNoRawat }}</li>
+                        </ul>
+                    </div>
+                    @endif
+
                     <x-adminlte-datatable id="tableRiwayatResep" :heads="$heads" :config="$config" head-theme="dark"
                         striped hoverable bordered compressed>
-                        {{-- <x-slot name="bodySlot"> --}}
-                            @foreach($riwayatPeresepan as $r)
-                            <tr>
-                                <td class="align-middle text-center">{{$r->no_resep}}</td>
-                                <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
-                                <td>
-                                    @php
-                                    $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
-                                    @endphp
-                                    <ul class="p-4">
-                                        @if($racikan)
-                                        <li>Racikan - {{$racikan->nama_racik}} - {{$racikan->jml_dr}} -
-                                            [{{$racikan->aturan_pakai}}]</li>
-                                        <ul>
-                                            @foreach($getDetailRacikan($racikan->no_resep) as $ror)
-                                            <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
-                                                {{$ror->jml}}</li>
-                                            @endforeach
-                                        </ul>
-                                        @endif
-                                        @foreach($getResepObat($r->no_resep) as $ro)
-                                        <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
+                        @if(count($riwayatPeresepan) > 0)
+                        @foreach($riwayatPeresepan as $r)
+                        <tr>
+                            <td class="align-middle text-center">{{$r->no_resep}}</td>
+                            <td class="align-middle text-center">{{$r->tgl_peresepan}}</td>
+                            <td>
+                                @php
+                                $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
+                                $resepObat = $getResepObat($r->no_resep);
+                                \Log::info("Detail untuk resep {$r->no_resep}: " .
+                                "Racikan: " . ($racikan ? 'Ada' : 'Tidak ada') .
+                                ", Obat: " . count($resepObat));
+                                @endphp
+                                <ul class="p-4">
+                                    @if($racikan)
+                                    <li>Racikan - {{$racikan->nama_racik ?? 'Tidak ada nama'}} - {{$racikan->jml_dr ??
+                                        '0'}} -
+                                        [{{$racikan->aturan_pakai ?? 'Tidak ada aturan'}}]</li>
+                                    <ul>
+                                        @foreach($getDetailRacikan($racikan->no_resep) as $ror)
+                                        <li>{{$ror->nama_brng}} - {{$ror->p1}}/{{$ror->p2}} - {{$ror->kandungan}} -
+                                            {{$ror->jml}}</li>
                                         @endforeach
                                     </ul>
-                                </td>
-                                <td class="align-middle text-center">
-                                    <x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)'
-                                        class="mx-auto btn-sm" theme="primary" icon="fa fa-sm fa-fw fa-pen" />
-                                </td>
-                            </tr>
-                            @endforeach
-                            {{--
-                        </x-slot> --}}
+                                    @endif
+
+                                    @if(count($resepObat) > 0)
+                                    @foreach($resepObat as $ro)
+                                    <li>{{$ro->nama_brng}} - {{$ro->jml}} - [{{$ro->aturan_pakai}}]</li>
+                                    @endforeach
+                                    @else
+                                    <li>Tidak ada data obat</li>
+                                    @endif
+                                </ul>
+                            </td>
+                            <td class="align-middle text-center">
+                                <x-adminlte-button onclick='getCopyResep({{$r->no_resep}}, event)'
+                                    class="mx-auto btn-sm" theme="primary" icon="fa fa-sm fa-fw fa-pen" />
+                            </td>
+                        </tr>
+                        @endforeach
+                        @else
+                        <tr>
+                            <td colspan="4" class="text-center">Tidak ada data riwayat peresepan</td>
+                        </tr>
+                        @endif
                     </x-adminlte-datatable>
                 </x-adminlte-callout>
 
             </div>
             <div class="tab-pane fade" id="copyresep" role="tabpanel" aria-labelledby="copyresep-tab">
                 <x-adminlte-callout theme="info" title="Input Resep Racikan">
-                    <form method="post" id="copyresepForm" action="{{url('/ranap/simpan/copyresep/'.$encryptNoRawat)}}">
+                    <form method="post" id="copyresepForm"
+                        action="{{url('/api/ranap/resep/racikan/'.$encryptNoRawat)}}">
                         @csrf
                         <div class="containerCopyResep">
                             <div class="row">
@@ -297,10 +323,54 @@
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    // Fungsi untuk me-refresh halaman dengan parameter yang benar
+    function reloadPageWithParams() {
+        console.log("Memanggil fungsi reloadPageWithParams...");
+        var currentUrl = window.location.href;
+        var baseUrl = currentUrl.split('?')[0]; // Ambil URL dasar tanpa parameter
+        var params = new URLSearchParams(window.location.search);
+        
+        // Pastikan parameter yang diperlukan ada
+        if (!params.has('no_rawat')) {
+            params.set('no_rawat', "{{$noRawat}}");
+        }
+        if (!params.has('no_rm')) {
+            params.set('no_rm', "{{$noRM}}");
+        }
+        if (!params.has('bangsal')) {
+            params.set('bangsal', "{{$bangsal}}");
+        }
+        
+        // Tambahkan timestamp untuk menghindari cache
+        params.set('ts', new Date().getTime());
+        
+        // Buat URL baru dengan parameter yang benar
+        var newUrl = baseUrl + '?' + params.toString();
+        
+        console.log("Memuat ulang halaman ke: " + newUrl);
+        window.location.href = newUrl;
+    }
+    
+    // Override fungsi reloadPage yang sudah ada
+    function reloadPage() {
+        reloadPageWithParams();
+    }
+
     let bangsal = $('#depo').val() ?? '{{$setBangsal->kd_depo}}';
     $('#depo').on('change', function(e){
         bangsal = $(this).val();
         console.log(bangsal);
+    });
+
+    // Event listener untuk perubahan jumlah racikan
+    $('#jumlah_racikan').on('change', function() {
+        var jmlRacikan = $(this).val();
+        console.log("Jumlah racikan diubah menjadi:", jmlRacikan);
+        
+        // Update jumlah untuk semua obat racikan
+        for (var j = 0; j <= i; j++) {
+            hitungRacikan(j);
+        }
     });
 
     $(document).on("select2:open", () => {
@@ -346,7 +416,7 @@
                             '                                <div class="col-md-1">' + 
                             '                                    <div class="form-group">' + 
                             '                                        <label class="d-sm-none"  for="p2'+i+'">P2</label>' + 
-                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+x+'" oninput="hitungRacikan('+i+')" type="text" name="p2[]">' + 
+                            '                                        <input id="p2'+i+'" class="form-control p-1 p2-'+i+'" oninput="hitungRacikan('+i+')" type="text" name="p2[]">' + 
                             '                                    </div>' + 
                             '                                </div>' + 
                             '                                <div class="col-md-2">' + 
@@ -368,7 +438,7 @@
             $('#'+'obatRacikan'+i, ".containerRacikan").select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/api/ranap/'+"{{$bangsal}}"+'/obat',
+                    url: '/api/ranap/'+bangsal+'/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -389,11 +459,12 @@
                     url: '/api/obat/'+data[0].id,
                     data:{
                         status:'ranap',
-                        kode:"{{$bangsal}}"
+                        kode: bangsal
                     },
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
+                        console.log("Data obat racikan:", data);
                         $('input[id="stok'+idRow+'"]').val(data.stok_akhir);
                         $('input[id="kps'+idRow+'"]').val(data.kapasitas);
                         $('input[id="p1'+idRow+'"]').val('1');
@@ -413,33 +484,81 @@
         }
 
         function hitungRacikan(index){
+            console.log("hitungRacikan dipanggil dengan index:", index);
             var p1 = getIndexValue('p1[]', index);
             var p2 = getIndexValue('p2[]', index);
             var jmlRacikan = $('#jumlah_racikan').val();
             var kps = getIndexValue('kps[]', index);
-            var kandungan = (p1/p2)*kps;
-            var kandungan = parseFloat(kandungan);
-            var jml = (p1/p2)*jmlRacikan;
-            var jml = parseFloat(jml);
-            if(isNaN(kandungan) || isFinite(kandungan)){
-                kandungan = 0;
+            
+            console.log("p1:", p1, "p2:", p2, "jmlRacikan:", jmlRacikan, "kps:", kps);
+            
+            // Konversi ke float
+            p1 = parseFloat(p1) || 0;
+            p2 = parseFloat(p2) || 1; // Hindari pembagian dengan nol
+            kps = parseFloat(kps) || 0;
+            jmlRacikan = parseFloat(jmlRacikan) || 0;
+            
+            // Cek apakah p2 adalah nol untuk menghindari pembagian dengan nol
+            if (p2 === 0) {
+                p2 = 1;
+                console.warn("p2 bernilai 0, diubah menjadi 1 untuk menghindari pembagian dengan nol");
             }
-            if(isNaN(jml) || isFinite(jml)){
-                jml = 0;
-            }
+            
+            var rasio = p1 / p2;
+            var kandungan = rasio * kps;
+            var jml = rasio * jmlRacikan;
+            
+            console.log("Rasio p1/p2:", rasio, "Hasil perhitungan - kandungan:", kandungan, "jml:", jml);
+            
+            // Update nilai di form
             $(".kandungan-"+index).val(kandungan.toFixed(2));
             $(".jml-"+index).val(jml.toFixed(2));
         }
 
         function hitungJml(index){
-            var kps = getIndexValue('kps[]', index);
-            var jmlRacikan = $('#jumlah_racikan').val();
-            var kandungan = $(".kandungan-"+index).val();
-            var jml = (kps*jmlRacikan)/kandungan;
-            var jml = parseFloat(jml);
-            if(isNaN(jml) || isFinite(jml)){
-                jml = 0;
+            console.log("hitungJml dipanggil dengan index:", index);
+            var kps = parseFloat(getIndexValue('kps[]', index)) || 0;
+            var jmlRacikan = parseFloat($('#jumlah_racikan').val()) || 0;
+            var kandungan = parseFloat($(".kandungan-"+index).val()) || 0;
+            var p1 = parseFloat(getIndexValue('p1[]', index)) || 0;
+            var p2 = parseFloat(getIndexValue('p2[]', index)) || 1;
+            
+            console.log("kps:", kps, "jmlRacikan:", jmlRacikan, "kandungan:", kandungan, "p1:", p1, "p2:", p2);
+            
+            // Pastikan kandungan tidak nol untuk menghindari pembagian dengan nol
+            if (kandungan === 0) {
+                console.warn("Kandungan bernilai 0, tidak dapat menghitung jumlah");
+                return;
             }
+            
+            // Hitung jumlah berdasarkan kandungan yang diinput
+            var jml = 0;
+            
+            // Jika p1/p2 = 1/1, gunakan perhitungan langsung dari kandungan
+            if (p1 === p2 && p1 !== 0) {
+                jml = jmlRacikan * (kandungan / kps);
+                console.log("Menggunakan perhitungan langsung: jmlRacikan * (kandungan / kps) =", jml);
+            } else {
+                // Jika tidak, gunakan perhitungan berdasarkan rasio p1/p2
+                var rasio = p1 / p2;
+                if (rasio !== 0) {
+                    jml = jmlRacikan * (kandungan / (kps * rasio));
+                    console.log("Menggunakan perhitungan dengan rasio:", jml);
+                } else {
+                    jml = 0;
+                    console.warn("Rasio p1/p2 adalah 0, tidak dapat menghitung jumlah");
+                }
+            }
+            
+            // Periksa apakah nilai valid
+            if(isNaN(jml) || !isFinite(jml)){
+                jml = 0;
+                console.warn("Hasil perhitungan tidak valid");
+            }
+            
+            console.log("Hasil perhitungan jml final:", jml);
+            
+            // Update nilai di form
             $(".jml-"+index).val(jml.toFixed(2));
         }
 
@@ -532,7 +651,7 @@
         $('.obat-racikan').select2({
             placeholder: 'Pilih obat racikan',
             ajax: {
-                url: '/api/ranap/B0007/obat',
+                url: '/api/ranap/' + bangsal + '/obat',
                 dataType: 'json',
                 delay: 250,
                 processResults: function (data) {
@@ -547,16 +666,17 @@
         }).on("select2:select", function(e){
             var data = e.params.data;
             var jmlRacikan = $('#jumlah_racikan').val();
+            console.log("Obat racikan pertama dipilih:", data);
             $.ajax({
                 url: '/api/obat/'+data.id,
                 data:{
                     status:'ranap',
-                    kode:'B0007'
+                    kode: bangsal
                 },
                 type: 'GET',
                 dataType: 'json',
                 success: function(data) {
-                    console.log(data);
+                    console.log("Data obat racikan pertama:", data);
                     $('#stok').val(data.stok_akhir);
                     $('#kps').val(data.kapasitas);
                     $('#p1').val('1');
@@ -590,30 +710,111 @@
             let _token   = $('meta[name="csrf-token"]').attr('content');
             var trHTML = '';
             $(".table-copy-resep").find("tr.body").remove();
-            $.ajax({
-                url:'/ranap/copy/'+no_resep,
-                type:'GET',
-                dataType:'json',
-                beforeSend:function() {
+            
+            console.log("Mengambil data resep dengan no_resep: " + no_resep);
+            
+            // Validasi nomor resep
+            if (!no_resep) {
                 Swal.fire({
-                    title: 'Loading....',
-                    allowEscapeKey: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    title: 'Error',
+                    text: 'Nomor resep tidak valid',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
+            
+            // Tambahkan parameter bangsal ke URL API
+            var apiUrl = '/api/ranap/resep-copy/' + no_resep;
+            if (bangsal) {
+                apiUrl += '?bangsal=' + bangsal;
+            }
+            
+            console.log("URL API: " + apiUrl);
+            
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': _token
+                },
+                beforeSend: function() {
+                    Swal.fire({
+                        title: 'Loading....',
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
                     });
                 },
-                success: function(data){
-                    // console.log(data);
+                success: function(data) {
+                    console.log("Data resep diterima:", data);
                     Swal.close();
-                    $.each(data, function (i, item) {
-                        trHTML += '<tr class="body"><td><input type="text" name="jml_copyresep[]" multiple="multiple" value="' + item.jml + '" size="5"></td>'
-                                + '<td><input type="hidden" name="kode_brng_copyresep[]" multiple="multiple" value="' + item.kode_brng +'" > ' + item.nama_brng + '</td>'
-                                + '<td><input type="text" name="aturan_copyresep[]" multiple="multiple" value="' + item.aturan_pakai + '"></td></tr>';
+                    
+                    if (data && data.length > 0) {
+                        $.each(data, function (i, item) {
+                            if (item.kode_brng && item.nama_brng && item.jml) {
+                                trHTML += '<tr class="body"><td><input type="text" name="jml_copyresep[]" multiple="multiple" value="' + item.jml + '" size="5"></td>'
+                                        + '<td><input type="hidden" name="kode_brng_copyresep[]" multiple="multiple" value="' + item.kode_brng +'" > ' + item.nama_brng + '</td>'
+                                        + '<td><input type="text" name="aturan_copyresep[]" multiple="multiple" value="' + (item.aturan_pakai || '') + '"></td></tr>';
+                            } else {
+                                console.warn("Item data tidak lengkap:", item);
+                            }
+                        });
+                        
+                        if (trHTML) {
+                            $('.tbBodyCopy').append(trHTML);
+                            $('#modalCopyResep').modal('show');
+                        } else {
+                            Swal.fire({
+                                title: 'Peringatan',
+                                text: 'Data resep tidak valid',
+                                icon: 'warning',
+                                confirmButtonText: 'Ok'
+                            });
+                        }
+                    } else if (data && data.status === 'gagal') {
+                        Swal.fire({
+                            title: 'Informasi',
+                            text: data.message || 'Tidak ada data resep yang dapat disalin',
+                            icon: 'info',
+                            confirmButtonText: 'Ok'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Informasi',
+                            text: 'Tidak ada data resep yang dapat disalin',
+                            icon: 'info',
+                            confirmButtonText: 'Ok'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error saat mengambil data resep:", xhr.responseText);
+                    let errorMessage = 'Gagal mengambil data resep. ';
+                    
+                    try {
+                        const responseData = JSON.parse(xhr.responseText);
+                        if (responseData && responseData.message) {
+                            errorMessage += responseData.message;
+                        } else if (xhr.status === 404) {
+                            errorMessage += 'Resep tidak ditemukan.';
+                        } else if (xhr.status === 500) {
+                            errorMessage += 'Server Error.';
+                        }
+                    } catch (e) {
+                        console.error("Error parsing response:", e);
+                        errorMessage += 'Status: ' + xhr.status + ' - ' + error;
+                    }
+                    
+                    Swal.fire({
+                        title: 'Error',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
                     });
-                    $('.tbBodyCopy').append(trHTML);
-                    $('#modalCopyResep').modal('show');
                 }
             });
         }
@@ -627,56 +828,89 @@
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Hapus!'
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.value) {
-                    let _token   = $('meta[name="csrf-token"]').attr('content');
+                    let _token = $('meta[name="csrf-token"]').attr('content');
+                    console.log("Menghapus obat dengan noResep: " + $noResep + " dan kode obat: " + $kdObat);
+                    
                     $.ajax({
-                        url: '/api/obat/'+$noResep+'/'+$kdObat,
+                        url: '/api/obat/' + $noResep + '/' + $kdObat,
                         type: 'POST',
                         dataType: 'json',
-                        data:{_token: _token}, 
-                        beforeSend:function() {
-                        Swal.fire({
-                            title: 'Loading....',
-                            allowEscapeKey: false,
-                            allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
+                        data: {
+                            _token: _token
+                        },
+                        beforeSend: function() {
+                            Swal.fire({
+                                title: 'Loading....',
+                                allowEscapeKey: false,
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
                             });
                         },
                         success: function(data) {
-                            console.log(data);
-                            data.status == 'sukses' ? Swal.fire(
-                                'Terhapus!',
-                                data.pesan,
-                                'success'
-                            ).then((result) => {
-                                if (result.value) {
-                                    window.location.reload();
-                                }
-                            }) : Swal.fire(
-                                'Gagal!',
-                                data.pesan,
-                                'error'
-                            ).then((result) => {
-                                if (result.value) {
-                                    window.location.reload();
-                                }
-                            })
+                            console.log("Respons sukses:", data);
+                            if (data && data.status === 'sukses') {
+                                Swal.fire({
+                                    title: 'Terhapus!',
+                                    text: data.pesan || 'Obat berhasil dihapus',
+                                    icon: 'success',
+                                    confirmButtonText: 'Ok'
+                                }).then((result) => {
+                                    if (result.value) {
+                                        console.log("Memuat ulang halaman setelah hapus obat...");
+                                        reloadPage();
+                                    }
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Gagal!',
+                                    text: (data && data.pesan) ? data.pesan : 'Obat gagal dihapus. Silakan coba lagi.',
+                                    icon: 'error',
+                                    confirmButtonText: 'Ok'
+                                }).then((result) => {
+                                    if (result.value) {
+                                        console.log("Memuat ulang halaman setelah gagal hapus obat...");
+                                        reloadPage();
+                                    }
+                                });
+                            }
                         },
-                        error: function(data) {
-                            console.log(data);
-                            Swal.fire(
-                                'Gagal!',
-                                data.pesan ?? 'Obat gagal dihapus.',
-                                'error'
-                            )
+                        error: function(xhr, status, error) {
+                            console.error("Error saat menghapus obat:", xhr.responseText);
+                            let errorMessage = 'Obat gagal dihapus. ';
+                            
+                            try {
+                                const responseData = JSON.parse(xhr.responseText);
+                                if (responseData && responseData.pesan) {
+                                    errorMessage += responseData.pesan;
+                                } else if (xhr.status === 404) {
+                                    errorMessage += 'Obat tidak ditemukan.';
+                                } else if (xhr.status === 500) {
+                                    errorMessage += 'Terjadi kesalahan di server. Silakan hubungi administrator.';
+                                    console.error("Detail error 500:", xhr.responseText);
+                                } else if (xhr.status === 400) {
+                                    errorMessage += 'Permintaan tidak valid. Obat mungkin sudah divalidasi.';
+                                }
+                            } catch (e) {
+                                errorMessage += 'Status: ' + xhr.status + ' - ' + error;
+                                console.error("Error parsing response:", e);
+                            }
+                            
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: errorMessage,
+                                icon: 'error',
+                                confirmButtonText: 'Ok'
+                            });
                         }
-                    })
+                    });
                 }
-            })
+            });
         }
 
         function hapusRacikan($noResep, $noRacik, e) {
@@ -693,10 +927,14 @@
                 if (result.value) {
                     let _token   = $('meta[name="csrf-token"]').attr('content');
                     $.ajax({
-                        url: '/ralan/racikan/'+$noResep+'/'+$noRacik,
-                        type: 'DELETE',
+                        url: '/api/resep/hapus-racikan',
+                        type: 'POST',
                         dataType: 'json',
-                        data:{_token: _token}, 
+                        data:{
+                            no_resep: $noResep,
+                            no_racik: $noRacik,
+                            _token: _token
+                        }, 
                         beforeSend:function() {
                         Swal.fire({
                             title: 'Loading....',
@@ -715,7 +953,8 @@
                                 'success'
                             ).then((result) => {
                                 if (result.value) {
-                                    window.location.reload();
+                                    console.log("Memuat ulang halaman setelah hapus racikan...");
+                                    reloadPage();
                                 }
                             }) : Swal.fire(
                                 'Gagal!',
@@ -723,7 +962,8 @@
                                 'error'
                             ).then((result) => {
                                 if (result.value) {
-                                    window.location.reload();
+                                    console.log("Memuat ulang halaman setelah hapus racikan...");
+                                    reloadPage();
                                 }
                             })
                         },
@@ -746,33 +986,72 @@
             let obat = getValue('kode_brng_copyresep[]');
             let jumlah = getValue('jml_copyresep[]');
             let aturan = getValue('aturan_copyresep[]');
+            let dokter = $('#dokter').val();
+            
+            // Validasi data sebelum dikirim
+            if (obat.length === 0) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Tidak ada data obat yang akan disimpan',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
+            
+            // Validasi dokter
+            if (!dokter) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Pilih dokter terlebih dahulu',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
+            
+            // Pastikan semua field terisi
+            for (let i = 0; i < obat.length; i++) {
+                if (!jumlah[i] || jumlah[i] <= 0) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Jumlah obat harus diisi dan lebih dari 0',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                    return;
+                }
+                
+                if (!aturan[i]) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Aturan pakai harus diisi',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                    return;
+                }
+            }
+            
             var data = {
-                obat:obat,
-                jumlah:jumlah,
-                aturan_pakai:aturan,
-                status:'Ranap',
-                kode:"{{$bangsal}}",
-                _token:_token,
+                obat: obat,
+                jumlah: jumlah,
+                aturan_pakai: aturan,
+                status: 'ranap',
+                kode: bangsal,
+                dokter: dokter,
+                _token: _token,
             };
-            // console.log(data);
+            
+            console.log("Data yang akan dikirim:", data);
+            
             $.ajax({
                 type: 'POST',
-                url: '/api/resep/'+"{{$encryptNoRawat}}",
+                url: '/api/resep_ranap/'+"{{$encryptNoRawat}}",
                 data: data,
                 dataType: 'json',
                 beforeSend: function() {
-                    $('#modalCopyResep').modal('hide')
-                    Swal.fire({
-                    title: 'Loading....',
-                    allowEscapeKey: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                    });
-            
-                },
-                beforeSend:function() {
+                    $('#modalCopyResep').modal('hide');
                     Swal.fire({
                         title: 'Loading....',
                         allowEscapeKey: false,
@@ -780,39 +1059,54 @@
                         didOpen: () => {
                             Swal.showLoading();
                         }
-                        });
+                    });
                 },
                 success: function (response) {
-                    console.log(response);
+                    console.log("Respons server:", response);
                     if(response.status == 'sukses'){
                         Swal.fire({
-                        title: 'Sukses',
-                        text: 'Data berhasil disimpan',
-                        icon: 'success',
-                        confirmButtonText: 'Ok'
+                            title: 'Sukses',
+                            text: 'Data berhasil disimpan',
+                            icon: 'success',
+                            confirmButtonText: 'Ok'
                         }).then((result) => {
                             if (result.value) {
-                                window.location.reload();
+                                console.log("Memuat ulang halaman setelah copy resep...");
+                                reloadPage();
                             }
-                        })
-                    }
-                    else{
+                        });
+                    } else {
                         Swal.fire({
-                        title: 'Gagal',
-                        text: response.pesan,
-                        icon: 'error',
-                        confirmButtonText: 'Ok'
-                        })
+                            title: 'Gagal',
+                            text: response.pesan || 'Gagal menyimpan data',
+                            icon: 'error',
+                            confirmButtonText: 'Ok'
+                        });
                     }
                 },
-                error: function (response) {
-                    console.log(response);
+                error: function (xhr, status, error) {
+                    console.error("Error saat menyimpan data:", xhr.responseText);
+                    let errorMessage = 'Gagal menyimpan data. ';
+                    
+                    try {
+                        const responseData = JSON.parse(xhr.responseText);
+                        if (responseData && responseData.pesan) {
+                            errorMessage += responseData.pesan;
+                        } else if (xhr.status === 404) {
+                            errorMessage += 'Endpoint API tidak ditemukan.';
+                        } else if (xhr.status === 500) {
+                            errorMessage += 'Server Error.';
+                        }
+                    } catch (e) {
+                        errorMessage += 'Status: ' + xhr.status + ' - ' + error;
+                    }
+                    
                     Swal.fire({
                         title: 'Error',
-                        text: response.pesan ?? 'Terjadi kesalahan',
+                        text: errorMessage,
                         icon: 'error',
                         confirmButtonText: 'Ok'
-                    })
+                    });
                 }
             });
         });
@@ -824,6 +1118,50 @@
             let jumlah = getValue('jumlah[]');
             let aturan = getValue('aturan[]');
             let dokter = $('#dokter').val();
+            
+            // Validasi input
+            if (obat.length === 0 || obat[0] === '') {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Pilih obat terlebih dahulu',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
+            
+            if (!dokter) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Pilih dokter terlebih dahulu',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
+            
+            for (let i = 0; i < obat.length; i++) {
+                if (!jumlah[i] || jumlah[i] <= 0) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Jumlah obat harus diisi dan lebih dari 0',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                    return;
+                }
+                
+                if (!aturan[i]) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Aturan pakai harus diisi',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                    return;
+                }
+            }
+            
             var form = $("#resepForm");
             var data = {
                 obat:obat,
@@ -836,7 +1174,8 @@
             };
             var url = form.attr('action');
             var method = form.attr('method');
-            // console.log(data);
+            console.log("Menyimpan resep dengan data:", data);
+
             $.ajax({
                 type: method,
                 url: url,
@@ -853,37 +1192,52 @@
                     });
                 },
                 success: function (response) {
-                    console.log(response);
+                    console.log("Respon server:", response);
                     if(response.status == 'sukses'){
-                        window.location.reload();
-                        // Swal.fire({
-                        // title: 'Sukses',
-                        // text: 'Data berhasil disimpan',
-                        // icon: 'success',
-                        // confirmButtonText: 'Ok'
-                        // }).then((result) => {
-                        //     if (result.value) {
-                        //         window.location.reload();
-                        //     }
-                        // })
+                        Swal.fire({
+                        title: 'Sukses',
+                        text: 'Data berhasil disimpan',
+                        icon: 'success',
+                        confirmButtonText: 'Ok'
+                        }).then((result) => {
+                            if (result.value) {
+                                console.log("Memuat ulang halaman...");
+                                reloadPage();
+                            }
+                        })
                     }
                     else{
                         Swal.fire({
                         title: 'Gagal',
-                        text: response.pesan,
+                        text: response.pesan || 'Gagal menyimpan resep',
                         icon: 'error',
                         confirmButtonText: 'Ok'
                         })
                     }
                 },
-                error: function (response) {
-                    console.log(response);
+                error: function (xhr, status, error) {
+                    console.error("Error saat menyimpan resep:", xhr.responseText);
+                    let errorMessage = 'Terjadi kesalahan sistem';
+                    
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response && response.pesan) {
+                            errorMessage = response.pesan;
+                        }
+                    } catch (e) {
+                        if (xhr.status === 404) {
+                            errorMessage = 'API endpoint tidak ditemukan. Periksa konfigurasi route.';
+                        } else if (xhr.status === 500) {
+                            errorMessage = 'Terjadi kesalahan di server. Silakan hubungi administrator.';
+                        }
+                    }
+                    
                     Swal.fire({
                         title: 'Error',
-                        text: response.pesan ?? 'Terjadi kesalahan',
+                        text: errorMessage,
                         icon: 'error',
                         confirmButtonText: 'Ok'
-                    })
+                    });
                 }
             });
         });
@@ -939,7 +1293,8 @@
                         confirmButtonText: 'Ok'
                         }).then((result) => {
                             if (result.value) {
-                                window.location.reload();
+                                console.log("Memuat ulang halaman setelah resep racikan...");
+                                reloadPage();
                             }
                         })
                     }
