@@ -45,6 +45,10 @@ Route::get('/hasil/lab/{noRawat}', [LabController::class, 'getPemeriksaanLab']);
 Route::post('/permintaan-lab/{noRawat}', [LabController::class, 'postPermintaanLab']);
 Route::post('/hapus/permintaan-lab/{noOrder}', [LabController::class, 'hapusPermintaanLab']);
 Route::get('/template-lab/{kd_jenis_prw}', [LabController::class, 'getTemplateByJenisPemeriksaan']);
+Route::post('/template-lab', [LabController::class, 'getTemplateByMultipleJenisPemeriksaan']);
+Route::get('/template-lab', [LabController::class, 'getTemplateByMultipleJenisPemeriksaan']);
+Route::get('/template-lab/check', [LabController::class, 'checkTemplateExistence']);
+Route::post('/template-lab/create-dummy', [LabController::class, 'createDummyTemplates']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);
 
 // Radiologi

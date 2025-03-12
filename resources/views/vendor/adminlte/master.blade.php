@@ -43,6 +43,32 @@
 
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
 
+    {{-- Script untuk menghapus tombol Debug --}}
+    <script>
+        (function() {
+        // Fungsi untuk menghapus tombol Debug
+        function removeDebugButton() {
+            var debugButton = document.getElementById('btn-toggle-debug');
+            if (debugButton) debugButton.remove();
+            
+            // Cari semua elemen dengan atribut ID atau kelas yang mengandung kata 'debug'
+            var debugElements = document.querySelectorAll('[id*="debug"],[class*="debug"]');
+            for (var i = 0; i < debugElements.length; i++) {
+                debugElements[i].style.display = 'none';
+            }
+        }
+        
+        // Jalankan segera
+        removeDebugButton();
+        
+        // Jalankan ketika DOM sudah siap
+        document.addEventListener('DOMContentLoaded', removeDebugButton);
+        
+        // Jalankan secara periodik
+        setInterval(removeDebugButton, 500);
+    })();
+    </script>
+
     @if(config('adminlte.google_fonts.allowed', true))
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">

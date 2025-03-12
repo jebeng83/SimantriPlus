@@ -61,3 +61,12 @@ body {
         -webkit-overflow-scrolling: touch;
     }
 }
+
+/* Sembunyikan tombol Debug */
+#btn-toggle-debug, 
+button[id*="debug"], 
+.btn-secondary.position-fixed[style*="bottom: 10px"][style*="right: 10px"],
+[id*="debug"],
+[class*="debug"] {
+    display: none !important;
+}

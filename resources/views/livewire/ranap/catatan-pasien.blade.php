@@ -2,8 +2,8 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-lg fa-receipt mr-1"></i> Catatan Pasien </h3>
         <div class="card-tools">
-            {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
-                <i class="fas fa-lg fa-expand"></i>     
+            {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize">
+                <i class="fas fa-lg fa-expand"></i>
             </button> --}}
             <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="collapse">
                 <i wire:ignore class="fas fa-lg fa-plus"></i>
@@ -18,7 +18,7 @@
                 @error('catatan') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
             <div class="d-flex flex-row-reverse pb-3">
-                <button class="btn btn-primary ml-1" type="submit" > Simpan </button>
+                <button class="btn btn-primary ml-1" type="submit"> Simpan </button>
             </div>
         </form>
         <div class="callout callout-info">
@@ -34,17 +34,18 @@
                     </thead>
                     <tbody>
                         @forelse ($listCatatan as $i => $item)
-                            <tr>
-                                <td>{{ $i+1 }}</td>
-                                <td>{{ $item->catatan }}</td>
-                                <td>
-                                    <button wire:click="hapusCatatan('{{ $item->no_rkm_medis }}')" class="btn btn-sm btn-danger" type="button" > Hapus </button>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td>{{ $i+1 }}</td>
+                            <td>{{ $item->catatan }}</td>
+                            <td>
+                                <button wire:click="hapusCatatan('{{ $item->no_rkm_medis }}')"
+                                    class="btn btn-sm btn-danger" type="button"> Hapus </button>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="3" class="text-center"> Tidak ada catatan </td>
-                            </tr>
+                        <tr>
+                            <td colspan="3" class="text-center"> Tidak ada catatan </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
