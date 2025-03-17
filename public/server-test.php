@@ -1,0 +1,1 @@
+<?php echo "<h1>Uji Server OK!</h1><p>Server: ". php_uname() . "</p><p>Storage dapat ditulis: ". (is_writable("../storage") ? "Ya" : "Tidak") . "</p><p>Bootstrap/cache dapat ditulis: ". (is_writable("../bootstrap/cache") ? "Ya" : "Tidak") . "</p>";

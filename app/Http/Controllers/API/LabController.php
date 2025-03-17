@@ -411,12 +411,9 @@ class LabController extends Controller
                 ->where('kd_jenis_prw', $kd_jenis_prw)
                 ->select(
                     'id_template', 
-                    'Pemeriksaan',
+                    'Pemeriksaan as text',
                     'satuan',
-                    'nilai_rujukan_ld',
-                    'nilai_rujukan_la',
-                    'nilai_rujukan_pd',
-                    'nilai_rujukan_pa',
+                    'nilai_rujukan_ld as nilai_rujukan',
                     'kd_jenis_prw'
                 )
                 ->orderBy('urut', 'asc')
@@ -443,130 +440,13 @@ class LabController extends Controller
                 // Jika pemeriksaan adalah DARAH RUTIN
                 if (strpos($namaPemeriksaan, 'DARAH RUTIN') !== false || strpos($namaPemeriksaan, 'HEMATOLOGI') !== false) {
                     $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_1',
+                        'id_template' => 'dummy_' . $kd_jenis_prw . '_1',
                         'text' => 'Hemoglobin (HGB)',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
                         'kd_jenis_prw' => $kd_jenis_prw,
                         'satuan' => 'g/dL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '13.0-17.0',
-                            'laki_anak' => '11.0-16.0',
-                            'perempuan_dewasa' => '12.0-15.0',
-                            'perempuan_anak' => '11.0-15.0'
-                        ]
-                    ];
-                    
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_2',
-                        'text' => 'Hematokrit (HCT)',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => '%',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '40-50',
-                            'laki_anak' => '33-45',
-                            'perempuan_dewasa' => '35-45',
-                            'perempuan_anak' => '34-44'
-                        ]
-                    ];
-                    
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_3',
-                        'text' => 'Jumlah Leukosit (WBC)',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => 'ribu/uL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '4.0-10.0',
-                            'laki_anak' => '4.5-13.5',
-                            'perempuan_dewasa' => '4.0-10.0',
-                            'perempuan_anak' => '4.5-13.5'
-                        ]
-                    ];
-                    
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_4',
-                        'text' => 'Jumlah Trombosit (PLT)',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => 'ribu/uL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '150-400',
-                            'laki_anak' => '150-450',
-                            'perempuan_dewasa' => '150-400',
-                            'perempuan_anak' => '150-450'
-                        ]
+                        'nilai_rujukan' => '13.5 - 17.5'
                     ];
                 }
-                // Jika pemeriksaan adalah ASAM URAT
-                else if (strpos($namaPemeriksaan, 'ASAM URAT') !== false) {
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_1',
-                        'text' => 'Asam Urat',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => 'mg/dL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '3.5-7.2',
-                            'laki_anak' => '2.0-5.5',
-                            'perempuan_dewasa' => '2.6-6.0',
-                            'perempuan_anak' => '2.0-5.0'
-                        ]
-                    ];
-                }
-                // Jika pemeriksaan adalah GULA DARAH
-                else if (strpos($namaPemeriksaan, 'GULA DARAH') !== false) {
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_1',
-                        'text' => 'Gula Darah Puasa',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => 'mg/dL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '70-110',
-                            'laki_anak' => '60-100',
-                            'perempuan_dewasa' => '70-110',
-                            'perempuan_anak' => '60-100'
-                        ]
-                    ];
-                    
-                    $result[] = [
-                        'id' => 'dummy_' . $kd_jenis_prw . '_2',
-                        'text' => 'Gula Darah 2 Jam PP',
-                        'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                        'kd_jenis_prw' => $kd_jenis_prw,
-                        'satuan' => 'mg/dL',
-                        'nilai_rujukan' => [
-                            'laki_dewasa' => '<140',
-                            'laki_anak' => '<140',
-                            'perempuan_dewasa' => '<140',
-                            'perempuan_anak' => '<140'
-                        ]
-                    ];
-                }
-                // Jika pemeriksaan lainnya, buat template generik
-                else {
-                    // Buat 3 template dummy untuk setiap jenis pemeriksaan
-                    for ($i = 1; $i <= 3; $i++) {
-                        $result[] = [
-                            'id' => 'dummy_' . $kd_jenis_prw . '_' . $i,
-                            'text' => 'Template ' . $i . ' untuk ' . $jenisPemeriksaan->nm_perawatan,
-                            'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                            'kd_jenis_prw' => $kd_jenis_prw,
-                            'satuan' => 'mg/dL',
-                            'nilai_rujukan' => [
-                                'laki_dewasa' => '0-' . ($i * 10),
-                                'laki_anak' => '0-' . ($i * 5),
-                                'perempuan_dewasa' => '0-' . ($i * 8),
-                                'perempuan_anak' => '0-' . ($i * 4)
-                            ]
-                        ];
-                    }
-                }
-                
-                \Illuminate\Support\Facades\Log::info('Mengembalikan template dummy', [
-                    'jumlah_template_dummy' => count($result)
-                ]);
                 
                 return response()->json([
                     'status' => 'sukses',
@@ -574,33 +454,17 @@ class LabController extends Controller
                 ]);
             }
             
-            // Format data untuk respons
-            $result = [];
-            foreach ($templates as $template) {
-                $result[] = [
-                    'id' => $template->id_template,
-                    'text' => $template->Pemeriksaan,
-                    'jenis_pemeriksaan' => $jenisPemeriksaan->nm_perawatan,
-                    'kd_jenis_prw' => $kd_jenis_prw,
-                    'satuan' => $template->satuan,
-                    'nilai_rujukan' => [
-                        'laki_dewasa' => $template->nilai_rujukan_ld,
-                        'laki_anak' => $template->nilai_rujukan_la,
-                        'perempuan_dewasa' => $template->nilai_rujukan_pd,
-                        'perempuan_anak' => $template->nilai_rujukan_pa
-                    ]
-                ];
-            }
-            
             return response()->json([
                 'status' => 'sukses',
-                'data' => $result
+                'data' => $templates
             ]);
+            
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal mengambil template lab: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Error di getTemplateByJenisPemeriksaan: ' . $e->getMessage(), [
                 'kd_jenis_prw' => $kd_jenis_prw,
-                'error' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString()
             ]);
+            
             return response()->json([
                 'status' => 'gagal',
                 'message' => $e->getMessage()

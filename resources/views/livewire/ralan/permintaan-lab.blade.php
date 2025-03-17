@@ -31,11 +31,45 @@
             <div wire:ignore class="form-group row">
                 <label for="jenis" class="col-sm-4 col-form-label">Jenis Pemeriksaan</label>
                 <div class="col-sm-8">
-                    <select class="form-control jenis" wire:model.defer="jns_pemeriksaan" id="jenis_lab" name="jenis[]"
+                    <select class="form-control jenis" wire:model="jns_pemeriksaan" id="jenis_lab" name="jenis[]"
                         multiple="multiple"></select>
                 </div>
                 @error('jns_pemeriksaan') <span class="text-danger">{{ $message }}</span> @enderror
             </div>
+
+            <!-- Container untuk template -->
+            @if(!empty($selectedTemplate))
+            <div class="template-container mt-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Template Pemeriksaan</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Pemeriksaan</th>
+                                        <th>Nilai Rujukan</th>
+                                        <th>Satuan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($selectedTemplate as $template)
+                                    <tr>
+                                        <td>{{ $template->nama_pemeriksaan }}</td>
+                                        <td>{{ $template->nilai_rujukan }}</td>
+                                        <td>{{ $template->satuan }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <div class="d-flex flex-row-reverse pb-3">
                 <button class="btn btn-primary ml-1" type="submit"> Simpan </button>
             </div>
