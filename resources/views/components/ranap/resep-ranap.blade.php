@@ -94,19 +94,7 @@
                     $config["responsive"] = true;
                     $config['order'] = [[1, 'desc']];
                     $jumlahRiwayat = count($riwayatPeresepan);
-                    \Log::info("Jumlah riwayat peresepan di view: " . $jumlahRiwayat);
                     @endphp
-
-                    @if(config('app.debug'))
-                    <div class="alert alert-info">
-                        <p>Debug Info:</p>
-                        <ul>
-                            <li>Jumlah data riwayat: {{ $jumlahRiwayat }}</li>
-                            <li>No RM: {{ $encryptNoRM }}</li>
-                            <li>No Rawat: {{ $encryptNoRawat }}</li>
-                        </ul>
-                    </div>
-                    @endif
 
                     <x-adminlte-datatable id="tableRiwayatResep" :heads="$heads" :config="$config" head-theme="dark"
                         striped hoverable bordered compressed>
@@ -119,9 +107,6 @@
                                 @php
                                 $racikan = $resepRacikan->where('no_resep', $r->no_resep)->first();
                                 $resepObat = $getResepObat($r->no_resep);
-                                \Log::info("Detail untuk resep {$r->no_resep}: " .
-                                "Racikan: " . ($racikan ? 'Ada' : 'Tidak ada') .
-                                ", Obat: " . count($resepObat));
                                 @endphp
                                 <ul class="p-4">
                                     @if($racikan)

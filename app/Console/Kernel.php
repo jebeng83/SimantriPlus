@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('logs:delete-old')->everyTwoDays()->at('01:00')
+            ->appendOutputTo(storage_path('logs/scheduler.log'));
     }
 
     /**
