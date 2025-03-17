@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BPJSTestController;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\RegPeriksaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -195,3 +196,8 @@ Route::get('/debug/permintaan-lab', function() {
         'detail_pemeriksaan' => $pemeriksaan
     ];
 });
+
+// Routes untuk RegPeriksa
+Route::get('/regperiksa/create/{no_rkm_medis}', [RegPeriksaController::class, 'create'])->name('regperiksa.create');
+Route::post('/regperiksa/store', [RegPeriksaController::class, 'store'])->name('regperiksa.store');
+Route::get('/regperiksa/generate-noreg/{kd_poli}/{tgl_registrasi}', [RegPeriksaController::class, 'generateNoReg']);
