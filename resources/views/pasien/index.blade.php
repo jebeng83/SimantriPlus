@@ -249,7 +249,9 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 <a id="btnEditPasien" href="#" class="btn btn-primary">Edit Data</a>
-                <button type="button" class="btn btn-success">Daftar Kunjungan</button>
+                <a id="btnDaftarKunjungan" href="#" class="btn btn-success">
+                    <i class="fas fa-notes-medical mr-1"></i> Daftar Kunjungan
+                </a>
             </div>
         </div>
     </div>
@@ -490,6 +492,9 @@
                 success: function(data) {
                     // Isi modal dengan data pasien
                     populatePatientModal(data);
+                    
+                    // Set URL untuk tombol Daftar Kunjungan
+                    $('#btnDaftarKunjungan').attr('href', '/regperiksa/create/' + data.no_rkm_medis);
                 },
                 error: function(xhr, status, error) {
                     console.error('Error fetching patient data:', error);
