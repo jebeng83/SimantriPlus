@@ -3,75 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terjadi Kesalahan - Simantri PLUS</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    
+    <title>Server Sedang dalam Pemeliharaan</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
             margin: 0;
             padding: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            text-align: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
         }
         .container {
-            max-width: 600px;
-            padding: 20px;
-            background-color: white;
+            background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 600px;
+            text-align: center;
         }
         h1 {
-            color: #dc3545;
-            margin-bottom: 20px;
+            color: #e74c3c;
+            margin-top: 0;
         }
         p {
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-        .icon {
-            font-size: 64px;
+            font-size: 16px;
+            line-height: 1.6;
             margin-bottom: 20px;
-            color: #dc3545;
         }
         .btn {
             display: inline-block;
-            background-color: #0056b3;
+            background-color: #3498db;
             color: white;
             padding: 10px 20px;
-            border-radius: 4px;
             text-decoration: none;
-            margin-top: 20px;
+            border-radius: 4px;
+            font-weight: bold;
             transition: background-color 0.3s;
         }
         .btn:hover {
-            background-color: #003d7a;
+            background-color: #2980b9;
+        }
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="icon">⚠️</div>
-        <h1>Terjadi Kesalahan</h1>
-        <p>Maaf, sistem sedang mengalami gangguan teknis.</p>
-        <p>Tim kami sedang bekerja untuk memperbaiki masalah ini. Silakan coba lagi nanti.</p>
+        <div class="icon">🏥</div>
+        <h1>Server Sedang dalam Pemeliharaan</h1>
+        <p>Mohon maaf atas ketidaknyamanan ini. Server kami sedang dalam perbaikan untuk meningkatkan layanan.</p>
+        <p>Silakan coba kembali dalam beberapa saat. Jika masalah berlanjut, hubungi administrator sistem.</p>
         <a href="/" class="btn">Kembali ke Beranda</a>
     </div>
-    <script>
-        // Coba reload halaman setelah 30 detik
-        setTimeout(function() {
-            window.location.reload();
-        }, 30000);
-    </script>
 </body>
 </html> 

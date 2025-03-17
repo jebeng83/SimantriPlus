@@ -37,9 +37,6 @@ class ResepRanap extends Component
             ->limit(20)
             ->get();
 
-        // Tambahkan log untuk debugging
-        \Log::info('Riwayat Peresepan: no_rm=' . $this->noRM . ', no_rawat=' . $this->noRawat . ', jumlah data=' . count($this->riwayatPeresepan));
-
         $this->resep = DB::table('resep_dokter')
             ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
             ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
@@ -103,9 +100,6 @@ class ResepRanap extends Component
                 ->select('databarang.nama_brng', 'resep_dokter.jml', 'resep_dokter.aturan_pakai')
                 ->get();
             
-            // Tambahkan log untuk debugging
-            \Log::info('Resep Obat untuk no_resep: ' . $noResep . ', jumlah data: ' . count($data));
-            
             return $data;
         } catch (\Exception $e) {
             \Log::error('Error saat mengambil resep obat: ' . $e->getMessage());
@@ -121,9 +115,6 @@ class ResepRanap extends Component
                 ->where('resep_dokter_racikan_detail.no_resep', $noResep)
                 ->select('databarang.nama_brng', 'resep_dokter_racikan_detail.*')
                 ->get();
-            
-            // Tambahkan log untuk debugging
-            \Log::info('Detail Racikan untuk no_resep: ' . $noResep . ', jumlah data: ' . count($data));
             
             return $data;
         } catch (\Exception $e) {
@@ -146,9 +137,6 @@ class ResepRanap extends Component
             })
             ->select('resep_dokter_racikan.*', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan', 'metode_racik.nm_racik')
             ->get();
-        
-        // Tambahkan log untuk debugging
-        \Log::info('Resep Racikan untuk no_rawat: ' . $noRawat . ', jumlah data: ' . count($data));
         
         return $data;
     }

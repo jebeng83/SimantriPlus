@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BPJSTestController;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -174,4 +175,23 @@ Route::middleware(['loginauth'])->group(function () {
         Session::regenerate(true);
         return csrf_token();
     })->name('refresh-csrf');
+});
+
+// Temporary route for debugging
+Route::get('/debug/permintaan-lab', function() {
+    $data = DB::table('permintaan_lab')
+            ->where('noorder', 'PL202503180001')
+            ->orWhere('no_rawat', '2025/03/18/000001')
+            ->get();
+    
+    $pemeriksaan = DB::table('permintaan_pemeriksaan_lab AS ppl')
+            ->join('jns_perawatan_lab AS jpl', 'ppl.kd_jenis_prw', '=', 'jpl.kd_jenis_prw')
+            ->where('ppl.noorder', 'PL202503180001')
+            ->select('ppl.kd_jenis_prw', 'jpl.nm_perawatan')
+            ->get();
+            
+    return [
+        'permintaan_lab' => $data,
+        'detail_pemeriksaan' => $pemeriksaan
+    ];
 });
