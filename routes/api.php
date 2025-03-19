@@ -69,3 +69,34 @@ Route::get('/riwayat-pemeriksaan/{noRawat}', [PemeriksaanController::class, 'get
 
 // BPJS
 Route::post('/icare', [App\Http\Controllers\API\BPJSController::class, 'icare']);
+
+// BPJS Routes
+Route::prefix('bpjs')->group(function () {
+    Route::get('peserta/{noKartu}', [App\Http\Controllers\API\BPJSController::class, 'getPeserta']);
+});
+
+// PCare Routes
+Route::prefix('pcare')->group(function () {
+    // Peserta - format endpoint sesuai dengan library awageeks/laravel-bpjs
+    Route::get('peserta/noka/{noKartu}', [App\Http\Controllers\API\PcareController::class, 'getPeserta']);
+    Route::get('peserta/nik/{nik}', [App\Http\Controllers\API\PcareController::class, 'getPesertaByNIK']);
+    Route::get('peserta/{noKartu}', [App\Http\Controllers\API\PcareController::class, 'getPeserta']);
+    
+    // Provider dan Dokter
+    Route::get('provider', [App\Http\Controllers\API\PcareController::class, 'getProvider']);
+    Route::get('dokter', [App\Http\Controllers\API\PcareController::class, 'getDokter']);
+    
+    // Diagnosa, Tindakan, dan Obat
+    Route::get('diagnosa/{keyword}', [App\Http\Controllers\API\PcareController::class, 'getDiagnosa']);
+    Route::get('tindakan/{keyword}', [App\Http\Controllers\API\PcareController::class, 'getTindakan']);
+    Route::get('obat/{keyword}', [App\Http\Controllers\API\PcareController::class, 'getObat']);
+    
+    // Kunjungan dan Status
+    Route::get('kunjungan/{noKartu}', [App\Http\Controllers\API\PcareController::class, 'getKunjungan']);
+    Route::get('statuspulang', [App\Http\Controllers\API\PcareController::class, 'getStatusPulang']);
+    
+    // Poli dan Klub
+    Route::get('poli', [App\Http\Controllers\API\PcareController::class, 'getPoli']);
+    Route::get('kelompok', [App\Http\Controllers\API\PcareController::class, 'getKelompokSehat']);
+    Route::get('klubprolanis', [App\Http\Controllers\API\PcareController::class, 'getKlubProlanis']);
+});

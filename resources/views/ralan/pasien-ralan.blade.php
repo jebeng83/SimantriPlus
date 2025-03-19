@@ -5,9 +5,10 @@
 @section('content_header')
 <div class="ralan-header">
     <div class="header-content">
-        <h1 class="ralan-title">Pasien Ralan</h1>
-        <p class="ralan-subtitle">{{$nm_poli}}</p>
-        <p class="ralan-sort-info" id="sort-label"><small><i class="fas fa-sort-numeric-down"></i> Diurutkan berdasarkan
+        <h1 class="ralan-title" style="color: white;">Pasien Ralan</h1>
+        <p class="ralan-subtitle" style="color: white;">{{$nm_poli}}</p>
+        <p class="ralan-sort-info" id="sort-label"><small><i class="fas fa-sort-numeric-down" style="color: white;"></i>
+                Diurutkan berdasarkan
                 No. Registrasi
                 ASC</small></p>
     </div>
@@ -362,17 +363,15 @@
 
     /* Memperbaiki area data pasien */
     .ralan-container {
-        padding: 0;
+        padding: 15px;
         background-color: #f8f9fa;
     }
 
     .ralan-card {
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         background: #fff;
-        position: relative;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         overflow: hidden;
-        margin-bottom: 20px;
     }
 
     /* Tab styling */
@@ -404,9 +403,10 @@
 
     /* Filter styling */
     .filter-box {
-        background-color: #f8f9fa;
-        padding: 15px 20px;
-        border-bottom: 1px solid #eee;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         margin-bottom: 15px;
     }
 
@@ -418,19 +418,20 @@
     }
 
     .filter-status-select {
-        width: 70%;
-        padding: 10px;
+        width: 200px;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
         border-radius: 4px;
-        border: 1px solid #ced4da;
-        background-color: #fff;
         font-size: 14px;
-        transition: all 0.2s;
+        color: #495057;
+        background-color: #fff;
+        transition: all 0.2s ease;
     }
 
     .filter-status-select:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        outline: none;
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
     }
 
     #applyFilterBtn {
@@ -456,64 +457,223 @@
         align-items: center;
     }
 
-    /* Table styling */
+    /* Table Container */
     .table-container {
-        padding: 0 20px 20px;
-        background-color: #fff;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
+    /* Table Styling */
     .table-pasien {
         width: 100%;
+        margin: 0;
         border-collapse: collapse;
-        font-size: 14px;
+        background: #fff;
     }
 
-    .table-pasien thead th {
-        background-color: #f8f9fa;
-        color: #495057;
-        padding: 12px 10px;
-        border-bottom: 2px solid #dee2e6;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.5px;
+    /* Header Styling */
+    .table-pasien thead {
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: 2;
+        background: #fff;
     }
 
-    .table-pasien tbody tr {
-        border-bottom: 1px solid #f2f2f2;
-        transition: all 0.2s;
-    }
-
-    .table-pasien tbody tr:hover {
-        background-color: #f9fbfd;
-    }
-
-    .table-pasien tbody tr td {
-        padding: 12px 10px;
-        vertical-align: middle;
-    }
-
-    /* Status badges */
-    .status-badge {
-        display: inline-block;
-        padding: 5px 12px;
-        border-radius: 50px;
-        font-size: 12px;
+    .table-pasien th {
+        background: #f8f9fa;
+        padding: 12px 8px;
         font-weight: 600;
-        text-transform: uppercase;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        white-space: nowrap;
     }
 
-    .status-badge.completed {
-        background-color: #e8f5e9;
-        color: #2e7d32;
+    /* Column Widths */
+    .table-pasien th:nth-child(1),
+    .table-pasien td:nth-child(1) {
+        width: 8%;
     }
 
-    .status-badge.pending {
-        background-color: #ffebee;
-        color: #c62828;
+    /* No Reg */
+
+    .table-pasien th:nth-child(2),
+    .table-pasien td:nth-child(2) {
+        width: 25%;
+    }
+
+    /* Nama */
+
+    .table-pasien th:nth-child(3),
+    .table-pasien td:nth-child(3) {
+        width: 20%;
+    }
+
+    /* No Rawat */
+
+    .table-pasien th:nth-child(4),
+    .table-pasien td:nth-child(4) {
+        width: 15%;
+    }
+
+    /* Telp */
+
+    .table-pasien th:nth-child(5),
+    .table-pasien td:nth-child(5) {
+        width: 20%;
+    }
+
+    /* Dokter */
+
+    .table-pasien th:nth-child(6),
+    .table-pasien td:nth-child(6) {
+        width: 12%;
+    }
+
+    /* Status */
+
+    /* Body Styling */
+    .table-pasien td {
+        padding: 12px 8px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f2f2f2;
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 768px) {
+        .ralan-container {
+            padding: 10px;
+        }
+
+        .table-container {
+            margin: 0 -10px;
+        }
+
+        .table-pasien {
+            min-width: 800px;
+        }
+
+        .table-pasien th,
+        .table-pasien td {
+            padding: 10px 6px;
+            font-size: 13px;
+        }
+
+        /* Adjust column widths for mobile */
+        .table-pasien th:nth-child(1),
+        .table-pasien td:nth-child(1) {
+            min-width: 60px;
+        }
+
+        /* No Reg */
+
+        .table-pasien th:nth-child(2),
+        .table-pasien td:nth-child(2) {
+            min-width: 180px;
+        }
+
+        /* Nama */
+
+        .table-pasien th:nth-child(3),
+        .table-pasien td:nth-child(3) {
+            min-width: 150px;
+        }
+
+        /* No Rawat */
+
+        .table-pasien th:nth-child(4),
+        .table-pasien td:nth-child(4) {
+            min-width: 100px;
+        }
+
+        /* Telp */
+
+        .table-pasien th:nth-child(5),
+        .table-pasien td:nth-child(5) {
+            min-width: 150px;
+        }
+
+        /* Dokter */
+
+        .table-pasien th:nth-child(6),
+        .table-pasien td:nth-child(6) {
+            min-width: 80px;
+        }
+
+        /* Status */
+    }
+
+    @media screen and (max-width: 480px) {
+        .ralan-container {
+            padding: 5px;
+        }
+
+        .table-pasien {
+            min-width: 650px;
+        }
+
+        .table-pasien th,
+        .table-pasien td {
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+
+        /* Further reduce widths for very small screens */
+        .table-pasien th:nth-child(1),
+        .table-pasien td:nth-child(1) {
+            min-width: 50px;
+        }
+
+        .table-pasien th:nth-child(2),
+        .table-pasien td:nth-child(2) {
+            min-width: 150px;
+        }
+
+        .table-pasien th:nth-child(3),
+        .table-pasien td:nth-child(3) {
+            min-width: 130px;
+        }
+
+        .table-pasien th:nth-child(4),
+        .table-pasien td:nth-child(4) {
+            min-width: 90px;
+        }
+
+        .table-pasien th:nth-child(5),
+        .table-pasien td:nth-child(5) {
+            min-width: 130px;
+        }
+
+        .table-pasien th:nth-child(6),
+        .table-pasien td:nth-child(6) {
+            min-width: 70px;
+        }
+    }
+
+    /* Hover Effects */
+    .table-pasien tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+
+    /* Scrollbar Styling */
+    .table-container::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+        background: #666;
     }
 
     /* Pagination styling */
@@ -605,32 +765,6 @@
         opacity: 0.9;
     }
 
-    /* Responsivitas */
-    @media (max-width: 768px) {
-        .ralan-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .header-actions {
-            width: 100%;
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .quick-stats {
-            width: 100%;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-
-        #manualRefreshBtn {
-            margin-top: 10px;
-            align-self: flex-end;
-        }
-    }
-
     /* Animasi rotasi untuk tombol refresh */
     .rotating i {
         animation: rotate 1s linear infinite;
@@ -645,6 +779,170 @@
             transform: rotate(360deg);
         }
     }
+
+    /* Status Badge Styling */
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 50px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition: all 0.2s ease;
+    }
+
+    .status-badge.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .status-badge.pending {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+
+    /* Filter Box Styling */
+    .filter-box {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 15px;
+    }
+
+    .filter-status-select {
+        width: 200px;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #495057;
+        background-color: #fff;
+        transition: all 0.2s ease;
+    }
+
+    .filter-status-select:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
+
+    /* Button Group Styling */
+    .btn-group-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .btn-group-actions .btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    /* Patient Name Styling */
+    .patient-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .patient-name:hover {
+        color: #007bff;
+    }
+
+    .patient-fullname {
+        font-weight: 500;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .filter-box {
+            padding: 10px;
+        }
+
+        .filter-status-select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-group-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .patient-name {
+            gap: 5px;
+        }
+
+        .patient-fullname {
+            font-size: 13px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .filter-box {
+            margin-bottom: 10px;
+        }
+
+        .btn-group-actions .btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            padding: 3px 6px;
+            font-size: 10px;
+        }
+    }
+
+    /* Toastr Notification Styling */
+    #toast-container {
+        position: fixed;
+        z-index: 999999;
+        pointer-events: none;
+    }
+
+    #toast-container.toast-bottom-right {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    #toast-container>div {
+        position: relative;
+        pointer-events: auto;
+        overflow: hidden;
+        margin: 0 0 6px;
+        padding: 15px 15px 15px 50px;
+        width: 300px;
+        border-radius: 8px;
+        background-position: 15px center;
+        background-repeat: no-repeat;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        color: #ffffff;
+        opacity: 0.95;
+    }
+
+    #toast-container>.toast-success {
+        background-color: #28a745;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23fff' d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'%3E%3C/path%3E%3C/svg%3E");
+    }
 </style>
 @stop
 
@@ -652,6 +950,25 @@
 @section('js')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
+    // Konfigurasi toastr
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": false,
+        "progressBar": true,
+        "positionClass": "toast-bottom-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
+
     $(document).ready(function() {
         // Set default sort option
         let currentSortOption = 'no_reg_asc';

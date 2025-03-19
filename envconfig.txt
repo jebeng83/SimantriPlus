@@ -1,0 +1,9 @@
+# BPJS Configuration untuk library awageeks/laravel-bpjs
+BPJS_CONS_ID=7925
+BPJS_SECRET_KEY=2eF2C8E837
+BPJS_USERNAME=11251616
+BPJS_PASSWORD=Pcare152#
+BPJS_USER_KEY=403bf17ddf158790afcfe1e8dd682a67
+BPJS_APP_CODE=095
+BPJS_BASE_URL=https://apijkn.bpjs-kesehatan.go.id
+BPJS_SERVICE_PCARE=pcare-rest
