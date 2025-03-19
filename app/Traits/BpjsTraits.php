@@ -13,56 +13,57 @@ use GuzzleHttp\Client;
 
 trait BpjsTraits
 {
-    public function requestGetBpjs($suburl)
+    public function requestGetBpjs($suburl, $type = 'pcare')
     {
         try {
-            $url = rtrim(env('BPJS_ICARE_BASE_URL'), '/') . '/' . ltrim($suburl, '/');
+            // Tentukan prefix berdasarkan tipe
+            $prefix = strtoupper($type);
+            
+            // Validasi dan ambil base URL
+            $baseUrl = env("BPJS_{$prefix}_BASE_URL");
+            if (empty($baseUrl)) {
+                throw new \Exception("BPJS_{$prefix}_BASE_URL tidak dikonfigurasi");
+            }
+            
+            $url = rtrim($baseUrl, '/') . '/' . ltrim($suburl, '/');
             
             // Generate timestamp sesuai dokumentasi BPJS
             date_default_timezone_set('UTC');
             $timestamp = strval(time());
             
-            Log::info('BPJS Timestamp Generated', [
+            Log::info("BPJS {$prefix} Request Details", [
+                'url' => $url,
                 'timestamp' => $timestamp,
                 'utc_time' => gmdate('Y-m-d H:i:s', time())
             ]);
 
-            // Ambil credentials dari env
-            $consId = env('BPJS_CONS_ID');
-            $secretKey = env('BPJS_CONS_PWD');
-            $userKey = env('BPJS_USER_KEY');
+            // Ambil credentials dari env dengan prefix yang sesuai
+            $consId = env("BPJS_{$prefix}_CONS_ID");
+            $secretKey = env("BPJS_{$prefix}_CONS_PWD");
+            $userKey = env("BPJS_{$prefix}_USER_KEY");
+            
+            if (empty($consId) || empty($secretKey) || empty($userKey)) {
+                throw new \Exception("Kredensial BPJS {$prefix} tidak lengkap");
+            }
             
             // Generate X-Authorization sesuai dokumentasi
-            // Format: Base64(username:password:kdAplikasi)
-            $username = env('BPJS_USER');
-            $password = env('BPJS_PASS');
-            // Gunakan kode aplikasi 095 sesuai dengan dokumentasi BPJS
-            $kdAplikasi = "095"; // Nilai hardcoded sesuai dengan yang digunakan di BPJSTestController
+            $username = env("BPJS_{$prefix}_USER");
+            $password = env("BPJS_{$prefix}_PASS");
+            $kdAplikasi = "095";
             
-            // Pastikan password dengan karakter khusus ditangani dengan benar
-            // Tidak perlu urlencode karena base64_encode sudah menangani karakter khusus
+            if (empty($username) || empty($password)) {
+                throw new \Exception("Username atau password BPJS {$prefix} tidak dikonfigurasi");
+            }
+            
             $authString = $username . ':' . $password . ':' . $kdAplikasi;
             $encodedAuth = base64_encode($authString);
             
-            Log::info('BPJS Authorization Generated', [
-                'auth_string_length' => strlen($authString),
-                'encoded_length' => strlen($encodedAuth),
-                'auth_string' => $username . ':' . str_repeat('*', strlen($password)) . ':' . $kdAplikasi // Log auth string untuk debugging (password disamarkan)
-            ]);
-
-            // Generate signature sesuai dokumentasi BPJS
-            // Format: HMAC-SHA256(consId&timestamp, secretKey)
+            // Generate signature
             $message = $consId . '&' . $timestamp;
             $signature = hash_hmac('sha256', $message, $secretKey, true);
             $encodedSignature = base64_encode($signature);
-            
-            Log::info('BPJS Signature Generated', [
-                'message' => $message,
-                'signature_length' => strlen($encodedSignature),
-                'signature' => $encodedSignature // Log signature untuk debugging
-            ]);
 
-            // Set headers sesuai dokumentasi BPJS
+            // Set headers
             $headers = [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
@@ -73,19 +74,11 @@ trait BpjsTraits
                 'user_key' => $userKey
             ];
 
-            // Log request dengan menyembunyikan informasi sensitif
-            Log::info('BPJS Request', [
-                'method' => 'GET',
-                'url' => $url,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'X-cons-id' => $consId,
-                    'X-timestamp' => $timestamp,
-                    'X-signature' => '***',
-                    'X-authorization' => '***',
-                    'user_key' => '***'
-                ]
+            Log::info("BPJS {$prefix} Request Headers", [
+                'headers' => array_merge(
+                    $headers,
+                    ['X-signature' => '***', 'X-authorization' => '***', 'user_key' => '***']
+                )
             ]);
 
             // Kirim request
@@ -98,36 +91,35 @@ trait BpjsTraits
             $statusCode = $response->getStatusCode();
             $body = $response->getBody()->getContents();
             
-            // Log raw response
-            Log::info('BPJS Raw Response', [
+            Log::info("BPJS {$prefix} Response Details", [
                 'status_code' => $statusCode,
-                'body' => $body
+                'response_length' => strlen($body)
             ]);
             
-            // Coba parse response sebagai JSON
             $jsonResponse = json_decode($body, true);
             
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("Invalid JSON response from BPJS API");
+                throw new \Exception("Invalid JSON response: " . json_last_error_msg());
             }
 
             return response()->json($jsonResponse);
 
         } catch (\GuzzleHttp\Exception\RequestException $e) {
-            Log::error('BPJS Request Error', [
+            Log::error("BPJS {$prefix} Request Error", [
                 'message' => $e->getMessage(),
-                'url' => $url ?? null
+                'url' => $url ?? null,
+                'response' => $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
             ]);
             
             return response()->json([
                 'metaData' => [
                     'code' => 500,
-                    'message' => 'Gagal menghubungi server BPJS: ' . $e->getMessage()
+                    'message' => "Gagal menghubungi server BPJS {$prefix}: " . $e->getMessage()
                 ],
                 'response' => null
             ], 500);
         } catch (\Exception $e) {
-            Log::error('BPJS Error', [
+            Log::error("BPJS {$prefix} Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null
             ]);
@@ -142,80 +134,45 @@ trait BpjsTraits
         }
     }
 
-    public function requestPostBpjs($suburl, $request)
+    public function requestPostBpjs($suburl, $request, $type = 'pcare')
     {
         try {
-            $url = rtrim(env('BPJS_ICARE_BASE_URL'), '/') . '/' . ltrim($suburl, '/');
+            // Tentukan prefix berdasarkan tipe
+            $prefix = strtoupper($type);
+            
+            // Validasi dan ambil base URL
+            $baseUrl = env("BPJS_{$prefix}_BASE_URL");
+            if (empty($baseUrl)) {
+                throw new \Exception("BPJS_{$prefix}_BASE_URL tidak dikonfigurasi");
+            }
+            
+            $url = rtrim($baseUrl, '/') . '/' . ltrim($suburl, '/');
             
             // Generate timestamp sesuai dokumentasi BPJS
             date_default_timezone_set('UTC');
             $timestamp = strval(time());
             
-            Log::info('BPJS Timestamp Generated', [
-                'timestamp' => $timestamp,
-                'utc_time' => gmdate('Y-m-d H:i:s', time())
-            ]);
+            // Ambil credentials dari env dengan prefix yang sesuai
+            $consId = env("BPJS_{$prefix}_CONS_ID");
+            $secretKey = env("BPJS_{$prefix}_CONS_PWD");
+            $userKey = env("BPJS_{$prefix}_USER_KEY");
+            $username = env("BPJS_{$prefix}_USER");
+            $password = env("BPJS_{$prefix}_PASS");
+            
+            if (empty($consId) || empty($secretKey) || empty($userKey) || empty($username) || empty($password)) {
+                throw new \Exception("Kredensial BPJS {$prefix} tidak lengkap");
+            }
 
-            // Ambil credentials dari env
-            $consId = env('BPJS_CONS_ID');
-            $secretKey = env('BPJS_CONS_PWD');
-            $userKey = env('BPJS_USER_KEY');
-            
-            // Generate X-Authorization sesuai dokumentasi
-            // Format: Base64(username:password:kdAplikasi)
-            $username = env('BPJS_USER');
-            $password = env('BPJS_PASS');
-            // Gunakan kode aplikasi 095 sesuai dengan dokumentasi BPJS
-            $kdAplikasi = "095"; // Nilai hardcoded sesuai dengan yang digunakan di BPJSTestController
-            
-            // Pastikan password dengan karakter khusus ditangani dengan benar
-            // Tidak perlu urlencode karena base64_encode sudah menangani karakter khusus
-            $authString = $username . ':' . $password . ':' . $kdAplikasi;
-            $encodedAuth = base64_encode($authString);
-            
-            Log::info('BPJS Authorization Generated', [
-                'auth_string_length' => strlen($authString),
-                'encoded_length' => strlen($encodedAuth),
-                'auth_string' => $username . ':' . str_repeat('*', strlen($password)) . ':' . $kdAplikasi // Log auth string untuk debugging (password disamarkan)
-            ]);
-
-            // Generate signature sesuai dokumentasi BPJS
-            // Format: HMAC-SHA256(consId&timestamp, secretKey)
-            $message = $consId . '&' . $timestamp;
-            $signature = hash_hmac('sha256', $message, $secretKey, true);
-            $encodedSignature = base64_encode($signature);
-            
-            Log::info('BPJS Signature Generated', [
-                'message' => $message,
-                'signature_length' => strlen($encodedSignature)
-            ]);
-
-            // Set headers sesuai dokumentasi BPJS
+            // Set headers
             $headers = [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'X-cons-id' => $consId,
                 'X-timestamp' => $timestamp,
-                'X-signature' => $encodedSignature,
-                'X-authorization' => $encodedAuth,
+                'X-signature' => $this->createSign($timestamp, $consId, $secretKey),
+                'X-authorization' => base64_encode($username . ':' . $password . ':095'),
                 'user_key' => $userKey
             ];
-
-            // Log request dengan menyembunyikan informasi sensitif
-            Log::info('BPJS Request', [
-                'method' => 'POST',
-                'url' => $url,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'X-cons-id' => $consId,
-                    'X-timestamp' => $timestamp,
-                    'X-signature' => '***',
-                    'X-authorization' => '***',
-                    'user_key' => '***'
-                ],
-                'body' => json_encode($request, JSON_PRETTY_PRINT)
-            ]);
 
             // Kirim request
             $client = new Client();
@@ -225,43 +182,13 @@ trait BpjsTraits
                 'verify' => false
             ]);
 
-            $statusCode = $response->getStatusCode();
-            $body = $response->getBody()->getContents();
-            
-            // Log raw response
-            Log::info('BPJS Raw Response', [
-                'status_code' => $statusCode,
-                'body' => $body
-            ]);
-            
-            // Coba parse response sebagai JSON
-            $jsonResponse = json_decode($body, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("Invalid JSON response from BPJS API");
-            }
+            return $this->responseDataBpjs($response->getBody()->getContents(), $timestamp);
 
-            return response()->json($jsonResponse);
-
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            Log::error('BPJS Request Error', [
-                'message' => $e->getMessage(),
-                'url' => $url ?? null,
-                'request' => $request ?? null
-            ]);
-            
-            return response()->json([
-                'metaData' => [
-                    'code' => 500,
-                    'message' => 'Gagal menghubungi server BPJS: ' . $e->getMessage()
-                ],
-                'response' => null
-            ], 500);
         } catch (\Exception $e) {
-            Log::error('BPJS Error', [
+            Log::error("BPJS {$prefix} Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null,
-                'request' => $request ?? null
+                'request' => $request
             ]);
             
             return response()->json([

@@ -245,6 +245,87 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Informasi BPJS -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-info">
+                                <h5 class="card-title mb-0"><i class="fas fa-hospital-user"></i> Informasi BPJS</h5>
+                            </div>
+                            <div class="card-body" id="bpjsInfo">
+                                <div class="text-center" id="bpjsLoading">
+                                    <i class="fas fa-spinner fa-spin"></i> Mengecek status BPJS...
+                                </div>
+                                <div id="bpjsContent" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="info-item">
+                                                <i class="fas fa-id-card-alt text-info"></i>
+                                                <div>
+                                                    <label>No. Kartu BPJS</label>
+                                                    <p id="bpjsNoKartu">-</p>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fas fa-user-check text-info"></i>
+                                                <div>
+                                                    <label>Status Kepesertaan</label>
+                                                    <p id="bpjsStatus">-</p>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fas fa-layer-group text-info"></i>
+                                                <div>
+                                                    <label>Jenis Peserta</label>
+                                                    <p id="bpjsJenisPeserta">-</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-item">
+                                                <i class="fas fa-hospital text-info"></i>
+                                                <div>
+                                                    <label>Faskes Tingkat 1</label>
+                                                    <p id="bpjsFaskes">-</p>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fas fa-bed text-info"></i>
+                                                <div>
+                                                    <label>Kelas Rawat</label>
+                                                    <p id="bpjsKelas">-</p>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fas fa-calendar-check text-info"></i>
+                                                <div>
+                                                    <label>Berlaku Sampai</label>
+                                                    <p id="bpjsBerlaku">-</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-center" id="bpjsStatusIndicator">
+                                        <div class="badge badge-success p-2" style="font-size: 1rem;">
+                                            <i class="fas fa-check-circle"></i> Data BPJS Terverifikasi
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="bpjsError" class="alert alert-danger" style="display: none;">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span id="bpjsErrorMessage">-</span>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            id="retryBpjsButton">
+                                            <i class="fas fa-sync"></i> Coba Lagi
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
@@ -459,6 +540,45 @@
             });
         });
         
+        // Event handler untuk tombol retry BPJS
+        $(document).on('click', '#retryBpjsButton', function() {
+            const noKartu = $('#bpjsNoKartu').text();
+            if (noKartu && noKartu !== '-') {
+                $('#bpjsLoading').show();
+                $('#bpjsContent').hide();
+                $('#bpjsError').hide();
+                checkBPJSStatus(noKartu);
+            } else {
+                // Cari dari data pasien terakhir
+                const patientRM = $('#patientRM').text().replace('No. RM: ', '');
+                if (patientRM && patientRM !== '-') {
+                    $('#bpjsLoading').show();
+                    $('#bpjsError').hide();
+                    
+                    // Ambil data peserta lagi
+                    $.ajax({
+                        url: '/pasien/' + patientRM,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(data) {
+                            if (data.no_peserta) {
+                                checkBPJSStatus(data.no_peserta);
+                            } else {
+                                $('#bpjsLoading').hide();
+                                $('#bpjsError').show();
+                                $('#bpjsErrorMessage').text('Pasien tidak memiliki nomor BPJS');
+                            }
+                        },
+                        error: function() {
+                            $('#bpjsLoading').hide();
+                            $('#bpjsError').show();
+                            $('#bpjsErrorMessage').text('Gagal mengambil data pasien');
+                        }
+                    });
+                }
+            }
+        });
+        
         // Efek ripple pada tombol
         $(document).on('click', '.btn', function(e) {
             var x = e.pageX - $(this).offset().left;
@@ -545,6 +665,20 @@
             $('#patientReligion').text(patient.agama || '-');
             $('#patientAddress').text(patient.alamat || '-');
             
+            // Reset tampilan BPJS
+            $('#bpjsLoading').show();
+            $('#bpjsContent').hide();
+            $('#bpjsError').hide();
+            
+            // Jika ada nomor BPJS, cek status kepesertaan
+            if (patient.no_peserta) {
+                checkBPJSStatus(patient.no_peserta);
+            } else {
+                $('#bpjsLoading').hide();
+                $('#bpjsError').show();
+                $('#bpjsErrorMessage').text('Pasien tidak memiliki nomor BPJS');
+            }
+            
             // Hitung dan tampilkan umur
             if (patient.tgl_lahir) {
                 const birthDate = new Date(patient.tgl_lahir);
@@ -563,6 +697,116 @@
             
             // Set RM untuk tombol edit
             $('#btnEditPasien').attr('href', '/data-pasien/' + patient.no_rkm_medis + '/edit');
+        }
+        
+        // Fungsi untuk mengecek status BPJS
+        function checkBPJSStatus(noKartu) {
+            $.ajax({
+                url: '/api/pcare/peserta/' + noKartu,
+                type: 'GET',
+                success: function(response) {
+                    $('#bpjsLoading').hide();
+                    
+                    if (response.metaData.code === 200 && response.response) {
+                        const data = response.response;
+                        
+                        // Tampilkan data BPJS
+                        $('#bpjsContent').show();
+                        $('#bpjsNoKartu').text(data.noKartu || '-');
+                        $('#bpjsStatus').html(
+                            `<span class="badge badge-${data.aktif ? 'success' : 'danger'}">
+                                ${data.ketAktif || '-'}
+                            </span>`
+                        );
+                        $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
+                        $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
+                        $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
+                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
+                        
+                        // Update status indicator
+                        if (data.aktif) {
+                            $('#bpjsStatusIndicator').html(
+                                `<div class="badge badge-success p-2" style="font-size: 1rem;">
+                                    <i class="fas fa-check-circle"></i> BPJS Aktif
+                                </div>`
+                            );
+                        } else {
+                            $('#bpjsStatusIndicator').html(
+                                `<div class="badge badge-danger p-2" style="font-size: 1rem;">
+                                    <i class="fas fa-times-circle"></i> BPJS Tidak Aktif
+                                </div>`
+                            );
+                        }
+                    } else {
+                        $('#bpjsError').show();
+                        $('#bpjsErrorMessage').text(response.metaData.message || 'Gagal mendapatkan data BPJS');
+                    }
+                },
+                error: function(xhr) {
+                    $('#bpjsLoading').hide();
+                    $('#bpjsError').show();
+                    $('#bpjsErrorMessage').text('Gagal menghubungi server BPJS. ' + (xhr.responseJSON?.metaData?.message || ''));
+                    
+                    // Coba alternatif dengan endpoint lain jika gagal
+                    if (xhr.status === 404 || xhr.status === 400) {
+                        retryWithAlternativeEndpoint(noKartu);
+                    }
+                }
+            });
+        }
+        
+        // Fungsi untuk mencoba endpoint alternatif jika endpoint utama gagal
+        function retryWithAlternativeEndpoint(noKartu) {
+            console.log('Mencoba endpoint alternatif untuk nomor kartu: ' + noKartu);
+            
+            $.ajax({
+                url: '/api/bpjs/peserta/' + noKartu,
+                type: 'GET',
+                success: function(response) {
+                    $('#bpjsLoading').hide();
+                    
+                    if (response.metaData.code === 200 && response.response) {
+                        const data = response.response;
+                        
+                        // Tampilkan data BPJS
+                        $('#bpjsContent').show();
+                        $('#bpjsNoKartu').text(data.noKartu || '-');
+                        $('#bpjsStatus').html(
+                            `<span class="badge badge-${data.aktif ? 'success' : 'danger'}">
+                                ${data.ketAktif || '-'}
+                            </span>`
+                        );
+                        $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
+                        $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
+                        $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
+                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
+                        
+                        // Update status indicator
+                        if (data.aktif) {
+                            $('#bpjsStatusIndicator').html(
+                                `<div class="badge badge-success p-2" style="font-size: 1rem;">
+                                    <i class="fas fa-check-circle"></i> BPJS Aktif
+                                </div>`
+                            );
+                        } else {
+                            $('#bpjsStatusIndicator').html(
+                                `<div class="badge badge-danger p-2" style="font-size: 1rem;">
+                                    <i class="fas fa-times-circle"></i> BPJS Tidak Aktif
+                                </div>`
+                            );
+                        }
+                    } else {
+                        $('#bpjsError').show();
+                        $('#bpjsErrorMessage').text(response.metaData.message || 'Gagal mendapatkan data BPJS');
+                    }
+                },
+                error: function() {
+                    // Jika kedua endpoint gagal, tetap tampilkan pesan error
+                    $('#bpjsLoading').hide();
+                    $('#bpjsError').show();
+                    $('#bpjsErrorMessage').text('Gagal menghubungi server BPJS melalui semua endpoint.');
+                }
+            });
         }
         
         // Mencegah event propagation dari tombol-tombol aksi

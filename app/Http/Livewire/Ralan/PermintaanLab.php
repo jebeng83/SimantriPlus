@@ -46,6 +46,7 @@ class PermintaanLab extends Component
             // Cek data langsung setelah mount
             $initialCheck = DB::table('permintaan_lab')
                             ->where('no_rawat', $this->noRawat)
+                            ->whereDate('tgl_permintaan', now()->format('Y-m-d'))
                             ->get();
                             
             \Illuminate\Support\Facades\Log::info('Initial check pada mount:', [
@@ -74,6 +75,9 @@ class PermintaanLab extends Component
     public function render()
     {
         try {
+            // Refresh data setiap kali render
+            $this->getPermintaanLab();
+            
             \Illuminate\Support\Facades\Log::info('Render PermintaanLab dipanggil', [
                 'no_rawat' => $this->noRawat,
                 'jumlah_data' => $this->permintaanLab ? $this->permintaanLab->count() : 0
@@ -102,85 +106,79 @@ class PermintaanLab extends Component
 
         try {
             DB::beginTransaction();
-            $getNumber = DB::table('permintaan_lab')
-                            ->where('tgl_permintaan', date('Y-m-d'))
-                            ->selectRaw('ifnull(MAX(CONVERT(RIGHT(noorder,4),signed)),0) as no')
-                            ->first();
+            
+            // Ambil nomor urut terakhir
+            $lastNumber = DB::table('permintaan_lab')
+                            ->whereDate('tgl_permintaan', now()->format('Y-m-d'))
+                            ->selectRaw('MAX(CONVERT(RIGHT(noorder,4),signed)) as last_number')
+                            ->value('last_number') ?? 0;
 
-            $lastNumber = substr($getNumber->no, 0, 4);
+            // Generate nomor order baru
             $getNextNumber = sprintf('%04s', ($lastNumber + 1));
-            $noOrder = 'PL'.date('Ymd').$getNextNumber;
+            $noOrder = 'PL' . now()->format('Ymd') . $getNextNumber;
 
             \Illuminate\Support\Facades\Log::info('Livewire - Menyimpan permintaan lab baru', [
                 'no_rawat' => $this->noRawat,
                 'noorder' => $noOrder
             ]);
 
-            DB::table('permintaan_lab')
-                    ->insert([
-                        'noorder' => $noOrder,
-                        'no_rawat' => $this->noRawat,
-                        'tgl_permintaan' => date('Y-m-d'),
-                        'jam_permintaan' => date('H:i:s'),
-                        'dokter_perujuk' => session()->get('username'),
-                        'diagnosa_klinis' =>  $this->klinis,
-                        'informasi_tambahan' =>  $this->info,
-                        'status' => 'ralan'
-                    ]);
+            // Simpan data utama
+            DB::table('permintaan_lab')->insert([
+                'noorder' => $noOrder,
+                'no_rawat' => $this->noRawat,
+                'tgl_permintaan' => now()->format('Y-m-d'),
+                'jam_permintaan' => now()->format('H:i:s'),
+                'dokter_perujuk' => session()->get('username'),
+                'diagnosa_klinis' => $this->klinis,
+                'informasi_tambahan' => $this->info,
+                'status' => 'ralan'
+            ]);
             
             \Illuminate\Support\Facades\Log::info('Livewire - Data utama permintaan lab tersimpan');
 
-            foreach( $this->jns_pemeriksaan as $pemeriksaan){
-                DB::table('permintaan_pemeriksaan_lab')
-                        ->insert([
-                            'noorder' => $noOrder,
-                            'kd_jenis_prw' => $pemeriksaan,
-                            'stts_bayar' => 'Belum'
-                        ]);
+            // Simpan detail pemeriksaan
+            foreach($this->jns_pemeriksaan as $pemeriksaan) {
+                // Simpan pemeriksaan
+                DB::table('permintaan_pemeriksaan_lab')->insert([
+                    'noorder' => $noOrder,
+                    'kd_jenis_prw' => $pemeriksaan,
+                    'stts_bayar' => 'Belum'
+                ]);
 
-                // Ambil template berdasarkan jenis pemeriksaan
-                try {
-                    $template = DB::table('template_laboratorium')
-                                ->where(DB::raw('kd_jenis_prw COLLATE utf8mb4_unicode_ci'), $pemeriksaan)
-                                ->select('id_template')
-                                ->get();
-                                
-                    \Illuminate\Support\Facades\Log::info('Template ditemukan untuk pemeriksaan', [
+                // Ambil dan simpan template
+                $templates = DB::table('template_laboratorium')
+                            ->where('kd_jenis_prw', $pemeriksaan)
+                            ->get();
+
+                foreach($templates as $template) {
+                    DB::table('permintaan_detail_permintaan_lab')->insert([
+                        'noorder' => $noOrder,
                         'kd_jenis_prw' => $pemeriksaan,
-                        'jumlah_template' => count($template)
+                        'id_template' => $template->id_template,
+                        'stts_bayar' => 'Belum'
                     ]);
-                                
-                    foreach($template as $temp){
-                        DB::table('permintaan_detail_permintaan_lab')->insert([
-                            'noorder'   =>  $noOrder,
-                            'kd_jenis_prw'  =>  $pemeriksaan,
-                            'id_template'   =>  $temp->id_template,
-                            'stts_bayar'    =>  'Belum'
-                        ]);
-                    }
-                } catch (\Exception $templateError) {
-                    \Illuminate\Support\Facades\Log::error('Error saat ambil template: ' . $templateError->getMessage(), [
-                        'kd_jenis_prw' => $pemeriksaan
-                    ]);
-                    // Lanjutkan meskipun ada error di template, untuk menghindari rollback transaksi
                 }
             }
             
             DB::commit();
+
+            // Reset form
+            $this->reset(['klinis', 'info', 'jns_pemeriksaan']);
+            $this->emit('select2Lab:reset');
             
-            // Refresh data setelah simpan
+            // Refresh data
             $this->getPermintaanLab();
             
-            // Reset form dan emit events
-            $this->reset(['klinis', 'info', 'jns_pemeriksaan']);
-            $this->emit('refreshPermintaanLab');
+            // Tampilkan notifikasi
             $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab berhasil ditambahkan'));
-            $this->emit('select2Lab');
+            
+            // Emit event untuk refresh komponen
+            $this->emit('refreshPermintaanLab');
 
         } catch (\Exception $e) {
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error('Error saat simpan permintaan lab: ' . $e->getMessage());
-            $this->dispatchBrowserEvent('swal', $this->toastResponse($e->getMessage() ?? 'Permintaan Lab gagal ditambahkan', 'error'));
+            $this->dispatchBrowserEvent('swal', $this->toastResponse('Permintaan Lab gagal ditambahkan: ' . $e->getMessage(), 'error'));
         }
     }
 
@@ -199,6 +197,7 @@ class PermintaanLab extends Component
             // Query untuk mengambil data
             $query = DB::table('permintaan_lab AS pl')
                       ->where('pl.no_rawat', '=', trim($this->noRawat))
+                      ->whereDate('pl.tgl_permintaan', '=', now()->format('Y-m-d'))
                       ->orderBy('pl.tgl_permintaan', 'desc')
                       ->orderBy('pl.jam_permintaan', 'desc');
 
@@ -214,15 +213,17 @@ class PermintaanLab extends Component
             // Log hasil query
             \Illuminate\Support\Facades\Log::info('Data permintaan lab berhasil diambil', [
                 'no_rawat' => $this->noRawat,
+                'tanggal' => now()->format('Y-m-d'),
                 'jumlah_data' => $this->permintaanLab->count(),
                 'raw_data' => $this->permintaanLab->toArray()
             ]);
 
             // Jika data kosong, coba cek langsung dengan raw query
             if ($this->permintaanLab->isEmpty()) {
-                $rawCheck = DB::select("SELECT * FROM permintaan_lab WHERE no_rawat = ?", [trim($this->noRawat)]);
+                $rawCheck = DB::select("SELECT * FROM permintaan_lab WHERE no_rawat = ? AND DATE(tgl_permintaan) = ?", [trim($this->noRawat), now()->format('Y-m-d')]);
                 \Illuminate\Support\Facades\Log::info('Raw check permintaan lab:', [
                     'no_rawat' => $this->noRawat,
+                    'tanggal' => now()->format('Y-m-d'),
                     'hasil' => $rawCheck
                 ]);
             }
@@ -230,6 +231,7 @@ class PermintaanLab extends Component
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error saat mengambil data permintaan lab: ' . $e->getMessage(), [
                 'no_rawat' => $this->noRawat,
+                'tanggal' => now()->format('Y-m-d'),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()

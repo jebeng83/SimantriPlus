@@ -16,6 +16,7 @@
             <strong>Debug Info:</strong><br>
             No Rawat (Encrypted): {{ $noRawatEncrypted }}<br>
             No Rawat (Decrypted): {{ $noRawat }}<br>
+            Tanggal: {{ now()->format('Y-m-d') }}<br>
             Jumlah Data: {{ count($permintaanLab) }}<br>
             Waktu: {{ now() }}
         </div>
@@ -93,20 +94,25 @@
         <div class="mt-4">
             <h5 class="mb-3">Daftar Permintaan Lab</h5>
 
-            <div class="table-responsive" wire:poll.30s>
+            <div class="table-responsive" wire:poll.5s>
                 <!-- Debug info -->
-                @if(app()->environment('local'))
+                @if(config('app.env') === 'local')
                 <div class="alert alert-info">
                     <small>
                         <strong>Debug Info:</strong><br>
                         No Rawat: {{ $noRawat }}<br>
+                        Tanggal: {{ now()->format('Y-m-d') }}<br>
                         Jumlah Data: {{ $permintaanLab->count() }}<br>
-                        Timestamp: {{ now() }}
+                        Timestamp: {{ now()->format('Y-m-d H:i:s') }}
                     </small>
                 </div>
                 @endif
 
-                <table class="table table-striped">
+                <div wire:loading wire:target="getPermintaanLab" class="alert alert-info">
+                    <i class="fas fa-spinner fa-spin"></i> Memperbarui data...
+                </div>
+
+                <table class="table table-striped" wire:loading.class.delay="opacity-50">
                     <thead>
                         <tr>
                             <th>No. Order</th>
@@ -137,7 +143,8 @@
                             </td>
                             <td>
                                 <button type="button" class="btn btn-danger btn-sm"
-                                    wire:click="konfirmasiHapus('{{ $item->noorder }}')" wire:loading.attr="disabled">
+                                    wire:click="konfirmasiHapus('{{ $item->noorder }}')" wire:loading.attr="disabled"
+                                    wire:target="konfirmasiHapus,deletePermintaanLab">
                                     <span wire:loading wire:target="konfirmasiHapus('{{ $item->noorder }}')">
                                         <i class="fas fa-spinner fa-spin"></i>
                                     </span>
@@ -150,10 +157,11 @@
                         @empty
                         <tr>
                             <td colspan="6" class="text-center">
-                                <div class="alert alert-info">
-                                    <p class="mb-0">Belum ada permintaan laboratorium</p>
+                                <div class="alert alert-info mb-0">
+                                    <p class="mb-0">Belum ada permintaan laboratorium untuk hari ini</p>
                                     <small class="d-block mt-1">
-                                        <i class="fas fa-info-circle"></i> No Rawat: {{ $noRawat }}
+                                        <i class="fas fa-info-circle"></i> No Rawat: {{ $noRawat }} | Tanggal: {{
+                                        now()->format('d/m/Y') }}
                                     </small>
                                 </div>
                             </td>
@@ -168,19 +176,18 @@
 
 @push('js')
 <script>
-    window.addEventListener('swal',function(e){
+    document.addEventListener('DOMContentLoaded', function() {
+        // Debug untuk memastikan Livewire terload
+        if (window.livewire) {
+            console.log('Livewire detected and ready');
+        }
+
+        // Event handlers
+        window.addEventListener('swal', function(e) {
             Swal.fire(e.detail);
         });
 
-        window.addEventListener('refreshPage', function(e) {
-            console.log('Permintaan refresh halaman diterima:', e.detail);
-            // Setelah delay 1 detik, refresh halaman untuk memastikan data muncul
-            setTimeout(function() {
-                window.location.reload();
-            }, 1000);
-        });
-
-        window.addEventListener('swal:confirm',function(e){
+        window.addEventListener('swal:confirm', function(e) {
             Swal.fire({
                 title: e.detail.title,
                 text: e.detail.text,
@@ -197,80 +204,51 @@
             });
         });
 
-        function formatData (data) {
-            var $data = $(
-                '<b>'+ data.id +'</b> - <i>'+ data.text +'</i>'
-            );
-            return $data;
-        };
-
-        $('#jenis_lab').select2({
-            placeholder: 'Pilih Jenis',
-            ajax: {
-                url: '/api/jns_perawatan_lab',
-                dataType: 'json',
-                delay: 250,
-                    processResults: function (data) {
-                        return {
-                            results: data
-                        };
-                    },
-                cache: true
-                },
-                templateResult: formatData,
-                minimumInputLength: 3
-        });
-
-        $('#jenis_lab').on('change', function (e) {
-            let data = $(this).val();
-            @this.set('jns_pemeriksaan', data);
-        });
-
-        window.livewire.on('select2Lab:reset', () => {
-            $('#jenis_lab').val("").trigger('change');
-        });
-
-        window.livewire.on('select2Lab', () => {
+        // Select2 initialization
+        function initSelect2() {
             $('#jenis_lab').select2({
-            placeholder: 'Pilih Jenis',
-            ajax: {
-                url: '/api/jns_perawatan_lab',
-                dataType: 'json',
-                delay: 250,
+                placeholder: 'Pilih Jenis',
+                ajax: {
+                    url: '/api/jns_perawatan_lab',
+                    dataType: 'json',
+                    delay: 250,
                     processResults: function (data) {
                         return {
                             results: data
                         };
                     },
-                cache: true
+                    cache: true
                 },
-                templateResult: formatData,
+                templateResult: function(data) {
+                    if (!data.id) return data.text;
+                    return $('<b>' + data.id + '</b> - <i>' + data.text + '</i>');
+                },
                 minimumInputLength: 3
             });
+
+            $('#jenis_lab').on('change', function(e) {
+                let data = $(this).val();
+                window.livewire.find('{{ $_instance->id }}').set('jns_pemeriksaan', data);
+            });
+        }
+
+        // Initialize Select2
+        initSelect2();
+
+        // Livewire event listeners
+        window.livewire.on('select2Lab:reset', function() {
+            $('#jenis_lab').val(null).trigger('change');
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Debug untuk memastikan Livewire terload
-            if (window.livewire) {
-                console.log('Livewire detected and ready');
-            }
-            
-            // Listener untuk event refreshPermintaanLab
-            window.livewire.on('refreshPermintaanLab', () => {
-                console.log('Event refreshPermintaanLab diterima');
-                @this.getPermintaanLab();
-            });
-
-            // Listener untuk event dataPermintaanLabUpdated
-            window.livewire.on('dataPermintaanLabUpdated', () => {
-                console.log('Data permintaan lab telah diperbarui');
-            });
-
-            // Auto refresh setiap 30 detik
-            setInterval(function() {
-                console.log('Auto refresh permintaan lab');
-                @this.getPermintaanLab();
-            }, 30000);
+        window.livewire.on('refreshPermintaanLab', function() {
+            console.log('Event refreshPermintaanLab diterima');
+            window.livewire.find('{{ $_instance->id }}').call('getPermintaanLab');
         });
+
+        // Auto refresh setiap 5 detik
+        setInterval(function() {
+            window.livewire.find('{{ $_instance->id }}').call('getPermintaanLab');
+        }, 5000);
+    });
 </script>
 @endpush

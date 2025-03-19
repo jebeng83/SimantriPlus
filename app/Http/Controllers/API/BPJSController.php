@@ -56,56 +56,56 @@ class BPJSController extends Controller
                 ], 400);
             }
             
-            // Log hasil mapping
-            Log::info('BPJS Dokter Mapping', [
-                'kd_dokter_internal' => $kodeDokterInternal,
-                'kd_dokter_pcare' => $kodeDokterPcare
-            ]);
-
-            // Format request untuk PCare sesuai katalog
-            // Sesuai dokumentasi, hanya perlu parameter 'param' untuk endpoint validate
+            // Format request untuk iCare
             $data = [
                 'param' => $noKartu
             ];
             
-            // Simpan kode dokter PCare untuk digunakan pada endpoint lain jika diperlukan
-            session(['kd_dokter_pcare' => $kodeDokterPcare]);
+            // Kirim request ke BPJS iCare
+            $response = $this->requestPostBpjs('api/icare/validate', $data, 'icare');
             
-            // Log final request data
-            Log::info('BPJS PCare Request Data', [
-                'final_data' => $data,
-                'kd_dokter_pcare' => $kodeDokterPcare, // Log kode dokter PCare terpisah
-                'url' => env('BPJS_ICARE_BASE_URL')
-            ]);
-            
-            // Kirim request ke BPJS - gunakan endpoint yang benar sesuai katalog
-            $response = $this->requestPostBpjs('api/pcare/validate', $data);
-            
-            // Log respons dari BPJS
-            Log::info('BPJS Response', [
-                'response' => $response
-            ]);
-            
-            // Pastikan format respons sesuai dengan katalog
-            if ($response->getStatusCode() == 200) {
-                $responseData = json_decode($response->getContent(), true);
-                
-                // Log respons data
-                Log::info('BPJS Response Data', [
-                    'data' => $responseData
-                ]);
-                
-                // Jika respons berhasil, kembalikan dengan format yang benar
-                return response()->json($responseData);
-            }
-            
-            // Jika respons gagal, kembalikan respons asli
             return $response;
             
         } catch (\Exception $e) {
             Log::error('BPJS iCare Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'metaData' => [
+                    'code' => 500,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ],
+                'response' => null
+            ], 500);
+        }
+    }
+
+    public function getPeserta($noKartu)
+    {
+        try {
+            // Validasi format nomor kartu
+            if (!preg_match('/^\d{13}$/', $noKartu)) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 400,
+                        'message' => 'Nomor kartu harus 13 digit'
+                    ],
+                    'response' => null
+                ], 400);
+            }
+
+            // Kirim request ke BPJS PCare
+            $response = $this->requestGetBpjs('peserta/' . $noKartu, 'pcare');
+            
+            return $response;
+
+        } catch (\Exception $e) {
+            Log::error('BPJS PCare Get Peserta Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'no_kartu' => $noKartu ?? null
             ]);
             
             return response()->json([
