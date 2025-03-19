@@ -62,7 +62,7 @@ trait BpjsTraits
             $message = $consId . '&' . $timestamp;
             $signature = hash_hmac('sha256', $message, $secretKey, true);
             $encodedSignature = base64_encode($signature);
-
+            
             // Set headers
             $headers = [
                 'Content-Type' => 'application/json',

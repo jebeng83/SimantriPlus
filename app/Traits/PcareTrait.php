@@ -60,9 +60,10 @@ trait PcareTrait
      * @param string $endpoint
      * @param string $method
      * @param array|null $data
+     * @param string|null $contentType Override content type (opsional)
      * @return array
      */
-    protected function requestPcare($endpoint, $method = 'GET', $data = null)
+    protected function requestPcare($endpoint, $method = 'GET', $data = null, $contentType = null)
     {
         try {
             // Gunakan konfigurasi lama
@@ -75,15 +76,28 @@ trait PcareTrait
             $signature = $this->generateSignature($timestamp);
             $authorization = $this->generateAuthorization();
             
+            // Default headers
             $headers = [
                 'X-cons-id' => $consId,
                 'X-timestamp' => $timestamp,
                 'X-signature' => $signature,
                 'X-authorization' => 'Basic ' . $authorization,
-                'user_key' => $userKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
+                'user_key' => $userKey
             ];
+            
+            // Tambahkan content type header berdasarkan parameter atau default ke application/json
+            if ($contentType === 'text/plain') {
+                $headers['Content-Type'] = 'text/plain';
+                $headers['Accept'] = 'application/json';
+                
+                // Konversi data ke JSON string jika method bukan GET
+                if ($method !== 'GET' && !is_null($data)) {
+                    $data = json_encode($data);
+                }
+            } else {
+                $headers['Content-Type'] = 'application/json';
+                $headers['Accept'] = 'application/json';
+            }
             
             // Format endpoint
             if (strpos($endpoint, 'peserta') !== false) {
@@ -101,16 +115,24 @@ trait PcareTrait
                 }
             } else {
                 // Untuk endpoint lain seperti provider, dokter, dll
-                if (strpos($endpoint, '?') === false) {
-                    $endpoint .= '?offset=0&limit=10';
-                } else if (strpos($endpoint, 'offset=') === false) {
-                    $endpoint .= '&offset=0&limit=10';
+                if ($method === 'GET') {
+                    if (strpos($endpoint, '?') === false) {
+                        $endpoint .= '?offset=0&limit=10';
+                    } else if (strpos($endpoint, 'offset=') === false) {
+                        $endpoint .= '&offset=0&limit=10';
+                    }
                 }
             }
             
             // Format URL langsung menggunakan pcare-rest tanpa menambahkan v1 atau v1.svc
             $baseUrl = rtrim($baseUrl, '/');
-            $fullUrl = $baseUrl . '/' . $endpoint;
+            
+            // Pastikan endpoint selalu diawali dengan pcare-rest
+            if (strpos($baseUrl, 'pcare-rest') === false) {
+                $fullUrl = $baseUrl . '/pcare-rest/' . $endpoint;
+            } else {
+                $fullUrl = $baseUrl . '/' . $endpoint;
+            }
             
             // Log request
             Log::info('PCare API Request', [
@@ -118,15 +140,16 @@ trait PcareTrait
                 'method' => $method,
                 'headers' => $headers,
                 'data' => $data,
+                'contentType' => $contentType,
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
             
             // Kirim request sesuai method
             $response = match($method) {
                 'GET' => Http::withHeaders($headers)->get($fullUrl),
-                'POST' => Http::withHeaders($headers)->post($fullUrl, $data),
-                'PUT' => Http::withHeaders($headers)->put($fullUrl, $data),
-                'DELETE' => Http::withHeaders($headers)->delete($fullUrl, $data),
+                'POST' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->post($fullUrl),
+                'PUT' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->put($fullUrl),
+                'DELETE' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->delete($fullUrl),
                 default => throw new Exception("Method HTTP tidak valid")
             };
             

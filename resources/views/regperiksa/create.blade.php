@@ -200,10 +200,6 @@
                         rows="2">{{ $pasien->alamatpj }}</textarea>
                   </div>
 
-                  @if($pasien->no_peserta)
-                  <x-ralan.icare-bpjs :noPeserta="$pasien->no_peserta" />
-                  @endif
-
                   <div class="form-group">
                      <label class="form-label">
                         <i class="fas fa-clinic-medical text-primary"></i>
@@ -244,6 +240,25 @@
 
 @section('css')
 <style>
+   /* Sembunyikan tombol i-Care BPJS khusus di halaman ini */
+   .btn-success.btn-block,
+   [id^="btnIcareBpjs"],
+   button.btn[onclick*="showIcareHistory"],
+   .mb-3 .btn-success.btn-block,
+   div.mb-3 button.btn-success.btn-block {
+      display: none !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      z-index: -999 !important;
+      clip: rect(0, 0, 0, 0) !important;
+      margin: 0 !important;
+      padding: 0 !important;
+   }
+
    /* Gradient & Colors */
    .text-gradient {
       background: linear-gradient(45deg, #2b5876, #4e4376);
@@ -384,7 +399,7 @@
       border-width: 6px 4px 0 4px;
    }
 
-   .select2-container--bootstrap4.select2-container--open .select2-selection--single .select2-selection__arrow b {
+   .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow b {
       border-color: transparent transparent #1e88e5 transparent;
       border-width: 0 4px 6px 4px;
    }

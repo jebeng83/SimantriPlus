@@ -34,7 +34,9 @@
 @stop
 
 @section('content')
-<!-- Notifikasi -->
+<!-- Tambahkan Moment.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
 @if(session('success'))
 <div class="alert alert-success alert-dismissible fade show animate__animated animate__fadeIn" role="alert">
     <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
@@ -307,9 +309,19 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 text-center" id="bpjsStatusIndicator">
-                                        <div class="badge badge-success p-2" style="font-size: 1rem;">
-                                            <i class="fas fa-check-circle"></i> BPJS Aktif
+                                        <div class="badge badge-pill"
+                                            style="background: linear-gradient(45deg, #4CAF50, #388E3C); color: white; font-size: 1rem; padding: 8px 15px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);">
+                                            BPJS Aktif
                                         </div>
+                                    </div>
+
+                                    <div class="mt-3 text-center" id="kunjunganSehatContainer" style="display: none;">
+                                        <button type="button" class="btn btn-warning btn-block mt-3"
+                                            id="btnKunjunganSehat" onclick="daftarKunjunganSehat()">
+                                            <i class="fas fa-heartbeat mr-2"></i> Daftar Kunjungan Sehat
+                                        </button>
+                                        <small class="text-muted">Layanan ini akan mendaftarkan pasien untuk kunjungan
+                                            sehat ke BPJS</small>
                                     </div>
 
                                     <div class="mt-3" id="icareBpjsContainer">
@@ -372,6 +384,49 @@
         100% {
             transform: scale(1);
         }
+    }
+
+    /* Sembunyikan tombol I-Care BPJS */
+    #icareBpjsContainer,
+    .btn-icare-bpjs,
+    [id^="i-care-bpjs"],
+    button[onclick*="showIcareHistory"],
+    button[id*="icareButton"],
+    a[href*="icare"],
+    button:contains("I-CARE BPJS"),
+    .i-care-button,
+    button.icare,
+    .btn-icare,
+    a.icare,
+    [class*="icare-bpjs"],
+    button:contains("i-Care BPJS"),
+    .btn-success.btn-block[id^="btnIcareBpjs"],
+    form[action*="regperiksa"] .btn-success.btn-block,
+    button[onclick*="showIcareHistory('"],
+    [id*="icareBpjs"],
+    div.mb-3 .btn-success.btn-block,
+    a[class*="i-care"],
+    .btn-block.btn-success,
+    /* Selector super spesifik untuk halaman regperiksa/create */
+    body form button.btn-success.btn-block,
+    button.btn-success.btn-block[onclick],
+    a.btn-success.btn-block,
+    .btn.btn-success.btn-block,
+    /* Selector berdasarkan konten teks tombol */
+    button:contains("iCare"),
+    button:contains("i-Care"),
+    a:contains("iCare"),
+    a:contains("i-Care") {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        position: absolute !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
     }
 
     .text-gradient {
@@ -812,34 +867,35 @@
                         $('#bpjsContent').show();
                         $('#bpjsNoKartu').text(data.noKartu || '-');
                         $('#bpjsStatus').html(
-                            `<span class="badge badge-success"><i class="fas fa-check-circle"></i> ${data.statusPeserta.keterangan || 'AKTIF'}</span>`
+                            `<span class="badge badge-pill badge-primary" style="background: linear-gradient(45deg, #2196F3, #1976D2); font-size: 0.85rem; padding: 5px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">${data.statusPeserta && data.statusPeserta.keterangan ? data.statusPeserta.keterangan : 'AKTIF'}</span>`
                         );
-                        $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
-                        $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
-                        $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
+                        $('#bpjsJenisPeserta').text(data.jnsPeserta && data.jnsPeserta.nama ? data.jnsPeserta.nama : '-');
+                        $('#bpjsFaskes').text(data.kdProviderPst && data.kdProviderPst.nmProvider ? data.kdProviderPst.nmProvider : '-');
+                        $('#bpjsKelas').text(data.jnsKelas && data.jnsKelas.nama ? data.jnsKelas.nama : '-');
                         
-                        // Perbarui nomor BPJS pada komponen i-Care
+                        // Perbarui nomor BPJS pada komponen i-Care (tetap diatur tapi tidak ditampilkan)
                         $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
                         
-                        if (data.tglCetakKartu) {
-                            $('#bpjsBerlaku').text(data.tglCetakKartu);
-                        } else {
-                            $('#bpjsBerlaku').text('-');
-                        }
+                        // Tampilkan tanggal akhir berlaku
+                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
                         
                         // Update status indicator
                         if (data.aktif) {
                             $('#bpjsStatusIndicator').html(
-                                `<div class="badge badge-success p-2" style="font-size: 1rem;">
-                                    <i class="fas fa-check-circle"></i> BPJS Aktif
+                                `<div class="badge badge-pill" style="background: linear-gradient(45deg, #4CAF50, #388E3C); color: white; font-size: 1rem; padding: 8px 15px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);">
+                                    BPJS Aktif
                                 </div>`
                             );
+                            // Tampilkan tombol kunjungan sehat jika BPJS aktif
+                            $('#kunjunganSehatContainer').show();
                         } else {
                             $('#bpjsStatusIndicator').html(
-                                `<div class="badge badge-danger p-2" style="font-size: 1rem;">
-                                    <i class="fas fa-times-circle"></i> BPJS Tidak Aktif
+                                `<div class="badge badge-pill" style="background: linear-gradient(45deg, #F44336, #D32F2F); color: white; font-size: 1rem; padding: 8px 15px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);">
+                                    BPJS Tidak Aktif
                                 </div>`
                             );
+                            // Sembunyikan tombol kunjungan sehat jika BPJS tidak aktif
+                            $('#kunjunganSehatContainer').hide();
                         }
                     } else {
                         $('#bpjsError').show();
@@ -937,36 +993,37 @@
                         $('#bpjsContent').show();
                         $('#bpjsNoKartu').text(data.noKartu || '-');
                         $('#bpjsStatus').html(
-                            `<span class="badge badge-${data.aktif ? 'success' : 'danger'}">
+                            `<span class="badge badge-pill" style="background: linear-gradient(45deg, ${data.aktif ? '#4CAF50, #388E3C' : '#F44336, #D32F2F'}); color: white; font-size: 0.85rem; padding: 5px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                                 ${data.ketAktif || '-'}
                             </span>`
                         );
-                        $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
-                        $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
-                        $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
+                        $('#bpjsJenisPeserta').text(data.jnsPeserta && data.jnsPeserta.nama ? data.jnsPeserta.nama : '-');
+                        $('#bpjsFaskes').text(data.kdProviderPst && data.kdProviderPst.nmProvider ? data.kdProviderPst.nmProvider : '-');
+                        $('#bpjsKelas').text(data.jnsKelas && data.jnsKelas.nama ? data.jnsKelas.nama : '-');
                         
-                        // Perbarui nomor BPJS pada komponen i-Care
+                        // Perbarui nomor BPJS pada komponen i-Care (tetap diatur tapi tidak ditampilkan)
                         $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
                         
-                        if (data.tglCetakKartu) {
-                            $('#bpjsBerlaku').text(data.tglCetakKartu);
-                        } else {
-                            $('#bpjsBerlaku').text('-');
-                        }
+                        // Tampilkan tanggal akhir berlaku
+                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
                         
                         // Update status indicator
                         if (data.aktif) {
                             $('#bpjsStatusIndicator').html(
-                                `<div class="badge badge-success p-2" style="font-size: 1rem;">
-                                    <i class="fas fa-check-circle"></i> BPJS Aktif
+                                `<div class="badge badge-pill" style="background: linear-gradient(45deg, #4CAF50, #388E3C); color: white; font-size: 1rem; padding: 8px 15px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);">
+                                    BPJS Aktif
                                 </div>`
                             );
+                            // Tampilkan tombol kunjungan sehat jika BPJS aktif
+                            $('#kunjunganSehatContainer').show();
                         } else {
                             $('#bpjsStatusIndicator').html(
-                                `<div class="badge badge-danger p-2" style="font-size: 1rem;">
-                                    <i class="fas fa-times-circle"></i> BPJS Tidak Aktif
+                                `<div class="badge badge-pill" style="background: linear-gradient(45deg, #F44336, #D32F2F); color: white; font-size: 1rem; padding: 8px 15px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);">
+                                    BPJS Tidak Aktif
                                 </div>`
                             );
+                            // Sembunyikan tombol kunjungan sehat jika BPJS tidak aktif
+                            $('#kunjunganSehatContainer').hide();
                         }
                     } else {
                         $('#bpjsError').show();
@@ -1038,6 +1095,108 @@
             $('#bpjsError').hide();
             $('#icareBpjsContainer').hide();
         });
+
+        // Fungsi untuk mendaftarkan kunjungan sehat
+        window.daftarKunjunganSehat = function() {
+            // Ambil nomor kartu BPJS
+            const noKartu = $('#bpjsNoKartu').text();
+            if (!noKartu || noKartu === '-') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Nomor kartu BPJS tidak valid',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            // Konfirmasi pendaftaran
+            Swal.fire({
+                title: 'Daftar Kunjungan Sehat',
+                text: 'Apakah Anda yakin ingin mendaftarkan kunjungan sehat untuk pasien ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Daftarkan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading
+                    Swal.fire({
+                        title: 'Memproses',
+                        text: 'Mendaftarkan kunjungan sehat...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Kirim request ke server
+                    $.ajax({
+                        url: '/api/pcare/pendaftaran',
+                        type: 'POST',
+                        dataType: 'json',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            noKartu: noKartu,
+                            tglDaftar: moment().format('DD-MM-YYYY'),
+                            kdPoli: '021',
+                            kunjSakit: false,
+                            keluhan: 'Konsultasi Kesehatan',
+                            sistole: 0,
+                            diastole: 0,
+                            beratBadan: 0,
+                            tinggiBadan: 0,
+                            respRate: 0,
+                            heartRate: 0,
+                            lingkarPerut: 0,
+                            rujukBalik: 0,
+                            kdTkp: '10', 
+                            kdSadar: '01'
+                        }),
+                        success: function(response) {
+                            Swal.close();
+                            if (response.metaData && (response.metaData.code === 200 || response.metaData.code === 201)) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: 'Kunjungan sehat berhasil didaftarkan dengan nomor antrian: ' + response.response.message,
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            } else {
+                                let errorMessage = 'Gagal mendaftarkan kunjungan sehat';
+                                if (response.metaData && response.metaData.message) {
+                                    errorMessage = response.metaData.message;
+                                }
+                                
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal',
+                                    text: errorMessage,
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.close();
+                            let errorMessage = 'Gagal mendaftarkan kunjungan sehat';
+                            
+                            if (xhr.responseJSON && xhr.responseJSON.metaData && xhr.responseJSON.metaData.message) {
+                                errorMessage = xhr.responseJSON.metaData.message;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: errorMessage,
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    });
+                }
+            });
+        };
     });
     
     // Fungsi untuk export data

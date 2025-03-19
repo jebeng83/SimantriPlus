@@ -225,7 +225,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
             form_data.append('url', '{{url()->current()}}');
             
             $.ajax({
-                url: "https://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
+                url: "{{url()->current()}}",
                 type: "POST",
                 data: form_data,
                 contentType: false,
@@ -270,7 +270,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                     if(data.status == 'success'){
                         let decode = decodeURIComponent(data.data.lokasi_pdf);
                         var html = '';
-                        html += '<iframe src="http://simrs.rsbhayangkaranganjuk.com/webapps/medrec/'+decode+'" frameborder="0" height="700px" width="100%"></iframe>';
+                        html += '<iframe></iframe>';
                         $('.container-retensi').html(html);
                         $('#modalBerkasRetensi').modal('show');
                     }else{
@@ -309,7 +309,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<iframe src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
+                            html += '<iframe></iframe>';
                             
                         });
                         $('.body-modal-berkasrm').html(html);

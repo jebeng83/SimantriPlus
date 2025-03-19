@@ -95,6 +95,9 @@ Route::prefix('pcare')->group(function () {
     Route::get('kunjungan/{noKartu}', [App\Http\Controllers\API\PcareController::class, 'getKunjungan']);
     Route::get('statuspulang', [App\Http\Controllers\API\PcareController::class, 'getStatusPulang']);
     
+    // Pendaftaran Kunjungan Sehat
+    Route::post('pendaftaran', [App\Http\Controllers\API\PcareController::class, 'addPendaftaran']);
+    
     // Poli dan Klub
     Route::get('poli', [App\Http\Controllers\API\PcareController::class, 'getPoli']);
     Route::get('kelompok', [App\Http\Controllers\API\PcareController::class, 'getKelompokSehat']);
