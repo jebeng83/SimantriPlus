@@ -311,6 +311,10 @@
                                             <i class="fas fa-check-circle"></i> BPJS Aktif
                                         </div>
                                     </div>
+
+                                    <div class="mt-3" id="icareBpjsContainer">
+                                        <x-ralan.icare-bpjs :noPeserta="''" />
+                                    </div>
                                 </div>
                                 <div id="bpjsError" class="alert alert-info" style="display: none;">
                                     <div class="d-flex align-items-center">
@@ -749,6 +753,7 @@
             $('#bpjsLoading').show();
             $('#bpjsContent').hide();
             $('#bpjsError').hide();
+            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
             
             // Jika ada nomor BPJS, cek status kepesertaan
             if (patient.no_peserta) {
@@ -807,14 +812,20 @@
                         $('#bpjsContent').show();
                         $('#bpjsNoKartu').text(data.noKartu || '-');
                         $('#bpjsStatus').html(
-                            `<span class="badge badge-${data.aktif ? 'success' : 'danger'}">
-                                ${data.ketAktif || '-'}
-                            </span>`
+                            `<span class="badge badge-success"><i class="fas fa-check-circle"></i> ${data.statusPeserta.keterangan || 'AKTIF'}</span>`
                         );
                         $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
                         $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
                         $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
-                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
+                        
+                        // Perbarui nomor BPJS pada komponen i-Care
+                        $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
+                        
+                        if (data.tglCetakKartu) {
+                            $('#bpjsBerlaku').text(data.tglCetakKartu);
+                        } else {
+                            $('#bpjsBerlaku').text('-');
+                        }
                         
                         // Update status indicator
                         if (data.aktif) {
@@ -840,6 +851,7 @@
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
                             $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
                         } else if (response.metaData.message && 
                             (response.metaData.message.includes('tidak ditemukan') || 
                              response.metaData.message.includes('Peserta tidak ditemukan'))) {
@@ -847,6 +859,7 @@
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
                             $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
                         } else if (response.metaData.code >= 500) {
                             // Error server (500+)
                             $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
@@ -931,7 +944,15 @@
                         $('#bpjsJenisPeserta').text(data.jnsPeserta?.nama || '-');
                         $('#bpjsFaskes').text(data.kdProviderPst?.nmProvider || '-');
                         $('#bpjsKelas').text(data.jnsKelas?.nama || '-');
-                        $('#bpjsBerlaku').text(data.tglAkhirBerlaku || '-');
+                        
+                        // Perbarui nomor BPJS pada komponen i-Care
+                        $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
+                        
+                        if (data.tglCetakKartu) {
+                            $('#bpjsBerlaku').text(data.tglCetakKartu);
+                        } else {
+                            $('#bpjsBerlaku').text('-');
+                        }
                         
                         // Update status indicator
                         if (data.aktif) {
@@ -957,6 +978,7 @@
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
                             $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
                         } else if (response.metaData.message && 
                             (response.metaData.message.includes('tidak ditemukan') || 
                              response.metaData.message.includes('Peserta tidak ditemukan'))) {
@@ -964,6 +986,7 @@
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
                             $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
                         } else if (response.metaData.code >= 500) {
                             // Error server (500+)
                             $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
@@ -1004,6 +1027,16 @@
         // Mencegah event propagation dari tombol-tombol aksi
         $(document).on('click', '.btn-group button, .btn-group a', function(e) {
             e.stopPropagation();
+        });
+
+        // Reset modal saat ditutup
+        $('#quickViewModal').on('hidden.bs.modal', function() {
+            $('#patientDetailLoader').show();
+            $('#patientDetailContent').hide();
+            $('#bpjsLoading').show();
+            $('#bpjsContent').hide();
+            $('#bpjsError').hide();
+            $('#icareBpjsContainer').hide();
         });
     });
     

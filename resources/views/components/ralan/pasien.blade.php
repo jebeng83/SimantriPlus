@@ -84,7 +84,10 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                     <div class="d-flex flex-row justify-content-between" style="gap:10px">
                         <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
                             data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
-                        <x-adminlte-button label="I-Care BPJS" id="icare-button" theme="success" />
+                        <button type="button" class="btn btn-success btn-block"
+                            onclick="showIcareHistory('{{$data->no_peserta ?? '0001441909697'}}', '{{$dokter ?? '102'}}')">
+                            <i class="fas fa-history mr-2"></i> i-Care BPJS
+                        </button>
                     </div>
                 </span>
                 <span class="nav-link">
@@ -128,13 +131,6 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
         <livewire:component.berkas-rm />
     </x-adminlte-modal>
 
-    <x-adminlte-modal id="icare-modal" title="I-Care BPJS" size="lg" theme="info" icon="fas fa-bell" v-centered
-        static-backdrop scrollable>
-        <div class="container-fluid container-icare">
-
-        </div>
-    </x-adminlte-modal>
-
     <x-adminlte-modal id="modalBerkasRetensi" title="Berkas Retensi" size="lg" theme="info" icon="fas fa-bell"
         v-centered static-backdrop scrollable>
         <div class="container-retensi" style="color:#0d2741">
@@ -144,6 +140,9 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
     <livewire:component.change-phone />
     <livewire:component.change-ktp />
     <livewire:component.change-card />
+
+    <!-- Komponen BPJS iCare -->
+    <x-ralan.icare-bpjs :noPeserta="$data->no_peserta ?? ''" :kodeDokter="$dokter ?? '102'" />
 
     @push('css')
     <style>
@@ -211,6 +210,13 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
             $('#data-card').text(event);
         });
 
+        $('#btn-rm').on('click', function(event){
+            event.preventDefault();
+            var rm = $(this).data('rm');
+            $('#modal-rm').modal('show');
+            Livewire.emit('setRm', rm);
+        });
+
         function uploadFile() {
             var file_data = $('#fileupload').prop('files')[0];
             var form_data = new FormData();
@@ -244,36 +250,6 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                 }
             });
         }
-
-        $('#icare-button').on('click', function(event){
-            event.preventDefault();
-            let kdDokter = "{{$dokter}}";
-            let param = "{{$data->no_peserta ?? ''}}";
-            $.ajax({
-                url: '/api/icare',
-                type: 'POST',
-                data: {
-                    kodedokter: kdDokter,
-                    param: param
-                },
-                beforeSend:function() {
-                    Swal.fire({
-                        title: 'Loading....',
-                        allowEscapeKey: false,
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    })
-                },
-                success: function(data) {
-                    Swal.close();
-                    $('#icare-modal').modal('show');
-                    $('.container-icare').html(data);
-                }
-            });
-        });
-        @endif
 
         function getBerkasRetensi(){
             $.ajax({
@@ -352,6 +328,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                 }
             });
         }
+        @endif
     </script>
     {{-- <script>
 
