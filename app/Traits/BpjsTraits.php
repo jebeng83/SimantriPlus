@@ -169,7 +169,7 @@ trait BpjsTraits
                 'Accept' => 'application/json',
                 'X-cons-id' => $consId,
                 'X-timestamp' => $timestamp,
-                'X-signature' => $this->createSign($timestamp, $consId, $secretKey),
+                'X-signature' => $this->createSign($timestamp, $consId),
                 'X-authorization' => base64_encode($username . ':' . $password . ':095'),
                 'user_key' => $userKey
             ];
@@ -269,7 +269,7 @@ trait BpjsTraits
             if (isset($res['response']) && is_string($res['response'])) {
                 try {
                     // Generate decryption key
-                    $key = env('BPJS_CONS_ID') . env('BPJS_CONS_PWD') . $xTimestamp;
+                    $key = $this->createKeyForDecode($xTimestamp);
 
                     // Step 1: Decrypt
                     $decrypted = $this->stringDecrypt($key, $res['response']);
@@ -366,9 +366,9 @@ trait BpjsTraits
             throw new \Exception('Missing consumer ID configuration');
         }
 
-        $secretKey = env('BPJS_CONS_PWD');
+        $secretKey = env('BPJS_ICARE_CONS_PWD');
         if (empty($secretKey)) {
-            Log::error('BPJS Configuration Error: Missing BPJS_CONS_PWD');
+            Log::error('BPJS Configuration Error: Missing BPJS_ICARE_CONS_PWD');
             throw new \Exception('Missing consumer password configuration');
         }
 
@@ -393,8 +393,8 @@ trait BpjsTraits
 
     private function createKeyForDecode($tStamp)
     {
-        $consid = env('BPJS_CONS_ID');
-        $conspwd = env('BPJS_CONS_PWD');
+        $consid = env('BPJS_ICARE_CONS_ID');
+        $conspwd = env('BPJS_ICARE_CONS_PWD');
         
         if (empty($consid) || empty($conspwd)) {
             Log::error('BPJS Configuration Error: Missing required credentials');

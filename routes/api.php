@@ -100,3 +100,12 @@ Route::prefix('pcare')->group(function () {
     Route::get('kelompok', [App\Http\Controllers\API\PcareController::class, 'getKelompokSehat']);
     Route::get('klubprolanis', [App\Http\Controllers\API\PcareController::class, 'getKlubProlanis']);
 });
+
+// ICare Routes
+Route::prefix('icare')->group(function () {
+    // Peserta
+    Route::get('peserta/{noKartu}', [App\Http\Controllers\API\IcareController::class, 'getPeserta']);
+    Route::get('peserta/nik/{nik}', [App\Http\Controllers\API\IcareController::class, 'getPesertaByNIK']);
+    Route::get('peserta/{noKartu}/riwayat', [App\Http\Controllers\API\IcareController::class, 'getRiwayatPeserta']);
+    Route::post('validate', [App\Http\Controllers\API\IcareController::class, 'validateIcare']);
+});

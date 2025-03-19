@@ -200,6 +200,10 @@
                         rows="2">{{ $pasien->alamatpj }}</textarea>
                   </div>
 
+                  @if($pasien->no_peserta)
+                  <x-ralan.icare-bpjs :noPeserta="$pasien->no_peserta" />
+                  @endif
+
                   <div class="form-group">
                      <label class="form-label">
                         <i class="fas fa-clinic-medical text-primary"></i>
