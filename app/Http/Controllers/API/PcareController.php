@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\PcareTrait;
+use Illuminate\Validation\ValidationException;
 
 class PcareController extends Controller
 {
@@ -454,6 +455,112 @@ class PcareController extends Controller
                 'metaData' => [
                     'code' => 500,
                     'message' => $this->getErrorMessage($e)
+                ],
+                'response' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Mendaftarkan kunjungan sehat ke PCare BPJS
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function addPendaftaran(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'tglDaftar' => 'required|string',
+                'noKartu' => 'required|string',
+                'keluhan' => 'nullable|string',
+                'kdProviderPeserta' => 'nullable|string',
+                'kdTkp' => 'required|string',
+                'noUrut' => 'nullable|integer',
+                'kdPoli' => 'required|string',
+                'kunjSakit' => 'required|boolean',
+                'sistole' => 'nullable|integer',
+                'diastole' => 'nullable|integer',
+                'beratBadan' => 'nullable|integer',
+                'tinggiBadan' => 'nullable|integer',
+                'respRate' => 'nullable|integer',
+                'heartRate' => 'nullable|integer',
+                'lingkarPerut' => 'nullable|integer',
+                'kdKelompokSehat' => 'nullable|string',
+                'kdStatusPulang' => 'nullable|string',
+                'tglPulang' => 'nullable|string',
+                'kdDokter' => 'nullable|string',
+                'kdDiag1' => 'nullable|string',
+                'kdDiag2' => 'nullable|string',
+                'kdDiag3' => 'nullable|string',
+                'rujukBalik' => 'nullable|integer',
+            ]);
+
+            // Dapatkan kode dokter dari tabel maping_dokter_pcare jika tidak disediakan
+            $kdDokter = $validatedData['kdDokter'] ?? null;
+            if (empty($kdDokter)) {
+                // Ambil kode dokter default dari tabel maping
+                $dokter = \DB::table('maping_dokter_pcare')->first();
+                if ($dokter) {
+                    $kdDokter = $dokter->kd_dokter_pcare;
+                } else {
+                    throw new \Exception('Tidak ada dokter yang terdaftar di PCare');
+                }
+            }
+
+            // Endpoint untuk pendaftaran
+            $endpoint = 'pendaftaran';
+
+            // Siapkan data pendaftaran
+            $pendaftaranData = [
+                "kdProviderPeserta" => env('BPJS_PCARE_KODE_PPK', '11251616'),
+                "tglDaftar" => $validatedData['tglDaftar'],
+                "noKartu" => $validatedData['noKartu'],
+                "kdPoli" => $validatedData['kdPoli'] ?? '021',
+                "keluhan" => $validatedData['keluhan'] ?? 'Konsultasi Kesehatan',
+                "kunjSakit" => $validatedData['kunjSakit'] ?? false,
+                "sistole" => isset($validatedData['sistole']) ? (int)$validatedData['sistole'] : 0,
+                "diastole" => isset($validatedData['diastole']) ? (int)$validatedData['diastole'] : 0,
+                "beratBadan" => isset($validatedData['beratBadan']) ? (int)$validatedData['beratBadan'] : 0,
+                "tinggiBadan" => isset($validatedData['tinggiBadan']) ? (int)$validatedData['tinggiBadan'] : 0,
+                "respRate" => isset($validatedData['respRate']) ? (int)$validatedData['respRate'] : 0,
+                "heartRate" => isset($validatedData['heartRate']) ? (int)$validatedData['heartRate'] : 0,
+                "lingkarPerut" => isset($validatedData['lingkarPerut']) ? (int)$validatedData['lingkarPerut'] : 0,
+                "rujukBalik" => $validatedData['rujukBalik'] ?? 0,
+                "kdTkp" => $validatedData['kdTkp'] ?? '10',
+                "kdDokter" => $kdDokter,
+                "kdSadar" => "01",
+            ];
+
+            // Kirim request ke PCare API dengan content-type: text/plain
+            $response = $this->requestPcare($endpoint, 'POST', $pendaftaranData, 'text/plain');
+
+            // Log response untuk debugging
+            Log::info('PCare Pendaftaran Response', [
+                'request' => $pendaftaranData,
+                'response' => $response,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+
+            return response()->json($response);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'metaData' => [
+                    'code' => 422,
+                    'message' => 'Validation Error',
+                ],
+                'response' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('PCare Pendaftaran Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'metaData' => [
+                    'code' => 500,
+                    'message' => 'Error: ' . $e->getMessage(),
                 ],
                 'response' => null
             ], 500);
