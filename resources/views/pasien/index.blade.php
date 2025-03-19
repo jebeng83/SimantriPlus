@@ -308,16 +308,17 @@
                                     </div>
                                     <div class="mt-3 text-center" id="bpjsStatusIndicator">
                                         <div class="badge badge-success p-2" style="font-size: 1rem;">
-                                            <i class="fas fa-check-circle"></i> Data BPJS Terverifikasi
+                                            <i class="fas fa-check-circle"></i> BPJS Aktif
                                         </div>
                                     </div>
                                 </div>
-                                <div id="bpjsError" class="alert alert-danger" style="display: none;">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span id="bpjsErrorMessage">-</span>
-                                    <div class="mt-2">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                            id="retryBpjsButton">
+                                <div id="bpjsError" class="alert alert-info" style="display: none;">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle mr-2" style="font-size: 1.5rem;"></i>
+                                        <span id="bpjsErrorMessage" style="font-size: 1rem;">-</span>
+                                    </div>
+                                    <div class="mt-2 text-center" id="bpjsRetryButtonContainer">
+                                        <button type="button" class="btn btn-sm btn-outline-info" id="retryBpjsButton">
                                             <i class="fas fa-sync"></i> Coba Lagi
                                         </button>
                                     </div>
@@ -526,6 +527,60 @@
             flex-direction: column !important;
         }
     }
+
+    /* BPJS Info Styling */
+    #bpjsError.alert-info {
+        background-color: #e3f2fd;
+        border-color: #b3e5fc;
+        color: #0277bd;
+    }
+
+    #bpjsError.alert-warning {
+        background-color: #fff8e1;
+        border-color: #ffecb3;
+        color: #ff8f00;
+    }
+
+    #bpjsError i.fa-info-circle {
+        color: #0277bd;
+    }
+
+    #bpjsError i.fa-exclamation-circle {
+        color: #ff8f00;
+    }
+
+    .btn-outline-info {
+        border-color: #0277bd;
+        color: #0277bd;
+    }
+
+    .btn-outline-info:hover {
+        background-color: #0277bd;
+        color: white;
+    }
+
+    .info-item {
+        display: flex;
+        margin-bottom: 15px;
+    }
+
+    .info-item i {
+        margin-right: 10px;
+        margin-top: 5px;
+        font-size: 1.2rem;
+    }
+
+    .info-item label {
+        font-weight: bold;
+        margin-bottom: 0;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .info-item p {
+        margin-bottom: 0;
+        font-size: 1rem;
+    }
 </style>
 @stop
 
@@ -544,10 +599,20 @@
         $(document).on('click', '#retryBpjsButton', function() {
             const noKartu = $('#bpjsNoKartu').text();
             if (noKartu && noKartu !== '-') {
-                $('#bpjsLoading').show();
-                $('#bpjsContent').hide();
-                $('#bpjsError').hide();
-                checkBPJSStatus(noKartu);
+                // Validasi panjang nomor BPJS
+                if (noKartu.length === 13) {
+                    $('#bpjsLoading').show();
+                    $('#bpjsContent').hide();
+                    $('#bpjsError').hide();
+                    checkBPJSStatus(noKartu);
+                } else {
+                    $('#bpjsLoading').hide();
+                    $('#bpjsContent').hide();
+                    $('#bpjsError').show();
+                    $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                    $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor BPJS tidak valid (harus 13 digit). Nomor saat ini: ' + noKartu.length + ' digit');
+                    $('#bpjsRetryButtonContainer').hide();
+                }
             } else {
                 // Cari dari data pasien terakhir
                 const patientRM = $('#patientRM').text().replace('No. RM: ', '');
@@ -562,17 +627,32 @@
                         dataType: 'json',
                         success: function(data) {
                             if (data.no_peserta) {
-                                checkBPJSStatus(data.no_peserta);
+                                // Validasi panjang nomor BPJS
+                                if (data.no_peserta.length === 13) {
+                                    checkBPJSStatus(data.no_peserta);
+                                } else {
+                                    $('#bpjsLoading').hide();
+                                    $('#bpjsContent').hide();
+                                    $('#bpjsError').show();
+                                    $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                                    $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor BPJS tidak valid (harus 13 digit). Nomor saat ini: ' + data.no_peserta.length + ' digit');
+                                    $('#bpjsRetryButtonContainer').hide();
+                                }
                             } else {
                                 $('#bpjsLoading').hide();
                                 $('#bpjsError').show();
-                                $('#bpjsErrorMessage').text('Pasien tidak memiliki nomor BPJS');
+                                $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                                $('#bpjsErrorMessage').html('<b>Informasi:</b> Pasien ini tidak terdaftar sebagai peserta BPJS');
+                                $('#bpjsRetryButtonContainer').hide();
                             }
                         },
                         error: function() {
                             $('#bpjsLoading').hide();
+                            $('#bpjsContent').hide();
                             $('#bpjsError').show();
-                            $('#bpjsErrorMessage').text('Gagal mengambil data pasien');
+                            $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<b>Gagal mengambil data pasien.</b><br>Silakan coba lagi nanti.');
+                            $('#bpjsRetryButtonContainer').show();
                         }
                     });
                 }
@@ -672,11 +752,24 @@
             
             // Jika ada nomor BPJS, cek status kepesertaan
             if (patient.no_peserta) {
-                checkBPJSStatus(patient.no_peserta);
+                // Validasi panjang nomor BPJS harus 13 digit
+                if (patient.no_peserta.length === 13) {
+                    checkBPJSStatus(patient.no_peserta);
+                } else {
+                    $('#bpjsLoading').hide();
+                    $('#bpjsContent').hide();
+                    $('#bpjsError').show();
+                    $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                    $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor BPJS tidak valid (harus 13 digit). Nomor saat ini: ' + patient.no_peserta.length + ' digit');
+                    $('#bpjsRetryButtonContainer').hide();
+                }
             } else {
                 $('#bpjsLoading').hide();
+                $('#bpjsContent').hide();
                 $('#bpjsError').show();
-                $('#bpjsErrorMessage').text('Pasien tidak memiliki nomor BPJS');
+                $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                $('#bpjsErrorMessage').html('<b>Informasi:</b> Pasien ini tidak terdaftar sebagai peserta BPJS');
+                $('#bpjsRetryButtonContainer').hide();
             }
             
             // Hitung dan tampilkan umur
@@ -739,17 +832,76 @@
                         }
                     } else {
                         $('#bpjsError').show();
-                        $('#bpjsErrorMessage').text(response.metaData.message || 'Gagal mendapatkan data BPJS');
+                        $('#bpjsContent').hide();
+                        
+                        // Klasifikasi pesan error berdasarkan kode dan pesan
+                        if (response.metaData.code === 201) {
+                            // Data tidak ditemukan (biasanya kode 201 di BPJS)
+                            $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
+                            $('#bpjsRetryButtonContainer').hide();
+                        } else if (response.metaData.message && 
+                            (response.metaData.message.includes('tidak ditemukan') || 
+                             response.metaData.message.includes('Peserta tidak ditemukan'))) {
+                            // Pesan error mengandung kata "tidak ditemukan"
+                            $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').hide();
+                        } else if (response.metaData.code >= 500) {
+                            // Error server (500+)
+                            $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
+                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        } else if (response.metaData.code >= 400 && response.metaData.code < 500) {
+                            // Error permintaan (400+)
+                            $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        } else {
+                            // Error umum
+                            $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        }
                     }
                 },
                 error: function(xhr) {
                     $('#bpjsLoading').hide();
+                    $('#bpjsContent').hide();
                     $('#bpjsError').show();
-                    $('#bpjsErrorMessage').text('Gagal menghubungi server BPJS. ' + (xhr.responseJSON?.metaData?.message || ''));
                     
-                    // Coba alternatif dengan endpoint lain jika gagal
-                    if (xhr.status === 404 || xhr.status === 400) {
-                        retryWithAlternativeEndpoint(noKartu);
+                    // Cek jika error karena nomor kartu tidak ditemukan
+                    if (xhr.responseJSON && xhr.responseJSON.metaData && 
+                        (xhr.responseJSON.metaData.message.includes('tidak ditemukan') || 
+                         xhr.responseJSON.metaData.message.includes('Peserta tidak ditemukan'))) {
+                        
+                        $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                        $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak ditemukan di database BPJS');
+                        $('#bpjsRetryButtonContainer').hide();
+                    } 
+                    // Cek jika error koneksi (404, timeout, atau status 0)
+                    else if (xhr.status === 0 || xhr.status === 408 || xhr.status === 504 || xhr.status === 599) {
+                        $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                        $('#bpjsErrorMessage').html('<b>Koneksi ke server BPJS terputus.</b><br>Server BPJS mungkin sedang dalam pemeliharaan atau jaringan internet mengalami gangguan. Silakan coba beberapa saat lagi.');
+                        $('#bpjsRetryButtonContainer').show();
+                    }
+                    // Untuk error internal server (500)
+                    else if (xhr.status === 500) {
+                        $('#bpjsError').removeClass('alert-info').addClass('alert-danger');
+                        $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah internal.</b><br>Mohon coba lagi nanti atau hubungi administrator jika masalah berlanjut.');
+                        $('#bpjsRetryButtonContainer').show();
+                    }
+                    // Error lainnya
+                    else {
+                        $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
+                        $('#bpjsErrorMessage').html('<b>Tidak dapat memperoleh data BPJS.</b><br>' + 
+                                                  (xhr.responseJSON?.metaData?.message || 'Gagal menghubungi server BPJS dengan kode error: ' + xhr.status));
+                        $('#bpjsRetryButtonContainer').show();
+                        
+                        // Coba alternatif dengan endpoint lain jika gagal
+                        if (xhr.status === 404 || xhr.status === 400) {
+                            retryWithAlternativeEndpoint(noKartu);
+                        }
                     }
                 }
             });
@@ -797,14 +949,54 @@
                         }
                     } else {
                         $('#bpjsError').show();
-                        $('#bpjsErrorMessage').text(response.metaData.message || 'Gagal mendapatkan data BPJS');
+                        $('#bpjsContent').hide();
+                        
+                        // Klasifikasi pesan error berdasarkan kode dan pesan
+                        if (response.metaData.code === 201) {
+                            // Data tidak ditemukan (biasanya kode 201 di BPJS)
+                            $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
+                            $('#bpjsRetryButtonContainer').hide();
+                        } else if (response.metaData.message && 
+                            (response.metaData.message.includes('tidak ditemukan') || 
+                             response.metaData.message.includes('Peserta tidak ditemukan'))) {
+                            // Pesan error mengandung kata "tidak ditemukan"
+                            $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').hide();
+                        } else if (response.metaData.code >= 500) {
+                            // Error server (500+)
+                            $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
+                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        } else if (response.metaData.code >= 400 && response.metaData.code < 500) {
+                            // Error permintaan (400+)
+                            $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        } else {
+                            // Error umum
+                            $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsRetryButtonContainer').show();
+                        }
                     }
                 },
                 error: function() {
                     // Jika kedua endpoint gagal, tetap tampilkan pesan error
                     $('#bpjsLoading').hide();
+                    $('#bpjsContent').hide();
                     $('#bpjsError').show();
-                    $('#bpjsErrorMessage').text('Gagal menghubungi server BPJS melalui semua endpoint.');
+                    $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
+                    $('#bpjsErrorMessage').html(`
+                        <b>Gagal menghubungi server BPJS melalui semua endpoint.</b><br>
+                        <ul class="mt-2 mb-0">
+                            <li>Server BPJS mungkin sedang tidak dapat diakses</li>
+                            <li>Koneksi internet mungkin bermasalah</li>
+                            <li>Jika masalah berlanjut, hubungi administrator</li>
+                        </ul>
+                    `);
+                    $('#bpjsRetryButtonContainer').show();
                 }
             });
         }
