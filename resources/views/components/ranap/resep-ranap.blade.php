@@ -312,15 +312,30 @@
     /* CSS untuk memperbaiki dropdown select2 */
     .select2-container {
         width: 100% !important;
-        z-index: 9999 !important;
+        z-index: 1050 !important;
+        /* Mengurangi z-index dari 9999 */
     }
 
     .select2-container--open {
-        z-index: 99999 !important;
+        z-index: 1051 !important;
+        /* Mengurangi z-index dari 99999 */
     }
 
     .select2-container--open .select2-dropdown {
-        z-index: 99999 !important;
+        z-index: 1051 !important;
+        /* Mengurangi z-index dari 99999 */
+    }
+
+    /* Perbaikan spesifik untuk posisi dropdown dan z-index */
+    .select2-dropdown {
+        border: 1px solid #ddd !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+        top: 0 !important;
+    }
+
+    /* Pastikan SweetAlert selalu di atas semua elemen */
+    .swal2-container {
+        z-index: 9999 !important;
     }
 
     .select2-results {
@@ -347,18 +362,10 @@
         height: 36px !important;
     }
 
-    /* Perbaikan spesifik untuk posisi dropdown dan z-index */
-    .select2-dropdown {
-        border: 1px solid #ddd !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
-        top: 0 !important;
-    }
-
     .select2-container--default .select2-results>.select2-results__options {
         max-height: 300px !important;
     }
 
-    /* Tambahan untuk memastikan popup terlihat dan elemen tetap terbuka */
     .select2-search {
         padding: 8px !important;
     }
@@ -486,10 +493,10 @@
                     $('.select2-search__field').focus();
                 }, 0);
                 
-                // Atur z-index tinggi untuk elemen dropdown
-                $('.select2-container--open').css('z-index', 99999);
-                $('.select2-dropdown').css('z-index', 99999);
-                $('.select2-results').css('z-index', 99999);
+                // Atur z-index yang lebih rendah untuk elemen dropdown
+                $('.select2-container--open').css('z-index', 1051);
+                $('.select2-dropdown').css('z-index', 1051);
+                $('.select2-results').css('z-index', 1051);
             }).on('change', function(e) {
                 var data = $(this).select2('data');
                 var id = $(this).attr('id').replace('obat', '');
@@ -538,10 +545,10 @@
                     $('.select2-search__field').focus();
                 }, 0);
                 
-                // Atur z-index tinggi untuk elemen dropdown
-                $('.select2-container--open').css('z-index', 99999);
-                $('.select2-dropdown').css('z-index', 99999);
-                $('.select2-results').css('z-index', 99999);
+                // Atur z-index yang lebih rendah untuk elemen dropdown
+                $('.select2-container--open').css('z-index', 1051);
+                $('.select2-dropdown').css('z-index', 1051);
+                $('.select2-results').css('z-index', 1051);
             }).on('change', function(e) {
                 var data = $(this).select2('data');
                 if (data && data.length > 0) {
