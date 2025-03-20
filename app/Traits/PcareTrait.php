@@ -66,9 +66,15 @@ trait PcareTrait
     protected function requestPcare($endpoint, $method = 'GET', $data = null, $contentType = null)
     {
         try {
-            // Gunakan konfigurasi lama
-            $baseUrl = env('BPJS_PCARE_BASE_URL');
+            // Cek jika request peserta sudah ada di cache
+            $cacheKey = 'pcare_' . md5($endpoint . json_encode($data));
+            if ($method === 'GET' && \Cache::has($cacheKey)) {
+                Log::info('PCare API Cache Hit', ['endpoint' => $endpoint]);
+                return \Cache::get($cacheKey);
+            }
             
+            // Gunakan konfigurasi dari .env
+            $baseUrl = env('BPJS_PCARE_BASE_URL');
             $consId = env('BPJS_PCARE_CONS_ID');
             $userKey = env('BPJS_PCARE_USER_KEY');
             
@@ -99,13 +105,12 @@ trait PcareTrait
                 $headers['Accept'] = 'application/json';
             }
             
-            // Format endpoint
+            // Normalisasi endpoint
             if (strpos($endpoint, 'peserta') !== false) {
                 // Tidak perlu menambahkan v1 atau v1.svc untuk endpoint peserta
                 // Format: {Base URL}/{Service Name}/peserta/{Parameter 1}
-                // Contoh: https://apijkn.bpjs-kesehatan.go.id/pcare-rest/peserta/0001441909697
                 
-                // Ganti format nokartu/123456 menjadi format /123456 jika belum dalam format tersebut
+                // Untuk endpoint peserta, pastikan formatnya benar
                 if (strpos($endpoint, 'nokartu/') !== false) {
                     $parts = explode('nokartu/', $endpoint);
                     $endpoint = 'peserta/' . $parts[1];
@@ -124,42 +129,85 @@ trait PcareTrait
                 }
             }
             
-            // Format URL langsung menggunakan pcare-rest tanpa menambahkan v1 atau v1.svc
+            // Format URL dengan benar
             $baseUrl = rtrim($baseUrl, '/');
             
-            // Pastikan endpoint selalu diawali dengan pcare-rest
-            if (strpos($baseUrl, 'pcare-rest') === false) {
-                $fullUrl = $baseUrl . '/pcare-rest/' . $endpoint;
-            } else {
+            // Pastikan tidak ada duplikasi path
+            if (strpos($baseUrl, 'pcare-rest') !== false) {
+                // Jika base URL sudah mengandung pcare-rest
                 $fullUrl = $baseUrl . '/' . $endpoint;
+            } else {
+                // Jika base URL tidak mengandung pcare-rest
+                $fullUrl = $baseUrl . '/pcare-rest/' . $endpoint;
             }
             
-            // Log request
+            // Debug info untuk URL
+            Log::debug('PCare API URL Debug', [
+                'baseUrl' => $baseUrl,
+                'endpoint' => $endpoint,
+                'fullUrl' => $fullUrl,
+                'method' => $method
+            ]);
+            
+            // Log request - kurangi data sensitif yang dilog
             Log::info('PCare API Request', [
                 'url' => $fullUrl,
                 'method' => $method,
-                'headers' => $headers,
-                'data' => $data,
                 'contentType' => $contentType,
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
             
-            // Kirim request sesuai method
-            $response = match($method) {
-                'GET' => Http::withHeaders($headers)->get($fullUrl),
-                'POST' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->post($fullUrl),
-                'PUT' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->put($fullUrl),
-                'DELETE' => Http::withHeaders($headers)->withBody($data, $contentType ?? 'application/json')->delete($fullUrl),
-                default => throw new Exception("Method HTTP tidak valid")
+            // Kirim request dengan timeout dan retry
+            $httpClient = Http::timeout(30)->withHeaders($headers);
+            
+            // Function untuk melakukan retry
+            $sendRequest = function() use ($method, $httpClient, $fullUrl, $data, $contentType) {
+                return match($method) {
+                    'GET' => $httpClient->get($fullUrl),
+                    'POST' => $httpClient->withBody($data, $contentType ?? 'application/json')->post($fullUrl),
+                    'PUT' => $httpClient->withBody($data, $contentType ?? 'application/json')->put($fullUrl),
+                    'DELETE' => $httpClient->withBody($data, $contentType ?? 'application/json')->delete($fullUrl),
+                    default => throw new \Exception("Method HTTP tidak valid")
+                };
             };
+            
+            // Coba dengan retry
+            $maxRetries = 3;
+            $attempt = 0;
+            $response = null;
+            
+            do {
+                $attempt++;
+                try {
+                    $response = $sendRequest();
+                    break; // Jika berhasil, keluar dari loop
+                } catch (\Exception $e) {
+                    if ($attempt >= $maxRetries) {
+                        throw $e; // Jika sudah mencapai max retry, lempar exception
+                    }
+                    
+                    Log::warning('PCare API Retry', [
+                        'attempt' => $attempt,
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    // Tunggu sebentar sebelum retry
+                    sleep(1);
+                }
+            } while ($attempt < $maxRetries);
             
             // Log response
             Log::info('PCare API Response', [
                 'status' => $response->status(),
-                'headers' => $response->headers(),
-                'body' => $response->body(),
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
+            
+            // Log response body terpisah untuk mengurangi ukuran log
+            if ($response->status() >= 400) {
+                Log::warning('PCare API Response Body', [
+                    'body' => $response->body()
+                ]);
+            }
             
             // Cek jika response error StartIndex
             if ($response->status() === 400 && strpos($response->body(), 'StartIndex cannot be less than zero') !== false) {
@@ -174,15 +222,20 @@ trait PcareTrait
                     $altEndpoint = $endpoint . '&startIndex=1&count=10';
                 }
                 
-                $altUrl = $baseUrl . '/' . $altEndpoint;
+                // Buat URL alternatif dengan benar
+                if (strpos($baseUrl, 'pcare-rest') !== false) {
+                    $altUrl = $baseUrl . '/' . $altEndpoint;
+                } else {
+                    $altUrl = $baseUrl . '/pcare-rest/' . $altEndpoint;
+                }
+                
                 Log::info('PCare API Retry Request', ['url' => $altUrl]);
                 
                 // Retry dengan endpoint alternatif
-                $response = Http::withHeaders($headers)->get($altUrl);
+                $response = $httpClient->get($altUrl);
                 
                 Log::info('PCare API Retry Response', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
+                    'status' => $response->status()
                 ]);
             }
             
@@ -190,16 +243,23 @@ trait PcareTrait
             $responseData = $response->json() ?? [];
             
             // Decrypt response jika ada
-            if (isset($responseData['response'])) {
+            if (isset($responseData['response']) && is_string($responseData['response'])) {
                 $responseData['response'] = $this->decrypt($responseData['response'], $timestamp);
+            }
+            
+            // Simpan ke cache jika GET request
+            if ($method === 'GET' && isset($responseData['metaData']) && $responseData['metaData']['code'] == 200) {
+                // Simpan cache selama 30 menit
+                \Cache::put($cacheKey, $responseData, now()->addMinutes(30));
             }
             
             return $responseData;
             
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('PCare API Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+                'endpoint' => $endpoint
             ]);
             
             throw $e;

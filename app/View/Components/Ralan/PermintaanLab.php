@@ -93,98 +93,89 @@ class PermintaanLab extends Component
                 }
             }
             
-            // Format variasi noRawat untuk mencoba berbagai kemungkinan
-            $noRawatVariations = [
-                $noRawat,                                    // Format asli
-                $decodedNoRawat,                             // Format yang sudah didekode
-                urldecode($noRawat),                         // URL decoded
-                str_replace('/', '', $noRawat),              // Tanpa slash
-                str_replace('/', '', $decodedNoRawat),       // Decoded tanpa slash
-                date('Y/m/d') . '/' . substr($noRawat, -6)   // Mencoba format tanggal+nomor
+            // Bersihkan format no_rawat
+            if (!is_string($noRawat)) {
+                $noRawat = (string)$noRawat;
+            }
+            
+            // Hapus karakter non-printable jika ada
+            $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $decodedNoRawat);
+            
+            // Jika setelah dibersihkan kosong, gunakan nilai asli
+            if (empty($cleanNoRawat) && !empty($decodedNoRawat)) {
+                $cleanNoRawat = $decodedNoRawat;
+            }
+            
+            // Array variasi pencarian no_rawat untuk meningkatkan kemungkinan menemukan data
+            $variasi = [
+                $cleanNoRawat, 
+                urldecode($cleanNoRawat),
+                str_replace(' ', '', $cleanNoRawat)
             ];
             
-            // Pastikan cache tidak digunakan dalam query
-            DB::connection()->disableQueryLog();
-            
-            // Coba satu persatu
-            foreach ($noRawatVariations as $variation) {
-                $query = DB::table('permintaan_lab')
-                          ->where('no_rawat', $variation)
-                          ->orderBy('tgl_permintaan', 'desc')
-                          ->orderBy('jam_permintaan', 'desc');
-                          
-                $data = $query->get();
-                
-                if (count($data) > 0) {
-                    \Illuminate\Support\Facades\Log::info('Berhasil mendapatkan data dengan variasi', [
-                        'variation' => $variation,
-                        'count' => count($data)
-                    ]);
-                    
-                    return $data;
+            // Cek apakah format no_rawat sesuai pola YYYY/MM/DD/XXXXXX
+            if (preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $cleanNoRawat)) {
+                // Gunakan format yang sudah benar
+                $noRawatFormatted = $cleanNoRawat;
+            } else {
+                // Coba ekstrak tanggal hari ini + 6 digit terakhir dari no_rawat
+                $today = date('Y/m/d');
+                if (preg_match('/\d{6}$/', $cleanNoRawat, $matches)) {
+                    $lastSixDigits = $matches[0];
+                    $noRawatFormatted = $today . '/' . $lastSixDigits;
+                    $variasi[] = $noRawatFormatted;
+                } else {
+                    $noRawatFormatted = $cleanNoRawat;
                 }
             }
             
-            // Jika semua variasi gagal, coba query alternatif dengan tanggal hari ini
-            $today = date('Y-m-d');
+            // Query untuk mendapatkan data permintaan lab dengan berbagai variasi no_rawat
+            foreach ($variasi as $varNoRawat) {
+                $queryResult = DB::table('permintaan_lab')
+                    ->where('no_rawat', $varNoRawat)
+                    ->orderBy('tgl_permintaan', 'desc')
+                    ->orderBy('jam_permintaan', 'desc')
+                    ->get();
+                
+                if ($queryResult->count() > 0) {
+                    \Illuminate\Support\Facades\Log::info('Berhasil mendapatkan data dengan variasi no_rawat', [
+                        'variasi' => $varNoRawat,
+                        'jumlah' => $queryResult->count()
+                    ]);
+                    return $queryResult;
+                }
+            }
             
-            // Query data untuk hari ini tanpa menggunakan cache
-            $queryToday = DB::table('permintaan_lab')
-                          ->whereDate('tgl_permintaan', $today)
-                          ->orderBy('tgl_permintaan', 'desc')
-                          ->orderBy('jam_permintaan', 'desc');
+            // Jika tidak ditemukan, coba cari dengan LEFT JOIN pada reg_periksa untuk memastikan
+            $queryByRM = DB::table('permintaan_lab')
+                ->join('reg_periksa', 'permintaan_lab.no_rawat', '=', 'reg_periksa.no_rawat')
+                ->where('reg_periksa.no_rkm_medis', $cleanNoRawat) // Coba cari berdasarkan no_rm
+                ->orderBy('permintaan_lab.tgl_permintaan', 'desc')
+                ->orderBy('permintaan_lab.jam_permintaan', 'desc')
+                ->select('permintaan_lab.*')
+                ->get();
+                
+            if ($queryByRM->count() > 0) {
+                \Illuminate\Support\Facades\Log::info('Berhasil mendapatkan data dengan no_rkm_medis', [
+                    'no_rkm_medis' => $cleanNoRawat,
+                    'jumlah' => $queryByRM->count()
+                ]);
+                return $queryByRM;
+            }
             
-            // Jalankan query dengan fresh data
-            $dataToday = $queryToday->get();
-                          
-            // Log hasil query alternatif untuk debugging
-            \Illuminate\Support\Facades\Log::debug('Data permintaan_lab dari query alternatif', [
-                'jumlah_data' => count($dataToday),
-                'data_sample' => $dataToday->take(3)
+            // Log jika tidak menemukan data
+            \Illuminate\Support\Facades\Log::warning('Tidak menemukan data permintaan lab untuk no_rawat', [
+                'cleanNoRawat' => $cleanNoRawat,
+                'variasi' => $variasi
             ]);
             
-            if (count($dataToday) > 0) {
-                \Illuminate\Support\Facades\Log::info('Mendapatkan data hari ini sebagai alternatif', [
-                    'count' => count($dataToday),
-                    'first' => $dataToday->first()
-                ]);
-                
-                return $dataToday;
-            }
-            
-            // Jika masih belum ada data, cek total data di tabel
-            $totalData = DB::table('permintaan_lab')->count();
-            \Illuminate\Support\Facades\Log::info('Total data di tabel permintaan_lab: ' . $totalData);
-            
-            if ($totalData > 0) {
-                // Ambil 5 data terbaru untuk diagnostik
-                $latestData = DB::table('permintaan_lab')
-                              ->orderBy('tgl_permintaan', 'desc')
-                              ->orderBy('jam_permintaan', 'desc')
-                              ->limit(5)
-                              ->get();
-                              
-                \Illuminate\Support\Facades\Log::info('5 data terbaru di permintaan_lab', [
-                    'data' => $latestData
-                ]);
-                
-                // Kembalikan data terbaru sebagai fallback
-                return $latestData;
-            }
-            
-            // Tidak ada data yang ditemukan
-            \Illuminate\Support\Facades\Log::warning('Tidak ada data permintaan lab ditemukan untuk semua variasi noRawat');
             return collect();
-            
         } catch (\Exception $e) {
             // Log error
             \Illuminate\Support\Facades\Log::error('Error pada getPemeriksaanLab: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return collect();
-        } finally {
-            // Aktifkan kembali query log
-            DB::connection()->enableQueryLog();
         }
     }
 

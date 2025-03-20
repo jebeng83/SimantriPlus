@@ -130,6 +130,53 @@
                 console.warn('Baris dengan noOrder ' + noOrder + ' tidak ditemukan');
             }
         };
+
+        // Cek daftar permintaan lab kosong
+        const checkEmptyTable = function() {
+            const tbody = document.getElementById('permintaan-lab-table-body');
+            const tableRows = tbody.querySelectorAll('tr:not(.empty-row)');
+            
+            console.log('Permintaan lab table rows:', tableRows.length);
+            
+            // Jika baris tabel kosong (tidak ada data) - tambahkan diagnosa info
+            if (tableRows.length === 0) {
+                console.log('Tabel permintaan lab kosong, menambahkan diagnostic info');
+                
+                const emptyRow = document.createElement('tr');
+                emptyRow.classList.add('empty-row');
+                emptyRow.innerHTML = `
+                    <td colspan="6" class="text-center">
+                        <div class="alert alert-info">
+                            <p>Belum ada permintaan laboratorium. Silakan tambahkan permintaan baru.</p>
+                            <small class="d-block mt-1">
+                                <strong>Info Diagnostik:</strong><br>
+                                No. Rawat: {{ $encrypNoRawat ?? 'Tidak ada' }}<br>
+                                No. Rawat Decoded: {{ $noRawat ?? 'Tidak ada' }}<br>
+                                Timestamp: {{ date('Y-m-d H:i:s') }}
+                            </small>
+                            <hr>
+                            <a href="#" class="btn btn-sm btn-secondary reload-permintaan">
+                                <i class="fas fa-sync-alt"></i> Muat Ulang Data
+                            </a>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(emptyRow);
+                
+                // Tambahkan event listener untuk reload data
+                const reloadBtn = emptyRow.querySelector('.reload-permintaan');
+                if (reloadBtn) {
+                    reloadBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // Hard reload halaman
+                        window.location.reload(true);
+                    });
+                }
+            }
+        };
+        
+        // Jalankan fungsi saat halaman dimuat
+        checkEmptyTable();
     });
 </script>
 @endpush

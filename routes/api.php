@@ -34,7 +34,8 @@ Route::get('/obat/{kdObat}', [ObatController::class, 'getObat']);
 Route::post('/resep_ranap/{noRawat}', [ResepRanapController::class, 'postResepRanap']);
 Route::post('/obat/{noResep}/{kdObat}', [ObatController::class, 'hapusObat']);
 Route::post('/resep/hapus-racikan', [ResepRanapController::class, 'hapusRacikan']);
-Route::post('/ranap/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikanRanap']);
+Route::post('/ranap/resep/racikan/{noRawat}', [ResepRanapController::class, 'postResepRacikanRanap']);
+Route::get('/ranap/riwayat-peresepan/{noRawat}', [ResepRanapController::class, 'getRiwayatPeresepan']);
 
 // Rute untuk copy resep
 Route::get('/ranap/resep/copy/{noResep}', [ResepController::class, 'getDetailResep']);
@@ -50,6 +51,8 @@ Route::get('/template-lab', [LabController::class, 'getTemplateByMultipleJenisPe
 Route::get('/template-lab/check', [LabController::class, 'checkTemplateExistence']);
 Route::post('/template-lab/create-dummy', [LabController::class, 'createDummyTemplates']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);
+Route::get('/get-permintaan-lab/{noRawat}', [LabController::class, 'getPermintaanLabData']);
+Route::get('/get-detail-pemeriksaan/{noOrder}', [LabController::class, 'getDetailPemeriksaan']);
 
 // Radiologi
 Route::get('/hasil/rad/{noRawat}', [RadiologiController::class, 'getPermintaanRadiologi']);

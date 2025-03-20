@@ -1,10 +1,10 @@
 @extends('adminlte::page')
 
-@section('title', 'Form ILP Dewasa')
+@section('title', 'Form ILP')
 
 @section('content_header')
 <div class="d-flex justify-content-between align-items-center">
-   <h1>Form ILP Dewasa</h1>
+   <h1>Form ILP </h1>
    <a href="{{ route('ilp.pendaftaran') }}" class="btn btn-secondary btn-sm">
       <i class="fas fa-arrow-left mr-1"></i> Kembali
    </a>

@@ -84,11 +84,10 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                     <div class="d-flex flex-row justify-content-between" style="gap:10px">
                         <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
                             data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
-                        <button type="button" class="btn btn-success btn-block"
-                            onclick="showIcareHistory('{{$data->no_peserta ?? '0001441909697'}}', '{{$dokter ?? '102'}}')">
-                            <i class="fas fa-history mr-2"></i> i-Care BPJS
-                        </button>
                     </div>
+                </span>
+                <span class="nav-link">
+                    <x-ralan.icare-bpjs :noPeserta="$data->no_peserta ?? ''" :kodeDokter="$dokter ?? '102'" />
                 </span>
                 <span class="nav-link">
                     <div class="d-flex flex-row justify-content-between" style="gap:10px">
@@ -140,9 +139,6 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
     <livewire:component.change-phone />
     <livewire:component.change-ktp />
     <livewire:component.change-card />
-
-    <!-- Komponen BPJS iCare -->
-    <x-ralan.icare-bpjs :noPeserta="$data->no_peserta ?? ''" :kodeDokter="$dokter ?? '102'" />
 
     @push('css')
     <style>

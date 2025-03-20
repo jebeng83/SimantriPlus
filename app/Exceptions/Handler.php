@@ -159,6 +159,76 @@ class Handler extends ExceptionHandler
                 ->with('error', 'Sesi telah kedaluwarsa. Silakan coba lagi.');
         });
         
+        // Tambahkan penanganan khusus untuk SyntaxError AJAX
+        $this->renderable(function (Throwable $e, $request) {
+            // Tangani semua request AJAX/JSON dengan pola error yang konsisten
+            if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
+                Log::error('AJAX Error: ' . $e->getMessage(), [
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]);
+                
+                $status = 500;
+                
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    $status = 422;
+                } elseif ($e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                    $status = 404;
+                } elseif ($e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException) {
+                    $status = 405;
+                }
+                
+                // Periksa apakah URL mengandung pattern pemeriksaan yang bermasalah
+                if (strpos($request->fullUrl(), '/ranap/pemeriksaan') !== false) {
+                    // Tangani khusus untuk pemeriksaan ranap
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Terjadi kesalahan, silakan refresh halaman dan coba lagi.',
+                        'code' => 'SYNTAX_ERROR',
+                        'timestamp' => time()
+                    ], 200); // Tetap kembalikan 200 untuk menghindari error AJAX
+                }
+                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                    'file' => config('app.debug') ? basename($e->getFile()) : null,
+                    'line' => config('app.debug') ? $e->getLine() : null,
+                    'timestamp' => time()
+                ], $status);
+            }
+            
+            return null;
+        });
+        
+        // Penanganan khusus untuk URL pemeriksaan ranap dengan format yang sering bermasalah
+        $this->renderable(function (Throwable $e, $request) {
+            if (strpos($request->url(), '/ranap/pemeriksaan') !== false && 
+                (strpos($request->fullUrl(), 'bangsal=') !== false || 
+                 strpos($request->fullUrl(), 'no_rawat=') !== false)) {
+                
+                // Log error untuk debugging
+                Log::error('URL Error di pemeriksaan ranap: ' . $e->getMessage(), [
+                    'url' => $request->fullUrl(),
+                    'exception' => get_class($e)
+                ]);
+                
+                if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'redirect',
+                        'redirect_url' => route('ranap.pasien')
+                    ], 200);
+                }
+                
+                return redirect()->route('ranap.pasien')
+                    ->with('warning', 'Terjadi kesalahan saat memuat halaman. Silakan coba lagi.');
+            }
+            
+            return null;
+        });
+        
         // Penanganan umum untuk semua error non-produksi
         $this->renderable(function (Throwable $e, $request) {
             if (!config('app.debug')) {

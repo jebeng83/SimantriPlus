@@ -2,6 +2,12 @@ var script = document.getElementById("permintaanLab");
 var encrypNoRawat = script.getAttribute("data-encrypNoRawat");
 var token = script.getAttribute("data-token");
 
+// Cache untuk data yang jarang berubah
+var templateCache = {};
+var permintaanLabCache = null;
+var permintaanLabCacheTime = 0;
+var CACHE_VALIDITY_PERIOD = 30000; // 30 detik
+
 function getValue(name) {
     var data = [];
     var doc = document.getElementsByName(name);
@@ -20,50 +26,65 @@ function formatData (data) {
     return $data;
 };
 
-// Inisialisasi Select2 untuk jenis pemeriksaan
+// Inisialisasi komponen dengan lazy loading
 $(document).ready(function() {
-    $('.jenis').select2({
-        placeholder: 'Pilih Jenis',
-        ajax: {
-            url: '/api/jns_perawatan_lab',
-            dataType: 'json',
-            delay: 250,
-            processResults: function (data) {
-                console.log('Data jns_perawatan_lab:', data);
-                return {
-                    results: data.map(item => ({
-                        id: item.id,
-                        text: item.text,
-                        kd_jenis_prw: item.kd_jenis_prw
-                    }))
-                };
-            },
-            cache: true
-        },
-        templateResult: formatData,
-        minimumInputLength: 3
-    });
-
-    // Pasang event handler untuk perubahan pilihan
-    $('.jenis').on('select2:select select2:unselect', function(e) {
-        console.log('Select2 event:', e);
-        handleJenisPemeriksaanChange();
-    });
+    // Lazy initialization untuk Select2 - hanya inisialisasi saat panel terbuka
+    initializeLabComponents();
 });
+
+// Inisialisasi komponen lab hanya saat diperlukan untuk menghemat resource
+function initializeLabComponents() {
+    // Cek apakah komponen sudah diinisialisasi
+    if ($('.jenis').data('initialized')) {
+        return;
+    }
+    
+    // Load permintaan lab hanya jika komponen lab terlihat
+    if ($('#permintaan-lab-table-body').is(':visible')) {
+        loadPermintaanLab();
+    }
+    
+    // Inisialisasi Select2 jika belum
+    if (!$('.jenis').data('select2')) {
+        $('.jenis').select2({
+            placeholder: 'Pilih Jenis',
+            ajax: {
+                url: '/api/jns_perawatan_lab',
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: item.text,
+                            kd_jenis_prw: item.kd_jenis_prw
+                        }))
+                    };
+                },
+                cache: true
+            },
+            templateResult: formatData,
+            minimumInputLength: 3
+        });
+
+        // Pasang event handler untuk perubahan pilihan
+        $('.jenis').on('select2:select select2:unselect', function(e) {
+            handleJenisPemeriksaanChange();
+        });
+        
+        $('.jenis').data('initialized', true);
+    }
+}
 
 // Fungsi untuk menangani perubahan jenis pemeriksaan
 function handleJenisPemeriksaanChange() {
-    console.log('Jenis pemeriksaan berubah:', $('#jenis').val());
     // Hapus container template sebelumnya
     $('.template-container').remove();
     
     const selectedValues = $('#jenis').val();
     if (!selectedValues || selectedValues.length === 0) {
-        console.log('Tidak ada jenis pemeriksaan yang dipilih');
         return;
     }
-    
-    console.log('Jumlah jenis pemeriksaan dipilih:', selectedValues.length);
     
     let promises = [];
     
@@ -72,45 +93,54 @@ function handleJenisPemeriksaanChange() {
         const optionElement = $('#jenis option[value="' + value + '"]');
         const namaPemeriksaan = optionElement.text() || 'Pemeriksaan';
         
-        console.log('Memproses:', value, namaPemeriksaan);
-        
-        // Ambil template untuk setiap jenis pemeriksaan
-        const promise = getTemplateLab(value)
-            .then(response => {
-                console.log('Response template:', response);
-                if (response.status === 'sukses' && response.data && response.data.length > 0) {
-                    const templateHtml = renderTemplateCheckboxes(response.data, value, namaPemeriksaan);
-                    $('#template-area').append(templateHtml);
-                    console.log('Template berhasil ditambahkan ke #template-area');
-                } else {
-                    console.log('Tidak ada template untuk', namaPemeriksaan);
-                }
-            })
-            .catch(error => {
-                console.error('Gagal mengambil template:', error);
-            });
-            
-        promises.push(promise);
-    });
-    
-    // Tunggu semua request selesai
-    Promise.all(promises).catch(error => {
-        console.error('Ada kesalahan saat mengambil template:', error);
+        // Periksa cache terlebih dahulu
+        if (templateCache[value]) {
+            const templateHtml = renderTemplateCheckboxes(templateCache[value], value, namaPemeriksaan);
+            $('#template-area').append(templateHtml);
+        } else {
+            // Ambil template untuk setiap jenis pemeriksaan
+            const promise = getTemplateLab(value)
+                .then(response => {
+                    if (response.status === 'sukses' && response.data && response.data.length > 0) {
+                        // Simpan ke cache
+                        templateCache[value] = response.data;
+                        
+                        const templateHtml = renderTemplateCheckboxes(response.data, value, namaPemeriksaan);
+                        $('#template-area').append(templateHtml);
+                    }
+                })
+                .catch(error => {
+                    // Kesalahan silenced pada production
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        console.error('Gagal mengambil template:', error);
+                    }
+                });
+                
+            promises.push(promise);
+        }
     });
 }
 
 // Fungsi untuk mengambil template berdasarkan jenis pemeriksaan
 function getTemplateLab(kdJenisPrw) {
-    console.log('Mengambil template untuk kode:', kdJenisPrw);
     return new Promise((resolve, reject) => {
+        // Gunakan cache jika tersedia
+        if (templateCache[kdJenisPrw]) {
+            return resolve({
+                status: 'sukses',
+                data: templateCache[kdJenisPrw]
+            });
+        }
+        
         $.ajax({
             url: '/api/template-lab/' + kdJenisPrw,
             type: 'GET',
             dataType: 'json',
             success: function(response) {
-                console.log('Response dari server:', response);
                 if (response.status === 'sukses' && response.data) {
-                    // Tidak perlu memproses ulang data karena sudah sesuai format dari backend
+                    // Simpan ke cache
+                    templateCache[kdJenisPrw] = response.data;
+                    
                     resolve({
                         status: 'sukses',
                         data: response.data
@@ -123,24 +153,21 @@ function getTemplateLab(kdJenisPrw) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error saat mengambil template:', error);
                 reject(error);
             }
         });
     });
 }
 
-// Fungsi untuk menampilkan template dalam bentuk checkbox
+// Fungsi untuk menampilkan template dalam bentuk checkbox - optimized
 function renderTemplateCheckboxes(templates, kdJenisPrw, namaPemeriksaan) {
-    console.log('Render template untuk', namaPemeriksaan, 'dengan data:', templates);
-    
     if (!templates || templates.length === 0) {
-        console.log('Tidak ada template untuk', namaPemeriksaan);
         return '';
     }
     
-    let html = `
-        <div class="template-container mt-2" data-jenis="${kdJenisPrw}">
+    // Gunakan array concatenation untuk performa lebih baik dengan string panjang
+    let htmlParts = [
+        `<div class="template-container mt-2" data-jenis="${kdJenisPrw}">
             <div class="card card-info card-outline">
                 <div class="card-header">
                     <h3 class="card-title">Template untuk ${namaPemeriksaan}</h3>
@@ -155,14 +182,11 @@ function renderTemplateCheckboxes(templates, kdJenisPrw, namaPemeriksaan) {
                                 <th>Satuan</th>
                             </tr>
                         </thead>
-                        <tbody>
-    `;
+                        <tbody>`
+    ];
     
     templates.forEach(template => {
-        // Log untuk debugging
-        console.log('Rendering template:', template);
-
-        html += `
+        htmlParts.push(`
             <tr>
                 <td class="text-center">
                     <div class="form-check">
@@ -184,28 +208,22 @@ function renderTemplateCheckboxes(templates, kdJenisPrw, namaPemeriksaan) {
                 <td>${template.nilai_rujukan}</td>
                 <td>${template.satuan}</td>
             </tr>
-        `;
+        `);
     });
     
-    html += `
+    htmlParts.push(`
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    `;
+    `);
     
-    return html;
+    return htmlParts.join('');
 }
-
-// Hapus handler untuk tombol simpan lama jika ada
-$('#simpanPermintaanLab').off('click');
 
 function hapusPermintaanLab(noOrder, event){
     event.preventDefault();
-    
-    // Tambahkan console log untuk debugging
-    console.log('Menghapus permintaan lab dengan noOrder:', noOrder);
     
     Swal.fire({
         title: 'Apakah anda yakin?',
@@ -236,8 +254,6 @@ function hapusPermintaanLab(noOrder, event){
                         });
                     },
                 success: function(response){
-                    console.log('Respons hapus dari server:', response);
-                    
                     if(response.status == 'sukses'){
                         Swal.fire({
                             title: "Sukses",
@@ -245,23 +261,20 @@ function hapusPermintaanLab(noOrder, event){
                             icon: "success",
                             confirmButtonText: "OK",
                         }).then(() => {
-                            console.log('Menghapus baris dari tabel...');
-                            
                             // Gunakan fungsi removeRowFromTable jika tersedia
                             if (typeof window.removeRowFromTable === 'function') {
                                 window.removeRowFromTable(noOrder);
+                                
+                                // Hapus dari cache jika ada
+                                if (permintaanLabCache) {
+                                    permintaanLabCache = permintaanLabCache.filter(item => item.noorder !== noOrder);
+                                }
                             } else {
                                 // Fallback ke reload halaman jika fungsi tidak tersedia
-                                console.log('Fungsi removeRowFromTable tidak ditemukan, reload halaman...');
-                                
-                                // Hapus cache browser lalu refresh
-                                const currentUrl = window.location.href.split('?')[0];
-                                const refreshUrl = currentUrl + '?nocache=' + new Date().getTime();
-                                window.location.href = refreshUrl;
+                                window.location.reload(true);
                             }
                         });
                     }else{
-                        console.error('Error hapus dari server:', response.message);
                         Swal.fire({
                             title: "Gagal",
                             text: response.message ?? "Data gagal dihapus",
@@ -271,7 +284,6 @@ function hapusPermintaanLab(noOrder, event){
                     }
                 },
                 error: function(xhr, status, error){
-                    console.error('Error AJAX hapus:', error);
                     // Menampilkan informasi error yang lebih detail
                     let errorMessage = "Data gagal dihapus";
                     if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -291,6 +303,21 @@ function hapusPermintaanLab(noOrder, event){
 }
 
 $(document).ready(function() {
+    // Event untuk mendeteksi saat tab permintaan lab dibuka
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        const targetId = $(e.target).attr('href');
+        if (targetId === '#permintaanLab' || targetId.indexOf('permintaan-lab') !== -1) {
+            initializeLabComponents();
+        }
+    });
+    
+    // Event untuk kartu yang collapsible
+    $('.card-collapse').on('shown.bs.collapse', function() {
+        if ($(this).find('#permintaan-lab-table-body').length) {
+            initializeLabComponents();
+        }
+    });
+    
     // Modifikasi fungsi simpan untuk menyertakan template yang dipilih
     $('#form-lab').on('submit', function(e) {
         e.preventDefault();
@@ -337,10 +364,6 @@ function simpanPermintaanLab(data) {
         return;
     }
     
-    // Tambahkan console log untuk debugging
-    console.log('Mengirim permintaan lab dengan data:', data);
-    console.log('Menggunakan no_rawat:', encrypNoRawat);
-    
     $.ajax({
         url: '/api/permintaan-lab/' + encrypNoRawat,
         type: 'POST',
@@ -354,9 +377,11 @@ function simpanPermintaanLab(data) {
             $('#btn-simpan').html('<i class="fas fa-spinner fa-spin"></i> Proses...');
         },
         success: function(response) {
-            console.log('Respons dari server:', response);
-            
             if (response.status === 'sukses') {
+                // Invalidate cache
+                permintaanLabCache = null;
+                permintaanLabCacheTime = 0;
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil',
@@ -365,11 +390,9 @@ function simpanPermintaanLab(data) {
                     confirmButtonText: 'OK'
                 }).then((result) => {
                     // Reload halaman dengan hard refresh
-                    console.log('Melakukan refresh halaman...');
                     window.location.reload(true);
                 });
             } else {
-                console.error('Error dari server:', response.message);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -380,7 +403,6 @@ function simpanPermintaanLab(data) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error AJAX:', xhr.responseText);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -390,4 +412,240 @@ function simpanPermintaanLab(data) {
             $('#btn-simpan').html('Simpan');
         }
     });
+}
+
+// Fungsi untuk memuat data permintaan lab dari server - optimized
+function loadPermintaanLab() {
+    const encrypNoRawat = document.getElementById('permintaanLab').getAttribute('data-encrypNoRawat');
+    
+    // Gunakan cache jika masih valid
+    const now = Date.now();
+    if (permintaanLabCache && (now - permintaanLabCacheTime < CACHE_VALIDITY_PERIOD)) {
+        renderPermintaanLabTable(permintaanLabCache);
+        return;
+    }
+    
+    // Tambahkan indikator loading di tbody
+    $('#permintaan-lab-table-body').html(`
+        <tr>
+            <td colspan="6" class="text-center">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <p class="mt-2">Memuat data permintaan lab...</p>
+            </td>
+        </tr>
+    `);
+    
+    // Validasi parameter
+    if (!encrypNoRawat || encrypNoRawat === 'undefined' || encrypNoRawat === 'null') {
+        $('#permintaan-lab-table-body').html(`
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="alert alert-danger">
+                        <p>Error: Parameter tidak valid</p>
+                        <small class="d-block mt-1">
+                            <button class="btn btn-sm btn-outline-danger mt-2" onclick="window.location.reload(true)">
+                                <i class="fas fa-sync-alt"></i> Reload Halaman
+                            </button>
+                        </small>
+                    </div>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    // Kirim permintaan AJAX
+    $.ajax({
+        url: '/api/get-permintaan-lab/' + encrypNoRawat,
+        type: 'GET',
+        dataType: 'json',
+        timeout: 15000, // 15 detik timeout
+        success: function(response) {
+            if (response.status === 'sukses' && response.data && response.data.length > 0) {
+                // Simpan ke cache
+                permintaanLabCache = response.data;
+                permintaanLabCacheTime = now;
+                
+                renderPermintaanLabTable(response.data);
+            } else {
+                // Coba fallback dengan memuat dari DOM yang sudah ada
+                const existingRows = document.querySelectorAll('#permintaan-lab-table-body tr[id^="row-"]');
+                
+                if (existingRows.length > 0) {
+                    // Data sudah ada di DOM, tidak perlu melakukan apa-apa
+                    $('#permintaan-lab-table-body').html('');
+                    existingRows.forEach(row => {
+                        $('#permintaan-lab-table-body').append(row.outerHTML);
+                    });
+                } else {
+                    // Tampilkan pesan jika tidak ada data
+                    $('#permintaan-lab-table-body').html(`
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="alert alert-info">
+                                    <p>Belum ada permintaan laboratorium. Silakan tambahkan permintaan baru.</p>
+                                    <button class="btn btn-sm btn-secondary mt-2" onclick="window.location.reload(true)">
+                                        <i class="fas fa-sync-alt"></i> Muat Ulang Data
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            // Coba fallback dengan memuat dari DOM yang sudah ada
+            const existingRows = document.querySelectorAll('#permintaan-lab-table-body tr[id^="row-"]');
+            
+            if (existingRows.length > 0) {
+                // Data sudah ada di DOM, tidak perlu melakukan apa-apa
+                $('#permintaan-lab-table-body').html('');
+                existingRows.forEach(row => {
+                    $('#permintaan-lab-table-body').append(row.outerHTML);
+                });
+            } else {
+                // Tampilkan pesan error
+                $('#permintaan-lab-table-body').html(`
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="alert alert-danger">
+                                <p>Terjadi kesalahan saat memuat data permintaan lab</p>
+                                <button class="btn btn-sm btn-outline-danger mt-2" onclick="loadPermintaanLab()">
+                                    <i class="fas fa-sync-alt"></i> Coba Lagi
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+    });
+}
+
+// Fungsi untuk merender tabel permintaan lab - optimized
+function renderPermintaanLabTable(data) {
+    // Kosongkan tabel
+    $('#permintaan-lab-table-body').empty();
+    
+    // Jika tidak ada data, tampilkan pesan
+    if (!data || data.length === 0) {
+        $('#permintaan-lab-table-body').html(`
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="alert alert-info">
+                        <p>Belum ada permintaan laboratorium. Silakan tambahkan permintaan baru.</p>
+                    </div>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    // Render HTML dengan strategi satu string (lebih efisien)
+    let html = '';
+    
+    data.forEach(item => {
+        html += `
+            <tr id="row-${item.noorder}">
+                <td scope="row">${item.noorder || 'N/A'}</td>
+                <td>${item.tgl_permintaan || 'N/A'} ${item.jam_permintaan || ''}</td>
+                <td>${item.informasi_tambahan || 'N/A'}</td>
+                <td>${item.diagnosa_klinis || 'N/A'}</td>
+                <td id="detail-${item.noorder}">
+                    <span class="text-muted">Memuat detail...</span>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm hapus-lab-btn" data-noorder="${item.noorder}"
+                        onclick='hapusPermintaanLab("${item.noorder}", event)'>Hapus</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    $('#permintaan-lab-table-body').html(html);
+    
+    // Lazy load detail pemeriksaan hanya untuk item yang terlihat
+    lazyLoadVisibleDetails(data);
+}
+
+// Fungsi untuk load detail secara lazy hanya untuk baris yang terlihat
+function lazyLoadVisibleDetails(data) {
+    // Fungsi untuk mengecek apakah elemen terlihat
+    function isElementInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+    
+    // Fungsi untuk load detail pemeriksaan yang terlihat
+    function loadVisibleDetails() {
+        data.forEach(item => {
+            const detailElement = document.getElementById(`detail-${item.noorder}`);
+            if (detailElement && isElementInViewport(detailElement) && !detailElement.dataset.loaded) {
+                detailElement.dataset.loaded = true;
+                loadPemeriksaanDetail(item.noorder);
+            }
+        });
+    }
+    
+    // Load detail untuk baris yang terlihat saat ini
+    loadVisibleDetails();
+    
+    // Load tambahan ketika user melakukan scroll
+    $(window).on('scroll', loadVisibleDetails);
+}
+
+// Fungsi untuk memuat detail pemeriksaan - optimized
+function loadPemeriksaanDetail(noOrder) {
+    // Gunakan cache jika tersedia
+    const cacheKey = `detail_${noOrder}`;
+    if (templateCache[cacheKey]) {
+        renderDetailPemeriksaan(noOrder, templateCache[cacheKey]);
+        return;
+    }
+    
+    $.ajax({
+        url: '/api/get-detail-pemeriksaan/' + noOrder,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'sukses' && response.data && response.data.length > 0) {
+                // Simpan ke cache
+                templateCache[cacheKey] = response.data;
+                renderDetailPemeriksaan(noOrder, response.data);
+            } else {
+                $(`#detail-${noOrder}`).html('<span class="text-muted">Tidak ada detail pemeriksaan</span>');
+            }
+        },
+        error: function(error) {
+            $(`#detail-${noOrder}`).html('<span class="text-danger">Gagal memuat detail</span>');
+        }
+    });
+}
+
+// Fungsi untuk render detail pemeriksaan
+function renderDetailPemeriksaan(noOrder, data) {
+    if (!data || data.length === 0) {
+        $(`#detail-${noOrder}`).html('<span class="text-muted">Tidak ada detail pemeriksaan</span>');
+        return;
+    }
+    
+    let detailHtml = '<ul class="mb-0 pl-3">';
+    
+    data.forEach(item => {
+        detailHtml += `<li>${item.nm_perawatan || 'Pemeriksaan'}</li>`;
+    });
+    
+    detailHtml += '</ul>';
+    
+    $(`#detail-${noOrder}`).html(detailHtml);
 }

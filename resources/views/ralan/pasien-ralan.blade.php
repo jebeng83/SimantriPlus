@@ -80,7 +80,7 @@
                             <div class="d-flex">
                                 <select id="filterStatus" class="filter-status-select">
                                     <option value="">Semua Status</option>
-                                    <option value="Belum">Menunggu (Belum)</option>
+                                    <option value="Belum" selected>Menunggu (Belum)</option>
                                     <option value="Sudah">Selesai (Sudah)</option>
                                 </select>
                                 <button class="btn btn-sm btn-primary ml-2" id="applyFilterBtn">
@@ -182,7 +182,7 @@
                                         </button>
                                         <div class="dropdown-menu" aria-labelledby="dropdownMenu-{{$row->no_rawat}}">
                                             <a href="/ilp/dewasa/{{$row->no_rawat}}" class="dropdown-item">
-                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Form ILP Dewasa
+                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Pelayanan ILP
                                             </a>
                                         </div>
                                     </div>
@@ -1050,6 +1050,13 @@
         
         // Menginisialisasi data dari tabel
         initializePaginationData();
+        
+        // Set filter status default dan terapkan filter saat halaman dimuat
+        $(document).ready(function() {
+            // Filter otomatis dengan nilai "Belum" saat halaman dimuat
+            const defaultStatus = $('#filterStatus').val(); // Ambil nilai dari select (yang sudah dipilih "Belum")
+            filterAndDisplayPasien(defaultStatus);
+        });
         
         // Tambahkan event listener untuk tombol filter status
         $('#filterStatus').on('change', function() {

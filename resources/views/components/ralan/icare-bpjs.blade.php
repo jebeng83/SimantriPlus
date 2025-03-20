@@ -1,6 +1,6 @@
 @props(['noPeserta', 'kodeDokter'])
 
-<div class="mb-3">
+<div>
     <button type="button" class="btn btn-success btn-block" id="btnIcareBpjs{{ rand() }}"
         onclick="showIcareHistory('{{ $noPeserta ?? '0001441909697' }}', '{{ $kodeDokter ?? '102' }}')">
         <i class="fas fa-history mr-2"></i> i-Care BPJS

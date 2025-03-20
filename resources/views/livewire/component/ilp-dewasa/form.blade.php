@@ -388,7 +388,7 @@
          <!-- Form Pemeriksaan -->
          <div class="ilp-form-section">
             <div class="ilp-form-header">
-               <i class="fas fa-user-md"></i> Form Pemeriksaan ILP Dewasa
+               <i class="fas fa-user-md"></i> Form Pemeriksaan ILP
             </div>
             <div class="ilp-form-body">
                <!-- Data Identitas -->
@@ -433,7 +433,7 @@
                      <div class="form-group">
                         <label><i class="fas fa-user-injured mr-1"></i> Riwayat Penyakit Diri Sendiri:</label>
                         <select wire:model="riwayat_diri_sendiri" class="form-control">
-                           <option value="">- Pilih -</option>
+                           <option value="Normal">Normal</option>
                            <option value="Hipertensi">Hipertensi</option>
                            <option value="Diabetes militus">Diabetes Militus</option>
                            <option value="Stroke">Stroke</option>
@@ -442,7 +442,6 @@
                            <option value="Kanker">Kanker</option>
                            <option value="Kolesterol">Kolesterol</option>
                            <option value="Hepatitis">Hepatitis</option>
-                           <option value="Normal">Normal</option>
                         </select>
                      </div>
                   </div>
@@ -450,7 +449,7 @@
                      <div class="form-group">
                         <label><i class="fas fa-users mr-1"></i> Riwayat Penyakit Keluarga:</label>
                         <select wire:model="riwayat_keluarga" class="form-control">
-                           <option value="">- Pilih -</option>
+                           <option value="Normal">Normal</option>
                            <option value="Hipertensi">Hipertensi</option>
                            <option value="Diabetes militus">Diabetes Militus</option>
                            <option value="Stroke">Stroke</option>
@@ -459,7 +458,6 @@
                            <option value="Kanker">Kanker</option>
                            <option value="Kolesterol">Kolesterol</option>
                            <option value="Hepatitis">Hepatitis</option>
-                           <option value="Normal">Normal</option>
                         </select>
                      </div>
                   </div>
@@ -474,9 +472,8 @@
                      <div class="form-group">
                         <label><i class="fas fa-smoking mr-1"></i> Merokok:</label>
                         <select wire:model="merokok" class="form-control">
-                           <option value="">Tidak</option>
-                           <option value="Ya">Ya</option>
                            <option value="Tidak">Tidak</option>
+                           <option value="Ya">Ya</option>
                         </select>
                      </div>
                   </div>
@@ -543,7 +540,7 @@
                      <div class="form-group">
                         <label><i class="fas fa-eye mr-1"></i> Metode Mata:</label>
                         <select wire:model="metode_mata" class="form-control">
-                           <option value="">Snelen Card</option>
+                           <option value="Snelen Card">Snelen Card</option>
                            <option value="hitungjari">Hitung Jari</option>
                            <option value="visus">Visus</option>
                            <option value="pinhole">Pinhole</option>
@@ -555,7 +552,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-eye-dropper mr-1"></i> Hasil Mata:</label>
                         <select wire:model="hasil_mata" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="normal">Normal</option>
                            <option value="tidak normal">Tidak Normal</option>
                         </select>
@@ -565,7 +561,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-deaf mr-1"></i> Tes Berbisik:</label>
                         <select wire:model="tes_berbisik" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="normal">Normal</option>
                            <option value="tidak normal">Tidak Normal</option>
                         </select>
@@ -575,7 +570,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-tooth mr-1"></i> Gigi:</label>
                         <select wire:model="gigi" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="normal">Normal</option>
                            <option value="caries">Caries</option>
                            <option value="jaringan Periodental">Jaringan Periodental</option>
@@ -594,7 +588,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-brain mr-1"></i> Kesehatan Jiwa:</label>
                         <select wire:model="kesehatan_jiwa" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="normal">Normal</option>
                            <option value="gangguan emosional">Gangguan Emosional</option>
                            <option value="gangguan perilaku">Gangguan Perilaku</option>
@@ -611,7 +604,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-liver mr-1"></i> Fungsi Hati:</label>
                         <select wire:model="fungsi_hari" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="Normal">Normal</option>
                            <option value="Hepatitis B">Hepatitis B</option>
                            <option value="Hepatitis C">Hepatitis C</option>
@@ -630,7 +622,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-syringe mr-1"></i> Status TT:</label>
                         <select wire:model="status_tt" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="-">-</option>
                            <option value="1">1</option>
                            <option value="2">2</option>
@@ -644,7 +635,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-virus mr-1"></i> Penyakit Lain Catin:</label>
                         <select wire:model="penyakit_lain_catin" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="Normal">Normal</option>
                            <option value="Anemia">Anemia</option>
                            <option value="HIV">HIV</option>
@@ -657,7 +647,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-venus mr-1"></i> Kanker Payudara:</label>
                         <select wire:model="kanker_payudara" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="Normal">Normal</option>
                            <option value="ada benjolan">Ada Benjolan</option>
                         </select>
@@ -667,7 +656,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-check-circle mr-1"></i> IVA Test:</label>
                         <select wire:model="iva_test" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="Negatif">Negatif</option>
                            <option value="Positif">Positif</option>
                         </select>
@@ -727,9 +715,8 @@
                      <div class="form-group">
                         <label><i class="fas fa-heart mr-1"></i> Risiko Jantung:</label>
                         <select wire:model="resiko_jantung" class="form-control">
-                           <option value="">- Pilih -</option>
-                           <option value="Ya">Ya</option>
                            <option value="Tidak">Tidak</option>
+                           <option value="Ya">Ya</option>
                         </select>
                      </div>
                   </div>
@@ -737,7 +724,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-chart-pie mr-1"></i> Charta:</label>
                         <select wire:model="charta" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="<10%">&lt;10%</option>
                            <option value="10% - 20%">10% - 20%</option>
                            <option value="20% - 30%">20% - 30%</option>
@@ -750,9 +736,8 @@
                      <div class="form-group">
                         <label><i class="fas fa-ribbon mr-1"></i> Risiko Kanker Usus:</label>
                         <select wire:model="resiko_kanker_usus" class="form-control">
-                           <option value="">- Pilih -</option>
-                           <option value="Ya">Ya</option>
                            <option value="Tidak">Tidak</option>
+                           <option value="Ya">Ya</option>
                         </select>
                      </div>
                   </div>
@@ -760,7 +745,6 @@
                      <div class="form-group">
                         <label><i class="fas fa-clipboard-check mr-1"></i> Skor PUMA:</label>
                         <select wire:model="skor_puma" class="form-control">
-                           <option value="">- Pilih -</option>
                            <option value="< 6">&lt; 6</option>
                            <option value="> 6">&gt; 6</option>
                         </select>
