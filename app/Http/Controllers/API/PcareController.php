@@ -32,13 +32,20 @@ class PcareController extends Controller
                 ], 400);
             }
 
+            // Cek cache dulu
+            $cacheKey = 'peserta_' . $noKartu;
+            if (\Cache::has($cacheKey)) {
+                Log::info('PCare Get Peserta From Cache', ['noKartu' => $noKartu]);
+                return response()->json(\Cache::get($cacheKey));
+            }
+
             // Log request
             Log::info('PCare Get Peserta Request', [
                 'noKartu' => $noKartu,
                 'timestamp' => now()
             ]);
 
-            // Format endpoint untuk format lama
+            // Format endpoint
             $endpoint = "peserta/{$noKartu}";
 
             // Debugging info - tampilkan semua variabel environment yang diperlukan
@@ -62,6 +69,9 @@ class PcareController extends Controller
 
             // Cek response
             if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
+                // Simpan ke cache selama 6 jam
+                \Cache::put($cacheKey, $response, now()->addHours(6));
+                
                 // Format response sesuai dengan contoh Java
                 $peserta = $response['response'];
                 
@@ -75,11 +85,11 @@ class PcareController extends Controller
                     ['Mulai Aktif', ': '.$peserta['tglMulaiAktif']],
                     ['Akhir Berlaku', ': '.$peserta['tglAkhirBerlaku']],
                     ['Provider Umum', ':'],
-                    ['       Kode Provider', ': '.$peserta['kdProviderPst']['kdProvider']],
-                    ['       Nama Provider', ': '.$peserta['kdProviderPst']['nmProvider']],
+                    ['       Kode Provider', ': '.($peserta['kdProviderPst']['kdProvider'] ?? '-')],
+                    ['       Nama Provider', ': '.($peserta['kdProviderPst']['nmProvider'] ?? '-')],
                     ['Provider Gigi', ':'],
-                    ['       Kode Provider', ': '.$peserta['kdProviderGigi']['kdProvider']],
-                    ['       Nama Provider', ': '.$peserta['kdProviderGigi']['nmProvider']],
+                    ['       Kode Provider', ': '.($peserta['kdProviderGigi']['kdProvider'] ?? '-')],
+                    ['       Nama Provider', ': '.($peserta['kdProviderGigi']['nmProvider'] ?? '-')],
                     ['Kelas Tanggungan', ':'],
                     ['       Kode Kelas', ': '.$peserta['jnsKelas']['kode']],
                     ['       Nama Kelas', ': '.$peserta['jnsKelas']['nama']],
@@ -89,14 +99,14 @@ class PcareController extends Controller
                     ['Golongan Darah', ': '.$peserta['golDarah']],
                     ['Nomor HP', ': '.$peserta['noHP']],
                     ['Nomor KTP', ': '.$peserta['noKTP']],
-                    ['Peserta Prolanis', ': '.$peserta['pstProl']],
-                    ['Peserta PRB', ': '.$peserta['pstPrb']],
+                    ['Peserta Prolanis', ': '.($peserta['pstProl'] ?? '-')],
+                    ['Peserta PRB', ': '.($peserta['pstPrb'] ?? '-')],
                     ['Status', ': '.$peserta['ketAktif']],
                     ['Asuransi/COB', ':'],
-                    ['       Kode Asuransi', ': '.$peserta['asuransi']['kdAsuransi']],
-                    ['       Nama Asuransi', ': '.$peserta['asuransi']['nmAsuransi']],
-                    ['       Nomer Asuransi', ': '.$peserta['asuransi']['noAsuransi']],
-                    ['       COB', ': '.$peserta['asuransi']['cob']],
+                    ['       Kode Asuransi', ': '.($peserta['asuransi']['kdAsuransi'] ?? '-')],
+                    ['       Nama Asuransi', ': '.($peserta['asuransi']['nmAsuransi'] ?? '-')],
+                    ['       Nomer Asuransi', ': '.($peserta['asuransi']['noAsuransi'] ?? '-')],
+                    ['       COB', ': '.($peserta['asuransi']['cob'] ? 'Ya' : 'Tidak')],
                     ['Tunggakan', ': '.$peserta['tunggakan']]
                 ];
 
@@ -145,20 +155,28 @@ class PcareController extends Controller
                 ], 400);
             }
 
+            // Cek cache dulu
+            $cacheKey = 'peserta_nik_' . $nik;
+            if (\Cache::has($cacheKey)) {
+                Log::info('PCare Get Peserta By NIK From Cache', ['nik' => $nik]);
+                return response()->json(\Cache::get($cacheKey));
+            }
+
             // Log request
             Log::info('PCare Get Peserta By NIK Request', [
                 'nik' => $nik,
                 'timestamp' => now()
             ]);
 
-            // Format endpoint untuk format lama
+            // Format endpoint
             $endpoint = "peserta/nik/{$nik}";
 
             // Kirim request ke PCare
             $response = $this->requestPcare($endpoint);
 
-            // Cek response
+            // Cek response dan simpan ke cache
             if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
+                \Cache::put($cacheKey, $response, now()->addHours(6));
                 return response()->json($response);
             }
 
@@ -462,10 +480,7 @@ class PcareController extends Controller
     }
 
     /**
-     * Mendaftarkan kunjungan sehat ke PCare BPJS
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Melakukan pendaftaran kunjungan ke PCare
      */
     public function addPendaftaran(Request $request)
     {
@@ -494,17 +509,52 @@ class PcareController extends Controller
                 'kdDiag2' => 'nullable|string',
                 'kdDiag3' => 'nullable|string',
                 'rujukBalik' => 'nullable|integer',
+                'kdSadar' => 'nullable|string',
             ]);
+
+            // Validasi format tanggal (harus DD-MM-YYYY)
+            if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $validatedData['tglDaftar'])) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 422,
+                        'message' => 'Format tanggal harus DD-MM-YYYY'
+                    ],
+                    'response' => null
+                ], 422);
+            }
+
+            // Validasi format nomor kartu (harus 13 digit)
+            if (!preg_match('/^\d{13}$/', $validatedData['noKartu'])) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 422,
+                        'message' => 'Nomor kartu harus 13 digit'
+                    ],
+                    'response' => null
+                ], 422);
+            }
 
             // Dapatkan kode dokter dari tabel maping_dokter_pcare jika tidak disediakan
             $kdDokter = $validatedData['kdDokter'] ?? null;
+            
             if (empty($kdDokter)) {
-                // Ambil kode dokter default dari tabel maping
-                $dokter = \DB::table('maping_dokter_pcare')->first();
-                if ($dokter) {
-                    $kdDokter = $dokter->kd_dokter_pcare;
-                } else {
-                    throw new \Exception('Tidak ada dokter yang terdaftar di PCare');
+                try {
+                    // Ambil kode dokter default dari tabel maping
+                    $dokter = \DB::table('maping_dokter_pcare')->first();
+                    if ($dokter) {
+                        $kdDokter = $dokter->kd_dokter_pcare;
+                        Log::info('PCare Pendaftaran Dokter', [
+                            'dokter_id' => $dokter->kd_dokter,
+                            'dokter_pcare' => $kdDokter
+                        ]);
+                    } else {
+                        throw new \Exception('Tidak ada dokter yang terdaftar di PCare');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('PCare Pendaftaran Error - Database', [
+                        'message' => $e->getMessage()
+                    ]);
+                    throw new \Exception('Gagal mendapatkan data dokter: ' . $e->getMessage());
                 }
             }
 
@@ -513,7 +563,7 @@ class PcareController extends Controller
 
             // Siapkan data pendaftaran
             $pendaftaranData = [
-                "kdProviderPeserta" => env('BPJS_PCARE_KODE_PPK', '11251616'),
+                "kdProviderPeserta" => $validatedData['kdProviderPeserta'] ?? env('BPJS_PCARE_KODE_PPK', '11251616'),
                 "tglDaftar" => $validatedData['tglDaftar'],
                 "noKartu" => $validatedData['noKartu'],
                 "kdPoli" => $validatedData['kdPoli'] ?? '021',
@@ -529,21 +579,38 @@ class PcareController extends Controller
                 "rujukBalik" => $validatedData['rujukBalik'] ?? 0,
                 "kdTkp" => $validatedData['kdTkp'] ?? '10',
                 "kdDokter" => $kdDokter,
-                "kdSadar" => "01",
+                "kdSadar" => $validatedData['kdSadar'] ?? "01",
             ];
+
+            // Log data pendaftaran untuk debugging
+            Log::info('PCare Pendaftaran Request Data', [
+                'request' => $pendaftaranData,
+            ]);
 
             // Kirim request ke PCare API dengan content-type: text/plain
             $response = $this->requestPcare($endpoint, 'POST', $pendaftaranData, 'text/plain');
 
             // Log response untuk debugging
             Log::info('PCare Pendaftaran Response', [
-                'request' => $pendaftaranData,
-                'response' => $response,
+                'status' => isset($response['metaData']) ? $response['metaData']['code'] : 'unknown',
+                'message' => isset($response['metaData']) ? $response['metaData']['message'] : 'unknown',
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
 
+            // Cek jika response menunjukkan kesalahan
+            if (isset($response['metaData']) && $response['metaData']['code'] != 200 && $response['metaData']['code'] != 201) {
+                Log::warning('PCare Pendaftaran Failed', [
+                    'response' => $response,
+                    'request' => $pendaftaranData
+                ]);
+            }
+
             return response()->json($response);
         } catch (ValidationException $e) {
+            Log::error('PCare Pendaftaran Validation Error', [
+                'errors' => $e->errors()
+            ]);
+            
             return response()->json([
                 'metaData' => [
                     'code' => 422,
@@ -567,3 +634,4 @@ class PcareController extends Controller
         }
     }
 } 
+

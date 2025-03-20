@@ -126,6 +126,99 @@
             }
         }
     });
+
+    // Tangani error JavaScript secara global
+    window.addEventListener('error', function(event) {
+        console.error('JavaScript Error:', event.error);
+        
+        // Jika error adalah SyntaxError dan berkaitan dengan 'Unexpected end of input'
+        if (event.error instanceof SyntaxError && event.error.message.includes('Unexpected end of input')) {
+            console.log('Menangani SyntaxError: Unexpected end of input');
+            
+            // Jika halaman sedang dimuat, refresh halaman sekali
+            if (!window.syntaxErrorHandled) {
+                window.syntaxErrorHandled = true;
+                
+                // Tampilkan pesan ke pengguna
+                Swal.fire({
+                    title: 'Terjadi kesalahan',
+                    text: 'Halaman akan dimuat ulang untuk memperbaiki masalah',
+                    icon: 'warning',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(function() {
+                    location.reload();
+                });
+            }
+        }
+    });
+    
+    // Tambahkan fungsi untuk mendeteksi dan menangani error AJAX
+    $(document).ajaxError(function(event, jqXHR, settings, thrownError) {
+        console.error('AJAX Error:', thrownError);
+        
+        // Jika error terkait SyntaxError atau unexpected token
+        if (thrownError === 'SyntaxError' || (jqXHR.responseText && jqXHR.responseText.includes('Unexpected token'))) {
+            console.log('Menangani AJAX SyntaxError');
+            
+            // Tampilkan pesan error dengan Swal
+            Swal.fire({
+                title: 'Terjadi kesalahan',
+                text: 'Sistem mengalami gangguan. Silakan coba lagi.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            
+            // Cegah error lanjutan
+            event.preventDefault();
+            return false;
+        }
+    });
+
+    // Tambahkan patcher untuk JSON agar lebih toleran
+    var originalParse = JSON.parse;
+    JSON.parse = function(text) {
+        try {
+            return originalParse(text);
+        } catch (e) {
+            console.error('JSON Parse Error:', e, 'pada teks:', text);
+            
+            // Log Error untuk debugging
+            if (typeof text === 'string') {
+                console.log('JSON Error pada text: ' + text.substring(0, 100) + (text.length > 100 ? '...' : ''));
+                
+                // Coba perbaiki JSON yang rusak dengan regex
+                var fixedText = text;
+                
+                // Fix kasus umum: trailing comma in object/array
+                fixedText = fixedText.replace(/,\s*([\]}])/g, '$1');
+                
+                // Fix kasus: missing quotes around property names
+                fixedText = fixedText.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+                
+                // Fix kasus: single quotes instead of double quotes
+                fixedText = fixedText.replace(/'/g, '"');
+                
+                try {
+                    return originalParse(fixedText);
+                } catch (fixError) {
+                    console.error('Gagal memperbaiki JSON:', fixError);
+                    return {
+                        status: 'error',
+                        message: 'Invalid JSON response',
+                        original_text: text.length > 100 ? text.substring(0, 100) + '...' : text
+                    };
+                }
+            }
+            
+            // Fallback untuk non-string
+            return {
+                status: 'error',
+                message: 'Invalid JSON response', 
+                error: e.message
+            };
+        }
+    };
 </script>
 @stop
 

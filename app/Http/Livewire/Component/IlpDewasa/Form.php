@@ -476,6 +476,75 @@ class Form extends Component
                 }
             }
             
+            // Mengatur nilai default untuk field enum agar tidak null saat disimpan
+            if (empty($this->riwayat_diri_sendiri)) {
+                $this->riwayat_diri_sendiri = 'Normal';
+            }
+            
+            if (empty($this->riwayat_keluarga)) {
+                $this->riwayat_keluarga = 'Normal';
+            }
+            
+            if (empty($this->merokok)) {
+                $this->merokok = 'Tidak';
+            }
+            
+            if (empty($this->metode_mata)) {
+                $this->metode_mata = 'snelen card';
+            }
+            
+            if (empty($this->hasil_mata)) {
+                $this->hasil_mata = 'normal';
+            }
+            
+            if (empty($this->tes_berbisik)) {
+                $this->tes_berbisik = 'normal';
+            }
+            
+            if (empty($this->gigi)) {
+                $this->gigi = 'normal';
+            }
+            
+            if (empty($this->kesehatan_jiwa)) {
+                $this->kesehatan_jiwa = 'normal';
+            }
+            
+            if (empty($this->fungsi_hari)) {
+                $this->fungsi_hari = 'Normal';
+            }
+            
+            if (empty($this->status_tt)) {
+                $this->status_tt = '-';
+            }
+            
+            if (empty($this->penyakit_lain_catin)) {
+                $this->penyakit_lain_catin = 'Normal';
+            }
+            
+            if (empty($this->kanker_payudara)) {
+                $this->kanker_payudara = 'Normal';
+            }
+            
+            if (empty($this->iva_test)) {
+                $this->iva_test = 'Negatif';
+            }
+            
+            if (empty($this->resiko_jantung)) {
+                $this->resiko_jantung = 'Tidak';
+            }
+            
+            if (empty($this->charta)) {
+                $this->charta = '<10%';
+            }
+            
+            if (empty($this->resiko_kanker_usus)) {
+                $this->resiko_kanker_usus = 'Tidak';
+            }
+            
+            if (empty($this->skor_puma)) {
+                $this->skor_puma = '< 6';
+            }
+            
             // Validasi input
             $this->validate([
                 'no_ktp' => 'nullable|string|max:20',
@@ -486,31 +555,31 @@ class Form extends Component
                 'lp' => 'nullable|string|max:4',
                 'td' => 'nullable|string|max:8',
                 'gula_darah' => 'nullable|string|max:4',
-                'metode_mata' => 'nullable|string',
-                'hasil_mata' => 'nullable|string',
-                'tes_berbisik' => 'nullable|string',
-                'gigi' => 'nullable|string',
-                'kesehatan_jiwa' => 'nullable|string',
+                'metode_mata' => 'nullable|in:hitungjari,visus,pinhole,snelen card',
+                'hasil_mata' => 'nullable|in:normal,tidak normal',
+                'tes_berbisik' => 'nullable|in:normal,tidak normal',
+                'gigi' => 'nullable|in:normal,caries,jaringan Periodental,goyang',
+                'kesehatan_jiwa' => 'nullable|in:normal,gangguan emosional,gangguan perilaku',
                 'tbc' => 'nullable|string|max:50',
-                'fungsi_hari' => 'nullable|string',
-                'status_tt' => 'nullable|string',
-                'penyakit_lain_catin' => 'nullable|string',
-                'kanker_payudara' => 'nullable|string',
-                'iva_test' => 'nullable|string',
-                'resiko_jantung' => 'nullable|string',
+                'fungsi_hari' => 'nullable|in:Normal,Hepatitis B,Hepatitis C,Sirosis',
+                'status_tt' => 'nullable|in:-,1,2,3,4,5',
+                'penyakit_lain_catin' => 'nullable|in:Normal,Anemia,HIV,Sifilis,Napza',
+                'kanker_payudara' => 'nullable|in:Normal,ada benjolan',
+                'iva_test' => 'nullable|in:Negatif,Positif',
+                'resiko_jantung' => 'nullable|in:Ya,Tidak',
                 'gds' => 'nullable|string|max:5',
                 'asam_urat' => 'nullable|string|max:5',
                 'kolesterol' => 'nullable|string|max:5',
                 'trigliserida' => 'nullable|string|max:5',
-                'charta' => 'nullable|string',
+                'charta' => 'nullable|in:<10%,10% - 20%,20% - 30%,30% - 40%,> 40%',
                 'ureum' => 'nullable|string|max:6',
                 'kreatinin' => 'nullable|string|max:6',
-                'resiko_kanker_usus' => 'nullable|string',
-                'skor_puma' => 'nullable|string',
+                'resiko_kanker_usus' => 'nullable|in:Ya,Tidak',
+                'skor_puma' => 'nullable|in:< 6,> 6',
                 'skilas' => 'nullable|string|max:100',
-                'riwayat_diri_sendiri' => 'nullable|string',
-                'riwayat_keluarga' => 'nullable|string',
-                'merokok' => 'nullable|string',
+                'riwayat_diri_sendiri' => 'nullable|in:Hipertensi,Diabetes militus,Stroke,Jantung,Asma,Kanker,Kolesterol,Hepatitis,Normal',
+                'riwayat_keluarga' => 'nullable|in:Hipertensi,Diabetes militus,Stroke,Jantung,Asma,Kanker,Kolesterol,Hepatitis,Normal',
+                'merokok' => 'nullable|in:Ya,Tidak',
                 'konsumsi_tinggi' => 'nullable|string|max:25',
             ]);
             
