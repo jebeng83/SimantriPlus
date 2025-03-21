@@ -1,22 +1,30 @@
-var script = document.getElementById("permintaanLab");
+// Inisialisasi variabel global
+var script = document.getElementById('permintaanLab');
 var encrypNoRawat = script.getAttribute("data-encrypNoRawat");
 var token = script.getAttribute("data-token");
+var baseUrl = document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '';
+var noRawat = encrypNoRawat; // Menggunakan nilai terenkripsi untuk API calls
 
-// Cache untuk data yang jarang berubah
-var templateCache = {};
+// Gunakan cache untuk menyimpan data dan mengurangi permintaan server
 var permintaanLabCache = null;
 var permintaanLabCacheTime = 0;
+var templateCache = {};
 var CACHE_VALIDITY_PERIOD = 30000; // 30 detik
 
 function getValue(name) {
-    var data = [];
-    var doc = document.getElementsByName(name);
-    for (var i = 0; i < doc.length; i++) {
-            var a = doc[i].value;
-            data.push(a);
-        }
-
-    return data;
+    // Coba cari berdasarkan ID
+    const elem = document.getElementById(name);
+    if (elem) {
+        return elem.value || '';
+    }
+    
+    // Jika tidak ditemukan ID, coba cari berdasarkan nama
+    const elements = document.getElementsByName(name);
+    if (elements.length > 0) {
+        return elements[0].value || '';
+    }
+    
+    return '';
 }
 
 function formatData (data) {
@@ -126,12 +134,14 @@ function getTemplateLab(kdJenisPrw) {
     return new Promise((resolve, reject) => {
         // Gunakan cache jika tersedia
         if (templateCache[kdJenisPrw]) {
+            console.log(`Menggunakan cache template untuk kd_jenis_prw: ${kdJenisPrw}, ${templateCache[kdJenisPrw].length} item`);
             return resolve({
                 status: 'sukses',
                 data: templateCache[kdJenisPrw]
             });
         }
         
+        console.log(`Memuat template untuk kd_jenis_prw: ${kdJenisPrw}`);
         $.ajax({
             url: '/api/template-lab/' + kdJenisPrw,
             type: 'GET',
@@ -140,12 +150,14 @@ function getTemplateLab(kdJenisPrw) {
                 if (response.status === 'sukses' && response.data) {
                     // Simpan ke cache
                     templateCache[kdJenisPrw] = response.data;
+                    console.log(`Template berhasil dimuat: ${response.data.length} item`);
                     
                     resolve({
                         status: 'sukses',
                         data: response.data
                     });
                 } else {
+                    console.warn(`Tidak ada template ditemukan untuk kd_jenis_prw: ${kdJenisPrw}`);
                     resolve({
                         status: 'sukses',
                         data: []
@@ -153,6 +165,7 @@ function getTemplateLab(kdJenisPrw) {
                 }
             },
             error: function(xhr, status, error) {
+                console.error(`Error memuat template: ${error}`, xhr);
                 reject(error);
             }
         });
@@ -648,4 +661,27 @@ function renderDetailPemeriksaan(noOrder, data) {
     detailHtml += '</ul>';
     
     $(`#detail-${noOrder}`).html(detailHtml);
+}
+
+// Fungsi untuk reset form
+function resetForm() {
+    // Reset input fields
+    $('#klinis').val('');
+    $('#info-tambahan').val('');
+    
+    // Hapus semua checkbox yang dipilih
+    $('.jenis-lab-checkbox').prop('checked', false);
+    
+    // Hapus semua container template
+    $('.template-container').remove();
+}
+
+// Fungsi untuk memuat ulang data lab request
+function loadLabRequest() {
+    // Invalidate cache
+    permintaanLabCache = null;
+    permintaanLabCacheTime = 0;
+    
+    // Muat ulang data permintaan lab
+    loadPermintaanLab();
 }

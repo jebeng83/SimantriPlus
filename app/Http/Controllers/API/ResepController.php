@@ -14,48 +14,102 @@ class ResepController extends Controller
 
     public function getObatRanap(Request $request, $bangsal)
     {
-        $q = $request->get('q');
-        $que = '%' . $q . '%';
-
-        // $depo = DB::table('set_depo_ranap')
-        //     ->where('kd_bangsal', $bangsal)
-        //     ->first();
-
-        $obat = DB::table('databarang')
-            ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
-            ->where('status', '1')
-            ->where('gudangbarang.stok', '>', '0')
-            ->where('gudangbarang.kd_bangsal', $bangsal)
-            ->where(function ($query) use ($que) {
-                $query->where('databarang.kode_brng', 'like', $que)
-                    ->orWhere('databarang.nama_brng', 'like', $que);
-            })
-            ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
-            ->get();
-        return response()->json($obat, 200);
+        try {
+            $q = $request->get('q');
+            $que = '%' . $q . '%';
+            
+            // Pastikan bangsal tidak null
+            if (empty($bangsal)) {
+                Log::error("kd_bangsal kosong saat getObatRanap");
+                return response()->json([], 200);
+            }
+            
+            // Ambil tanggal terakhir di riwayat_barang_medis untuk bangsal ini
+            $maxTgl = DB::table('riwayat_barang_medis')
+                ->where('kd_bangsal', $bangsal)
+                ->max('tanggal');
+                
+            if (!$maxTgl) {
+                Log::warning("Tidak ada data riwayat_barang_medis untuk bangsal {$bangsal}");
+                return response()->json([], 200);
+            }
+            
+            // Query menggunakan riwayat_barang_medis
+            $obat = DB::table('databarang')
+                ->join('riwayat_barang_medis', function($join) use ($bangsal, $maxTgl) {
+                    $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
+                        ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal)
+                        ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
+                        ->whereRaw('riwayat_barang_medis.jam = (SELECT MAX(jam) FROM riwayat_barang_medis WHERE tanggal = ? AND kd_bangsal = ? AND kode_brng = databarang.kode_brng)', [$maxTgl, $bangsal]);
+                })
+                ->where('databarang.status', '1')
+                ->where('riwayat_barang_medis.stok_akhir', '>', '0')
+                ->where(function ($query) use ($que) {
+                    $query->where('databarang.kode_brng', 'like', $que)
+                        ->orWhere('databarang.nama_brng', 'like', $que);
+                })
+                ->selectRaw('databarang.kode_brng AS id, databarang.nama_brng AS text, riwayat_barang_medis.stok_akhir as stok')
+                ->get();
+            
+            Log::info("getObatRanap: Ditemukan " . count($obat) . " obat di bangsal " . $bangsal);
+            
+            return response()->json($obat, 200);
+        } catch (\Exception $e) {
+            Log::error("Error di getObatRanap: " . $e->getMessage());
+            return response()->json([], 500);
+        }
     }
 
     public function getObatRalan(Request $request, $poli)
     {
-        $q = $request->get('q');
-        $que = '%' . $q . '%';
+        try {
+            $q = $request->get('q');
+            $que = '%' . $q . '%';
 
-        $depo = DB::table('set_depo_ralan')
-            ->where('kd_poli', $poli)
-            ->first();
+            // Log debug info
+            Log::info("getObatRalan dipanggil dengan parameter poli: {$poli}, query: {$q}");
 
-        $obat = DB::table('databarang')
-            ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
-            ->where('status', '1')
-            ->where('gudangbarang.stok', '>', '0')
-            ->where('gudangbarang.kd_bangsal', $depo->kd_bangsal)
-            ->where(function ($query) use ($que) {
-                $query->where('databarang.kode_brng', 'like', $que)
-                    ->orWhere('databarang.nama_brng', 'like', $que);
-            })
-            ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
-            ->get();
-        return response()->json($obat, 200);
+            $depo = DB::table('set_depo_ralan')
+                ->where('kd_poli', $poli)
+                ->first();
+
+            // Jika data depo tidak ditemukan, handle dengan fallback ke depo default atau berikan respons kosong
+            if (!$depo) {
+                Log::warning("Depo tidak ditemukan untuk poli: {$poli}, menggunakan fallback");
+                // Cari depo pertama yang tersedia atau gunakan kode default
+                $defaultDepo = DB::table('set_depo_ralan')->first();
+                
+                if ($defaultDepo) {
+                    $kd_bangsal = $defaultDepo->kd_bangsal;
+                    Log::info("Menggunakan depo fallback dengan kd_bangsal: {$kd_bangsal}");
+                } else {
+                    Log::error("Tidak ada depo yang ditemukan sama sekali");
+                    return response()->json([], 200);
+                }
+            } else {
+                $kd_bangsal = $depo->kd_bangsal;
+                Log::info("Depo ditemukan dengan kd_bangsal: {$kd_bangsal}");
+            }
+
+            $obat = DB::table('databarang')
+                ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                ->where('status', '1')
+                ->where('gudangbarang.stok', '>', '0')
+                ->where('gudangbarang.kd_bangsal', $kd_bangsal)
+                ->where(function ($query) use ($que) {
+                    $query->where('databarang.kode_brng', 'like', $que)
+                        ->orWhere('databarang.nama_brng', 'like', $que);
+                })
+                ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
+                ->limit(20) // Batasi hasil untuk performa
+                ->get();
+            
+            Log::info("Berhasil mengambil " . count($obat) . " obat");
+            return response()->json($obat, 200);
+        } catch (\Exception $e) {
+            Log::error("Error di getObatRalan: " . $e->getMessage());
+            return response()->json([], 500);
+        }
     }
 
     public function getObatLuar(Request $request)
@@ -82,34 +136,153 @@ class ResepController extends Controller
         $bangsal = "";
         if ($status == 'ralan') {
             $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
-            $bangsal = $db->kd_bangsal;
+            $bangsal = $db ? $db->kd_bangsal : null;
         } else {
             $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
-            $bangsal = $db->kd_depo;
+            $bangsal = $db ? $db->kd_depo : null;
         }
-        $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('kd_bangsal', $bangsal)->max('tanggal');
-        $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $kdObat)->where('tanggal', $maxTgl)->where('kd_bangsal', $bangsal)->max('jam');
+        
+        // Pastikan bangsal tidak null sebelum mengambil stok
+        if (empty($bangsal)) {
+            Log::error("kd_bangsal kosong saat getDataObat", [
+                'kode_brng' => $kdObat,
+                'status' => $status,
+                'kode' => $kode
+            ]);
+            
+            // Kembalikan data barang tanpa stok
+            $dataBarang = DB::table('databarang')
+                ->where('kode_brng', $kdObat)
+                ->first();
+                
+            // Buat objek baru dengan stok_akhir = 0
+            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+            $dataWithStok['stok_akhir'] = 0;
+            
+            return response()->json((object)$dataWithStok);
+        }
+        
+        $maxTgl = DB::table('riwayat_barang_medis')
+            ->where('kode_brng', $kdObat)
+            ->where('kd_bangsal', $bangsal)
+            ->max('tanggal');
+            
+        if (!$maxTgl) {
+            Log::warning("Tidak ada data riwayat_barang_medis untuk obat {$kdObat} di bangsal {$bangsal}");
+            
+            // Kembalikan data barang tanpa stok
+            $dataBarang = DB::table('databarang')
+                ->where('kode_brng', $kdObat)
+                ->first();
+                
+            // Buat objek baru dengan stok_akhir = 0
+            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+            $dataWithStok['stok_akhir'] = 0;
+            
+            return response()->json((object)$dataWithStok);
+        }
+        
+        $maxJam = DB::table('riwayat_barang_medis')
+            ->where('kode_brng', $kdObat)
+            ->where('tanggal', $maxTgl)
+            ->where('kd_bangsal', $bangsal)
+            ->max('jam');
+            
+        if (!$maxJam) {
+            Log::warning("Tidak ada jam untuk obat {$kdObat} di bangsal {$bangsal} tanggal {$maxTgl}");
+            
+            // Kembalikan data barang tanpa stok
+            $dataBarang = DB::table('databarang')
+                ->where('kode_brng', $kdObat)
+                ->first();
+                
+            // Buat objek baru dengan stok_akhir = 0
+            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+            $dataWithStok['stok_akhir'] = 0;
+            
+            return response()->json((object)$dataWithStok);
+        }
+        
         $data = DB::table('databarang')
-            ->join('riwayat_barang_medis', 'databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
+            ->join('riwayat_barang_medis', function($join) use ($kdObat, $maxTgl, $maxJam, $bangsal) {
+                $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
+                    ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
+                    ->where('riwayat_barang_medis.jam', '=', $maxJam)
+                    ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal);
+            })
             ->where('databarang.kode_brng', $kdObat)
-            ->where('riwayat_barang_medis.tanggal', $maxTgl)
-            ->where('riwayat_barang_medis.jam', $maxJam)
             ->select('databarang.*', 'riwayat_barang_medis.stok_akhir')
             ->first();
+        
+        // Log informasi tentang stok obat yang ditemukan
+        Log::info("getDataObat: Stok obat {$kdObat} di bangsal {$bangsal}: " . ($data ? $data->stok_akhir : 'tidak ditemukan'), [
+            'tanggal' => $maxTgl,
+            'jam' => $maxJam
+        ]);
+        
+        // Jika tidak ditemukan, kembalikan data barang dengan stok 0
+        if (!$data) {
+            $dataBarang = DB::table('databarang')
+                ->where('kode_brng', $kdObat)
+                ->first();
+                
+            // Buat objek baru dengan stok_akhir = 0
+            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+            $dataWithStok['stok_akhir'] = 0;
+            
+            return response()->json((object)$dataWithStok);
+        }
 
         return response()->json($data);
     }
 
     public function postResep(Request $request, $noRawat)
     {
-        $dokter = session()->get('username');
-        $resObat = $request->get('obat');
-        $resJml = $request->get('jumlah');
-        $resAturan = $request->get('aturan_pakai');
-        $status = $request->get('status');
-        $kode = $request->get('kode');
-        
         try {
+            // Validasi parameter yang diperlukan
+            if (!$request->has('obat') || !$request->has('jumlah') || !$request->has('aturan_pakai') || !$request->has('status') || !$request->has('kode')) {
+                Log::warning("Parameter input tidak lengkap pada panggilan postResep", [
+                    'has_obat' => $request->has('obat'),
+                    'has_jumlah' => $request->has('jumlah'),
+                    'has_aturan_pakai' => $request->has('aturan_pakai'),
+                    'has_status' => $request->has('status'),
+                    'has_kode' => $request->has('kode')
+                ]);
+                
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Parameter input tidak lengkap'
+                ], 400);
+            }
+            
+            $dokter = session()->get('username');
+            $resObat = $request->get('obat');
+            $resJml = $request->get('jumlah');
+            $resAturan = $request->get('aturan_pakai');
+            $status = $request->get('status');
+            $kode = $request->get('kode');
+            
+            // Pastikan array obat, jumlah, dan aturan pakai memiliki elemen
+            if (empty($resObat) || empty($resJml)) {
+                Log::warning("Data obat atau jumlah kosong", [
+                    'count_obat' => count($resObat ?? []),
+                    'count_jumlah' => count($resJml ?? [])
+                ]);
+                
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Data obat atau jumlah tidak boleh kosong'
+                ], 400);
+            }
+            
+            // Log parameter yang diterima untuk debugging
+            Log::info("Parameter postResep:", [
+                'noRawat' => $noRawat,
+                'status' => $status,
+                'kode' => $kode,
+                'jumlah_obat' => count($resObat ?? [])
+            ]);
+            
             // Dekripsi dan sanitasi no_rawat
             $encryptedNoRawat = $noRawat; // Simpan nilai terenkripsi untuk log
             $noRawat = $this->decryptData($noRawat);
@@ -142,7 +315,7 @@ class ResepController extends Controller
             }
             
             // Log debug untuk tracking
-            Log::info('Proses no_rawat di ResepController', [
+            Log::info('Proses no_rawat di postResep', [
                 'encrypted' => $encryptedNoRawat,
                 'decoded' => $noRawat,
                 'cleaned' => $cleanNoRawat
@@ -168,107 +341,256 @@ class ResepController extends Controller
                 ]);
             }
             
-            $noRawat = $cleanNoRawat; // Gunakan no_rawat yang sudah dibersihkan
-            $bangsal = "";
-
+            // Mulai transaksi setelah validasi awal
             DB::beginTransaction();
-        
-            if ($status == 'Ralan') {
-                $iter = $request->get('iter');
-                if ($iter != '-') {
-                    DB::table('resep_iter')->upsert(
-                        [
-                            'no_rawat' => $noRawat,
-                            'catatan_iter' => $iter,
-                        ],
-                        ['no_rawat'],
-                        ['catatan_iter']
-                    );
-                }
-                $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
-                $bangsal = $db->kd_bangsal;
-            } else {
-                $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
-                $bangsal = $db->kd_depo;
-            }
-
-            for ($i = 0; $i < count($resObat); $i++) {
-                $obat = $resObat[$i];
-                $jml = $resJml[$i];
-                $aturan = $resAturan[$i] ?? '-';
-
-                if (empty($jml) || $jml < 1) {
-                    continue;
-                }
-
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
-
-                if ($maxStok < $jml) {
-                    continue;
-                }
-
-                $resep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->first();
-                if (!empty($resep)) {
-                    if ($resep->tgl_perawatan != '0000-00-00') {
-                        return response()->json([
-                            'status' => 'gagal',
-                            'pesan' => 'Resep obat sudah tervalidasi'
-                        ]);
+            
+            try {
+                $noRawat = $cleanNoRawat; // Gunakan no_rawat yang sudah dibersihkan
+                $bangsal = "";
+            
+                if ($status == 'Ralan') {
+                    $iter = $request->get('iter');
+                    if ($iter != '-') {
+                        DB::table('resep_iter')->upsert(
+                            [
+                                'no_rawat' => $noRawat,
+                                'catatan_iter' => $iter,
+                            ],
+                            ['no_rawat'],
+                            ['catatan_iter']
+                        );
+                    }
+                    
+                    // Dapatkan bangsal dari set_depo_ralan
+                    $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
+                    if ($db) {
+                        $bangsal = $db->kd_bangsal;
+                    } else {
+                        Log::warning("Tidak ada bangsal yang terkait dengan poli {$kode}");
+                    }
+                } else {
+                    // Dapatkan bangsal dari set_depo_ranap
+                    $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
+                    if ($db) {
+                        $bangsal = $db->kd_depo;
+                    } else {
+                        Log::warning("Tidak ada depo yang terkait dengan bangsal {$kode}");
                     }
                 }
-                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-                $maxNo = substr($no->resep, 0, 4);
-                $nextNo = sprintf('%04s', ($maxNo + 1));
-                $tgl = date('Ymd');
-                $noResep = $tgl . '' . $nextNo;
+                
+                // Jika bangsal masih kosong, coba ambil langsung dari parameter kode
+                if (empty($bangsal)) {
+                    $bangsal = $kode;
+                    Log::info("Menggunakan kode sebagai bangsal: {$bangsal}");
+                }
 
-                if ($resep) {
-                    DB::table('resep_dokter')->insert([
-                        'no_resep' => $resep->no_resep,
-                        'kode_brng' => $obat,
-                        'jml' => $jml,
-                        'aturan_pakai' => $aturan,
+                // Buat nomor resep
+                $no = DB::table('resep_obat')
+                    ->whereDate('tgl_peresepan', date('Y-m-d'))
+                    ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,6),signed)),0) as resep")
+                    ->first();
+                
+                $maxNo = $no->resep;
+                $nextNo = sprintf('%06s', ($maxNo + 1));
+                $tgl = date('Ymd');
+                $noResep = $tgl . $nextNo;
+                
+                Log::info("Nomor resep yang dibuat: {$noResep}");
+
+                // Cek apakah resep sudah ada untuk no_rawat ini
+                $resepExists = DB::table('resep_obat')
+                    ->where('no_rawat', $noRawat)
+                    ->where('tgl_peresepan', date('Y-m-d'))
+                    ->first();
+
+                // Log hasil pengecekan resep
+                Log::info("Cek resep yang sudah ada: ", [
+                    'resep_exists' => $resepExists ? 'ya' : 'tidak',
+                    'no_resep_exists' => $resepExists ? $resepExists->no_resep : 'tidak ada'
+                ]);
+
+                // Jika resep sudah ada dan sudah divalidasi, berikan pesan
+                if ($resepExists && $resepExists->tgl_perawatan != '0000-00-00') {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Resep obat sudah tervalidasi'
                     ]);
-                } else {
-                    DB::table('resep_obat')->insert([
+                }
+                
+                // Jika resep belum ada, buat entry baru di resep_obat
+                if (!$resepExists) {
+                    Log::info("Membuat resep baru dengan nomor: {$noResep}");
+                    
+                    // Data untuk insert dengan nilai default untuk kolom tanggal dan jam
+                    $resepData = [
                         'no_resep' => $noResep,
-                        'tgl_perawatan' => '0000-00-00',
-                        'jam' => '00:00:00',
+                        'tgl_perawatan' => '0000-00-00',  // Format default yang diharapkan
+                        'jam' => '00:00:00',              // Format default yang diharapkan
                         'no_rawat' => $noRawat,
                         'kd_dokter' => $dokter,
                         'tgl_peresepan' => date('Y-m-d'),
                         'jam_peresepan' => date('H:i:s'),
                         'status' => $status,
+                        'tgl_penyerahan' => '0000-00-00', // Format default yang diharapkan
+                        'jam_penyerahan' => '00:00:00',   // Format default yang diharapkan
+                    ];
+                    
+                    // Log data yang akan dimasukkan
+                    Log::info("Data resep_obat yang akan disimpan:", $resepData);
+                    
+                    $insert = DB::table('resep_obat')->insert($resepData);
+                    
+                    // Verifikasi data resep telah tersimpan
+                    $cekResep = DB::table('resep_obat')->where('no_resep', $noResep)->first();
+                    Log::info("Status penyimpanan resep baru: ", [
+                        'insert_success' => $insert ? 'ya' : 'tidak',
+                        'resep_found' => $cekResep ? 'ya' : 'tidak',
+                        'tgl_perawatan' => $cekResep ? $cekResep->tgl_perawatan : 'N/A',
+                        'jam' => $cekResep ? $cekResep->jam : 'N/A',
+                        'tgl_penyerahan' => $cekResep ? $cekResep->tgl_penyerahan : 'N/A',
+                        'jam_penyerahan' => $cekResep ? $cekResep->jam_penyerahan : 'N/A'
                     ]);
-                    DB::table('resep_dokter')->insert([
-                        'no_resep' => $noResep,
+                    
+                    $useNoResep = $noResep;
+                } else {
+                    $useNoResep = $resepExists->no_resep;
+                    Log::info("Menggunakan resep yang sudah ada: {$useNoResep}");
+                }
+
+                // Flag untuk melacak apakah ada obat yang berhasil disimpan
+                $anyDrugSaved = false;
+
+                // Loop untuk setiap obat yang diresepkan
+                for ($i = 0; $i < count($resObat); $i++) {
+                    $obat = $resObat[$i];
+                    $jml = $resJml[$i];
+                    $aturan = $resAturan[$i] ?? '-';
+
+                    if (empty($jml) || $jml < 1) {
+                        Log::info("Melewati obat {$obat} karena jumlah tidak valid: {$jml}");
+                        continue;
+                    }
+
+                    // Pastikan kd_bangsal tidak null
+                    if (empty($bangsal)) {
+                        Log::error("kd_bangsal kosong saat cek stok obat: {$obat}", [
+                            'kode_brng' => $obat,
+                            'kd_bangsal' => $bangsal
+                        ]);
+                        continue;
+                    }
+
+                    // Cek stok obat dari gudangbarang
+                    $stokData = DB::table('gudangbarang')
+                        ->where('kode_brng', $obat)
+                        ->where('kd_bangsal', $bangsal)
+                        ->select(DB::raw('SUM(stok) as total_stok'))
+                        ->first();
+                    
+                    $maxStok = $stokData ? $stokData->total_stok : 0;
+                    
+                    // Log informasi stok
+                    Log::info("Cek stok obat dari gudangbarang", [
+                        'kode_brng' => $obat,
+                        'kd_bangsal' => $bangsal,
+                        'stok' => $maxStok,
+                        'jumlah_diminta' => $jml
+                    ]);
+
+                    if ($maxStok < $jml) {
+                        Log::warning("Stok obat tidak mencukupi", [
+                            'kode_brng' => $obat,
+                            'stok_tersedia' => $maxStok,
+                            'jumlah_diminta' => $jml
+                        ]);
+                        continue; // Skip jika stok tidak mencukupi
+                    }
+
+                    // Untuk obat non-racikan, tidak perlu pembagian kapasitas
+                    $detailData = [
+                        'no_resep' => $useNoResep,
                         'kode_brng' => $obat,
                         'jml' => $jml,
                         'aturan_pakai' => $aturan,
+                    ];
+                    
+                    // Log data detail yang akan dimasukkan
+                    Log::info("Data resep_dokter yang akan disimpan:", $detailData);
+                    
+                    $insert = DB::table('resep_dokter')->insert($detailData);
+                    
+                    Log::info("Hasil penyimpanan detail resep: ", [
+                        'no_resep' => $useNoResep,
+                        'kode_brng' => $obat,
+                        'jml' => $jml,
+                        'aturan_pakai' => $aturan,
+                        'insert_success' => $insert ? 'ya' : 'tidak'
+                    ]);
+                    
+                    if ($insert) {
+                        $anyDrugSaved = true;
+                    }
+                }
+                
+                // Jika tidak ada obat yang berhasil disimpan, rollback transaksi
+                if (!$anyDrugSaved) {
+                    Log::warning("Tidak ada obat yang berhasil disimpan, membatalkan transaksi");
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Tidak ada obat yang berhasil ditambahkan ke resep'
                     ]);
                 }
+
+                // Ambil data resep untuk respons
+                $resep = DB::table('resep_dokter')
+                    ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+                    ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
+                    ->where('resep_obat.no_rawat', $noRawat)
+                    ->where('resep_obat.kd_dokter', $dokter)
+                    ->select(
+                        'resep_dokter.no_resep', 
+                        'resep_dokter.kode_brng', 
+                        'resep_dokter.jml', 
+                        'databarang.nama_brng', 
+                        'resep_dokter.aturan_pakai', 
+                        'resep_obat.tgl_peresepan', 
+                        'resep_obat.jam_peresepan'
+                    )
+                    ->orderBy('resep_obat.jam_peresepan', 'desc')
+                    ->get();
+                
+                Log::info("Data resep yang berhasil diambil: " . count($resep));
+                
+                // Commit transaksi jika semua operasi berhasil
+                DB::commit();
+                
+                return response()->json([
+                    'status' => 'sukses',
+                    'pesan' => 'Input resep berhasil',
+                    'data' => $resep,
+                ]);
+            } catch (\Illuminate\Database\QueryException $ex) {
+                DB::rollback();
+                Log::error('Error pada postResep (QueryException): ' . $ex->getMessage());
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => $ex->getMessage()
+                ]);
+            } catch (\Exception $e) {
+                DB::rollback();
+                Log::error('Error pada postResep (Exception): ' . $e->getMessage());
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => $e->getMessage()
+                ]);
             }
-            $resep = DB::table('resep_dokter')
-                ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
-                ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
-                ->where('resep_obat.no_rawat', $noRawat)
-                ->where('resep_obat.kd_dokter', $dokter)
-                ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
-                ->orderBy('resep_obat.jam_peresepan', 'desc')
-                ->get();
-            DB::commit();
-            return response()->json([
-                'status' => 'sukses',
-                'pesan' => 'Input resep berhasil',
-                'data' => $resep,
-            ]);
-        } catch (\Illuminate\Database\QueryException $ex) {
-            DB::rollback();
+        } catch (\Exception $outerException) {
+            Log::error('Error fatal pada postResep (outer): ' . $outerException->getMessage());
             return response()->json([
                 'status' => 'gagal',
-                'pesan' => $ex->getMessage()
+                'pesan' => 'Terjadi kesalahan: ' . $outerException->getMessage()
             ]);
         }
     }
@@ -309,25 +631,58 @@ class ResepController extends Controller
                 $jml = $resJml[$i] < 1 ? 1 : $resJml[$i];
                 $aturan = $resAturan[$i] ?? '-';
 
-                $maxTgl = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->max('tanggal');
-                $maxJam = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('tanggal', $maxTgl)->where('kd_bangsal',  $bangsal)->max('jam');
-                $maxStok = DB::table('riwayat_barang_medis')->where('kode_brng', $obat)->where('kd_bangsal', $bangsal)->where('tanggal', $maxTgl)->where('jam', $maxJam)->max('stok_akhir');
+                // Pastikan kd_bangsal tidak null
+                if (empty($bangsal)) {
+                    Log::error("kd_bangsal kosong saat cek stok obat ranap: {$obat}", [
+                        'kode_brng' => $obat,
+                        'kd_bangsal' => $bangsal
+                    ]);
+                    continue;
+                }
+
+                $maxTgl = DB::table('riwayat_barang_medis')
+                    ->where('kode_brng', $obat)
+                    ->where('kd_bangsal', $bangsal)
+                    ->max('tanggal');
+                
+                if (!$maxTgl) {
+                    Log::warning("Tidak ada riwayat barang untuk obat ranap {$obat} di bangsal {$bangsal}");
+                    continue;
+                }
+                
+                $maxJam = DB::table('riwayat_barang_medis')
+                    ->where('kode_brng', $obat)
+                    ->where('tanggal', $maxTgl)
+                    ->where('kd_bangsal', $bangsal)
+                    ->max('jam');
+                
+                if (!$maxJam) {
+                    Log::warning("Tidak ada jam untuk obat ranap {$obat} di bangsal {$bangsal} tanggal {$maxTgl}");
+                    continue;
+                }
+                
+                // Ambil stok_akhir dengan kondisi lengkap
+                $stokData = DB::table('riwayat_barang_medis')
+                    ->where('kode_brng', $obat)
+                    ->where('kd_bangsal', $bangsal)
+                    ->where('tanggal', $maxTgl)
+                    ->where('jam', $maxJam)
+                    ->first(['stok_akhir']);
+                
+                $maxStok = $stokData ? $stokData->stok_akhir : 0;
+                
+                // Log informasi stok
+                Log::info("Cek stok obat ranap dari riwayat_barang_medis", [
+                    'kode_brng' => $obat,
+                    'kd_bangsal' => $bangsal,
+                    'stok' => $maxStok,
+                    'jumlah_diminta' => $jml,
+                    'tanggal' => $maxTgl,
+                    'jam' => $maxJam
+                ]);
 
                 if ($maxStok < $jml) {
                     continue;
-                    // if(empty($obat)){
-                    //     return response()->json([
-                    //         'status' => 'gagal',
-                    //         'pesan' => 'Obat tidak boleh kosong'
-                    //     ]);
-                    // }else{
-                    //     $dataBarang = DB::table('databarang')->where('kode_brng', $obat)->first();
-                    //     return response()->json([
-                    //         'status' => 'gagal',
-                    //         'pesan' => 'Stok obat '.$dataBarang->nama_brng.' kosong'
-                    //     ]);
-                    // }
-
                 }
 
                 $maxTglResep = DB::table('resep_obat')->where('no_rawat', $noRawat)->where('tgl_peresepan', date('Y-m-d'))->where('kd_dokter', $dokter)->max('jam_peresepan');
@@ -414,6 +769,14 @@ class ResepController extends Controller
         $kandungan = $input['kandungan'];
         $jml = $input['jml'];
 
+        // Log parameter yang diterima untuk debugging
+        Log::info("Parameter postResepRacikan:", [
+            'noRawat' => $noRawat,
+            'status' => $input['status'] ?? '-',
+            'kode' => $input['kode'] ?? '-',
+            'jumlah_obat' => count($kdObat ?? [])
+        ]);
+
         try {
             // Dekripsi dan sanitasi no_rawat
             $encryptedNoRawat = $noRawat; // Simpan nilai terenkripsi untuk log
@@ -477,7 +840,7 @@ class ResepController extends Controller
             $no_rawat = $cleanNoRawat;
             $dokter = session()->get('username');
             $status = $request->get('status');
-            $kode = $request->get('kode');
+            $bangsal = $request->get('kode');
 
             $request->validate([
                 'nama_racikan' => 'required',
@@ -507,11 +870,15 @@ class ResepController extends Controller
             $noResep = '';
 
             if ($satu_resep == 0) {
-                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-                $maxNo = substr($no->resep, 0, 4);
-                $nextNo = sprintf('%04s', ($maxNo + 1));
+                $no = DB::table('resep_obat')
+                    ->whereDate('tgl_peresepan', date('Y-m-d'))
+                    ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,6),signed)),0) as resep")
+                    ->first();
+                
+                $maxNo = $no->resep;
+                $nextNo = sprintf('%06s', ($maxNo + 1));
                 $tgl = date('Ymd');
-                $noResep = $tgl . '' . $nextNo;
+                $noResep = $tgl . $nextNo;
 
                 DB::table('resep_obat')
                     ->insert([
@@ -534,11 +901,15 @@ class ResepController extends Controller
                 if (!empty($resep)) {
                     $noResep = $resep->no_resep;
                 } else {
-                    $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-                    $maxNo = substr($no->resep, 0, 4);
-                    $nextNo = sprintf('%04s', ($maxNo + 1));
+                    $no = DB::table('resep_obat')
+                        ->whereDate('tgl_peresepan', date('Y-m-d'))
+                        ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,6),signed)),0) as resep")
+                        ->first();
+                    
+                    $maxNo = $no->resep;
+                    $nextNo = sprintf('%06s', ($maxNo + 1));
                     $tgl = date('Ymd');
-                    $noResep = $tgl . '' . $nextNo;
+                    $noResep = $tgl . $nextNo;
 
                     DB::table('resep_obat')
                         ->insert([
@@ -568,6 +939,59 @@ class ResepController extends Controller
                 ]);
 
             for ($i = 0; $i < count($kdObat); $i++) {
+                if (empty($kdObat[$i]) || (float)$p1[$i] <= 0) {
+                    continue;
+                }
+
+                // Pastikan kd_bangsal tidak null
+                if (empty($bangsal)) {
+                    Log::error("kd_bangsal kosong saat cek stok obat racikan: {$kdObat[$i]}", [
+                        'kode_brng' => $kdObat[$i],
+                        'kd_bangsal' => $bangsal
+                    ]);
+                    continue;
+                }
+                
+                // Cek stok obat dari gudangbarang
+                $stokData = DB::table('gudangbarang')
+                    ->where('kode_brng', $kdObat[$i])
+                    ->where('kd_bangsal', $bangsal)
+                    ->select(DB::raw('SUM(stok) as total_stok'))
+                    ->first();
+                
+                $maxStok = $stokData ? $stokData->total_stok : 0;
+                
+                // Dapatkan kapasitas obat
+                $kapasitasData = DB::table('databarang')
+                    ->where('kode_brng', $kdObat[$i])
+                    ->select('kapasitas')
+                    ->first();
+                
+                $kapasitas = ($kapasitasData && $kapasitasData->kapasitas > 0) ? $kapasitasData->kapasitas : 1;
+                
+                // Hitung jumlah berdasarkan kapasitas seperti di kode Java
+                $jumlahAsli = (float)$jml[$i];
+                $jumlahKapasitas = $satu_resep == 0 ? $jumlahAsli : (float)$jml[$i] * (float)$jumlahRacikan;
+                
+                // Pembagian dengan kapasitas (sesuai kode Java)
+                $jumlahSetelahPembagian = $jumlahKapasitas / $kapasitas;
+                
+                // Log untuk debug
+                Log::info("Perhitungan jumlah obat racikan berdasarkan kapasitas", [
+                    'kode_brng' => $kdObat[$i],
+                    'kapasitas' => (float)$kapasitas,
+                    'jumlah_asli' => $jumlahAsli,
+                    'jumlah_kapasitas' => $jumlahKapasitas,
+                    'jumlah_setelah_pembagian' => $jumlahSetelahPembagian
+                ]);
+                
+                // Cek stok
+                if ($maxStok < $jumlahSetelahPembagian) {
+                    Log::warning("Stok tidak cukup untuk obat: {$kdObat[$i]}, Stok: {$maxStok}, Diminta: {$jumlahSetelahPembagian}");
+                    continue;
+                }
+                
+                // Insert detail racikan dengan jumlah yang sudah dihitung
                 DB::table('resep_dokter_racikan_detail')->insert([
                     'no_resep' => $noResep,
                     'no_racik' => '1',
@@ -575,9 +999,10 @@ class ResepController extends Controller
                     'p1' => $p1[$i],
                     'p2' => $p2[$i],
                     'kandungan' => $kandungan[$i],
-                    'jml' => $jml[$i],
+                    'jml' => $jumlahSetelahPembagian
                 ]);
             }
+            
             DB::commit();
             return response()->json(['status' => 'sukses', 'message' => 'Racikan berhasil ditambahkan']);
         } catch (\Illuminate\Database\QueryException $ex) {
@@ -684,17 +1109,21 @@ class ResepController extends Controller
             $no_rawat = $cleanNoRawat;
             $dokter = session()->get('username');
             $status = $request->get('status');
-            $kode = $request->get('kode');
+            $bangsal = $request->get('kode');
 
             DB::beginTransaction();
             $noResep = '';
 
             if ($satu_resep == 0) {
-                $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-                $maxNo = substr($no->resep, 0, 4);
-                $nextNo = sprintf('%04s', ($maxNo + 1));
+                $no = DB::table('resep_obat')
+                    ->whereDate('tgl_peresepan', date('Y-m-d'))
+                    ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,6),signed)),0) as resep")
+                    ->first();
+                
+                $maxNo = $no->resep;
+                $nextNo = sprintf('%06s', ($maxNo + 1));
                 $tgl = date('Ymd');
-                $noResep = $tgl . '' . $nextNo;
+                $noResep = $tgl . $nextNo;
 
                 DB::table('resep_obat')
                     ->insert([
@@ -717,11 +1146,15 @@ class ResepController extends Controller
                 if (!empty($resep)) {
                     $noResep = $resep->no_resep;
                 } else {
-                    $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
-                    $maxNo = substr($no->resep, 0, 4);
-                    $nextNo = sprintf('%04s', ($maxNo + 1));
+                    $no = DB::table('resep_obat')
+                        ->whereDate('tgl_peresepan', date('Y-m-d'))
+                        ->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,6),signed)),0) as resep")
+                        ->first();
+                    
+                    $maxNo = $no->resep;
+                    $nextNo = sprintf('%06s', ($maxNo + 1));
                     $tgl = date('Ymd');
-                    $noResep = $tgl . '' . $nextNo;
+                    $noResep = $tgl . $nextNo;
 
                     DB::table('resep_obat')
                         ->insert([
@@ -751,6 +1184,59 @@ class ResepController extends Controller
                 ]);
 
             for ($i = 0; $i < count($kdObat); $i++) {
+                if (empty($kdObat[$i]) || (float)$p1[$i] <= 0) {
+                    continue;
+                }
+
+                // Pastikan kd_bangsal tidak null
+                if (empty($bangsal)) {
+                    Log::error("kd_bangsal kosong saat cek stok obat racikan: {$kdObat[$i]}", [
+                        'kode_brng' => $kdObat[$i],
+                        'kd_bangsal' => $bangsal
+                    ]);
+                    continue;
+                }
+                
+                // Cek stok obat dari gudangbarang
+                $stokData = DB::table('gudangbarang')
+                    ->where('kode_brng', $kdObat[$i])
+                    ->where('kd_bangsal', $bangsal)
+                    ->select(DB::raw('SUM(stok) as total_stok'))
+                    ->first();
+                
+                $maxStok = $stokData ? $stokData->total_stok : 0;
+                
+                // Dapatkan kapasitas obat
+                $kapasitasData = DB::table('databarang')
+                    ->where('kode_brng', $kdObat[$i])
+                    ->select('kapasitas')
+                    ->first();
+                
+                $kapasitas = ($kapasitasData && $kapasitasData->kapasitas > 0) ? $kapasitasData->kapasitas : 1;
+                
+                // Hitung jumlah berdasarkan kapasitas seperti di kode Java
+                $jumlahAsli = (float)$jml[$i];
+                $jumlahKapasitas = $satu_resep == 0 ? $jumlahAsli : (float)$jml[$i] * (float)$jumlahRacikan;
+                
+                // Pembagian dengan kapasitas (sesuai kode Java)
+                $jumlahSetelahPembagian = $jumlahKapasitas / $kapasitas;
+                
+                // Log untuk debug
+                Log::info("Perhitungan jumlah obat racikan berdasarkan kapasitas", [
+                    'kode_brng' => $kdObat[$i],
+                    'kapasitas' => (float)$kapasitas,
+                    'jumlah_asli' => $jumlahAsli,
+                    'jumlah_kapasitas' => $jumlahKapasitas,
+                    'jumlah_setelah_pembagian' => $jumlahSetelahPembagian
+                ]);
+                
+                // Cek stok
+                if ($maxStok < $jumlahSetelahPembagian) {
+                    Log::warning("Stok tidak cukup untuk obat: {$kdObat[$i]}, Stok: {$maxStok}, Diminta: {$jumlahSetelahPembagian}");
+                    continue;
+                }
+                
+                // Insert detail racikan dengan jumlah yang sudah dihitung
                 DB::table('resep_dokter_racikan_detail')->insert([
                     'no_resep' => $noResep,
                     'no_racik' => '1',
@@ -758,9 +1244,10 @@ class ResepController extends Controller
                     'p1' => $p1[$i],
                     'p2' => $p2[$i],
                     'kandungan' => $kandungan[$i],
-                    'jml' => $jml[$i],
+                    'jml' => $jumlahSetelahPembagian
                 ]);
             }
+            
             DB::commit();
             return response()->json(['status' => 'sukses', 'message' => 'Racikan berhasil ditambahkan']);
         } catch (\Illuminate\Database\QueryException $ex) {

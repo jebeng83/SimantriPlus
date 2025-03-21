@@ -124,7 +124,7 @@
     $('.obat-racikan').select2({
                 placeholder: 'Pilih obat racikan',
                 ajax: {
-                    url: '/ralan/obat',
+                    url: '/api/ralan/{{ $poli ?? "" }}/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -141,6 +141,10 @@
                 $.ajax({
                     url: '/api/obat/'+data.id,
                     type: 'GET',
+                    data:{
+                        status:'ralan',
+                        kode:"{{ $poli ?? "" }}"
+                    },
                     dataType: 'json',
                     success: function(data) {
                         console.log(data);

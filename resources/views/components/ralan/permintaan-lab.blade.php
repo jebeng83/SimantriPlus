@@ -55,11 +55,20 @@
                             $e->getMessage());
                             }
                             @endphp
-                            @forelse($detailPemeriksaan as $p)
-                            <li>{{$p->nm_perawatan}}</li>
-                            @empty
+                            @if($detailPemeriksaan->count() > 0)
+                            <ul class="mb-0 pl-3">
+                                @foreach($detailPemeriksaan as $p)
+                                <li>
+                                    {{ $p->nm_perawatan ?? 'Tanpa nama' }}
+                                    @if(isset($p->source) && $p->source == 'template')
+                                    <span class="badge badge-info ml-1">Template</span>
+                                    @endif
+                                </li>
+                                @endforeach
+                            </ul>
+                            @else
                             <span class="text-muted">Tidak ada detail pemeriksaan</span>
-                            @endforelse
+                            @endif
                         </td>
                         <td><button class="btn btn-danger btn-sm hapus-lab-btn" data-noorder="{{$row->noorder}}"
                                 onclick='hapusPermintaanLab("{{$row->noorder}}", event)'>Hapus</button></td>
