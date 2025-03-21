@@ -12,6 +12,7 @@ use App\Models\Poliklinik;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
+use Illuminate\Support\Facades\Schema;
 
 class Pendaftaran extends Component
 {
@@ -336,13 +337,35 @@ class Pendaftaran extends Component
 
     public function generateNoReg()
     {
-        $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
-        $no_reg = DB::table('reg_periksa')
-            ->where('tgl_registrasi', $tgl)
-            ->where('kd_dokter', $this->dokter)
-            ->where('kd_poli', $this->kd_poli)
-            ->max('no_reg');
-        return str_pad($no_reg + 1, 3, '0', STR_PAD_LEFT);
+        try {
+            // Gunakan FormPendaftaran dari namespace Registrasi untuk konsistensi
+            $formPendaftaran = new \App\Http\Livewire\Registrasi\FormPendaftaran();
+            $formPendaftaran->dokter = $this->dokter;
+            $formPendaftaran->kd_poli = $this->kd_poli;
+            $formPendaftaran->tgl_registrasi = $this->tgl_registrasi;
+            
+            // Panggil method generateNoReg dari FormPendaftaran
+            $no_reg = $formPendaftaran->generateNoReg();
+            
+            \Log::info("ILP Pendaftaran: Nomor registrasi didapatkan dari FormPendaftaran: $no_reg");
+            
+            return $no_reg;
+        } catch (\Exception $e) {
+            \Log::error('Error generateNoReg ILP via FormPendaftaran: ' . $e->getMessage());
+            
+            // Fallback jika terjadi error
+            $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
+            $max = DB::table('reg_periksa')
+                ->where('tgl_registrasi', $tgl)
+                ->where('kd_dokter', $this->dokter)
+                ->where('kd_poli', $this->kd_poli)
+                ->max('no_reg');
+                
+            $no_reg = str_pad(intval($max ?? 0) + 1, 3, '0', STR_PAD_LEFT);
+            \Log::info("ILP Pendaftaran: Fallback nomor registrasi: $no_reg");
+            
+            return $no_reg;
+        }
     }
 
     public function generateNoRawat()

@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use App\Models\Poliklinik;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class FormPendaftaran extends Component
 {
@@ -114,13 +115,140 @@ class FormPendaftaran extends Component
 
     public function generateNoReg()
     {
-        $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
-        $no_reg = DB::table('reg_periksa')
-            ->where('tgl_registrasi', $tgl)
-            ->where('kd_dokter', $this->dokter)
-            ->where('kd_poli', $this->kd_poli)
-            ->max('no_reg');
-        return str_pad($no_reg + 1, 3, '0', STR_PAD_LEFT);
+        try {
+            $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
+            $kd_dokter = $this->dokter;
+            $kd_poli = $this->kd_poli;
+            
+            if (!$kd_dokter || !$kd_poli) {
+                \Log::error('FormPendaftaran: kd_dokter atau kd_poli tidak tersedia');
+                throw new \Exception('Data dokter atau poli tidak lengkap');
+            }
+            
+            // Buat kunci cache untuk locking spesifik per dokter dan poli
+            $lockKey = "lock_no_reg_{$kd_dokter}_{$kd_poli}_{$tgl}";
+            $isLocked = \Cache::add($lockKey, true, 30); // Lock selama 30 detik maksimal
+            
+            if (!$isLocked) {
+                \Log::warning('FormPendaftaran: Menunggu lock untuk generate nomor registrasi...');
+                // Tunggu sampai 3 detik untuk mendapatkan lock
+                $startTime = microtime(true);
+                while (!$isLocked && microtime(true) - $startTime < 3) {
+                    usleep(100000); // Tunggu 100ms
+                    $isLocked = \Cache::add($lockKey, true, 30);
+                }
+            }
+            
+            try {
+                // Sesuai dengan contoh Java, gunakan filter dokter dan poli
+                \Log::info("FormPendaftaran: Mencari nomor registrasi untuk dokter: $kd_dokter, poli: $kd_poli, tanggal: $tgl");
+                
+                // 1. Cek di reg_periksa
+                $maxReg = 0;
+                $regPeriksaData = DB::table('reg_periksa')
+                    ->where('tgl_registrasi', $tgl)
+                    ->where('kd_dokter', $kd_dokter)
+                    ->where('kd_poli', $kd_poli)
+                    ->get(['no_reg']);
+                
+                foreach ($regPeriksaData as $item) {
+                    $regNum = intval(ltrim($item->no_reg, '0'));
+                    if ($regNum > $maxReg) {
+                        $maxReg = $regNum;
+                    }
+                }
+                
+                \Log::info("FormPendaftaran: Max reg dari reg_periksa: $maxReg");
+                
+                // 2. Cek di booking_registrasi
+                if (Schema::hasTable('booking_registrasi')) {
+                    $bookingData = DB::table('booking_registrasi')
+                        ->where('tanggal_periksa', $tgl)
+                        ->where('kd_dokter', $kd_dokter)
+                        ->where('kd_poli', $kd_poli)
+                        ->get(['no_reg']);
+                    
+                    foreach ($bookingData as $item) {
+                        $regNum = intval(ltrim($item->no_reg, '0'));
+                        if ($regNum > $maxReg) {
+                            $maxReg = $regNum;
+                        }
+                    }
+                    
+                    \Log::info("FormPendaftaran: Max reg termasuk booking: $maxReg");
+                }
+                
+                // 3. Cek di history_noreg jika ada
+                if (Schema::hasTable('history_noreg')) {
+                    $historyData = DB::table('history_noreg')
+                        ->where('tgl_registrasi', $tgl)
+                        ->where('kd_dokter', $kd_dokter)
+                        ->where('kd_poli', $kd_poli)
+                        ->get(['no_reg']);
+                    
+                    foreach ($historyData as $item) {
+                        $regNum = intval(ltrim($item->no_reg, '0'));
+                        if ($regNum > $maxReg) {
+                            $maxReg = $regNum;
+                        }
+                    }
+                    
+                    \Log::info("FormPendaftaran: Max reg termasuk history: $maxReg");
+                }
+                
+                // Generate nomor berikutnya
+                $nextRegNum = $maxReg + 1;
+                $nextReg = str_pad($nextRegNum, 3, '0', STR_PAD_LEFT);
+                \Log::info("FormPendaftaran: Nomor registrasi final: $nextReg");
+                
+                // Simpan ke tabel history jika ada
+                if (Schema::hasTable('history_noreg')) {
+                    DB::table('history_noreg')->insert([
+                        'kd_dokter' => $kd_dokter,
+                        'tgl_registrasi' => $tgl,
+                        'no_reg' => $nextReg,
+                        'kd_poli' => $kd_poli,
+                        'method' => 'form_pendaftaran',
+                        'created_by' => auth()->check() ? auth()->user()->username : 'system',
+                        'created_at' => now()
+                    ]);
+                }
+                
+                // Simpan ke cache global
+                $globalCacheKey = "global_max_reg_{$kd_dokter}_{$kd_poli}_{$tgl}";
+                \Cache::put($globalCacheKey, $nextRegNum, now()->addDay());
+                
+                return $nextReg;
+            } finally {
+                // Hapus lock dari cache setelah selesai
+                if ($isLocked) {
+                    \Cache::forget($lockKey);
+                    \Log::info('FormPendaftaran: Lock untuk generate nomor registrasi dilepaskan');
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('FormPendaftaran error generating no_reg: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Fallback: gunakan metode sederhana
+            try {
+                $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
+                $queryMaxReg = DB::table('reg_periksa')
+                    ->where('tgl_registrasi', $tgl)
+                    ->where('kd_dokter', $this->dokter)
+                    ->where('kd_poli', $this->kd_poli)
+                    ->max('no_reg');
+                
+                $maxReg = $queryMaxReg ? intval(ltrim($queryMaxReg, '0')) : 0;
+                $nextReg = str_pad($maxReg + 1, 3, '0', STR_PAD_LEFT);
+                
+                \Log::warning("FormPendaftaran: Menggunakan fallback untuk generate no_reg: $nextReg");
+                return $nextReg;
+            } catch (\Exception $fallbackError) {
+                \Log::error('Fallback juga gagal: ' . $fallbackError->getMessage());
+                return '001'; // Default ke 001 jika semua metode gagal
+            }
+        }
     }
 
     public function generateNoRawat()

@@ -89,6 +89,13 @@ Route::middleware(['loginauth'])->group(function () {
     // Route untuk register
     Route::get('/register', [App\Http\Controllers\RegisterController::class, 'index'])->name('register');
     
+    // Route untuk regperiksa
+    Route::prefix('regperiksa')->group(function () {
+        Route::get('/create/{no_rkm_medis}', [App\Http\Controllers\RegPeriksaController::class, 'create'])->name('regperiksa.create');
+        Route::post('/store', [App\Http\Controllers\RegPeriksaController::class, 'store'])->name('regperiksa.store');
+        Route::get('/generate-noreg/{kd_dokter}/{tgl_registrasi}', [App\Http\Controllers\RegPeriksaController::class, 'generateNoReg'])->name('regperiksa.generate-noreg');
+    });
+    
     // Route untuk diagnostik
     Route::get('/diagnostic', [App\Http\Controllers\DiagnosticController::class, 'index'])->name('diagnostic');
     
@@ -181,6 +188,29 @@ Route::middleware(['loginauth'])->group(function () {
         Session::regenerate(true);
         return csrf_token();
     })->name('refresh-csrf');
+    
+    // Route untuk Livewire generateNoReg
+    Route::post('/livewire/generate-noreg', function(Illuminate\Http\Request $request) {
+        $formPendaftaran = new App\Http\Livewire\Registrasi\FormPendaftaran();
+        $formPendaftaran->dokter = $request->input('dokter');
+        $formPendaftaran->kd_poli = $request->input('kd_poli');
+        $formPendaftaran->tgl_registrasi = $request->input('tgl_registrasi');
+        
+        try {
+            $no_reg = $formPendaftaran->generateNoReg();
+            return response()->json([
+                'success' => true,
+                'no_reg' => $no_reg,
+                'message' => 'Nomor registrasi berhasil dibuat'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error generateNoReg via Livewire: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    })->name('livewire.generate-noreg');
 });
 
 // Temporary route for debugging
@@ -202,7 +232,11 @@ Route::get('/debug/permintaan-lab', function() {
     ];
 });
 
-// Routes untuk RegPeriksa
-Route::get('/regperiksa/create/{no_rkm_medis}', [RegPeriksaController::class, 'create'])->name('regperiksa.create');
-Route::post('/regperiksa/store', [RegPeriksaController::class, 'store'])->name('regperiksa.store');
-Route::get('/regperiksa/generate-noreg/{kd_dokter}/{tgl_registrasi}', [RegPeriksaController::class, 'generateNoReg']);
+// Rute pengujian untuk memeriksa nomor registrasi
+Route::get('/test-noreg', [App\Http\Controllers\RegPeriksaController::class, 'testNoReg']);
+
+// Rute pengujian tanpa autentikasi
+Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::class, 'testNoRegPublic'])->withoutMiddleware(['loginauth']);
+
+// Rute pengujian dokter spesifik
+Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);

@@ -45,37 +45,18 @@ class KYCController extends Controller
         $validated = $request->validate([
             'nik' => 'required|string|size:16|regex:/^[0-9]+$/',
             'name' => 'required|string|max:255',
-            'dob' => 'nullable|date|before:today',
-            'gender' => 'nullable|in:male,female',
-            'phone' => 'nullable|string|max:15',
         ], [
             'nik.required' => 'NIK wajib diisi',
             'nik.size' => 'NIK harus 16 digit',
             'nik.regex' => 'NIK hanya boleh berisi angka',
             'name.required' => 'Nama wajib diisi',
-            'dob.before' => 'Tanggal lahir harus sebelum hari ini',
-            'gender.in' => 'Jenis kelamin harus male atau female',
         ]);
 
         try {
             // Log data yang diterima untuk debugging
             \Log::info('Data KYC yang diterima:', $validated);
-
-            // Simpan data pasien ke session jika tersedia
-            if (isset($validated['dob'])) {
-                $dob = date('Y-m-d', strtotime($validated['dob']));
-                session(['patient_dob' => $dob]);
-            }
             
-            if (isset($validated['gender'])) {
-                session(['patient_gender' => $validated['gender']]);
-            }
-            
-            if (isset($validated['phone'])) {
-                session(['patient_phone' => $validated['phone']]);
-            }
-            
-            // Selalu simpan NIK dan nama
+            // Simpan NIK dan nama ke session
             session([
                 'patient_nik' => $validated['nik'],
                 'patient_name' => $validated['name'],
@@ -742,7 +723,7 @@ class KYCController extends Controller
     {
         try {
             // Dapatkan token dari konfigurasi atau database
-            $token = $this->getSatusehatToken();
+            $token = Cache::has('satusehat_token') ? Cache::get('satusehat_token') : $this->getSatusehatToken(true);
             
             if (!$token) {
                 return ['error' => 'Tidak dapat mendapatkan token akses SATUSEHAT'];
@@ -772,51 +753,76 @@ class KYCController extends Controller
                 'token_length' => strlen($token)
             ]);
             
-            // Kirim request ke API SATUSEHAT
-            $response = Http::withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json'
-                ])
-                ->post($endpoint, $data);
+            // Gunakan curl langsung untuk mendapatkan token yang lebih reliable
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $endpoint,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => json_encode($data),
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $token
+                ],
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_VERIFYPEER => 0
+            ]);
+
+            $response = curl_exec($curl);
+            $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+
+            curl_close($curl);
             
             // Log response untuk debugging
-            Log::info('KYC Challenge Code Response Status: ' . $response->status());
-            Log::info('KYC Challenge Code Response Body: ' . $response->body());
+            Log::info('KYC Challenge Code Response Status: ' . $statusCode);
+            Log::info('KYC Challenge Code Response Raw: ' . substr($response, 0, 300) . '...');
             
-            if ($response->successful()) {
-                $result = $response->json();
-                
-                // Periksa apakah ada error dalam response yang sukses
-                if (isset($result['metadata']['code']) && $result['metadata']['code'] != '200') {
-                    $errorMessage = 'Error dari SATUSEHAT: ' . ($result['metadata']['message'] ?? 'Unknown error');
-                    Log::error('KYC Challenge Code Error dalam response sukses: ' . $errorMessage);
-                    Log::error('Response Body: ' . $response->body());
-                    return ['error' => $errorMessage];
-                }
-                
-                // Periksa apakah data challenge_code ada
-                if (!isset($result['data']['challenge_code'])) {
-                    $errorMessage = 'Error dari SATUSEHAT: Challenge code tidak ditemukan dalam response';
-                    Log::error('KYC Challenge Code Error: ' . $errorMessage);
-                    Log::error('Response Body: ' . $response->body());
-                    return ['error' => $errorMessage];
-                }
-                
+            if ($error) {
+                Log::error('KYC Challenge Code Curl error: ' . $error);
+                return ['error' => 'Terjadi kesalahan koneksi: ' . $error];
+            }
+            
+            // Pastikan respons tidak kosong
+            if (empty($response)) {
+                \Log::error('Respons kosong dari server SATUSEHAT');
+                return ['error' => 'Gagal mendapatkan challenge code: Respons kosong dari server SATUSEHAT'];
+            }
+
+            // Coba decode respons JSON
+            $responseBody = json_decode($response, true);
+            
+            // Jika gagal decode, coba tampilkan respons mentah
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                \Log::error('Gagal decode respons JSON: ' . json_last_error_msg());
+                \Log::error('Respons mentah: ' . $response);
+                return ['error' => 'Gagal mendapatkan challenge code: Gagal decode respons JSON'];
+            }
+
+            // Log respons untuk debugging
+            \Log::info('KYC Challenge Code Response Body:', $responseBody);
+
+            if ($statusCode == 200 && isset($responseBody['data']['challenge_code'])) {
                 // Simpan data challenge code ke session untuk digunakan nanti
                 session([
-                    'kyc_challenge_code' => $result['data']['challenge_code'],
-                    'kyc_nik' => $result['data']['nik'],
-                    'kyc_name' => $result['data']['name'],
-                    'kyc_ihs_number' => $result['data']['ihs_number'],
-                    'kyc_expired_timestamp' => $result['data']['expired_timestamp']
+                    'kyc_challenge_code' => $responseBody['data']['challenge_code'],
+                    'kyc_nik' => $responseBody['data']['nik'],
+                    'kyc_name' => $responseBody['data']['name'],
+                    'kyc_ihs_number' => $responseBody['data']['ihs_number'],
+                    'kyc_expired_timestamp' => $responseBody['data']['expired_timestamp']
                 ]);
                 
-                return $result['data'];
+                return $responseBody['data'];
             } else {
                 // Handle error response
                 $errorMessage = 'Error dari SATUSEHAT: ';
                 
-                if ($response->status() === 401) {
+                if ($statusCode === 401) {
                     $errorMessage .= 'Token tidak valid atau kadaluarsa';
                     
                     // Coba refresh token dan coba lagi
@@ -827,18 +833,18 @@ class KYCController extends Controller
                         return $this->requestChallengeCode($nik, $name);
                     }
                 } else {
-                    $errorData = $response->json();
+                    $errorData = $responseBody;
                     if (isset($errorData['metadata']['message'])) {
                         $errorMessage .= $errorData['metadata']['message'];
                     } else if (isset($errorData['fault']['faultstring'])) {
                         $errorMessage .= $errorData['fault']['faultstring'];
                     } else {
-                        $errorMessage .= 'Kode HTTP ' . $response->status();
+                        $errorMessage .= 'Kode HTTP ' . $statusCode;
                     }
                 }
                 
                 Log::error('KYC Challenge Code Error: ' . $errorMessage);
-                Log::error('KYC Challenge Code Response: ' . $response->body());
+                Log::error('KYC Challenge Code Response: ' . $response);
                 return ['error' => $errorMessage];
             }
         } catch (\Exception $e) {

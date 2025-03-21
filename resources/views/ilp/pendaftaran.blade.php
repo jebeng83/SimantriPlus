@@ -10,6 +10,7 @@
 @section('content')
 <div class="row">
    <div class="col-md-12">
+      {{-- Menggunakan ILP\Pendaftaran yang telah terintegrasi dengan FormPendaftaran dari Registrasi --}}
       <livewire:i-l-p.pendaftaran />
    </div>
 </div>

@@ -239,6 +239,7 @@
 @stop
 
 @section('css')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 <style>
    /* Sembunyikan tombol i-Care BPJS khusus di halaman ini */
    .btn-success.btn-block,
@@ -572,102 +573,231 @@
 @stop
 
 @section('js')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-   $(function() {
-    // Inisialisasi Select2 dengan tema custom
-    $('.select2bs4').select2({
-        theme: 'bootstrap4',
-        width: '100%',
-        containerCssClass: 'select2-lg',
-        dropdownCssClass: 'select2-lg'
-    });
+   $(document).ready(function() {
+        // Inisialisasi Select2
+        $('.select2bs4').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: 'Pilih opsi...',
+            allowClear: true
+        });
+        
+        // Inisialisasi toastr
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: 5000
+        };
 
-    // Event handler dokter dengan loading state
-    $('#kd_dokter').on('change', function() {
-        var dokter = $(this).val();
-        if (!dokter) return;
-        
-        var btn = $('#btnSimpan').prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...');
-            
-        $.get('/regperiksa/generate-noreg/' + dokter + '/' + '{{ date("Y-m-d") }}')
-            .done(function(data) {
-                $('#no_reg').val(data);
-                btn.prop('disabled', false)
-                   .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
-                   
-                // Notifikasi sukses
-                toastr.success('Nomor registrasi berhasil digenerate');
-            })
-            .fail(function() {
-                toastr.error('Gagal mengambil nomor registrasi');
-                btn.prop('disabled', false)
-                   .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
-            });
-    });
+        // Inisialisasi SweetAlert2
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
 
-    // Form submission dengan animasi dan feedback
-    $('#formRegPeriksa').on('submit', function(e) {
-        e.preventDefault();
-        
-        if (!$('#kd_dokter').val() || !$('#no_reg').val()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Peringatan',
-                text: 'Silakan pilih dokter terlebih dahulu',
-                confirmButtonText: 'Mengerti',
-                confirmButtonColor: '#1e88e5'
-            });
-            return;
-        }
-        
-        var btn = $('#btnSimpan').prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...');
-        
-        $.ajax({
-            url: this.action,
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
-                if (res.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Data registrasi berhasil disimpan',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        backdrop: `
-                            rgba(30, 136, 229, 0.4)
-                            url("/images/success-confetti.gif")
-                            center top
-                            no-repeat
-                        `
-                    }).then(() => location.href = '{{ route("pasien.index") }}');
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal menyimpan data',
-                        confirmButtonText: 'Coba Lagi',
-                        confirmButtonColor: '#1e88e5'
+        // Fungsi untuk menampilkan notifikasi dengan fallback
+        function showNotification(type, message) {
+            try {
+                if (typeof toastr !== 'undefined' && toastr) {
+                    switch(type) {
+                        case 'success':
+                            toastr.success(message);
+                            break;
+                        case 'error':
+                            toastr.error(message);
+                            break;
+                        case 'warning':
+                            toastr.warning(message);
+                            break;
+                        default:
+                            toastr.info(message);
+                    }
+                } else if (typeof Swal !== 'undefined' && Swal) {
+                    Toast.fire({
+                        icon: type,
+                        title: message
                     });
-                    btn.prop('disabled', false)
+                } else {
+                    alert(message);
+                }
+            } catch (e) {
+                console.error("Notification error:", e);
+                alert(message);
+            }
+        }
+
+        // Debug untuk melihat event binding
+        console.log("Script loaded, binding change event to #kd_dokter");
+
+        // Event change untuk dokter
+        $('#kd_dokter').on('change', function() {
+            const dokter = $(this).val();
+            console.log("Dokter changed:", dokter);
+            
+            if (!dokter) {
+                $('#no_reg').val('');
+                return;
+            }
+            
+            const tglReg = '{{ date('Y-m-d') }}';
+            const kdPoli = $('#kd_poli').val();
+            
+            if (!kdPoli) {
+                showNotification('warning', 'Silakan pilih poliklinik terlebih dahulu');
+                $(this).val('').trigger('change.select2');
+                return;
+            }
+            
+            $('#btnSimpan').prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...');
+            
+            $.ajax({
+                url: '{{ route("livewire.generate-noreg") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    dokter: dokter,
+                    kd_poli: kdPoli,
+                    tgl_registrasi: tglReg
+                },
+                dataType: 'json',
+                timeout: 60000, // 60 detik timeout
+                beforeSend: function() {
+                    $('#no_reg').val('Loading...');
+                    console.log("Sending request to generate noreg via Livewire");
+                },
+                success: function(response) {
+                    console.log("Response received:", response);
+                    
+                    if (response.success) {
+                        // Gunakan langsung nomor reg dari respons
+                        let noReg = response.no_reg;
+                        $('#no_reg').val(noReg);
+                        showNotification('success', 'Nomor registrasi: ' + noReg);
+                    } else {
+                        $('#no_reg').val('001');
+                        showNotification('warning', response.message || 'Gagal memperoleh nomor registrasi');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error:", status, error);
+                    console.error("Response:", xhr.responseText);
+                    
+                    // Penanganan error yang lebih baik
+                    let errorResponse = { message: 'Gagal mengambil nomor registrasi' };
+                    
+                    if (status === 'timeout') {
+                        errorResponse.message = 'Koneksi timeout, nomor default digunakan';
+                    }
+                    
+                    try {
+                        if (xhr.responseJSON) {
+                            errorResponse = xhr.responseJSON;
+                        } else if (xhr.responseText) {
+                            errorResponse = JSON.parse(xhr.responseText);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                    }
+                    
+                    $('#no_reg').val('001');
+                    showNotification('error', errorResponse.message || 'Gagal mengambil nomor registrasi: ' + error);
+                },
+                complete: function() {
+                    $('#btnSimpan').prop('disabled', false)
                        .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
                 }
-            },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Terjadi kesalahan sistem',
-                    confirmButtonText: 'Tutup',
-                    confirmButtonColor: '#1e88e5'
-                });
-                btn.prop('disabled', false)
-                   .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
+            });
+        });
+
+        // Penanganan submit form
+        $('#formRegPeriksa').on('submit', function(e) {
+            e.preventDefault();
+            console.log("Form submitted");
+            
+            // Validasi form
+            if (!$('#no_reg').val() || !$('#kd_dokter').val() || !$('#kd_poli').val() || !$('#kd_pj').val()) {
+                showNotification('error', 'Semua field wajib diisi');
+                return false;
             }
+            
+            // Ambil data form
+            const formData = $(this).serialize();
+            console.log("Form data:", formData);
+            
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                timeout: 60000, // 60 detik timeout
+                beforeSend: function() {
+                    $('#btnSimpan').prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...');
+                },
+                success: function(response) {
+                    console.log("Response:", response);
+                    
+                    if (response.success) {
+                        showNotification('success', response.message || 'Data berhasil disimpan');
+                        
+                        // Tampilkan alert sukses dengan SweetAlert2
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Registrasi berhasil disimpan dengan nomor: ' + response.no_rawat,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(function() {
+                            // Redirect ke halaman daftar pasien
+                            window.location.href = '{{ route("pasien.index") }}';
+                        });
+                    } else {
+                        showNotification('error', response.message || 'Gagal menyimpan data');
+                        $('#btnSimpan').prop('disabled', false)
+                            .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error:", status, error);
+                    
+                    let errorMessage = 'Terjadi kesalahan saat menyimpan data';
+                    
+                    if (status === 'timeout') {
+                        errorMessage = 'Koneksi timeout, silakan coba lagi';
+                    }
+                    
+                    try {
+                        if (xhr.responseJSON) {
+                            errorMessage = xhr.responseJSON.message || errorMessage;
+                        } else if (xhr.responseText) {
+                            const errorResponse = JSON.parse(xhr.responseText);
+                            errorMessage = errorResponse.message || errorMessage;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                    }
+                    
+                    showNotification('error', errorMessage);
+                    $('#btnSimpan').prop('disabled', false)
+                        .html('<i class="fas fa-save mr-2"></i>Simpan Registrasi');
+                }
+            });
+        });
+
+        // Event change untuk poliklinik
+        $('#kd_poli').on('change', function() {
+            // Reset dokter ketika poli berubah
+            $('#kd_dokter').val('').trigger('change.select2');
+            $('#no_reg').val('');
         });
     });
-});
 </script>
 @stop
