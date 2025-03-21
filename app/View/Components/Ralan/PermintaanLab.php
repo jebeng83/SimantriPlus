@@ -185,93 +185,61 @@ class PermintaanLab extends Component
             // Log untuk tracking
             \Illuminate\Support\Facades\Log::info('Getting detail pemeriksaan for noOrder: ' . $noOrder);
             
-            // Ambil data dari permintaan_pemeriksaan_lab terlebih dahulu
-            $pemeriksaanLab = DB::table('permintaan_pemeriksaan_lab')
-                              ->where('noorder', $noOrder)
-                              ->get();
-                              
+            // Buat query builder untuk mengambil data dari permintaan_pemeriksaan_lab dan jns_perawatan_lab
+            $pemeriksaanLabQuery = DB::table('permintaan_pemeriksaan_lab')
+                ->leftJoin('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
+                ->where('permintaan_pemeriksaan_lab.noorder', $noOrder)
+                ->select(
+                    'jns_perawatan_lab.nm_perawatan',
+                    'permintaan_pemeriksaan_lab.kd_jenis_prw',
+                    DB::raw("'jenis' as source")
+                );
+            
+            // Buat query builder untuk mengambil data dari permintaan_detail_permintaan_lab dan template_laboratorium
+            $templateLabQuery = DB::table('permintaan_detail_permintaan_lab')
+                ->leftJoin('template_laboratorium', 'permintaan_detail_permintaan_lab.id_template', '=', 'template_laboratorium.id_template')
+                ->where('permintaan_detail_permintaan_lab.noorder', $noOrder)
+                ->select(
+                    DB::raw('COALESCE(template_laboratorium.Pemeriksaan, CONCAT("Template ID: ", permintaan_detail_permintaan_lab.id_template)) as nm_perawatan'),
+                    'permintaan_detail_permintaan_lab.kd_jenis_prw',
+                    DB::raw("'template' as source")
+                );
+            
+            // Gabungkan hasil kedua query dengan union
+            $combinedQuery = $pemeriksaanLabQuery->union($templateLabQuery);
+            
+            // Eksekusi query gabungan
+            $results = $combinedQuery->get();
+            
             // Log hasil query
-            \Illuminate\Support\Facades\Log::info('Found ' . count($pemeriksaanLab) . ' records in permintaan_pemeriksaan_lab');
+            \Illuminate\Support\Facades\Log::info('Found ' . count($results) . ' total records for noOrder: ' . $noOrder);
             
-            // Jika ada data pemeriksaan, ambil informasi jenis perawatan
-            if (count($pemeriksaanLab) > 0) {
-                $results = collect();
+            // Jika tidak ada data, coba fallback dengan query langsung ke permintaan_lab
+            if (count($results) === 0) {
+                // Ambil informasi permintaan lab untuk fallback
+                $permintaanLab = DB::table('permintaan_lab')
+                    ->where('noorder', $noOrder)
+                    ->first();
                 
-                foreach ($pemeriksaanLab as $pemeriksaan) {
-                    try {
-                        // Ambil data nama perawatan dari tabel jns_perawatan_lab
-                        $jenisPrw = DB::table('jns_perawatan_lab')
-                                    ->where('kd_jenis_prw', $pemeriksaan->kd_jenis_prw)
-                                    ->first();
-                                    
-                        if ($jenisPrw) {
-                            $results->push($jenisPrw);
-                        } else {
-                            // Jika tidak ditemukan, buat objek manual dengan nama perawatan sesuai kode
-                            $mockPrw = (object)[
-                                'nm_perawatan' => 'Pemeriksaan Kode: ' . $pemeriksaan->kd_jenis_prw,
-                                'kd_jenis_prw' => $pemeriksaan->kd_jenis_prw
-                            ];
-                            $results->push($mockPrw);
-                        }
-                    } catch (\Exception $e) {
-                        // Log error tapi tidak detail
-                        \Illuminate\Support\Facades\Log::error('Error ambil jenis perawatan untuk kode: ' . $pemeriksaan->kd_jenis_prw);
-                    }
+                if ($permintaanLab) {
+                    $fallbackResult = collect([(object)[
+                        'nm_perawatan' => $permintaanLab->diagnosa_klinis ?? 'Pemeriksaan Lab',
+                        'kd_jenis_prw' => $noOrder,
+                        'source' => 'fallback'
+                    ]]);
+                    
+                    \Illuminate\Support\Facades\Log::info('Using fallback data for noOrder: ' . $noOrder);
+                    return $fallbackResult;
                 }
-                
-                return $results;
             }
             
-            // Alternatif: jika tidak ada data di permintaan_pemeriksaan_lab
-            // Periksa di tabel permintaan_detail_permintaan_lab
-            $detailLab = DB::table('permintaan_detail_permintaan_lab')
-                          ->where('noorder', $noOrder)
-                          ->get();
-                          
-            // Log hasil query alternatif
-            \Illuminate\Support\Facades\Log::info('Found ' . count($detailLab) . ' records in permintaan_detail_permintaan_lab');
-            
-            if (count($detailLab) > 0) {
-                $results = collect();
-                
-                foreach ($detailLab as $detail) {
-                    try {
-                        // Ambil data template
-                        $template = DB::table('template_laboratorium')
-                                    ->where('id_template', $detail->id_template)
-                                    ->first();
-                                    
-                        if ($template) {
-                            $templateObj = (object)[
-                                'nm_perawatan' => $template->Pemeriksaan ?? ('Template ID: ' . $detail->id_template),
-                                'kd_jenis_prw' => $detail->kd_jenis_prw
-                            ];
-                            $results->push($templateObj);
-                        } else {
-                            // Jika tidak ditemukan template, tampilkan info dasar
-                            $mockTemplate = (object)[
-                                'nm_perawatan' => 'Template ID: ' . $detail->id_template,
-                                'kd_jenis_prw' => $detail->kd_jenis_prw
-                            ];
-                            $results->push($mockTemplate);
-                        }
-                    } catch (\Exception $e) {
-                        // Log error tapi tidak detail
-                        \Illuminate\Support\Facades\Log::error('Error ambil template untuk ID: ' . $detail->id_template);
-                    }
-                }
-                
-                return $results;
-            }
-            
-            // Jika tidak ada data yang ditemukan, kembalikan collection kosong
-            \Illuminate\Support\Facades\Log::info('No data found for order: ' . $noOrder);
-            return collect();
-            
+            return $results;
         } catch (\Exception $e) {
-            // Log error tapi tidak detail
-            \Illuminate\Support\Facades\Log::error('Error pada getDetailPemeriksaan: ' . $e->getMessage());
+            // Log error dengan detail untuk debugging
+            \Illuminate\Support\Facades\Log::error('Error pada getDetailPemeriksaan: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'noOrder' => $noOrder
+            ]);
             return collect();
         }
     }

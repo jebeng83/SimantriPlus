@@ -128,8 +128,21 @@ class LabController extends Controller
         \Illuminate\Support\Facades\Log::info('Menerima request permintaan lab', [
             'no_rawat' => $noRawat,
             'jenis_pemeriksaan' => count($jnsPemeriksaan),
+            'jumlah_template' => count($templates),
             'data_input' => $input
         ]);
+        
+        // Inspeksi struktur template untuk debugging
+        if (count($templates) > 0) {
+            $sampleTemplate = $templates[0];
+            \Illuminate\Support\Facades\Log::info('Contoh struktur template', [
+                'sample_template' => $sampleTemplate,
+                'keys' => array_keys($sampleTemplate),
+                'has_kd_jenis' => isset($sampleTemplate['kd_jenis']),
+                'has_kd_jenis_prw' => isset($sampleTemplate['kd_jenis_prw']),
+                'has_id_template' => isset($sampleTemplate['id_template'])
+            ]);
+        }
         
         // Validasi input
         if (empty($jnsPemeriksaan)) {
@@ -241,23 +254,53 @@ class LabController extends Controller
             if (!empty($templates)) {
                 foreach($templates as $template) {
                     try {
-                        DB::table('permintaan_detail_permintaan_lab')
+                        // Validasi id_template dan kd_jenis_prw
+                        if (empty($template['id_template'])) {
+                            \Illuminate\Support\Facades\Log::warning('Template tanpa id_template dilewati', [
+                                'template' => $template
+                            ]);
+                            continue;
+                        }
+                        
+                        // Pastikan kd_jenis_prw tersedia, gunakan kd_jenis jika kd_jenis_prw tidak tersedia
+                        $kd_jenis_prw = isset($template['kd_jenis_prw']) ? $template['kd_jenis_prw'] : 
+                                      (isset($template['kd_jenis']) ? $template['kd_jenis'] : null);
+                                      
+                        if (empty($kd_jenis_prw)) {
+                            \Illuminate\Support\Facades\Log::warning('Template tanpa kd_jenis_prw atau kd_jenis dilewati', [
+                                'template' => $template
+                            ]);
+                            continue;
+                        }
+                        
+                        // Debug log sebelum insert
+                        \Illuminate\Support\Facades\Log::info('Mencoba menyimpan template pemeriksaan:', [
+                            'noorder' => $noOrder,
+                            'kd_jenis_prw' => $kd_jenis_prw,
+                            'id_template' => $template['id_template']
+                        ]);
+                        
+                        // Simpan dengan urutan parameter yang benar: noorder, kd_jenis_prw, id_template, stts_bayar
+                        $inserted = DB::table('permintaan_detail_permintaan_lab')
                             ->insert([
                                 'noorder' => $noOrder,
-                                'kd_jenis_prw' => $template['kd_jenis_prw'],
+                                'kd_jenis_prw' => $kd_jenis_prw,
                                 'id_template' => $template['id_template'],
                                 'stts_bayar' => 'Belum'
                             ]);
                         
-                        \Illuminate\Support\Facades\Log::info('Template pemeriksaan disimpan:', [
+                        \Illuminate\Support\Facades\Log::info('Template pemeriksaan ' . ($inserted ? 'berhasil' : 'gagal') . ' disimpan:', [
                             'noorder' => $noOrder,
-                            'kd_jenis_prw' => $template['kd_jenis_prw'],
-                            'id_template' => $template['id_template']
+                            'kd_jenis_prw' => $kd_jenis_prw,
+                            'id_template' => $template['id_template'],
+                            'pemeriksaan' => $template['pemeriksaan'] ?? 'Tidak ada nama',
+                            'inserted' => $inserted
                         ]);
                     } catch (\Exception $templateError) {
                         \Illuminate\Support\Facades\Log::warning('Gagal menyimpan template:', [
                             'error' => $templateError->getMessage(),
-                            'template' => $template
+                            'template' => $template,
+                            'trace' => $templateError->getTraceAsString()
                         ]);
                         // Lanjutkan meskipun ada error template
                     }
@@ -997,26 +1040,13 @@ class LabController extends Controller
      */
     public function getPermintaanLabData($noRawat)
     {
-        // Cek apakah ada cache yang tersedia
-        $cacheKey = 'permintaan_lab_' . md5($noRawat);
-        $cacheTime = 5; // dalam menit
-        
-        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-            \Illuminate\Support\Facades\Log::info('Menggunakan data cache permintaan lab', [
-                'cache_key' => $cacheKey
-            ]);
-            return response()->json(\Illuminate\Support\Facades\Cache::get($cacheKey));
-        }
-        
         try {
             // Dekripsi no_rawat
             $decodedNoRawat = $this->safeDecodeNoRawat($noRawat);
             
             \Illuminate\Support\Facades\Log::info('getPermintaanLabData dipanggil', [
                 'noRawat_encoded' => $noRawat,
-                'noRawat_decoded' => $decodedNoRawat,
-                'session_id' => session()->getId(),
-                'user_agent' => request()->userAgent()
+                'noRawat_decoded' => $decodedNoRawat
             ]);
             
             // Cek format no_rawat terlebih dahulu
@@ -1028,134 +1058,103 @@ class LabController extends Controller
             $cleanNoRawat = preg_replace('/[[:^print:]]/', '', $decodedNoRawat);
             
             // Variasi format no_rawat yang mungkin
-            $variations = [
-                $cleanNoRawat,
-                urldecode($cleanNoRawat),
-                str_replace(' ', '', $cleanNoRawat)
-            ];
+            $variations = [$cleanNoRawat];
             
-            // Cek apakah format tanggal+nomor belum ada
-            if (preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $cleanNoRawat)) {
-                $hasDateFormat = true;
-            } else {
-                $hasDateFormat = false;
-                
-                // Tambahkan format tanggal hari ini + 6 digit terakhir jika ada
-                $today = date('Y/m/d');
-                if (preg_match('/\d{6}$/', $cleanNoRawat, $matches)) {
-                    $lastSixDigits = $matches[0];
-                    $variations[] = $today . '/' . $lastSixDigits;
+            // Cek apakah format no_rawat mengandung tanggal yyyy/mm/dd
+            $hasDateFormat = preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d+$/', $cleanNoRawat);
+            if ($hasDateFormat) {
+                // Tambahkan variasi dengan format tanggal yang berbeda
+                $parts = explode('/', $cleanNoRawat);
+                if (count($parts) === 4) {
+                    $dateAlternatives = [
+                        $parts[0] . '/' . $parts[1] . '/' . $parts[2] . '/' . $parts[3],
+                        $parts[0] . '-' . $parts[1] . '-' . $parts[2] . '/' . $parts[3]
+                    ];
+                    $variations = array_merge($variations, $dateAlternatives);
                 }
             }
             
             // Gunakan query builder yang lebih efisien
-            $baseQuery = DB::table('permintaan_lab')
+            $results = [];
+            
+            // Coba dengan no_rawat langsung
+            $dataFromRawat = DB::table('permintaan_lab')
                 ->select('permintaan_lab.*', 'reg_periksa.no_rkm_medis')
                 ->leftJoin('reg_periksa', 'permintaan_lab.no_rawat', '=', 'reg_periksa.no_rawat')
+                ->where('permintaan_lab.no_rawat', $cleanNoRawat)
                 ->orderBy('permintaan_lab.tgl_permintaan', 'desc')
                 ->orderBy('permintaan_lab.jam_permintaan', 'desc')
-                ->limit(20); // Batasi hasil untuk performa
-            
-            // Coba semua variasi untuk mendapatkan data
-            $data = null;
-            foreach ($variations as $variation) {
-                $query = clone $baseQuery;
-                $query->where('permintaan_lab.no_rawat', $variation);
-                    
-                $result = $query->get();
+                ->get();
                 
-                if ($result->count() > 0) {
-                    \Illuminate\Support\Facades\Log::info("Berhasil mendapatkan data dengan variasi: $variation", [
-                        'count' => $result->count()
-                    ]);
-                    $data = $result;
-                    break;
-                }
-            }
-            
-            // Jika tidak ada data yang ditemukan, coba cari dengan metode lain
-            if (!$data || $data->isEmpty()) {
-                // Coba cari dengan nomor RM jika tersedia
-                if (!$hasDateFormat && preg_match('/^\d{6}$/', $cleanNoRawat)) {
-                    $queryByRM = clone $baseQuery;
-                    $queryByRM->where('reg_periksa.no_rkm_medis', $cleanNoRawat);
-                    
-                    $resultByRM = $queryByRM->get();
-                    
-                    if ($resultByRM->count() > 0) {
-                        \Illuminate\Support\Facades\Log::info("Berhasil mendapatkan data dengan no_rkm_medis: $cleanNoRawat", [
-                            'count' => $resultByRM->count()
-                        ]);
-                        $data = $resultByRM;
-                    }
-                }
-                
-                // Jika masih tidak ada data, coba cari dengan tanggal hari ini
-                if (!$data || $data->isEmpty()) {
-                    $today = date('Y-m-d');
-                    $queryToday = clone $baseQuery;
-                    $queryToday->whereDate('permintaan_lab.tgl_permintaan', $today);
-                    
-                    if (session()->has('username')) {
-                        $queryToday->where('permintaan_lab.dokter_perujuk', session()->get('username'));
-                    }
-                        
-                    $resultToday = $queryToday->get();
-                    
-                    if ($resultToday->count() > 0) {
-                        \Illuminate\Support\Facades\Log::info("Berhasil mendapatkan data untuk hari ini", [
-                            'count' => $resultToday->count()
-                        ]);
-                        $data = $resultToday;
-                    }
-                }
-            }
-            
-            // Log hasil akhir
-            if ($data && $data->count() > 0) {
-                \Illuminate\Support\Facades\Log::info('Hasil akhir query permintaan_lab', [
-                    'jumlah_data' => $data->count(),
-                    'contoh_data' => $data->first()
-                ]);
-                
-                $response = [
-                    'status' => 'sukses',
-                    'data' => $data,
-                    'count' => $data->count(),
-                    'no_rawat_decoded' => $decodedNoRawat
-                ];
-                
-                // Simpan ke cache
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $response, now()->addMinutes($cacheTime));
-                
-                return response()->json($response);
+            if ($dataFromRawat->count() > 0) {
+                $results = $dataFromRawat;
             } else {
-                \Illuminate\Support\Facades\Log::warning('Tidak ada data permintaan lab yang ditemukan', [
-                    'no_rawat' => $decodedNoRawat
-                ]);
+                // Coba cari dengan tanggal hari ini dan dokter yang login
+                $today = date('Y-m-d');
                 
-                $response = [
-                    'status' => 'sukses',
-                    'data' => [],
-                    'count' => 0,
-                    'no_rawat_decoded' => $decodedNoRawat,
-                    'message' => 'Tidak ada data permintaan lab yang ditemukan'
-                ];
+                $dataToday = DB::table('permintaan_lab')
+                    ->select('permintaan_lab.*', 'reg_periksa.no_rkm_medis')
+                    ->leftJoin('reg_periksa', 'permintaan_lab.no_rawat', '=', 'reg_periksa.no_rawat')
+                    ->whereDate('permintaan_lab.tgl_permintaan', $today);
+                    
+                if (session()->has('username')) {
+                    $dataToday->where('permintaan_lab.dokter_perujuk', session()->get('username'));
+                }
                 
-                // Simpan ke cache (tetapi dengan waktu lebih singkat untuk data kosong)
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $response, now()->addMinutes(1));
-                
-                return response()->json($response);
+                $dataTodayResults = $dataToday->orderBy('permintaan_lab.jam_permintaan', 'desc')
+                    ->get();
+                    
+                if ($dataTodayResults->count() > 0) {
+                    \Illuminate\Support\Facades\Log::info("Berhasil mendapatkan data permintaan lab untuk hari ini", [
+                        'count' => $dataTodayResults->count(),
+                        'dokter' => session()->get('username') ?? 'Not logged in'
+                    ]);
+                    $results = $dataTodayResults;
+                }
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error pada getPermintaanLabData: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
             
-            return response()->json([
-                'status' => 'gagal',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ]);
+            // Tambahkan informasi detail pemeriksaan untuk setiap permintaan
+            foreach ($results as $item) {
+                // Ambil jenis pemeriksaan dari permintaan_pemeriksaan_lab
+                $detailPemeriksaan = DB::table('permintaan_pemeriksaan_lab')
+                    ->leftJoin('jns_perawatan_lab', 'permintaan_pemeriksaan_lab.kd_jenis_prw', '=', 'jns_perawatan_lab.kd_jenis_prw')
+                    ->where('permintaan_pemeriksaan_lab.noorder', $item->noorder)
+                    ->select(
+                        'permintaan_pemeriksaan_lab.kd_jenis_prw',
+                        'permintaan_pemeriksaan_lab.noorder',
+                        'jns_perawatan_lab.nm_perawatan as pemeriksaan',
+                        DB::raw("'jenis' as source")
+                    )
+                    ->get();
+                
+                // Tambahkan template pemeriksaan dari permintaan_detail_permintaan_lab
+                $detailTemplate = DB::table('permintaan_detail_permintaan_lab')
+                    ->leftJoin('template_laboratorium', 'permintaan_detail_permintaan_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('permintaan_detail_permintaan_lab.noorder', $item->noorder)
+                    ->select(
+                        'permintaan_detail_permintaan_lab.kd_jenis_prw',
+                        'permintaan_detail_permintaan_lab.noorder',
+                        'template_laboratorium.Pemeriksaan as pemeriksaan',
+                        'template_laboratorium.nilai_rujukan',
+                        'template_laboratorium.satuan',
+                        DB::raw("'template' as source")
+                    )
+                    ->get();
+                
+                // Gabungkan kedua hasil
+                $allDetails = $detailPemeriksaan->merge($detailTemplate);
+                
+                // Simpan ke item
+                $item->detail = $allDetails;
+            }
+            
+            \Illuminate\Support\Facades\Log::info("getPermintaanLabData - Final result count: " . count($results));
+            
+            return response()->json($results);
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error pada getPermintaanLabData: ' . $e->getMessage());
+            return response()->json([]);
         }
     }
     

@@ -962,19 +962,33 @@
     
     // Fungsi hitung-hitung untuk racikan
     function hitungRacikan(index) {
+        // Pastikan semua input dikonversi ke angka dengan benar
         var p1 = parseFloat($('#p1'+index).val()) || 0;
         var p2 = parseFloat($('#p2'+index).val()) || 1;
         var jmlRacikan = parseFloat($('#jumlah_racikan').val()) || 0;
         var kps = parseFloat($('#kps'+index).val()) || 0;
         
-        if (p2 === 0) p2 = 1; // Hindari pembagian dengan nol
+        // Hindari pembagian dengan nol
+        if (p2 === 0) p2 = 1;
         
         var rasio = p1 / p2;
         var kandungan = rasio * kps;
         var jml = rasio * jmlRacikan;
         
+        // Batasi nilai maksimal untuk menghindari angka yang terlalu besar
+        if (jml > 1000) jml = 1000;
+        if (kandungan > 1000) kandungan = 1000;
+        
+        // Validasi nilai yang dihasilkan
+        if (isNaN(kandungan) || !isFinite(kandungan)) kandungan = 0;
+        if (isNaN(jml) || !isFinite(jml)) jml = 0;
+        
+        // Gunakan presisi 2 desimal untuk semua nilai
         $('#kandungan'+index).val(kandungan.toFixed(2));
         $('#jml'+index).val(jml.toFixed(2));
+        
+        console.log("Racikan " + index + ": p1=" + p1 + ", p2=" + p2 + ", kps=" + kps + 
+                   ", kandungan=" + kandungan.toFixed(2) + ", jml=" + jml.toFixed(2));
     }
     
     function hitungJml(index) {

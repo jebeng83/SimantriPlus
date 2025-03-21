@@ -379,7 +379,7 @@
             $('#'+'obatRacikan'+i, ".containerRacikan").select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
+                    url: '/api/ralan/{{$poli}}/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -421,22 +421,29 @@
         }
 
         function hitungRacikan(index){
-            var p1 = getIndexValue('p1[]', index);
-            var p2 = getIndexValue('p2[]', index);
-            var jmlRacikan = $('#jumlah_racikan').val();
-            var kps = getIndexValue('kps[]', index);
-            var kandungan = (p1/p2)*kps;
-            var kandungan = parseFloat(kandungan);
-            var jml = (p1/p2)*jmlRacikan;
-            var jml = parseFloat(jml);
-            // if(isNaN(kandungan) || isFinite(kandungan)){
-            //     var kandungan = 0;
-            // }
-            // if(isNaN(jml) || isFinite(jml)){
-            //     var jml = 0;
-            // }
-            $(".kandungan-"+index).val(kandungan.toFixed(1));
-            $(".jml-"+index).val(jml.toFixed(1));
+            var p1 = parseFloat(getIndexValue('p1[]', index)) || 0;
+            var p2 = parseFloat(getIndexValue('p2[]', index)) || 1;
+            
+            // Hindari pembagian dengan nol
+            if (p2 === 0) p2 = 1;
+            
+            var jmlRacikan = parseFloat($('#jumlah_racikan').val()) || 0;
+            var kps = parseFloat(getIndexValue('kps[]', index)) || 1;
+            
+            var rasio = p1 / p2;
+            var kandungan = rasio * kps;
+            var jml = rasio * jmlRacikan;
+            
+            // Batasi nilai untuk mencegah angka yang terlalu besar
+            if (isNaN(kandungan) || !isFinite(kandungan)) kandungan = 0;
+            if (isNaN(jml) || !isFinite(jml)) jml = 0;
+            
+            // Gunakan toFixed(2) untuk presisi lebih baik
+            $(".kandungan-"+index).val(kandungan.toFixed(2));
+            $(".jml-"+index).val(jml.toFixed(2));
+            
+            console.log("Racikan " + index + ": p1=" + p1 + ", p2=" + p2 + ", kps=" + kps + 
+                        ", kandungan=" + kandungan.toFixed(2) + ", jml=" + jml.toFixed(2));
         }
 
         function hitungJml(index){
@@ -497,7 +504,7 @@
             $('#'+'obat'+x, wrapper).select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
+                    url: '/api/ralan/{{$poli}}/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -522,7 +529,7 @@
             $('.obat').select2({
                 placeholder: 'Pilih obat',
                 ajax: {
-                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
+                    url: '/api/ralan/{{$poli}}/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {
@@ -534,12 +541,30 @@
                 },
                 templateResult: formatData,
                 minimumInputLength: 3
+            }).on("select2:select", function(e){
+                var data = e.params.data;
+                $.ajax({
+                    url: '/api/obat/'+data.id,
+                    data:{
+                        status:'ralan',
+                        kode:"{{$poli}}"
+                    },
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        console.log(data);
+                        $('#stok').val(data.stok_akhir);
+                        $('#kps').val(data.kapasitas);
+                        $('#p1').val('1');
+                        $('#p2').val('1');
+                    }
+                });
             });
 
             $('.obat-racikan').select2({
                 placeholder: 'Pilih obat racikan',
                 ajax: {
-                    url: '/api/ralan/'+"{{$poli}}"+'/obat',
+                    url: '/api/ralan/{{$poli}}/obat',
                     dataType: 'json',
                     delay: 250,
                     processResults: function (data) {

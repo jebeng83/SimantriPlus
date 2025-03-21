@@ -28,8 +28,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Rute untuk obat ranap
 Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
+// Tambahkan rute untuk obat ralan
+Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::get('/obat/{kdObat}', [ObatController::class, 'getObat']);
 Route::post('/cari-kode-obat', [ObatController::class, 'cariKodeObat']);
+
+// Rute untuk resep
+Route::post('/resep/{noRawat}', [ResepController::class, 'postResep']);
+Route::post('/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikan']);
+Route::delete('/resep/{noResep}/{kdObat}/{noRawat}', [ResepController::class, 'hapusObat']);
+Route::post('/obat-batch', [ResepController::class, 'hapusObatBatch']);
 
 // Rute untuk resep ranap
 Route::post('/resep_ranap/{noRawat}', [ResepRanapController::class, 'postResepRanap']);

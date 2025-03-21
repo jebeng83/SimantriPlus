@@ -205,4 +205,4 @@ Route::get('/debug/permintaan-lab', function() {
 // Routes untuk RegPeriksa
 Route::get('/regperiksa/create/{no_rkm_medis}', [RegPeriksaController::class, 'create'])->name('regperiksa.create');
 Route::post('/regperiksa/store', [RegPeriksaController::class, 'store'])->name('regperiksa.store');
-Route::get('/regperiksa/generate-noreg/{kd_poli}/{tgl_registrasi}', [RegPeriksaController::class, 'generateNoReg']);
+Route::get('/regperiksa/generate-noreg/{kd_dokter}/{tgl_registrasi}', [RegPeriksaController::class, 'generateNoReg']);

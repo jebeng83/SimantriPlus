@@ -146,14 +146,14 @@ class RegPeriksaController extends Controller
         }
     }
 
-    public function generateNoReg($kd_poli, $tgl_registrasi)
+    public function generateNoReg($kd_dokter, $tgl_registrasi)
     {
         try {
-            \Log::info('Generating nomor registrasi untuk poli: ' . $kd_poli . ' tanggal: ' . $tgl_registrasi);
+            \Log::info('Generating nomor registrasi untuk dokter: ' . $kd_dokter . ' tanggal: ' . $tgl_registrasi);
             
             // Ambil nomor urut terakhir berdasarkan dokter dan tanggal
             $lastReg = DB::table('reg_periksa')
-                ->where('kd_dokter', $kd_poli) // Menggunakan kd_dokter sebagai filter
+                ->where('kd_dokter', $kd_dokter) // Parameter seharusnya kd_dokter bukan kd_poli
                 ->where('tgl_registrasi', $tgl_registrasi)
                 ->orderBy(DB::raw('CAST(no_reg AS UNSIGNED)'), 'desc')
                 ->first();
