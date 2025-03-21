@@ -25,6 +25,11 @@ Route::get('/', [App\Http\Controllers\LoginController::class, 'index'])->name('l
 Route::post('/customlogin', [App\Http\Controllers\LoginController::class, 'customLogin'])->name('customlogin');
 Route::get('/logout', [App\Http\Controllers\HomeController::class, 'logout'])->name('logout');
 
+// Error page routes
+Route::get('/error', [App\Http\Controllers\ErrorController::class, 'index'])->name('error.500');
+Route::get('/not-found', [App\Http\Controllers\ErrorController::class, 'notFound'])->name('error.404');
+Route::get('/forbidden', [App\Http\Controllers\ErrorController::class, 'forbidden'])->name('error.403');
+
 Route::get('/infokesehatan', function () {
     return redirect()->away('https://ayosehat.kemkes.go.id/promosi-kesehatan');
 });

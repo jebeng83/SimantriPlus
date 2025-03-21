@@ -1,0 +1,286 @@
+/**
+ * Uniform Layout CSS - Memastikan tampilan yang konsisten di semua halaman
+ */
+
+/* Animasi halaman */
+.page-transitioning {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+/* Memastikan sidebar konsisten di semua halaman */
+.main-sidebar,
+.premium-route .main-sidebar,
+body[data-route^="/home"] .main-sidebar,
+body[data-route^="/data-pasien"] .main-sidebar,
+body[data-route^="/ranap/pasien"] .main-sidebar,
+body[data-route^="/ilp/dashboard"] .main-sidebar,
+body[data-route^="/ilp/pendaftaran"] .main-sidebar,
+body[data-route^="/ilp/faktor-resiko"] .main-sidebar,
+body[data-route^="/ranap/pemeriksaan"] .main-sidebar,
+body[data-route^="/ralan/pemeriksaan"] .main-sidebar,
+body[data-route^="/ralan/pasien"] .main-sidebar,
+body[data-route^="/kyc"] .main-sidebar,
+body[data-route^="/register"] .main-sidebar {
+    background: #000000 !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Styling untuk sidebar text */
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+.main-sidebar .nav-sidebar > .nav-item > .nav-link,
+.premium-route .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/home"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/data-pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ranap/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ilp/dashboard"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ilp/pendaftaran"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ilp/faktor-resiko"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ranap/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ralan/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link,
+body[data-route^="/ralan/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+    color: white;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+.main-sidebar .nav-sidebar > .nav-item > .nav-link:hover,
+.premium-route .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/home"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/data-pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ranap/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ilp/dashboard"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ilp/pendaftaran"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ilp/faktor-resiko"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ranap/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ralan/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover,
+body[data-route^="/ralan/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+.main-sidebar .nav-sidebar > .nav-item > .nav-link.active,
+.premium-route .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/home"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/data-pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ranap/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ilp/dashboard"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ilp/pendaftaran"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ilp/faktor-resiko"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ranap/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ralan/pemeriksaan"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+body[data-route^="/ralan/pasien"] .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 500;
+}
+
+/* Active menu indicator */
+.sidebar .nav-sidebar > .nav-item > .nav-link.active::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: 0;
+    height: 80%;
+    width: 4px;
+    background-color: #64B5F6;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Brand styling konsisten */
+.main-sidebar .brand-link,
+.premium-route .main-sidebar .brand-link,
+body[data-route^="/home"] .main-sidebar .brand-link,
+body[data-route^="/data-pasien"] .main-sidebar .brand-link,
+body[data-route^="/ranap/pasien"] .main-sidebar .brand-link,
+body[data-route^="/ilp/dashboard"] .main-sidebar .brand-link,
+body[data-route^="/ilp/pendaftaran"] .main-sidebar .brand-link,
+body[data-route^="/ilp/faktor-resiko"] .main-sidebar .brand-link,
+body[data-route^="/ranap/pemeriksaan"] .main-sidebar .brand-link,
+body[data-route^="/ralan/pemeriksaan"] .main-sidebar .brand-link,
+body[data-route^="/ralan/pasien"] .main-sidebar .brand-link {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: transparent !important;
+    padding: 1rem;
+}
+
+.main-sidebar .brand-link .brand-image,
+.premium-route .main-sidebar .brand-link .brand-image,
+body[data-route^="/home"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/data-pasien"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ranap/pasien"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ilp/dashboard"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ilp/pendaftaran"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ilp/faktor-resiko"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ranap/pemeriksaan"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ralan/pemeriksaan"] .main-sidebar .brand-link .brand-image,
+body[data-route^="/ralan/pasien"] .main-sidebar .brand-link .brand-image {
+    margin-left: 0.5rem;
+    max-height: 40px;
+}
+
+.main-sidebar .brand-link .brand-text,
+.premium-route .main-sidebar .brand-link .brand-text,
+body[data-route^="/home"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/data-pasien"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ranap/pasien"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ilp/dashboard"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ilp/pendaftaran"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ilp/faktor-resiko"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ranap/pemeriksaan"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ralan/pemeriksaan"] .main-sidebar .brand-link .brand-text,
+body[data-route^="/ralan/pasien"] .main-sidebar .brand-link .brand-text {
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* Improve overall transition */
+* {
+    transition-property: background-color, color, border-color, opacity, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
+/* Content wrapper styling */
+.content-wrapper {
+    background-color: #f7f9fc;
+    transition: all 0.3s ease;
+}
+
+/* Page header styling */
+.content-header h1 {
+    font-size: 1.6rem;
+    color: #343a40;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* Navbar styling - Mengubah semua navbar menjadi hitam */
+.main-header {
+    background: #000000 !important;
+    border: none;
+}
+
+/* Override khusus untuk halaman home */
+body[data-route^="/home"] .main-header,
+body[data-route="home"] .main-header {
+    background: #000000 !important;
+}
+
+.navbar-nav .nav-item > .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-item > .nav-link:hover {
+    color: white;
+}
+
+/* Card styling */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: white;
+    padding: 1rem 1.25rem;
+}
+
+.card-title {
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+/* Buttons styling */
+.btn {
+    font-weight: 500;
+    border-radius: 0.35rem;
+    box-shadow: none;
+    padding: 0.375rem 1rem;
+}
+
+/* Tabel styling */
+.table thead th {
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    font-weight: 600;
+    color: #343a40;
+    vertical-align: middle;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Form styling */
+.form-control {
+    border-radius: 0.35rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+}
+
+.form-control:focus {
+    border-color: #4891e0;
+    box-shadow: 0 0 0 0.2rem rgba(79, 91, 218, 0.25);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Error Page Styling */
+.error-page {
+    padding: 2rem;
+}
+
+.error-page .card {
+    border-radius: 15px;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.error-page img {
+    max-width: 100px;
+}
+
+.error-page h2 {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .content-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .brand-text {
+        display: none;
+    }
+} 

@@ -561,7 +561,7 @@ class PcareController extends Controller
             // Endpoint untuk pendaftaran
             $endpoint = 'pendaftaran';
 
-            // Siapkan data pendaftaran
+            // Siapkan data pendaftaran kunjungan sehat
             $pendaftaranData = [
                 "kdProviderPeserta" => $validatedData['kdProviderPeserta'] ?? env('BPJS_PCARE_KODE_PPK', '11251616'),
                 "tglDaftar" => $validatedData['tglDaftar'],

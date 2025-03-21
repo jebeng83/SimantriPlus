@@ -244,4 +244,78 @@ class ObatController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Mencari kode obat berdasarkan nama obat
+     */
+    public function cariKodeObat(Request $request)
+    {
+        try {
+            // Validasi input
+            if (!$request->has('nama_obat') || !is_array($request->input('nama_obat'))) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Parameter nama_obat diperlukan dan harus berupa array'
+                ], 400);
+            }
+            
+            $namaObat = $request->input('nama_obat');
+            $hasilPencarian = [];
+            
+            Log::info("Mencari kode obat untuk " . count($namaObat) . " nama obat");
+            
+            // Cari kode untuk setiap nama obat
+            foreach ($namaObat as $index => $nama) {
+                // Trim nama obat untuk menghindari masalah whitespace
+                $nama = trim($nama);
+                
+                // Periksa jika nama kosong
+                if (empty($nama)) {
+                    Log::warning("Nama obat pada indeks $index kosong");
+                    continue;
+                }
+                
+                // Cari obat dengan nama yang sama atau mirip
+                $obat = DB::table('databarang')
+                    ->where('nama_brng', 'LIKE', $nama)
+                    ->first();
+                
+                if (!$obat) {
+                    // Coba pencarian dengan substring
+                    $obat = DB::table('databarang')
+                        ->whereRaw('LOWER(nama_brng) LIKE ?', ['%' . strtolower($nama) . '%'])
+                        ->first();
+                }
+                
+                if ($obat) {
+                    Log::info("Obat ditemukan: {$nama} -> {$obat->kode_brng}");
+                    $hasilPencarian[] = $obat->kode_brng;
+                } else {
+                    Log::warning("Obat tidak ditemukan: {$nama}");
+                    // Gunakan nama obat sebagai fallback jika tidak ditemukan
+                    $hasilPencarian[] = "NOT_FOUND_" . $index;
+                }
+            }
+            
+            // Periksa apakah ada obat yang ditemukan
+            if (empty($hasilPencarian)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Tidak ada obat yang ditemukan'
+                ], 404);
+            }
+            
+            return response()->json([
+                'status' => 'sukses',
+                'pesan' => 'Berhasil mencari kode obat',
+                'data' => $hasilPencarian
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error saat mencari kode obat: " . $e->getMessage());
+            return response()->json([
+                'status' => 'gagal',
+                'pesan' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 } 
