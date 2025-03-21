@@ -1,6 +1,7 @@
 <nav class="main-header navbar
     {{ config('adminlte.classes_topnav_nav', 'navbar-expand') }}
-    {{ config('adminlte.classes_topnav', 'navbar-white navbar-light') }}">
+    {{ config('adminlte.classes_topnav', 'navbar-white navbar-light') }}"
+    style="background: #000000 !important; color: white;">
 
     {{-- Navbar left links --}}
     <ul class="navbar-nav">
@@ -38,3 +39,23 @@
     </ul>
 
 </nav>
+
+<style>
+    /* Override warna teks navbar menjadi putih */
+    .main-header .navbar-nav .nav-link {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .main-header .navbar-nav .nav-link:hover {
+        color: #ffffff !important;
+    }
+
+    /* Override warna icon menjadi putih */
+    .main-header .nav-item i {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .main-header .nav-item:hover i {
+        color: #ffffff !important;
+    }
+</style>

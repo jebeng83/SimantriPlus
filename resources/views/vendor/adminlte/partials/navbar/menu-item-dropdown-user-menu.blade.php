@@ -27,17 +27,17 @@
     </a>
 
     {{-- User menu dropdown --}}
-    <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+    <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right"
+        style="background-color: #212121; color: white; border: 1px solid #333;">
 
         {{-- User menu header --}}
         @if(!View::hasSection('usermenu_header') && config('adminlte.usermenu_header'))
-        <li class="user-header {{ config('adminlte.usermenu_header_class', 'bg-primary') }}
-                @if(!config('adminlte.usermenu_image')) h-auto @endif">
+        <li class="user-header" style="background-color: #000000;">
             @if(config('adminlte.usermenu_image'))
             <img src="{{ Auth::user()->adminlte_image() }}" class="img-circle elevation-2"
                 alt="{{ Auth::user()->name }}">
             @endif
-            <p class="@if(!config('adminlte.usermenu_image')) mt-0 @endif">
+            <p style="color: white;">
                 {{ Auth::user()->name }}
                 @if(config('adminlte.usermenu_desc'))
                 <small>{{ Auth::user()->adminlte_desc() }}</small>
@@ -59,17 +59,17 @@
         @endif
 
         {{-- User menu footer --}}
-        <li class="user-footer">
+        <li class="user-footer" style="background-color: #1a1a1a; border-top: 1px solid #333;">
             @if($profile_url)
-            <a href="{{ $profile_url }}" class="btn btn-default btn-flat">
-                <i class="fa fa-fw fa-user text-lightblue"></i>
+            <a href="{{ $profile_url }}" class="btn btn-sm btn-dark">
+                <i class="fa fa-fw fa-user text-white"></i>
                 {{ __('adminlte::menu.profile') }}
             </a>
             @endif
-            <a class="btn btn-default btn-flat float-right @if(!$profile_url) btn-block @endif" href="#"
+            <a class="btn btn-sm btn-danger float-right" href="#"
                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                <i class="fa fa-fw fa-power-off text-red"></i>
-                {{ __('adminlte::adminlte.log_out') }}
+                <i class="fa fa-fw fa-power-off"></i>
+                {{ __('adminlte::menu.logout') }}
             </a>
             <form id="logout-form" action="{{ $logout_url }}" method="POST" style="display: none;">
                 @if(config('adminlte.logout_method'))
@@ -82,3 +82,26 @@
     </ul>
 
 </li>
+
+<style>
+    /* Override warna teks dropdown */
+    .user-menu .dropdown-menu a {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .user-menu .dropdown-menu a:hover {
+        background-color: #333 !important;
+        color: white !important;
+    }
+
+    /* Override warna dropdown separator */
+    .dropdown-divider {
+        border-color: #333 !important;
+    }
+
+    /* Override warna teks header */
+    .user-header p,
+    .user-header small {
+        color: white !important;
+    }
+</style>

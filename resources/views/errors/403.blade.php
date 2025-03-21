@@ -1,9 +1,9 @@
 @extends('adminlte::page')
 
-@section('title', 'Terjadi Kesalahan - Simantri PLUS')
+@section('title', 'Akses Ditolak - Simantri PLUS')
 
 @section('content_header')
-<h1>Terjadi Kesalahan</h1>
+<h1>Akses Ditolak</h1>
 @stop
 
 @section('content')
@@ -13,9 +13,9 @@
          <div class="card">
             <div class="card-body text-center p-5">
                <img src="{{ asset('img/warning.png') }}" alt="Warning" class="mb-4" style="width: 80px; height: auto;">
-               <h2 class="text-danger mb-4">Terjadi Kesalahan</h2>
-               <p class="lead mb-5">Maaf, sistem sedang mengalami gangguan teknis.</p>
-               <p class="mb-5">Tim kami sedang bekerja untuk memperbaiki masalah ini. Silakan coba lagi nanti.</p>
+               <h2 class="text-danger mb-4">Akses Ditolak</h2>
+               <p class="lead mb-5">Maaf, Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+               <p class="mb-5">Silakan hubungi administrator jika Anda yakin seharusnya memiliki akses.</p>
 
                <a href="{{ route('home') }}" class="btn btn-primary btn-lg">
                   <i class="fas fa-home mr-2"></i> Kembali ke Beranda

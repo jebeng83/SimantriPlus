@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Rute untuk obat ranap
 Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
 Route::get('/obat/{kdObat}', [ObatController::class, 'getObat']);
+Route::post('/cari-kode-obat', [ObatController::class, 'cariKodeObat']);
 
 // Rute untuk resep ranap
 Route::post('/resep_ranap/{noRawat}', [ResepRanapController::class, 'postResepRanap']);

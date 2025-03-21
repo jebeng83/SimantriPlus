@@ -8,7 +8,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#6777ef" />
+    <meta name="theme-color" content="#000000" />
 
     {{-- Favicon --}}
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
@@ -43,6 +43,10 @@
 
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
 
+    {{-- Premium AdminLTE style for consistent look --}}
+    <link rel="stylesheet" href="{{ asset('css/adminlte-premium.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/uniform-layout.css') }}">
+
     {{-- Script untuk menghapus tombol Debug --}}
     <script>
         (function() {
@@ -72,6 +76,8 @@
     @if(config('adminlte.google_fonts.allowed', true))
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
     @endif
     @else
     <link rel="stylesheet" href="{{ mix(config('adminlte.laravel_mix_css_path', 'css/app.css')) }}">
@@ -93,7 +99,7 @@
     {{-- @laravelPWA --}}
 </head>
 
-<body class="@yield('classes_body')" @yield('body_data')>
+<body class="@yield('classes_body') dark-sidebar premium-route" @yield('body_data') data-route="{{ Request::path() }}">
 
     {{-- Body Content --}}
     @yield('body')
@@ -109,6 +115,9 @@
     @include('adminlte::plugins', ['type' => 'js'])
 
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
+
+    {{-- Navigation Handler Script --}}
+    <script src="{{ asset('js/navigation-handler.js') }}"></script>
     @else
     <script src="{{ mix(config('adminlte.laravel_mix_js_path', 'js/app.js')) }}"></script>
     @endif
