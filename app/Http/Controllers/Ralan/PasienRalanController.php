@@ -27,33 +27,50 @@ class PasienRalanController extends Controller
      */
     public function index(Request $request)
     {
-        $kd_poli = session()->get('kd_poli');
-        $kd_dokter = session()->get('username');
+        // Cek dan log status session
+        $sessionOk = $this->checkSessionStatus();
+        \Log::info('PasienRalanController index called - session status: ' . ($sessionOk ? 'OK' : 'Invalid'));
+        
+        // Jika session belum terisi poliklinik, gunakan default
+        if (!session()->has('kd_poli')) {
+            // Default ke poli umum jika belum ada yang dipilih
+            session()->put('kd_poli', 'UMUM');
+            \Log::info('Setting default kd_poli to UMUM');
+        }
+
+        $kdPoli = session('kd_poli');
+        $kdDokter = session('username');
+        
         $tanggal = $request->get('tanggal') ?? date('Y-m-d');
         $sortOption = $request->get('sort', 'no_reg_asc');
         $heads = ['No. Reg', 'Nama Pasien', 'No Rawat', 'Telp', 'Dokter', 'Status'];
         $headsInternal = ['No. Reg', 'No. RM', 'Nama Pasien', 'Dokter', 'Status'];
         
-        // Debug session dan parameter
-        \Log::debug('Session index', [
-            'kd_poli' => $kd_poli,
-            'kd_dokter' => $kd_dokter,
-            'tanggal' => $tanggal,
-            'sortOption' => $sortOption,
-            'timestamp' => now()->format('Y-m-d H:i:s')
+        // Ambil nama dokter
+        $dokter = DB::table('dokter')->where('kd_dokter', $kdDokter)->first();
+        $nmDokter = $dokter ? $dokter->nm_dokter : 'Dokter';
+        
+        // Ambil nama poliklinik
+        $poliklinik = DB::table('poliklinik')->where('kd_poli', $kdPoli)->first();
+        $nmPoli = $poliklinik ? $poliklinik->nm_poli : 'Poliklinik';
+        
+        \Log::info('PasienRalanController preparing view with params: ', [
+            'kd_poli' => $kdPoli,
+            'kd_dokter' => $kdDokter,
+            'tanggal' => $tanggal
         ]);
         
         // Hapus cache lama untuk mendapatkan data terbaru
-        $this->clearAllRelatedCaches($kd_poli, $kd_dokter, $tanggal);
+        $this->clearAllRelatedCaches($kdPoli, $kdDokter, $tanggal);
         
         // Ambil data pasien ralan langsung dari database tanpa cache
-        $data = $this->queryPasienRalanData($kd_poli, $kd_dokter, $tanggal, $sortOption);
+        $data = $this->queryPasienRalanData($kdPoli, $kdDokter, $tanggal, $sortOption);
         
         // Ambil data rujukan internal
         $dataInternal = $this->getRujukInternal($tanggal);
 
         // Ambil mapping dokter PCare
-        $dokterPcare = $this->getDokterPcare($kd_dokter);
+        $dokterPcare = $this->getDokterPcare($kdDokter);
 
         // Jika request AJAX, kembalikan hanya data dalam format JSON
         if ($request->ajax()) {
@@ -73,7 +90,7 @@ class PasienRalanController extends Controller
                 ],
                 'timestamp' => now()->format('Y-m-d H:i:s'),
                 'tanggal' => $tanggal,
-                'poli' => $this->getPoliklinik($kd_poli),
+                'poli' => $this->getPoliklinik($kdPoli),
                 'success' => true
             ]);
         }
@@ -89,13 +106,13 @@ class PasienRalanController extends Controller
         \Log::debug('Statistik dari view: Total=' . $totalPasien . ', Selesai=' . $selesai . ', Menunggu=' . $menunggu);
 
         return view('ralan.pasien-ralan', [
-            'nm_poli' => $this->getPoliklinik($kd_poli),
+            'nm_poli' => $this->getPoliklinik($kdPoli),
             'heads' => $heads,
             'data' => $data,
             'tanggal' => $tanggal,
             'headsInternal' => $headsInternal,
             'dataInternal' => $dataInternal,
-            'dokter' => $dokterPcare ? $dokterPcare->kd_dokter : $kd_dokter,
+            'dokter' => $dokterPcare ? $dokterPcare->kd_dokter : $kdDokter,
             'totalPasien' => $totalPasien,
             'selesai' => $selesai,
             'menunggu' => $menunggu
@@ -489,23 +506,48 @@ class PasienRalanController extends Controller
         ]);
     }
 
+    /**
+     * Fungsi untuk mendapatkan nama poliklinik dari kode poli
+     *
+     * @param string $kd_poli
+     * @return string
+     */
     private function getPoliklinik($kd_poli)
     {
-        $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
-        return $poli->nm_poli;
+        $poliklinik = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
+        return $poliklinik ? $poliklinik->nm_poli : 'Poliklinik';
     }
 
+    /**
+     * Ambil data rujukan internal
+     *
+     * @param string $tanggal
+     * @return \Illuminate\Support\Collection
+     */
     private function getRujukInternal($tanggal)
     {
-        return DB::table('reg_periksa')
-            ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-            ->join('rujukan_internal_poli', 'reg_periksa.no_rawat', '=', 'rujukan_internal_poli.no_rawat')
-            ->join('dokter', 'dokter.kd_dokter', '=', 'rujukan_internal_poli.kd_dokter')
-            ->where('rujukan_internal_poli.kd_poli', session()->get('kd_poli'))
-            ->where('reg_periksa.tgl_registrasi', $tanggal)
-            ->orderBy('reg_periksa.no_reg', 'asc')
-            ->select('reg_periksa.no_reg', 'reg_periksa.no_rkm_medis', 'reg_periksa.no_rawat', 'pasien.nm_pasien', 'dokter.nm_dokter', 'reg_periksa.stts')
-            ->get();
+        try {
+            $data = DB::table('rujukan_internal_poli')
+                ->join('reg_periksa', 'rujukan_internal_poli.no_rawat', '=', 'reg_periksa.no_rawat')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
+                ->join('poliklinik', 'poliklinik.kd_poli', '=', 'reg_periksa.kd_poli')
+                ->where('reg_periksa.tgl_registrasi', $tanggal)
+                ->select(
+                    'reg_periksa.no_reg',
+                    'pasien.no_rkm_medis',
+                    'pasien.nm_pasien',
+                    'dokter.nm_dokter',
+                    'rujukan_internal_poli.kd_poli',
+                    'poliklinik.nm_poli'
+                )
+                ->get();
+            
+            return $data;
+        } catch (\Exception $e) {
+            \Log::error('Error getting rujuk internal data: ' . $e->getMessage());
+            return collect(); // Return empty collection on error
+        }
     }
 
     private function getDokterPcare($kd_dokter)
@@ -537,5 +579,25 @@ class PasienRalanController extends Controller
     {
         $data = Crypt::encrypt($data);
         return $data;
+    }
+
+    private function checkSessionStatus()
+    {
+        // Cek status session dan pastikan semua data yang diperlukan tersedia
+        $sessionData = [
+            'id' => session()->getId(),
+            'username' => session()->get('username'),
+            'logged_in' => session()->get('logged_in'),
+            'kd_poli' => session()->get('kd_poli')
+        ];
+        
+        \Log::debug('Session status check: ', $sessionData);
+        
+        // Periksa apakah session memiliki username dan status login
+        return (
+            session()->has('username') && 
+            session()->has('logged_in') && 
+            session()->get('logged_in') === true
+        );
     }
 }
