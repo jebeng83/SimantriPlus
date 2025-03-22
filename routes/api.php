@@ -27,9 +27,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Rute untuk obat ranap
-Route::get('/ranap/{bangsal}/obat', [ResepController::class, 'getObatRanap']);
+Route::get('/ranap/{bangsal}/obat', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);
 // Tambahkan rute untuk obat ralan
 Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
+Route::get('/obat-luar', [ResepController::class, 'getObatLuar']);
 Route::get('/obat/{kdObat}', [ObatController::class, 'getObat']);
 Route::post('/cari-kode-obat', [ObatController::class, 'cariKodeObat']);
 
@@ -124,3 +125,6 @@ Route::prefix('icare')->group(function () {
     Route::get('peserta/{noKartu}/riwayat', [App\Http\Controllers\API\IcareController::class, 'getRiwayatPeserta']);
     Route::post('validate', [App\Http\Controllers\API\IcareController::class, 'validateIcare']);
 });
+
+// Endpoint untuk tes getObatRanap
+Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);

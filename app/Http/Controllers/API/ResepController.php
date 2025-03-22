@@ -12,53 +12,53 @@ class ResepController extends Controller
 {
     use EnkripsiData;
 
-    public function getObatRanap(Request $request, $bangsal)
-    {
-        try {
-            $q = $request->get('q');
-            $que = '%' . $q . '%';
+    // public function getObatRanap(Request $request, $bangsal)
+    // {
+    //     try {
+    //         $q = $request->get('q');
+    //         $que = '%' . $q . '%';
             
-            // Pastikan bangsal tidak null
-            if (empty($bangsal)) {
-                Log::error("kd_bangsal kosong saat getObatRanap");
-                return response()->json([], 200);
-            }
+    //         // Pastikan bangsal tidak null
+    //         if (empty($bangsal)) {
+    //             Log::error("kd_bangsal kosong saat getObatRanap");
+    //             return response()->json([], 200);
+    //         }
             
-            // Ambil tanggal terakhir di riwayat_barang_medis untuk bangsal ini
-            $maxTgl = DB::table('riwayat_barang_medis')
-                ->where('kd_bangsal', $bangsal)
-                ->max('tanggal');
+    //         // Ambil tanggal terakhir di riwayat_barang_medis untuk bangsal ini
+    //         $maxTgl = DB::table('riwayat_barang_medis')
+    //             ->where('kd_bangsal', $bangsal)
+    //             ->max('tanggal');
                 
-            if (!$maxTgl) {
-                Log::warning("Tidak ada data riwayat_barang_medis untuk bangsal {$bangsal}");
-                return response()->json([], 200);
-            }
+    //         if (!$maxTgl) {
+    //             Log::warning("Tidak ada data riwayat_barang_medis untuk bangsal {$bangsal}");
+    //             return response()->json([], 200);
+    //         }
             
-            // Query menggunakan riwayat_barang_medis
-            $obat = DB::table('databarang')
-                ->join('riwayat_barang_medis', function($join) use ($bangsal, $maxTgl) {
-                    $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
-                        ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal)
-                        ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
-                        ->whereRaw('riwayat_barang_medis.jam = (SELECT MAX(jam) FROM riwayat_barang_medis WHERE tanggal = ? AND kd_bangsal = ? AND kode_brng = databarang.kode_brng)', [$maxTgl, $bangsal]);
-                })
-                ->where('databarang.status', '1')
-                ->where('riwayat_barang_medis.stok_akhir', '>', '0')
-                ->where(function ($query) use ($que) {
-                    $query->where('databarang.kode_brng', 'like', $que)
-                        ->orWhere('databarang.nama_brng', 'like', $que);
-                })
-                ->selectRaw('databarang.kode_brng AS id, databarang.nama_brng AS text, riwayat_barang_medis.stok_akhir as stok')
-                ->get();
+    //         // Query menggunakan riwayat_barang_medis
+    //         $obat = DB::table('databarang')
+    //             ->join('riwayat_barang_medis', function($join) use ($bangsal, $maxTgl) {
+    //                 $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
+    //                     ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal)
+    //                     ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
+    //                     ->whereRaw('riwayat_barang_medis.jam = (SELECT MAX(jam) FROM riwayat_barang_medis WHERE tanggal = ? AND kd_bangsal = ? AND kode_brng = databarang.kode_brng)', [$maxTgl, $bangsal]);
+    //             })
+    //             ->where('databarang.status', '1')
+    //             ->where('riwayat_barang_medis.stok_akhir', '>', '0')
+    //             ->where(function ($query) use ($que) {
+    //                 $query->where('databarang.kode_brng', 'like', $que)
+    //                     ->orWhere('databarang.nama_brng', 'like', $que);
+    //             })
+    //             ->selectRaw('databarang.kode_brng AS id, databarang.nama_brng AS text, riwayat_barang_medis.stok_akhir as stok')
+    //             ->get();
             
-            Log::info("getObatRanap: Ditemukan " . count($obat) . " obat di bangsal " . $bangsal);
+    //         Log::info("getObatRanap: Ditemukan " . count($obat) . " obat di bangsal " . $bangsal);
             
-            return response()->json($obat, 200);
-        } catch (\Exception $e) {
-            Log::error("Error di getObatRanap: " . $e->getMessage());
-            return response()->json([], 500);
-        }
-    }
+    //         return response()->json($obat, 200);
+    //     } catch (\Exception $e) {
+    //         Log::error("Error di getObatRanap: " . $e->getMessage());
+    //         return response()->json([], 500);
+    //     }
+    // }
 
     public function getObatRalan(Request $request, $poli)
     {
@@ -68,7 +68,12 @@ class ResepController extends Controller
 
             // Log debug info
             Log::info("getObatRalan dipanggil dengan parameter poli: {$poli}, query: {$q}");
-
+            
+            // Berdasarkan kode Java, nilai default
+            $STOKKOSONGRESEP = "no"; // Nilai default dalam Java
+            $aktifkanBatch = "no"; // Nilai default dalam Java
+            
+            // Temukan depo/bangsal berdasarkan poli
             $depo = DB::table('set_depo_ralan')
                 ->where('kd_poli', $poli)
                 ->first();
@@ -83,157 +88,312 @@ class ResepController extends Controller
                     $kd_bangsal = $defaultDepo->kd_bangsal;
                     Log::info("Menggunakan depo fallback dengan kd_bangsal: {$kd_bangsal}");
                 } else {
-                    Log::error("Tidak ada depo yang ditemukan sama sekali");
-                    return response()->json([], 200);
+                    // Gunakan salah satu kode bangsal dari tabel yang sudah diketahui
+                    $kd_bangsal = 'B0009'; // Alternatif: B0007, B0010, B0013, B0014, B0016
+                    Log::info("Tidak ada depo yang ditemukan, menggunakan kode bangsal default: {$kd_bangsal}");
                 }
             } else {
                 $kd_bangsal = $depo->kd_bangsal;
                 Log::info("Depo ditemukan dengan kd_bangsal: {$kd_bangsal}");
             }
-
-            $obat = DB::table('databarang')
-                ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
-                ->where('status', '1')
-                ->where('gudangbarang.stok', '>', '0')
-                ->where('gudangbarang.kd_bangsal', $kd_bangsal)
-                ->where(function ($query) use ($que) {
-                    $query->where('databarang.kode_brng', 'like', $que)
-                        ->orWhere('databarang.nama_brng', 'like', $que);
-                })
-                ->selectRaw('gudangbarang.kode_brng AS id, databarang.nama_brng AS text')
-                ->limit(20) // Batasi hasil untuk performa
-                ->get();
+            
+            // Set filter stok
+            $qrystokkosong = "";
+            // Jika STOKKOSONGRESEP = no, maka hanya tampilkan stok > 0
+            if($STOKKOSONGRESEP == "no") {
+                $qrystokkosong = " and gudangbarang.stok > 0 ";
+                Log::info("Filter STOKKOSONGRESEP aktif: hanya tampilkan stok > 0");
+            }
+            
+            Log::info("Nilai AKTIFKANBATCH: " . $aktifkanBatch);
+            
+            if($aktifkanBatch == "yes") {
+                // Query dengan batch
+                Log::info("Menggunakan query dengan batch (no_batch dan no_faktur tidak kosong)");
+                $obat = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
+                    ->where('gudangbarang.no_batch', '<>', '')
+                    ->where('gudangbarang.no_faktur', '<>', '')
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('sum(gudangbarang.stok) as stok')
+                    )
+                    ->groupBy('gudangbarang.kode_brng')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(20) // Batasi hasil untuk performa
+                    ->get();
+            } else {
+                // Query tanpa batch (nilai default dalam Java adalah "no")
+                Log::info("Menggunakan query tanpa batch (no_batch dan no_faktur kosong)");
+                $obat = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
+                    // Hapus kondisi batch dan faktur yang ketat
+                    // ->where('gudangbarang.no_batch', '=', '')
+                    // ->where('gudangbarang.no_faktur', '=', '')
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('SUM(gudangbarang.stok) as stok')
+                    )
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(100) // Meningkatkan batas hasil
+                    ->get();
+            }
             
             Log::info("Berhasil mengambil " . count($obat) . " obat");
             return response()->json($obat, 200);
         } catch (\Exception $e) {
             Log::error("Error di getObatRalan: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return response()->json([], 500);
         }
     }
 
     public function getObatLuar(Request $request)
     {
-        $q = $request->get('q');
-        $que = '%' . $q . '%';
-
-        $obat = DB::table('databarang')
-            ->where('status', '1')
-            ->where(function ($query) use ($que) {
-                $query->where('databarang.kode_brng', 'like', $que)
-                    ->orWhere('databarang.nama_brng', 'like', $que);
-            })
-            ->selectRaw('databarang.kode_brng AS id, databarang.nama_brng AS text')
-            ->get();
-        return response()->json($obat, 200);
+        try {
+            // Dapatkan parameter
+            $q = $request->get('q');
+            $que = '%' . $q . '%';
+            
+            // Log debug info
+            Log::info("getObatLuar dipanggil dengan query: {$q}");
+            
+            // Berdasarkan kode Java, nilai default
+            $STOKKOSONGRESEP = "no"; // Nilai default dalam Java
+            $aktifkanBatch = "no"; // Nilai default dalam Java
+            
+            // Dapatkan kode bangsal untuk apotek/farmasi
+            $kd_bangsal = DB::table('set_depo_ralan')
+                ->select('kd_bangsal')
+                ->first();
+                
+            if (!$kd_bangsal) {
+                // Menggunakan konstanta default jika tidak ada setting
+                $kd_bangsal = 'B0009'; // Ubah nilai default menjadi kode yang ada di tabel
+                Log::warning("Depo obat luar tidak ditemukan, menggunakan default: {$kd_bangsal}");
+            } else {
+                $kd_bangsal = $kd_bangsal->kd_bangsal;
+                Log::info("Depo obat luar ditemukan: {$kd_bangsal}");
+            }
+            
+            // Set filter stok
+            $qrystokkosong = "";
+            // Jika STOKKOSONGRESEP = no, maka hanya tampilkan stok > 0
+            if($STOKKOSONGRESEP == "no") {
+                $qrystokkosong = " and gudangbarang.stok > 0 ";
+                Log::info("Filter STOKKOSONGRESEP aktif: hanya tampilkan stok > 0");
+            }
+            
+            Log::info("Nilai AKTIFKANBATCH: " . $aktifkanBatch);
+            
+            if($aktifkanBatch == "yes") {
+                // Query dengan batch
+                Log::info("Menggunakan query dengan batch (no_batch dan no_faktur tidak kosong)");
+                $obat = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
+                    ->where('gudangbarang.no_batch', '<>', '')
+                    ->where('gudangbarang.no_faktur', '<>', '')
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('sum(gudangbarang.stok) as stok')
+                    )
+                    ->groupBy('gudangbarang.kode_brng')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(20) // Batasi hasil untuk performa
+                    ->get();
+            } else {
+                // Query tanpa batch (nilai default dalam Java adalah "no")
+                Log::info("Menggunakan query tanpa batch (no_batch dan no_faktur kosong)");
+                $obat = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
+                    // Hapus kondisi batch dan faktur yang ketat
+                    // ->where('gudangbarang.no_batch', '=', '')
+                    // ->where('gudangbarang.no_faktur', '=', '')
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('SUM(gudangbarang.stok) as stok')
+                    )
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(100) // Meningkatkan batas hasil
+                    ->get();
+            }
+            
+            Log::info("Berhasil mengambil " . count($obat) . " obat luar");
+            return response()->json($obat, 200);
+        } catch (\Exception $e) {
+            Log::error("Error di getObatLuar: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return response()->json([], 500);
+        }
     }
 
     public function getDataObat(Request $request, $kdObat)
     {
-        $input = $request->all();
-        $status = $input['status'];
-        $kode = $input['kode'];
-        $bangsal = "";
-        if ($status == 'ralan') {
-            $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
-            $bangsal = $db ? $db->kd_bangsal : null;
-        } else {
-            $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
-            $bangsal = $db ? $db->kd_depo : null;
-        }
-        
-        // Pastikan bangsal tidak null sebelum mengambil stok
-        if (empty($bangsal)) {
-            Log::error("kd_bangsal kosong saat getDataObat", [
-                'kode_brng' => $kdObat,
-                'status' => $status,
-                'kode' => $kode
-            ]);
+        try {
+            $input = $request->all();
+            $status = $input['status'];
+            $kode = $input['kode'];
+            $bangsal = "";
             
-            // Kembalikan data barang tanpa stok
-            $dataBarang = DB::table('databarang')
-                ->where('kode_brng', $kdObat)
-                ->first();
+            // Log debug info
+            Log::info("getDataObat dipanggil untuk kode obat: {$kdObat}, status: {$status}, kode: {$kode}");
+            
+            // Tentukan kode bangsal berdasarkan status dan kode
+            if ($status == 'ralan') {
+                $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
+                $bangsal = $db ? $db->kd_bangsal : null;
+                Log::info("Status ralan: mencari depo dari poli {$kode}, hasilnya: " . ($bangsal ?: "tidak ditemukan"));
+            } else {
+                $db = DB::table('set_depo_ranap')->where('kd_bangsal', $kode)->first();
+                $bangsal = $db ? $db->kd_depo : null;
+                Log::info("Status ranap: mencari depo dari bangsal {$kode}, hasilnya: " . ($bangsal ?: "tidak ditemukan"));
                 
-            // Buat objek baru dengan stok_akhir = 0
-            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
-            $dataWithStok['stok_akhir'] = 0;
+                // Jika tidak ditemukan, gunakan kode bangsal langsung
+                if (empty($bangsal)) {
+                    $bangsal = $kode;
+                    Log::info("Menggunakan kode bangsal langsung: {$bangsal}");
+                }
+            }
             
-            return response()->json((object)$dataWithStok);
-        }
-        
-        $maxTgl = DB::table('riwayat_barang_medis')
-            ->where('kode_brng', $kdObat)
-            ->where('kd_bangsal', $bangsal)
-            ->max('tanggal');
-            
-        if (!$maxTgl) {
-            Log::warning("Tidak ada data riwayat_barang_medis untuk obat {$kdObat} di bangsal {$bangsal}");
-            
-            // Kembalikan data barang tanpa stok
-            $dataBarang = DB::table('databarang')
-                ->where('kode_brng', $kdObat)
-                ->first();
+            // Pastikan bangsal tidak null sebelum mengambil stok
+            if (empty($bangsal)) {
+                Log::error("kd_bangsal kosong saat getDataObat", [
+                    'kode_brng' => $kdObat,
+                    'status' => $status,
+                    'kode' => $kode
+                ]);
                 
-            // Buat objek baru dengan stok_akhir = 0
-            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
-            $dataWithStok['stok_akhir'] = 0;
-            
-            return response()->json((object)$dataWithStok);
-        }
-        
-        $maxJam = DB::table('riwayat_barang_medis')
-            ->where('kode_brng', $kdObat)
-            ->where('tanggal', $maxTgl)
-            ->where('kd_bangsal', $bangsal)
-            ->max('jam');
-            
-        if (!$maxJam) {
-            Log::warning("Tidak ada jam untuk obat {$kdObat} di bangsal {$bangsal} tanggal {$maxTgl}");
-            
-            // Kembalikan data barang tanpa stok
-            $dataBarang = DB::table('databarang')
-                ->where('kode_brng', $kdObat)
-                ->first();
+                // Gunakan kode bangsal default dari tabel
+                $bangsal = 'B0009'; // Alternatif: B0007, B0010, B0013, dll
+                Log::info("Menggunakan kode bangsal default: {$bangsal}");
                 
-            // Buat objek baru dengan stok_akhir = 0
-            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
-            $dataWithStok['stok_akhir'] = 0;
-            
-            return response()->json((object)$dataWithStok);
-        }
-        
-        $data = DB::table('databarang')
-            ->join('riwayat_barang_medis', function($join) use ($kdObat, $maxTgl, $maxJam, $bangsal) {
-                $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
-                    ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
-                    ->where('riwayat_barang_medis.jam', '=', $maxJam)
-                    ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal);
-            })
-            ->where('databarang.kode_brng', $kdObat)
-            ->select('databarang.*', 'riwayat_barang_medis.stok_akhir')
-            ->first();
-        
-        // Log informasi tentang stok obat yang ditemukan
-        Log::info("getDataObat: Stok obat {$kdObat} di bangsal {$bangsal}: " . ($data ? $data->stok_akhir : 'tidak ditemukan'), [
-            'tanggal' => $maxTgl,
-            'jam' => $maxJam
-        ]);
-        
-        // Jika tidak ditemukan, kembalikan data barang dengan stok 0
-        if (!$data) {
-            $dataBarang = DB::table('databarang')
-                ->where('kode_brng', $kdObat)
-                ->first();
+                // Ambil data dengan kode bangsal default
+                $data = DB::table('databarang')
+                    ->leftJoin('gudangbarang', function($join) use ($kdObat, $bangsal) {
+                        $join->on('databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                            ->where('gudangbarang.kd_bangsal', '=', $bangsal);
+                            // Hapus kondisi no_batch dan no_faktur yang ketat
+                    })
+                    ->where('databarang.kode_brng', $kdObat)
+                    ->select(
+                        'databarang.*', 
+                        DB::raw('COALESCE(SUM(gudangbarang.stok), 0) as stok')
+                    )
+                    ->groupBy('databarang.kode_brng')
+                    ->first();
                 
-            // Buat objek baru dengan stok_akhir = 0
-            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
-            $dataWithStok['stok_akhir'] = 0;
+                if ($data) {
+                    return response()->json($data);
+                }
+                
+                // Jika tidak ditemukan di depo default, kembalikan data barang tanpa stok
+                $dataBarang = DB::table('databarang')
+                    ->where('kode_brng', $kdObat)
+                    ->first();
+                    
+                // Buat objek baru dengan stok = 0
+                $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+                $dataWithStok['stok'] = 0;
+                
+                return response()->json((object)$dataWithStok);
+            }
             
-            return response()->json((object)$dataWithStok);
-        }
+            // Ambil data dari gudangbarang dan databarang (langsung, tanpa riwayat)
+            $data = DB::table('databarang')
+                ->leftJoin('gudangbarang', function($join) use ($kdObat, $bangsal) {
+                    $join->on('databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                        ->where('gudangbarang.kd_bangsal', '=', $bangsal);
+                        // Hapus kondisi no_batch dan no_faktur yang ketat
+                })
+                ->where('databarang.kode_brng', $kdObat)
+                ->select(
+                    'databarang.*', 
+                    DB::raw('COALESCE(SUM(gudangbarang.stok), 0) as stok')
+                )
+                ->groupBy('databarang.kode_brng')
+                ->first();
+            
+            // Log informasi tentang stok obat yang ditemukan
+            Log::info("getDataObat: Stok obat {$kdObat} di bangsal {$bangsal}: " . ($data ? $data->stok : 'tidak ditemukan'));
+            
+            // Jika tidak ditemukan, kembalikan data barang dengan stok 0
+            if (!$data) {
+                $dataBarang = DB::table('databarang')
+                    ->where('kode_brng', $kdObat)
+                    ->first();
+                    
+                // Buat objek baru dengan stok = 0
+                $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+                $dataWithStok['stok'] = 0;
+                
+                return response()->json((object)$dataWithStok);
+            }
 
-        return response()->json($data);
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error("Error di getDataObat: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            
+            // Return default response with empty stok
+            $dataBarang = DB::table('databarang')
+                ->where('kode_brng', $kdObat)
+                ->first();
+                
+            $dataWithStok = $dataBarang ? (array)$dataBarang : [];
+            $dataWithStok['stok'] = 0;
+            
+            return response()->json((object)$dataWithStok);
+        }
     }
 
     public function postResep(Request $request, $noRawat)
