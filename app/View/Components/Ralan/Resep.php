@@ -33,13 +33,27 @@ class Resep extends Component
             ->limit(5)
             ->get();
 
-        $this->resep = DB::table('resep_dokter')
-            ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
-            ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
-            ->where('resep_obat.no_rawat', $this->noRawat)
-            ->where('resep_obat.kd_dokter', $this->dokter)
-            ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
-            ->get();
+        // Ambil nomor resep terbaru untuk no_rawat ini
+        $latestResep = DB::table('resep_obat')
+            ->where('no_rawat', $this->noRawat)
+            ->where('kd_dokter', $this->dokter)
+            ->orderBy('tgl_peresepan', 'desc')
+            ->orderBy('jam_peresepan', 'desc')
+            ->select('no_resep')
+            ->first();
+            
+        if ($latestResep) {
+            // Ambil detail resep untuk nomor resep terbaru saja
+            $this->resep = DB::table('resep_dokter')
+                ->join('databarang', 'resep_dokter.kode_brng', '=', 'databarang.kode_brng')
+                ->join('resep_obat', 'resep_obat.no_resep', '=', 'resep_dokter.no_resep')
+                ->where('resep_dokter.no_resep', $latestResep->no_resep)
+                ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 
+                        'resep_dokter.aturan_pakai', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
+                ->get();
+        } else {
+            $this->resep = collect(); // Set resep ke collection kosong
+        }
 
         $this->dataMetodeRacik = DB::table('metode_racik')
             ->get();
@@ -62,6 +76,12 @@ class Resep extends Component
             'poli' => session()->get('kd_poli'),
             'dataMetodeRacik' => $this->dataMetodeRacik,
             'resepRacikan' => $this->getResepRacikan($this->noRM, session()->get('username')),
+            'getResepObat' => function($noResep) {
+                return self::getResepObat($noResep);
+            },
+            'getDetailRacikan' => function($noResep) {
+                return self::getDetailRacikan($noResep);
+            }
         ]);
     }
 
@@ -91,13 +111,12 @@ class Resep extends Component
             ->join('resep_obat', 'resep_dokter_racikan.no_resep', '=', 'resep_obat.no_resep')
             ->join('reg_periksa', 'resep_obat.no_rawat', '=', 'reg_periksa.no_rawat')
             ->join('metode_racik', 'resep_dokter_racikan.kd_racik', '=', 'metode_racik.kd_racik')
-            ->where([
-                ['reg_periksa.no_rkm_medis', '=', $noRM],
-                ['resep_obat.kd_dokter', '=', $kdDokter]
-            ])
+            ->where('reg_periksa.no_rkm_medis', $noRM)
+            ->where('resep_obat.kd_dokter', $kdDokter)
+            ->where('resep_obat.no_rawat', $this->noRawat)
             ->select('resep_dokter_racikan.*', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan', 'metode_racik.nm_racik')
-            ->orderBy('resep_obat.tgl_peresepan', 'desc')
             ->get();
+            
         return $data;
     }
 
