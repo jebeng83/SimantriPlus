@@ -13,32 +13,110 @@ class ResepRanapController extends Controller
 {
     use EnkripsiData;
 
-    public function getObatRanap($bangsal)
+    public function getObatRanap(Request $request, $bangsal)
     {
         try {
-            // Query untuk mendapatkan data obat berdasarkan bangsal
-            // Menggunakan riwayat_barang_medis untuk melihat stok di bangsal tertentu
-            $maxTgl = DB::table('riwayat_barang_medis')
-                ->where('kd_bangsal', $bangsal)
-                ->max('tanggal');
-                
-            $result = DB::table('databarang')
-                ->join('riwayat_barang_medis', function($join) use ($bangsal, $maxTgl) {
-                    $join->on('databarang.kode_brng', '=', 'riwayat_barang_medis.kode_brng')
-                        ->where('riwayat_barang_medis.kd_bangsal', '=', $bangsal)
-                        ->where('riwayat_barang_medis.tanggal', '=', $maxTgl)
-                        ->whereRaw('riwayat_barang_medis.jam = (SELECT MAX(jam) FROM riwayat_barang_medis WHERE tanggal = ? AND kd_bangsal = ? AND kode_brng = databarang.kode_brng)', [$maxTgl, $bangsal]);
-                })
-                ->where('riwayat_barang_medis.stok_akhir', '>', 0)
-                ->select('databarang.kode_brng as id', 'databarang.nama_brng as text', 'riwayat_barang_medis.stok_akhir as stok')
-                ->get();
-                
-            // Log jumlah obat yang ditemukan
-            Log::info("Ditemukan " . count($result) . " obat di bangsal " . $bangsal);
-                
-            return response()->json($result);
+            Log::info("Permintaan getObatRanap untuk bangsal: {$bangsal}");
+            
+            // Berdasarkan kode Java, nilai default
+            $STOKKOSONGRESEP = "no"; // Nilai default dalam Java
+            $aktifkanBatch = "no"; // Nilai default dalam Java
+            
+            // Dapatkan parameter pencarian - mendukung 'q' atau 'term' (untuk Select2)
+            $q = $request->get('q', $request->get('term', ''));
+            Log::info("Mencari obat dengan query: {$q}");
+            
+            // Format pencarian menjadi pattern LIKE
+            $que = '%' . $q . '%';
+            
+            // Set filter stok
+            $qrystokkosong = "";
+            // Jika STOKKOSONGRESEP = no, maka hanya tampilkan stok > 0
+            if($STOKKOSONGRESEP == "no") {
+                $qrystokkosong = " and gudangbarang.stok > 0 ";
+                Log::info("Filter STOKKOSONGRESEP aktif: hanya tampilkan stok > 0");
+            }
+            
+            Log::info("Nilai AKTIFKANBATCH: " . $aktifkanBatch);
+            
+            if($aktifkanBatch == "yes") {
+                // Query dengan batch
+                Log::info("Menggunakan query dengan batch (no_batch dan no_faktur tidak kosong)");
+                $result = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $bangsal)
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('sum(gudangbarang.stok) as stok'),
+                        'databarang.kode_sat',
+                        'databarang.letak_barang',
+                        'jenis.nama as nama_jenis',
+                        'industrifarmasi.nama_industri',
+                        'databarang.h_beli'
+                    )
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'databarang.letak_barang', 'jenis.nama', 'industrifarmasi.nama_industri', 'databarang.h_beli')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(100) // Meningkatkan batas hasil
+                    ->get();
+            } else {
+                // Query tanpa batch (nilai default dalam Java adalah "no")
+                Log::info("Menggunakan query tanpa batch (no_batch dan no_faktur kosong)");
+                $result = DB::table('databarang')
+                    ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
+                    ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
+                    ->where('databarang.status', '=', '1')
+                    ->where('gudangbarang.kd_bangsal', '=', $bangsal)
+                    ->whereRaw("1=1 {$qrystokkosong}")
+                    ->where(function ($query) use ($que) {
+                        $query->where('databarang.kode_brng', 'like', $que)
+                            ->orWhere('databarang.nama_brng', 'like', $que)
+                            ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('databarang.letak_barang', 'like', $que);
+                    })
+                    ->select(
+                        'databarang.kode_brng as id',
+                        'databarang.nama_brng as text',
+                        DB::raw('SUM(gudangbarang.stok) as stok'),
+                        'databarang.kode_sat',
+                        'databarang.letak_barang',
+                        'jenis.nama as nama_jenis',
+                        'industrifarmasi.nama_industri',
+                        'databarang.h_beli'
+                    )
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'databarang.letak_barang', 'jenis.nama', 'industrifarmasi.nama_industri', 'databarang.h_beli')
+                    ->orderBy('databarang.nama_brng')
+                    ->limit(100) // Meningkatkan batas hasil
+                    ->get();
+            }
+            
+            // Format data untuk output standar API
+            $formattedResult = [];
+            foreach($result as $item) {
+                $formattedResult[] = [
+                    'id' => $item->id,
+                    'text' => $item->text,
+                    'stok' => (float)$item->stok
+                ];
+            }
+            
+            Log::info("Ditemukan " . count($formattedResult) . " obat di gudangbarang untuk bangsal " . $bangsal);
+            
+            return response()->json($formattedResult);
         } catch (\Exception $e) {
             Log::error("Error getObatRanap: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return response()->json([
                 'status' => 'gagal',
                 'pesan' => 'Terjadi kesalahan: ' . $e->getMessage()
