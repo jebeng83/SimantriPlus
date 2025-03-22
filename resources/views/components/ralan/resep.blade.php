@@ -48,55 +48,19 @@
 
             {{-- @if(count($resep) > 0) --}}
             <x-adminlte-callout theme="info">
-                {{--
-                <livewire:ralan.table-resep :no-rawat="$no_rawat" /> --}}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                {{-- <th><input type="checkbox" id="checkboxAll"></th> --}}
-                                <th>Nama Obat</th>
-                                <th>Tanggal / Jam</th>
-                                <th>Jumlah</th>
-                                <th>Aturan Pakai</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="body-resep">
-                            @forelse($resep as $r)
-                            <tr>
-                                {{--
-                            <tr data-target="{{$r->kode_brng}}" class="cursor-pointer"> --}}
-                                {{-- <td><input type="checkbox" id="checkbox-resep" disabled></td> --}}
-                                <td>{{$r->nama_brng}}</td>
-                                <td>{{$r->tgl_peresepan}} {{$r->jam_peresepan}}</td>
-                                <td>{{$r->jml}}</td>
-                                <td>{{$r->aturan_pakai}}</td>
-                                <td>
-                                    <button class="btn btn-danger btn-sm"
-                                        onclick='hapusObat("{{$r->no_resep}}", "{{$r->kode_brng}}", event)'>Hapus</button>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center">Tidak ada data</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="container-delete-resep-button">
-                        @php
-                        if(count($resep) > 0){
-                        $no_resep = $resep->pluck('no_resep')->toArray();
-                        $no = $no_resep[0];
-                        }else{
-                        $no = '';
-                        }
-                        @endphp
-                        <button class="btn btn-danger btn-sm btn-block disabled" data-target="{{$no}}"
-                            id="delete-batch-button">Hapus
-                            Obat</button>
-                    </div>
+                <livewire:ralan.table-resep :no-rawat="$no_rawat" />
+                <div class="container-delete-resep-button">
+                    @php
+                    if(count($resep) > 0){
+                    $no_resep = $resep->pluck('no_resep')->toArray();
+                    $no = $no_resep[0];
+                    }else{
+                    $no = '';
+                    }
+                    @endphp
+                    <button class="btn btn-danger btn-sm btn-block disabled" data-target="{{$no}}"
+                        id="delete-batch-button">Hapus
+                        Obat</button>
                 </div>
             </x-adminlte-callout>
             {{-- @endif --}}
