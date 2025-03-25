@@ -30,8 +30,17 @@ class PasienController extends Controller
 
     public function edit($no_rkm_medis)
     {
-        $pasien = DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->first();
-        $posyandu = DB::table('data_posyandu')->get();
+        // Memastikan query langsung ke database tanpa cache
+        DB::connection()->disableQueryLog();
+        $pasien = DB::table('pasien')
+                  ->where('no_rkm_medis', $no_rkm_medis)
+                  ->useWritePdo() // Menggunakan koneksi write untuk memastikan data terbaru
+                  ->first();
+        
+        // Ambil data posyandu langsung dari database
+        $posyandu = DB::table('data_posyandu')
+                    ->useWritePdo()
+                    ->get();
 
         return view('pasien.edit', ['pasien' => $pasien, 'posyandu' => $posyandu]);
     }
@@ -269,7 +278,12 @@ class PasienController extends Controller
                 'no_rkm_medis' => $no_rkm_medis
             ]);
             
-            $pasien = DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->first();
+            // Memastikan query langsung ke database tanpa cache
+            DB::connection()->disableQueryLog();
+            $pasien = DB::table('pasien')
+                     ->where('no_rkm_medis', $no_rkm_medis)
+                     ->useWritePdo() // Menggunakan koneksi write untuk memastikan data terbaru
+                     ->first();
             
             if (!$pasien) {
                 // Log jika pasien tidak ditemukan
@@ -288,7 +302,11 @@ class PasienController extends Controller
                 'no_rkm_medis' => $no_rkm_medis
             ]);
             
-            return response()->json($pasien);
+            // Menambahkan header no-cache
+            return response()->json($pasien)
+                   ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                   ->header('Pragma', 'no-cache')
+                   ->header('Expires', '0');
         } catch (\Exception $e) {
             // Log error
             \Log::error('PasienController - show: Gagal mengambil detail pasien', [

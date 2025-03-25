@@ -96,7 +96,8 @@
             </thead>
             <tbody>
                 @forelse($pasien as $p)
-                <tr class="patient-row" onclick="window.location='{{ route('pasien.edit', $p->no_rkm_medis) }}'"
+                <tr class="patient-row"
+                    onclick="window.location='{{ route('pasien.edit', $p->no_rkm_medis) }}?t=' + Date.now()"
                     style="cursor: pointer;">
                     <td>{{ $p->no_rkm_medis }}</td>
                     <td>{{ $p->nm_pasien }}</td>
@@ -115,8 +116,8 @@
                                 title="Lihat Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <a href="{{ route('pasien.edit', $p->no_rkm_medis) }}" class="btn btn-sm btn-primary"
-                                data-toggle="tooltip" title="Edit Data">
+                            <a href="{{ route('pasien.edit', $p->no_rkm_medis) }}?t={{ time() }}"
+                                class="btn btn-sm btn-primary" data-toggle="tooltip" title="Edit Data">
                                 <i class="fas fa-edit"></i>
                             </a>
                         </div>

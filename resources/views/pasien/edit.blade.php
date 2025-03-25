@@ -3,6 +3,9 @@
 @section('title', 'Edit Pasien')
 
 @section('content_header')
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <h1>Edit Data Pasien</h1>
 @stop
 
@@ -164,6 +167,35 @@
 @section('js')
 <script>
     $(document).ready(function() {
+        // Refresh data dari server
+        const no_rkm_medis = '{{ $pasien->no_rkm_medis }}';
+        
+        // AJAX request untuk mendapatkan data terbaru pasien
+        $.ajax({
+            url: '/pasien/' + no_rkm_medis,
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            success: function(data) {
+                // Isi formulir dengan data terbaru
+                $('#no_ktp').val(data.no_ktp);
+                $('#no_kk').val(data.no_kk);
+                $('#nm_pasien').val(data.nm_pasien);
+                $('#tgl_lahir').val(data.tgl_lahir);
+                $('#status').val(data.status);
+                $('#stts_nikah').val(data.stts_nikah);
+                $('#no_peserta').val(data.no_peserta);
+                $('#no_tlp').val(data.no_tlp);
+                $('#alamat').val(data.alamat);
+                $('#data_posyandu').val(data.data_posyandu);
+                
+                console.log('Data pasien berhasil disegarkan dari database');
+            },
+            error: function(xhr) {
+                console.error('Gagal memperbarui data: ' + xhr.responseText);
+            }
+        });
+        
         // Animasi untuk form
         $('.form-group').each(function(index) {
             $(this).css('opacity', 0);
