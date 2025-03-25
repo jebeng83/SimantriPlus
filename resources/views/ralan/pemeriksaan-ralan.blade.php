@@ -88,6 +88,15 @@
                 <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
                 <livewire:ralan.modal.edit-pemeriksaan />
             </x-adminlte-card>
+
+            <!-- Card Pemeriksaan ANC -->
+            @if(session()->get('kd_poli') == 'U0007' || session()->get('kd_poli') == 'U0007')
+            <x-adminlte-card title="Pemeriksaan ANC" theme="info" icon="fas fa-lg fa-stethoscope"
+                collapsible="collapsed" maximizable>
+                <livewire:ralan.pemeriksaan-anc :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
+            </x-adminlte-card>
+            @endif
+
             @if(session()->get('kd_poli') == 'U0003' || session()->get('kd_poli') == 'U0003')
             <livewire:ralan.odontogram :noRawat=" request()->get('no_rawat')" :noRm="request()->get('no_rm')">
                 @endif
@@ -117,6 +126,63 @@
             alert('pemeriksaan');
         })
     })
+</script>
+
+<!-- Script untuk debug service worker -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if Service Worker exists
+        if ('serviceWorker' in navigator) {
+            console.log('Service Worker tersedia di browser ini');
+            
+            // Log semua service worker yang terdaftar
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                console.log('Service Workers terdaftar:', registrations.length);
+                
+                // Debug service worker yang bermasalah
+                if (registrations.length > 0) {
+                    registrations.forEach(function(registration) {
+                        console.log('Service Worker scope:', registration.scope);
+                        console.log('Service Worker state:', registration.active ? registration.active.state : 'tidak aktif');
+                    });
+                }
+            });
+
+            // Handle unload event untuk membersihkan service worker jika perlu
+            window.addEventListener('beforeunload', function() {
+                // Jika halaman mengalami error, pertimbangkan untuk unregister service worker
+                if (window.hasServiceWorkerError) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                            console.log('Service Worker dinonaktifkan karena error');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Detect ANC card click
+        var ancCard = document.querySelector('[title="Pemeriksaan ANC"]');
+        if (ancCard) {
+            ancCard.addEventListener('click', function() {
+                console.log('ANC card clicked');
+            });
+        }
+    });
+    
+    // Tangkap error fetching yang mungkin terkait service worker
+    window.addEventListener('error', function(event) {
+        if (event.message && event.message.includes('Failed to fetch')) {
+            console.error('Fetch error terdeteksi:', event);
+            window.hasServiceWorkerError = true;
+            
+            if (confirm('Terjadi error saat memuat data. Muat ulang halaman?')) {
+                // Tambahkan parameter untuk menonaktifkan service worker
+                window.location.reload(true);
+            }
+        }
+    });
 </script>
 
 <!-- Script untuk mengelola tampilan berdasarkan keberadaan data -->
@@ -177,5 +243,34 @@
         }
     }, 500); // Check every 500ms
 });
+</script>
+
+<!-- Script untuk memeriksa duplikasi elemen -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fungsi untuk memeriksa duplikasi heading di kartu ANC
+        function checkANCCardDuplication() {
+            var ancCard = document.querySelector('[title="Pemeriksaan ANC"]');
+            if (ancCard) {
+                var ancHeadings = ancCard.querySelectorAll('h3.card-title, .card-header');
+                if (ancHeadings.length > 1) {
+                    console.warn('Duplikasi elemen di kartu Pemeriksaan ANC:', ancHeadings.length, 'headings ditemukan');
+                } else {
+                    console.log('Kartu Pemeriksaan ANC normal:', ancHeadings.length, 'heading ditemukan');
+                }
+            }
+        }
+        
+        // Jalankan pengecekan saat DOM loaded
+        checkANCCardDuplication();
+        
+        // Jalankan pengecekan lagi saat card di-expand
+        var ancCardToggle = document.querySelector('[title="Pemeriksaan ANC"] .btn-tool[data-card-widget="collapse"]');
+        if (ancCardToggle) {
+            ancCardToggle.addEventListener('click', function() {
+                setTimeout(checkANCCardDuplication, 500); // Delay untuk memastikan DOM sudah diupdate
+            });
+        }
+    });
 </script>
 @endpush

@@ -32,6 +32,26 @@ class AppServiceProvider extends ServiceProvider
             $view->with('adminlte_css', 'layouts.global-styles');
         });
         
-        // Kode boot yang sudah ada
+        // Register Livewire Components
+        if (class_exists('Livewire')) {
+            // Register components hanya sekali
+            if (!app()->bound('livewire.ralan.pemeriksaan-anc')) {
+                \Livewire::component('ralan.pemeriksaan-anc', \App\Http\Livewire\Ralan\PemeriksaanANC::class);
+            }
+        }
+        
+        // Handle session timeout
+        if (auth()->check()) {
+            $lastActivity = session('last_activity');
+            $timeout = config('session.lifetime') * 60; // Convert minutes to seconds
+            
+            if ($lastActivity && time() - $lastActivity > $timeout) {
+                auth()->logout();
+                session()->flush();
+                return redirect()->route('login')->with('error', 'Sesi Anda telah berakhir. Silakan login kembali.');
+            }
+            
+            session(['last_activity' => time()]);
+        }
     }
 }
