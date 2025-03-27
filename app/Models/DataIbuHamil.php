@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class DataIbuHamil extends Model
 {
+    use HasFactory;
+
     protected $table = 'data_ibu_hamil';
     protected $primaryKey = 'id_hamil';
     public $incrementing = false;
@@ -61,10 +64,14 @@ class DataIbuHamil extends Model
         'hari_pertama_haid' => 'date',
         'hari_perkiraan_lahir' => 'date',
         'kepemilikan_buku_kia' => 'boolean',
-        'berat_badan_sebelum_hamil' => 'double',
-        'tinggi_badan' => 'double',
-        'lila' => 'double',
-        'imt_sebelum_hamil' => 'double'
+        'berat_badan_sebelum_hamil' => 'decimal:2',
+        'tinggi_badan' => 'decimal:2',
+        'lila' => 'decimal:2',
+        'imt_sebelum_hamil' => 'decimal:2',
+        'provinsi' => 'integer',
+        'kabupaten' => 'integer',
+        'kecamatan' => 'integer',
+        'desa' => 'integer',
     ];
 
     public static function boot()
@@ -72,22 +79,17 @@ class DataIbuHamil extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            // Gunakan tabel sequence untuk mendapatkan nomor urut berikutnya
-            $sequenceRow = DB::table('data_ibu_hamil_sequence')->first();
-            $nextNumber = $sequenceRow ? $sequenceRow->last_number + 1 : 1;
-            
-            // Format ID: H + 6 digit nomor (misal: H000001)
-            $model->id_hamil = 'H' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-            
-            // Update nilai sequence
-            if ($sequenceRow) {
-                DB::table('data_ibu_hamil_sequence')
-                    ->where('id', $sequenceRow->id)
-                    ->update(['last_number' => $nextNumber]);
-            } else {
-                DB::table('data_ibu_hamil_sequence')->insert([
-                    'last_number' => $nextNumber
-                ]);
+            if (!$model->id_hamil) {
+                $lastId = static::orderBy('id_hamil', 'desc')->value('id_hamil');
+                
+                if ($lastId) {
+                    $numericPart = (int)substr($lastId, 3);
+                    $newNumericPart = $numericPart + 1;
+                } else {
+                    $newNumericPart = 1;
+                }
+                
+                $model->id_hamil = 'IH-' . str_pad($newNumericPart, 4, '0', STR_PAD_LEFT);
             }
         });
     }

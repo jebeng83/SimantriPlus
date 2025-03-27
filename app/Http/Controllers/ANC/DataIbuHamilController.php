@@ -16,7 +16,7 @@ class DataIbuHamilController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = DataIbuHamil::latest()->get();
+            $data = DataIbuHamil::with('pasien')->latest()->get();
             
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -33,7 +33,33 @@ class DataIbuHamilController extends Controller
                     ';
                     return $actionBtn;
                 })
-                ->rawColumns(['action'])
+                ->addColumn('usia_kehamilan', function($row) {
+                    if ($row->hari_perkiraan_lahir) {
+                        $hpl = \Carbon\Carbon::parse($row->hari_perkiraan_lahir);
+                        $today = \Carbon\Carbon::now();
+                        
+                        if ($today->lt($hpl)) {
+                            $diffInDays = $today->diffInDays($hpl);
+                            $weeks = floor((280 - $diffInDays) / 7);
+                            $days = (280 - $diffInDays) % 7;
+                            return $weeks . ' minggu ' . $days . ' hari';
+                        } else {
+                            return 'Sudah lewat HPL';
+                        }
+                    }
+                    return '-';
+                })
+                ->editColumn('status', function ($row) {
+                    $statusClass = [
+                        'Hamil' => 'badge bg-primary',
+                        'Melahirkan' => 'badge bg-success',
+                        'Abortus' => 'badge bg-danger'
+                    ];
+                    
+                    $class = $statusClass[$row->status] ?? 'badge bg-secondary';
+                    return '<span class="'.$class.'">'.$row->status.'</span>';
+                })
+                ->rawColumns(['action', 'status'])
                 ->make(true);
         }
         
@@ -74,11 +100,11 @@ class DataIbuHamilController extends Controller
             'nama_suami' => 'nullable|string',
             'nik_suami' => 'nullable|string',
             'telp_suami' => 'nullable|string',
-            'provinsi' => 'required|string',
-            'kabupaten' => 'required|string',
-            'kecamatan' => 'required|string',
+            'provinsi' => 'required|integer',
+            'kabupaten' => 'required|integer',
+            'kecamatan' => 'required|integer',
             'puskesmas' => 'required|string',
-            'desa' => 'required|string',
+            'desa' => 'required|integer',
             'data_posyandu' => 'required|string',
             'alamat_lengkap' => 'required|string',
             'rt' => 'nullable|string',
@@ -86,7 +112,17 @@ class DataIbuHamilController extends Controller
         ]);
 
         try {
+            // Cek apakah pasien tersebut ada
+            $pasien = Pasien::where('no_rkm_medis', $request->no_rkm_medis)->first();
+            if (!$pasien) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pasien dengan No. RM '. $request->no_rkm_medis .' tidak ditemukan'
+                ], 404);
+            }
+            
             $dataIbuHamil = DataIbuHamil::create($validated);
+            
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data ibu hamil berhasil disimpan',
@@ -162,11 +198,11 @@ class DataIbuHamilController extends Controller
             'nama_suami' => 'nullable|string',
             'nik_suami' => 'nullable|string',
             'telp_suami' => 'nullable|string',
-            'provinsi' => 'required|string',
-            'kabupaten' => 'required|string',
-            'kecamatan' => 'required|string',
+            'provinsi' => 'required|integer',
+            'kabupaten' => 'required|integer',
+            'kecamatan' => 'required|integer',
             'puskesmas' => 'required|string',
-            'desa' => 'required|string',
+            'desa' => 'required|integer',
             'data_posyandu' => 'required|string',
             'alamat_lengkap' => 'required|string',
             'rt' => 'nullable|string',
@@ -174,7 +210,17 @@ class DataIbuHamilController extends Controller
         ]);
 
         try {
+            // Cek apakah pasien tersebut ada
+            $pasien = Pasien::where('no_rkm_medis', $request->no_rkm_medis)->first();
+            if (!$pasien) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pasien dengan No. RM '. $request->no_rkm_medis .' tidak ditemukan'
+                ], 404);
+            }
+            
             $dataIbuHamil->update($validated);
+            
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data ibu hamil berhasil diperbarui',
@@ -228,40 +274,11 @@ class DataIbuHamilController extends Controller
         try {
             Log::info('Mencari data pasien dengan NIK: ' . $nik);
             
-            // Cek apakah tabelnya ada
-            try {
-                $tableExists = DB::select("SHOW TABLES LIKE 'pasien'");
-                if (empty($tableExists)) {
-                    Log::error('Tabel pasien tidak ditemukan');
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Tabel pasien tidak ditemukan'
-                    ], 404);
-                }
-            } catch (\Exception $e) {
-                Log::error('Error cek tabel: ' . $e->getMessage());
-            }
-            
             // Debug query
             $queryLog = DB::connection()->enableQueryLog();
             
-            $pasien = DB::table('pasien')
-                ->select([
-                    'pasien.nm_pasien as nama',
-                    'pasien.tgl_lahir',
-                    'pasien.no_kk',
-                    'pasien.no_peserta',
-                    'pasien.alamat',
-                    'pasien.kd_prop',
-                    'pasien.kd_kab',
-                    'pasien.kd_kec',
-                    'pasien.kd_kel',
-                    'pasien.data_posyandu',
-                    'pasien.no_rkm_medis'
-                ])
-                ->where('no_ktp', $nik)
-                ->first();
-                
+            $pasien = Pasien::where('no_ktp', $nik)->first();
+            
             Log::info('Query logs: ', DB::getQueryLog());
             DB::connection()->disableQueryLog();
 
@@ -273,14 +290,29 @@ class DataIbuHamilController extends Controller
                 ], 404);
             }
             
+            // Cek jika pasien sudah terdaftar sebagai ibu hamil
+            $dataIbuHamil = DataIbuHamil::where('no_rkm_medis', $pasien->no_rkm_medis)
+                                        ->where('status', 'Hamil')
+                                        ->first();
+            
+            if ($dataIbuHamil) {
+                Log::info('Pasien sudah terdaftar sebagai ibu hamil dengan ID: ' . $dataIbuHamil->id_hamil);
+                
+                // Tambahkan data status ibu hamil
+                $ibuHamilStatus = [
+                    'id_hamil' => $dataIbuHamil->id_hamil,
+                    'status' => $dataIbuHamil->status,
+                    'kehamilan_ke' => $dataIbuHamil->kehamilan_ke,
+                    'hari_perkiraan_lahir' => $dataIbuHamil->hari_perkiraan_lahir
+                ];
+            } else {
+                $ibuHamilStatus = null;
+            }
+            
             // Cek struktur tabel kabupaten
             $kabupatenColumns = Schema::getColumnListing('kabupaten');
             $kecamatanColumns = Schema::getColumnListing('kecamatan');
             $kelurahanColumns = Schema::getColumnListing('kelurahan');
-            
-            Log::info('Struktur tabel kabupaten: ', ['columns' => $kabupatenColumns]);
-            Log::info('Struktur tabel kecamatan: ', ['columns' => $kecamatanColumns]);
-            Log::info('Struktur tabel kelurahan: ', ['columns' => $kelurahanColumns]);
             
             // Ambil data propinsi
             $propinsi = DB::table('propinsi')
@@ -322,30 +354,31 @@ class DataIbuHamilController extends Controller
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'nama' => $pasien->nama,
+                    'nama' => $pasien->nm_pasien,
                     'no_rkm_medis' => $pasien->no_rkm_medis,
                     'tgl_lahir' => $pasien->tgl_lahir,
                     'nomor_kk' => $pasien->no_kk,
                     'no_jaminan_kesehatan' => $pasien->no_peserta,
                     'alamat' => $pasien->alamat,
                     'provinsi' => [
-                        'kode' => $pasien->kd_prop,
+                        'kode' => (int) $pasien->kd_prop,
                         'nama' => $propinsi ? $propinsi->nm_prop : 'Tidak Ada'
                     ],
                     'kabupaten' => [
-                        'kode' => $pasien->kd_kab,
+                        'kode' => (int) $pasien->kd_kab,
                         'nama' => $kabupaten ? ($kabupaten->nm_kab ?? $kabupaten->nama_kabupaten ?? 'Tidak Ada') : 'Tidak Ada'
                     ],
                     'kecamatan' => [
-                        'kode' => $pasien->kd_kec,
+                        'kode' => (int) $pasien->kd_kec,
                         'nama' => $kecamatan ? ($kecamatan->nm_kec ?? $kecamatan->nama_kecamatan ?? 'Tidak Ada') : 'Tidak Ada'
                     ],
                     'desa' => [
-                        'kode' => $pasien->kd_kel,
+                        'kode' => (int) $pasien->kd_kel,
                         'nama' => $kelurahan ? ($kelurahan->nm_kel ?? $kelurahan->nama_kelurahan ?? 'Tidak Ada') : 'Tidak Ada'
                     ],
                     'puskesmas' => 'KERJO',
-                    'data_posyandu' => $pasien->data_posyandu
+                    'data_posyandu' => $pasien->data_posyandu,
+                    'ibu_hamil_status' => $ibuHamilStatus
                 ]
             ]);
         } catch (\Exception $e) {
