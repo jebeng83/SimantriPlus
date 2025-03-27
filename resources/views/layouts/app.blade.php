@@ -36,7 +36,20 @@
 
     @include('layouts.global-styles')
 
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+
     <style>
+        /* Alpine.js transitions */
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .transition {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         /* Global styles */
         body {
             font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -260,6 +273,30 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Menangani error service worker
+    window.addEventListener('error', function(event) {
+        if (event.message && (event.message.includes('Failed to fetch') || event.message.includes('Service Worker'))) {
+            console.log('Service worker error ditangani');
+            // Opsional: unregister service worker untuk menghindari masalah
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+        }
+    });
+
+    // Menangani error CORS
+    $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+        if (jqxhr.status === 0 || jqxhr.status === 503) {
+            console.log('CORS atau koneksi error ditangani pada: ' + settings.url);
+        }
+    });
+    </script>
 </body>
 
 </html>

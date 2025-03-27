@@ -79,39 +79,40 @@
             <x-ralan.pasien :no-rawat="$no_rawat ?? request()->get('no_rawat')" />
         </div>
         <div class="col-md-8">
-            @if(session()->get('kd_poli') == 'U017')
-            <x-adminlte-card title="Uji Fungsi KFR" theme="info" collapsible="collapsed" maximizable>
-                <livewire:ralan.uji-fungsi-kfr :noRawat="request()->get('no_rawat')" />
-            </x-adminlte-card>
-            @endif
             <x-adminlte-card title="Pemeriksaan" theme="info" icon="fas fa-lg fa-bell" collapsible maximizable>
                 <livewire:ralan.pemeriksaan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
                 <livewire:ralan.modal.edit-pemeriksaan />
             </x-adminlte-card>
-
-            <!-- Card Pemeriksaan ANC -->
-            @if(session()->get('kd_poli') == 'U0007' || session()->get('kd_poli') == 'U0007')
-            <x-adminlte-card title="Pemeriksaan ANC" theme="info" icon="fas fa-lg fa-stethoscope"
-                collapsible="collapsed" maximizable>
-                <livewire:ralan.pemeriksaan-anc :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
-            </x-adminlte-card>
-            @endif
-
             @if(session()->get('kd_poli') == 'U0003' || session()->get('kd_poli') == 'U0003')
             <livewire:ralan.odontogram :noRawat=" request()->get('no_rawat')" :noRm="request()->get('no_rm')">
                 @endif
+
+                <!-- Komponen-komponen yang dipindahkan setelah Pemeriksaan ANC -->
                 <x-ralan.permintaan-lab :no-rawat="request()->get('no_rawat')" />
+
                 <x-adminlte-card title="Resep" id="resepCard" theme="info" icon="fas fa-lg fa-pills"
                     collapsible="collapsed" maximizable>
                     <x-ralan.resep />
                 </x-adminlte-card>
+
                 <x-adminlte-card title="Diagnosa" theme="info" icon="fas fa-lg fa-file-medical" collapsible="collapsed"
                     maximizable>
                     <livewire:ralan.diagnosa :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
                 </x-adminlte-card>
+
                 <livewire:ralan.resume :no-rawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
+
                 <livewire:ralan.catatan :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
+
                 <x-ralan.rujuk-internal :no-rawat="request()->get('no_rawat')" />
+
+                @if(session()->get('kd_poli') == 'U0007')
+                <x-adminlte-card title="Pemeriksaan ANC" theme="info" icon="fas fa-lg fa-baby" collapsible="collapsed"
+                    maximizable>
+                    <livewire:ralan.pemeriksaan-anc :noRawat="request()->get('no_rawat')"
+                        :noRm="request()->get('no_rm')" />
+                </x-adminlte-card>
+                @endif
         </div>
     </div>
 </div>
@@ -120,6 +121,7 @@
 
 @section('plugins.TempusDominusBs4', true)
 @push('js')
+
 <script>
     $(function () {
         $('#pemeriksaan-tab').on('click', function () {

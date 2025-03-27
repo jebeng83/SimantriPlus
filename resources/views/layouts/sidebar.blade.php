@@ -88,6 +88,38 @@
       </div>
    </li>
 
+   <!-- Nav Item - ePPBGM Menu -->
+   <li class="nav-item">
+      <a class="nav-link {{ request()->is('anc*') ? '' : 'collapsed' }}" href="#" data-toggle="collapse"
+         data-target="#collapseEPPBGM" aria-expanded="{{ request()->is('anc*') ? 'true' : 'false' }}"
+         aria-controls="collapseEPPBGM">
+         <i class="fas fa-fw fa-baby"></i>
+         <span>ePPBGM</span>
+      </a>
+      <div id="collapseEPPBGM" class="collapse {{ request()->is('anc*') ? 'show' : '' }}"
+         aria-labelledby="headingEPPBGM" data-parent="#accordionSidebar">
+         <div class="bg-white py-2 collapse-inner rounded">
+            <h6 class="collapse-header">Menu ePPBGM:</h6>
+            <a class="collapse-item {{ request()->is('anc/data-ibu-hamil*') ? 'active' : '' }}"
+               href="{{ route('anc.data-ibu-hamil.index') }}">
+               <i class="fas fa-female fa-sm fa-fw mr-2 text-gray-400"></i>Data Ibu Hamil
+            </a>
+            <a class="collapse-item {{ request()->is('anc/data-balita-sakit*') ? 'active' : '' }}"
+               href="{{ route('anc.data-balita-sakit.index') }}">
+               <i class="fas fa-child fa-sm fa-fw mr-2 text-gray-400"></i>Data Balita Sakit
+            </a>
+            <a class="collapse-item {{ request()->is('anc/data-rematri*') ? 'active' : '' }}"
+               href="{{ route('anc.data-rematri.index') }}">
+               <i class="fas fa-user-friends fa-sm fa-fw mr-2 text-gray-400"></i>Data Rematri
+            </a>
+            <a class="collapse-item {{ request()->is('anc/data-ibu-nifas*') ? 'active' : '' }}"
+               href="{{ route('anc.data-ibu-nifas.index') }}">
+               <i class="fas fa-baby-carriage fa-sm fa-fw mr-2 text-gray-400"></i>Data Ibu Nifas
+            </a>
+         </div>
+      </div>
+   </li>
+
    <!-- Divider -->
    <hr class="sidebar-divider">
 

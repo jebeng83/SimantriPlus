@@ -338,6 +338,32 @@ return [
             ],
         ],
         [
+            'text'    => 'ePPBGM',
+            'icon'    => 'fas fa-fw fa-baby',
+            'submenu' => [
+                [
+                    'text' => 'Data Ibu Hamil',
+                    'url'  => '/anc/data-ibu-hamil',
+                    'icon' => 'fas fa-fw fa-female',
+                ],
+                [
+                    'text' => 'Data Balita Sakit',
+                    'url'  => '/anc/data-balita-sakit',
+                    'icon' => 'fas fa-fw fa-child',
+                ],
+                [
+                    'text' => 'Data Rematri',
+                    'url'  => '/anc/data-rematri',
+                    'icon' => 'fas fa-fw fa-user-friends',
+                ],
+                [
+                    'text' => 'Data Ibu Nifas',
+                    'url'  => '/anc/data-ibu-nifas',
+                    'icon' => 'fas fa-fw fa-baby-carriage',
+                ],
+            ],
+        ],
+        [
             'text'        => 'KYC (Verifikasi SSM)',
             'url'         => '/kyc',
             'icon'        => 'fas fa-fw fa-id-card',
