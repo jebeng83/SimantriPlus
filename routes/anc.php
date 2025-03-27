@@ -1,0 +1,25 @@
+<?php
+
+use App\Http\Controllers\ANC\DataIbuHamilController;
+use App\Http\Controllers\ANC\DataBalitaSakitController;
+use App\Http\Controllers\ANC\DataRematriController;
+use App\Http\Controllers\ANC\DataIbuNifasController;
+
+Route::prefix('anc')->name('anc.')->group(function () {
+    // Data Ibu Hamil Routes
+    Route::resource('data-ibu-hamil', DataIbuHamilController::class);
+    Route::get('data-ibu-hamil/get-data-pasien/{nik}', [DataIbuHamilController::class, 'getDataPasien'])->name('data-ibu-hamil.get-data-pasien');
+    Route::get('data-ibu-hamil/{id}/edit', [DataIbuHamilController::class, 'edit'])->name('data-ibu-hamil.edit');
+    
+    // Data Balita Sakit Routes
+    Route::resource('data-balita-sakit', DataBalitaSakitController::class);
+    Route::get('data-balita-sakit/get-data-pasien/{nik}', [DataBalitaSakitController::class, 'getDataPasien'])->name('data-balita-sakit.get-data-pasien');
+    
+    // Data Rematri Routes
+    Route::resource('data-rematri', DataRematriController::class);
+    Route::get('data-rematri/get-data-pasien/{nik}', [DataRematriController::class, 'getDataPasien'])->name('data-rematri.get-data-pasien');
+    
+    // Data Ibu Nifas Routes
+    Route::resource('data-ibu-nifas', DataIbuNifasController::class);
+    Route::get('data-ibu-nifas/get-data-pasien/{nik}', [DataIbuNifasController::class, 'getDataPasien'])->name('data-ibu-nifas.get-data-pasien');
+});

@@ -228,7 +228,6 @@
         </table>
     </div>
 </div>
-
 @section('js')
 <script>
     // Fungsi untuk mengupdate jam saat ini

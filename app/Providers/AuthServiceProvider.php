@@ -24,5 +24,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
+
+        // Permission untuk akses menu ePPBGM
+        Gate::define('access-ppbgm', function ($user) {
+            return true; // Sementara diizinkan untuk semua user
+        });
     }
 }

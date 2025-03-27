@@ -37,6 +37,10 @@ class RouteServiceProvider extends ServiceProvider
 
                 Route::middleware('web')
                     ->group(base_path('routes/web.php'));
+                
+                // ANC Routes
+                Route::middleware('web')
+                    ->group(base_path('routes/anc.php'));
             });
         } catch (\Exception $e) {
             // Log error
