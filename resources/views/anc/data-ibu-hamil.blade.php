@@ -937,150 +937,36 @@
                     if (response.status === 'success') {
                         let data = response.data;
                         
-                        // Isi data pasien
-                        $('#nama').val(data.nama || '');
-                        $('#tgl_lahir').val(data.tgl_lahir || '');
-                        $('#nomor_kk').val(data.nomor_kk || '');
-                        $('#no_jaminan_kesehatan').val(data.no_jaminan_kesehatan || '');
-                        $('#alamat_lengkap').val(data.alamat || '');
-                        $('#no_rkm_medis').val(data.no_rkm_medis || '');
-                        
-                        // Set data_posyandu jika ada
-                        if (data.data_posyandu) {
-                            $('#data_posyandu').val(data.data_posyandu);
-                        } else {
-                            $('#data_posyandu').val('');
-                        }
-                        
-                        // Set status jika ada
-                        if (data.status) {
-                            $('#status').val(data.status);
-                        }
-                        
-                        // Set puskesmas default
-                        $('#puskesmas').val('KERJO');
-                        
-                        // Cek dan isi data wilayah jika ada
-                        if (data.provinsi && data.provinsi.kode) {
-                            // Isi provinsi dengan AJAX
-                            $.ajax({
-                                url: "{{ url('/propinsi') }}",
-                                method: 'GET',
-                                dataType: 'json',
-                                success: function(res) {
-                                    $('#provinsi').empty().append('<option value="">- Pilih Provinsi -</option>');
-                                    if (res.data && res.data.length > 0) {
-                                        $.each(res.data, function(i, item) {
-                                            $('#provinsi').append($('<option>', {
-                                                value: item.kd_prop,
-                                                text: item.nm_prop
-                                            }));
-                                        });
-                                        
-                                        // Set selected and trigger change
-                                        $('#provinsi').val(data.provinsi.kode).trigger('change');
-                                        
-                                        // Kabupaten load
-                                        if (data.kabupaten && data.kabupaten.kode) {
-                                            $.ajax({
-                                                url: "{{ url('/kabupaten') }}?kd_prop=" + data.provinsi.kode,
-                                                method: 'GET',
-                                                dataType: 'json',
-                                                success: function(res) {
-                                                    $('#kabupaten').empty().append('<option value="">- Pilih Kabupaten -</option>');
-                                                    if (res.data && res.data.length > 0) {
-                                                        $.each(res.data, function(i, item) {
-                                                            $('#kabupaten').append($('<option>', {
-                                                                value: item.kd_kab,
-                                                                text: item.nm_kab
-                                                            }));
-                                                        });
-                                                        
-                                                        // Set selected and trigger change
-                                                        $('#kabupaten').val(data.kabupaten.kode).trigger('change');
-                                                        
-                                                        // Kecamatan load
-                                                        if (data.kecamatan && data.kecamatan.kode) {
-                                                            $.ajax({
-                                                                url: "{{ url('/kecamatan') }}?kd_prop=" + data.provinsi.kode + "&kd_kab=" + data.kabupaten.kode,
-                                                                method: 'GET',
-                                                                dataType: 'json',
-                                                                success: function(res) {
-                                                                    $('#kecamatan').empty().append('<option value="">- Pilih Kecamatan -</option>');
-                                                                    if (res.data && res.data.length > 0) {
-                                                                        $.each(res.data, function(i, item) {
-                                                                            $('#kecamatan').append($('<option>', {
-                                                                                value: item.kd_kec,
-                                                                                text: item.nm_kec
-                                                                            }));
-                                                                        });
-                                                                        
-                                                                        // Set selected and trigger change
-                                                                        $('#kecamatan').val(data.kecamatan.kode).trigger('change');
-                                                                        
-                                                                        // Desa/Kelurahan load
-                                                                        if (data.desa && data.desa.kode) {
-                                                                            $.ajax({
-                                                                                url: "{{ url('/kelurahan') }}?kd_prop=" + data.provinsi.kode + "&kd_kab=" + data.kabupaten.kode + "&kd_kec=" + data.kecamatan.kode,
-                                                                                method: 'GET',
-                                                                                dataType: 'json',
-                                                                                success: function(res) {
-                                                                                    $('#desa').empty().append('<option value="">- Pilih Desa/Kelurahan -</option>');
-                                                                                    if (res.data && res.data.length > 0) {
-                                                                                        $.each(res.data, function(i, item) {
-                                                                                            $('#desa').append($('<option>', {
-                                                                                                value: item.kd_kel,
-                                                                                                text: item.nm_kel
-                                                                                            }));
-                                                                                        });
-                                                                                        
-                                                                                        // Set selected
-                                                                                        $('#desa').val(data.desa.kode);
-                                                                                    }
-                                                                                },
-                                                                                error: function(xhr, status, error) {
-                                                                                    console.error('Error saat mengambil data kelurahan:', error);
-                                                                                    console.error('Response:', xhr.responseText);
-                                                                                }
-                                                                            });
-                                                                        }
-                                                                    }
-                                                                },
-                                                                error: function(xhr, status, error) {
-                                                                    console.error('Error saat mengambil data kecamatan:', error);
-                                                                    console.error('Response:', xhr.responseText);
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-                                                },
-                                                error: function(xhr, status, error) {
-                                                    console.error('Error saat mengambil data kabupaten:', error);
-                                                    console.error('Response:', xhr.responseText);
-                                                }
-                                            });
-                                        }
-                                    }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error('Error saat mengambil data provinsi:', error);
-                                    console.error('Response:', xhr.responseText);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Gagal Mengambil Data Provinsi',
-                                        text: 'Terjadi kesalahan saat mengambil data provinsi. Silakan coba lagi nanti.'
-                                    });
+                        // Periksa apakah pasien sudah terdaftar sebagai ibu hamil
+                        if (data.ibu_hamil_status) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Perhatian',
+                                html: `Pasien ini sudah terdaftar sebagai ibu hamil dengan status <b>${data.ibu_hamil_status.status}</b>.<br>
+                                       ID: <b>${data.ibu_hamil_status.id_hamil}</b><br>
+                                       Kehamilan ke: <b>${data.ibu_hamil_status.kehamilan_ke}</b><br>
+                                       HPL: <b>${data.ibu_hamil_status.hari_perkiraan_lahir ? new Date(data.ibu_hamil_status.hari_perkiraan_lahir).toLocaleDateString('id-ID') : '-'}</b>`,
+                                showCancelButton: true,
+                                confirmButtonText: 'Tetap Tambahkan',
+                                cancelButtonText: 'Batal'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Isi form dengan data pasien
+                                    fillPatientData(data);
                                 }
                             });
+                        } else {
+                            // Langsung isi form jika pasien belum terdaftar
+                            fillPatientData(data);
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: 'Data pasien ditemukan',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
                         }
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: 'Data pasien ditemukan',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
                     }
                 },
                 error: function(xhr, status, error) {
@@ -1101,6 +987,37 @@
             });
         });
 
+        // Fungsi untuk mengisi data pasien ke form
+        function fillPatientData(data) {
+            // Isi data pasien
+            $('#nama').val(data.nama || '');
+            $('#tgl_lahir').val(data.tgl_lahir || '');
+            $('#nomor_kk').val(data.nomor_kk || '');
+            $('#no_jaminan_kesehatan').val(data.no_jaminan_kesehatan || '');
+            $('#alamat_lengkap').val(data.alamat || '');
+            $('#no_rkm_medis').val(data.no_rkm_medis || '');
+            
+            // Set data_posyandu jika ada
+            if (data.data_posyandu) {
+                $('#data_posyandu').val(data.data_posyandu);
+            } else {
+                $('#data_posyandu').val('');
+            }
+            
+            // Set status jika ada
+            if (data.status) {
+                $('#status').val(data.status);
+            }
+            
+            // Set puskesmas default
+            $('#puskesmas').val('KERJO');
+            
+            // Cek dan isi data wilayah jika ada
+            if (data.provinsi && data.provinsi.kode) {
+                loadProvinceAndDistricts(data);
+            }
+        }
+
         // Handle checkbox belum memiliki NIK
         $('#belumMemilikiNIK').on('change', function() {
             if ($(this).is(':checked')) {
@@ -1116,43 +1033,70 @@
         $('#formDataIbuHamil').on('submit', function(e) {
             e.preventDefault();
             
-            // Tentukan URL berdasarkan mode (edit atau tambah)
-            var url = $(this).attr('action');
-            var method = $(this).find('input[name="_method"]').val() || 'POST';
+            // Fungsi untuk mengkonversi string ke integer pada dropdown wilayah
+            function parseIntIfPossible(value) {
+                if (value && !isNaN(value)) {
+                    return parseInt(value);
+                }
+                return value;
+            }
             
+            // Konversi nilai string ke integer untuk wilayah
+            var provinsiVal = parseIntIfPossible($('#provinsi').val());
+            var kabupatenVal = parseIntIfPossible($('#kabupaten').val());
+            var kecamatanVal = parseIntIfPossible($('#kecamatan').val());
+            var desaVal = parseIntIfPossible($('#desa').val());
+            
+            // Set nilai yang sudah dikonversi
+            $('#provinsi').val(provinsiVal);
+            $('#kabupaten').val(kabupatenVal);
+            $('#kecamatan').val(kecamatanVal);
+            $('#desa').val(desaVal);
+            
+            var formData = $(this).serialize();
+            var url = $(this).attr('action');
+            var method = $('input[name="_method"]').val() || 'POST';
+            
+            // Tampilkan loading
+            Swal.fire({
+                title: 'Menyimpan Data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Kirim data
             $.ajax({
                 url: url,
-                method: method,
-                data: $(this).serialize(),
+                type: method === 'PUT' ? 'POST' : method,
+                data: formData,
                 success: function(response) {
-                    if (response.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: response.message,
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(() => {
-                            window.location.href = "{{ route('anc.data-ibu-hamil.index') }}";
-                        });
-                    }
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function() {
+                        window.location.href = "{{ route('anc.data-ibu-hamil.index') }}";
+                    });
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error Response:', xhr.responseText);
+                    Swal.close();
                     
-                    let errorMessage = 'Gagal menyimpan data';
+                    var message = 'Terjadi kesalahan saat menyimpan data';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
+                        message = xhr.responseJSON.message;
                     }
                     
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal',
-                        text: errorMessage,
-                        html: xhr.responseJSON && xhr.responseJSON.trace ? 
-                              '<p>' + errorMessage + '</p><pre style="text-align:left;max-height:200px;overflow:auto">' + 
-                              xhr.responseJSON.trace + '</pre>' : errorMessage
+                        text: message
                     });
+                    
+                    console.error("Error response:", xhr.responseJSON);
                 }
             });
         });
@@ -1168,7 +1112,7 @@
                     if (response.data && response.data.length > 0) {
                         $.each(response.data, function(i, item) {
                             $('#provinsi').append($('<option>', {
-                                value: item.kd_prop,
+                                value: parseInt(item.kd_prop),
                                 text: item.nm_prop
                             }));
                         });
@@ -1193,7 +1137,7 @@
                         if (response.data && response.data.length > 0) {
                             $.each(response.data, function(i, item) {
                                 $('#kabupaten').append($('<option>', {
-                                    value: item.kd_kab,
+                                    value: parseInt(item.kd_kab),
                                     text: item.nm_kab
                                 }));
                             });
@@ -1226,7 +1170,7 @@
                         if (response.data && response.data.length > 0) {
                             $.each(response.data, function(i, item) {
                                 $('#kecamatan').append($('<option>', {
-                                    value: item.kd_kec,
+                                    value: parseInt(item.kd_kec),
                                     text: item.nm_kec
                                 }));
                             });
@@ -1259,7 +1203,7 @@
                         if (response.data && response.data.length > 0) {
                             $.each(response.data, function(i, item) {
                                 $('#desa').append($('<option>', {
-                                    value: item.kd_kel,
+                                    value: parseInt(item.kd_kel),
                                     text: item.nm_kel
                                 }));
                             });
@@ -1301,13 +1245,13 @@
                             if (res.data && res.data.length > 0) {
                                 $.each(res.data, function(i, item) {
                                     $('#provinsi').append($('<option>', {
-                                        value: item.kd_prop,
+                                        value: parseInt(item.kd_prop),
                                         text: item.nm_prop
                                     }));
                                 });
                                 
-                                // Set selected and trigger change
-                                $('#provinsi').val('{{ $dataIbuHamil->provinsi }}').trigger('change');
+                                // Set selected and trigger change (pastikan sebagai integer)
+                                $('#provinsi').val(parseInt('{{ $dataIbuHamil->provinsi }}')).trigger('change');
                                 
                                 // Kabupaten load
                                 $.ajax({
@@ -1319,13 +1263,13 @@
                                         if (res.data && res.data.length > 0) {
                                             $.each(res.data, function(i, item) {
                                                 $('#kabupaten').append($('<option>', {
-                                                    value: item.kd_kab,
+                                                    value: parseInt(item.kd_kab),
                                                     text: item.nm_kab
                                                 }));
                                             });
                                             
-                                            // Set selected and trigger change
-                                            $('#kabupaten').val('{{ $dataIbuHamil->kabupaten }}').trigger('change');
+                                            // Set selected and trigger change (pastikan sebagai integer)
+                                            $('#kabupaten').val(parseInt('{{ $dataIbuHamil->kabupaten }}')).trigger('change');
                                             
                                             // Kecamatan load
                                             $.ajax({
@@ -1337,13 +1281,13 @@
                                                     if (res.data && res.data.length > 0) {
                                                         $.each(res.data, function(i, item) {
                                                             $('#kecamatan').append($('<option>', {
-                                                                value: item.kd_kec,
+                                                                value: parseInt(item.kd_kec),
                                                                 text: item.nm_kec
                                                             }));
                                                         });
                                                         
-                                                        // Set selected and trigger change
-                                                        $('#kecamatan').val('{{ $dataIbuHamil->kecamatan }}').trigger('change');
+                                                        // Set selected and trigger change (pastikan sebagai integer)
+                                                        $('#kecamatan').val(parseInt('{{ $dataIbuHamil->kecamatan }}')).trigger('change');
                                                         
                                                         // Desa/Kelurahan load
                                                         $.ajax({
@@ -1355,14 +1299,14 @@
                                                                 if (res.data && res.data.length > 0) {
                                                                     $.each(res.data, function(i, item) {
                                                                         $('#desa').append($('<option>', {
-                                                                            value: item.kd_kel,
+                                                                            value: parseInt(item.kd_kel),
                                                                             text: item.nm_kel
                                                                         }));
                                                                     });
                                                                     
-                                                                    // Set selected
-                                                                    $('#desa').val('{{ $dataIbuHamil->desa }}');
-                                                                    
+                                                                    // Set selected (pastikan sebagai integer)
+                                                                    $('#desa').val(parseInt('{{ $dataIbuHamil->desa }}'));
+
                                                                     // Set posyandu jika ada
                                                                     if ('{{ $dataIbuHamil->data_posyandu }}') {
                                                                         $('#data_posyandu').val('{{ $dataIbuHamil->data_posyandu }}');
@@ -1385,6 +1329,120 @@
                 $('#formDataIbuHamil')[0].reset();
             @endif
         });
+
+        // Fungsi untuk memuat data wilayah berdasarkan data pasien
+        function loadProvinceAndDistricts(data) {
+            // Isi provinsi dengan AJAX
+            $.ajax({
+                url: "{{ url('/propinsi') }}",
+                method: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    $('#provinsi').empty().append('<option value="">- Pilih Provinsi -</option>');
+                    if (res.data && res.data.length > 0) {
+                        $.each(res.data, function(i, item) {
+                            $('#provinsi').append($('<option>', {
+                                value: parseInt(item.kd_prop),
+                                text: item.nm_prop
+                            }));
+                        });
+                        
+                        // Set selected and trigger change
+                        $('#provinsi').val(data.provinsi.kode).trigger('change');
+                        
+                        // Kabupaten load
+                        if (data.kabupaten && data.kabupaten.kode) {
+                            $.ajax({
+                                url: "{{ url('/kabupaten') }}?kd_prop=" + data.provinsi.kode,
+                                method: 'GET',
+                                dataType: 'json',
+                                success: function(res) {
+                                    $('#kabupaten').empty().append('<option value="">- Pilih Kabupaten -</option>');
+                                    if (res.data && res.data.length > 0) {
+                                        $.each(res.data, function(i, item) {
+                                            $('#kabupaten').append($('<option>', {
+                                                value: parseInt(item.kd_kab),
+                                                text: item.nm_kab
+                                            }));
+                                        });
+                                        
+                                        // Set selected and trigger change
+                                        $('#kabupaten').val(data.kabupaten.kode).trigger('change');
+                                        
+                                        // Kecamatan load
+                                        if (data.kecamatan && data.kecamatan.kode) {
+                                            $.ajax({
+                                                url: "{{ url('/kecamatan') }}?kd_prop=" + data.provinsi.kode + "&kd_kab=" + data.kabupaten.kode,
+                                                method: 'GET',
+                                                dataType: 'json',
+                                                success: function(res) {
+                                                    $('#kecamatan').empty().append('<option value="">- Pilih Kecamatan -</option>');
+                                                    if (res.data && res.data.length > 0) {
+                                                        $.each(res.data, function(i, item) {
+                                                            $('#kecamatan').append($('<option>', {
+                                                                value: parseInt(item.kd_kec),
+                                                                text: item.nm_kec
+                                                            }));
+                                                        });
+                                                        
+                                                        // Set selected and trigger change
+                                                        $('#kecamatan').val(data.kecamatan.kode).trigger('change');
+                                                        
+                                                        // Desa/Kelurahan load
+                                                        if (data.desa && data.desa.kode) {
+                                                            $.ajax({
+                                                                url: "{{ url('/kelurahan') }}?kd_prop=" + data.provinsi.kode + "&kd_kab=" + data.kabupaten.kode + "&kd_kec=" + data.kecamatan.kode,
+                                                                method: 'GET',
+                                                                dataType: 'json',
+                                                                success: function(res) {
+                                                                    $('#desa').empty().append('<option value="">- Pilih Desa/Kelurahan -</option>');
+                                                                    if (res.data && res.data.length > 0) {
+                                                                        $.each(res.data, function(i, item) {
+                                                                            $('#desa').append($('<option>', {
+                                                                                value: parseInt(item.kd_kel),
+                                                                                text: item.nm_kel
+                                                                            }));
+                                                                        });
+                                                                        
+                                                                        // Set selected
+                                                                        $('#desa').val(data.desa.kode);
+                                                                    }
+                                                                },
+                                                                error: function(xhr, status, error) {
+                                                                    console.error('Error saat mengambil data kelurahan:', error);
+                                                                    console.error('Response:', xhr.responseText);
+                                                                }
+                                                            });
+                                                        }
+                                                    }
+                                                },
+                                                error: function(xhr, status, error) {
+                                                    console.error('Error saat mengambil data kecamatan:', error);
+                                                    console.error('Response:', xhr.responseText);
+                                                }
+                                            });
+                                        }
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error('Error saat mengambil data kabupaten:', error);
+                                    console.error('Response:', xhr.responseText);
+                                }
+                            });
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error saat mengambil data provinsi:', error);
+                    console.error('Response:', xhr.responseText);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Mengambil Data Provinsi',
+                        text: 'Terjadi kesalahan saat mengambil data provinsi. Silakan coba lagi nanti.'
+                    });
+                }
+            });
+        }
     });
 </script>
 @stop
