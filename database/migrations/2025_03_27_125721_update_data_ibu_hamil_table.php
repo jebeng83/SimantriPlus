@@ -53,7 +53,7 @@ return new class extends Migration
             $table->integer('kabupaten')->nullable();
             $table->integer('kecamatan')->nullable();
             $table->string('puskesmas', 255)->nullable();
-            $table->integer('desa')->nullable();
+            $table->string('desa', 60)->nullable();
             $table->string('data_posyandu', 50)->nullable();
             $table->text('alamat_lengkap')->nullable();
             $table->char('rt', 3)->nullable();
@@ -64,14 +64,17 @@ return new class extends Migration
         // Set tabel engine ke InnoDB dengan charset latin1 dan collate latin1_swedish_ci
         DB::statement('ALTER TABLE data_ibu_hamil ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC');
         
-        // Foreign key dihilangkan karena tabel pasien tidak ada
-        // Schema::table('data_ibu_hamil', function (Blueprint $table) {
-        //     $table->foreign('no_rkm_medis')
-        //           ->references('no_rkm_medis')
-        //           ->on('pasien')
-        //           ->onUpdate('cascade')
-        //           ->onDelete('restrict');
-        // });
+        // Tambahkan foreign key ke tabel pasien
+        Schema::table('data_ibu_hamil', function (Blueprint $table) {
+            // Cek jika tabel pasien ada
+            if (Schema::hasTable('pasien')) {
+                $table->foreign('no_rkm_medis')
+                      ->references('no_rkm_medis')
+                      ->on('pasien')
+                      ->onUpdate('cascade')
+                      ->onDelete('restrict');
+            }
+        });
     }
 
     /**

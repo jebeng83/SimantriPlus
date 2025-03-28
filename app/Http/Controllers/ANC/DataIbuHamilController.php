@@ -18,11 +18,30 @@ class DataIbuHamilController extends Controller
         if ($request->ajax()) {
             $data = DataIbuHamil::with('pasien')->latest()->get();
             
+            // Filter jika ada parameter
+            $kelurahanFilter = $request->input('kelurahan');
+            $posyanduFilter = $request->input('posyandu');
+            
+            if ($kelurahanFilter) {
+                $data = $data->filter(function($item) use ($kelurahanFilter) {
+                    return $item->desa == $kelurahanFilter;
+                });
+            }
+            
+            if ($posyanduFilter) {
+                $data = $data->filter(function($item) use ($posyanduFilter) {
+                    return $item->data_posyandu == $posyanduFilter;
+                });
+            }
+            
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function($row){
                     $actionBtn = '
                         <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-info btn-detail" data-id="'.$row->id_hamil.'">
+                                <i class="fas fa-eye"></i>
+                            </button>
                             <a href="'.route('anc.data-ibu-hamil.edit', $row->id_hamil).'" class="btn btn-sm btn-primary">
                                 <i class="fas fa-edit"></i>
                             </a>
@@ -81,6 +100,9 @@ class DataIbuHamilController extends Controller
             'imt_sebelum_hamil' => 'nullable|numeric',
             'status_gizi' => 'nullable|string',
             'jumlah_janin' => 'nullable|string',
+            'usia_ibu' => 'nullable|string|max:25',
+            'jumlah_anak_hidup' => 'nullable|string|max:3',
+            'riwayat_keguguran' => 'nullable|string|max:3',
             'jarak_kehamilan_tahun' => 'nullable|string',
             'jarak_kehamilan_bulan' => 'nullable|string',
             'hari_pertama_haid' => 'nullable|date',
@@ -104,7 +126,7 @@ class DataIbuHamilController extends Controller
             'kabupaten' => 'required|integer',
             'kecamatan' => 'required|integer',
             'puskesmas' => 'required|string',
-            'desa' => 'required|integer',
+            'desa' => 'required|string',
             'data_posyandu' => 'required|string',
             'alamat_lengkap' => 'required|string',
             'rt' => 'nullable|string',
@@ -112,6 +134,16 @@ class DataIbuHamilController extends Controller
         ]);
 
         try {
+            // Pastikan nilai desa selalu string
+            $validated['desa'] = (string) $validated['desa'];
+            
+            // Pastikan field-field baru diisi dengan benar
+            $validated['usia_ibu'] = (string) $request->input('usia_ibu', '');
+            $validated['jumlah_anak_hidup'] = (string) $request->input('jumlah_anak_hidup', '0');
+            $validated['riwayat_keguguran'] = (string) $request->input('riwayat_keguguran', '0');
+            
+            Log::info('Data yang akan disimpan:', $validated);
+
             // Cek apakah pasien tersebut ada
             $pasien = Pasien::where('no_rkm_medis', $request->no_rkm_medis)->first();
             if (!$pasien) {
@@ -140,20 +172,103 @@ class DataIbuHamilController extends Controller
         }
     }
 
-    public function show($nik)
+    public function show($id)
     {
-        $dataIbuHamil = DataIbuHamil::where('nik', $nik)->first();
-        if (!$dataIbuHamil) {
+        try {
+            $dataIbuHamil = DataIbuHamil::find($id);
+            
+            if (!$dataIbuHamil) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data ibu hamil tidak ditemukan'
+                ], 404);
+            }
+            
+            // Mendapatkan data provinsi
+            $provinsiData = null;
+            $path = public_path('assets/propinsi.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $propinsiList = json_decode($content, true);
+                
+                if (isset($propinsiList['propinsi'])) {
+                    foreach ($propinsiList['propinsi'] as $prov) {
+                        if ($prov['id'] == $dataIbuHamil->provinsi) {
+                            $provinsiData = $prov;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Mendapatkan data kabupaten
+            $kabupatenData = null;
+            $path = public_path('assets/kabupaten.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kabupatenList = json_decode($content, true);
+                
+                if (isset($kabupatenList['kabupaten'])) {
+                    foreach ($kabupatenList['kabupaten'] as $kab) {
+                        if ($kab['id'] == $dataIbuHamil->kabupaten && $kab['id_propinsi'] == $dataIbuHamil->provinsi) {
+                            $kabupatenData = $kab;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Mendapatkan data kecamatan
+            $kecamatanData = null;
+            $path = public_path('assets/kecamatan.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kecamatanList = json_decode($content, true);
+                
+                if (isset($kecamatanList['kecamatan'])) {
+                    foreach ($kecamatanList['kecamatan'] as $kec) {
+                        if ($kec['id'] == $dataIbuHamil->kecamatan && $kec['id_kabupaten'] == $dataIbuHamil->kabupaten) {
+                            $kecamatanData = $kec;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Mendapatkan data desa/kelurahan
+            $desaData = null;
+            $path = public_path('assets/kelurahan.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kelurahanList = json_decode($content, true);
+                
+                if (isset($kelurahanList['kelurahan'])) {
+                    foreach ($kelurahanList['kelurahan'] as $kel) {
+                        if ($kel['id'] == $dataIbuHamil->desa && $kel['id_kecamatan'] == $dataIbuHamil->kecamatan) {
+                            $desaData = $kel;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Tambahkan informasi wilayah ke data
+            $dataIbuHamil->provinsi_nama = $provinsiData ? $provinsiData['nama'] : null;
+            $dataIbuHamil->kabupaten_nama = $kabupatenData ? $kabupatenData['nama'] : null;
+            $dataIbuHamil->kecamatan_nama = $kecamatanData ? $kecamatanData['nama'] : null;
+            $dataIbuHamil->desa_nama = $desaData ? $desaData['nama'] : null;
+    
+            return response()->json([
+                'status' => 'success',
+                'data' => $dataIbuHamil
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error mendapatkan detail data ibu hamil: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Data ibu hamil tidak ditemukan'
-            ], 404);
+                'message' => 'Terjadi kesalahan saat mengambil data: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $dataIbuHamil
-        ]);
     }
 
     public function update(Request $request, $id)
@@ -179,6 +294,9 @@ class DataIbuHamilController extends Controller
             'imt_sebelum_hamil' => 'nullable|numeric',
             'status_gizi' => 'nullable|string',
             'jumlah_janin' => 'nullable|string',
+            'usia_ibu' => 'nullable|string|max:25',
+            'jumlah_anak_hidup' => 'nullable|string|max:3',
+            'riwayat_keguguran' => 'nullable|string|max:3',
             'jarak_kehamilan_tahun' => 'nullable|string',
             'jarak_kehamilan_bulan' => 'nullable|string',
             'hari_pertama_haid' => 'nullable|date',
@@ -202,7 +320,7 @@ class DataIbuHamilController extends Controller
             'kabupaten' => 'required|integer',
             'kecamatan' => 'required|integer',
             'puskesmas' => 'required|string',
-            'desa' => 'required|integer',
+            'desa' => 'required|string',
             'data_posyandu' => 'required|string',
             'alamat_lengkap' => 'required|string',
             'rt' => 'nullable|string',
@@ -210,6 +328,16 @@ class DataIbuHamilController extends Controller
         ]);
 
         try {
+            // Pastikan nilai desa selalu string
+            $validated['desa'] = (string) $validated['desa'];
+            
+            // Pastikan field-field baru diisi dengan benar
+            $validated['usia_ibu'] = (string) $request->input('usia_ibu', '');
+            $validated['jumlah_anak_hidup'] = (string) $request->input('jumlah_anak_hidup', '0');
+            $validated['riwayat_keguguran'] = (string) $request->input('riwayat_keguguran', '0');
+            
+            Log::info('Data yang akan diupdate:', $validated);
+
             // Cek apakah pasien tersebut ada
             $pasien = Pasien::where('no_rkm_medis', $request->no_rkm_medis)->first();
             if (!$pasien) {
@@ -269,6 +397,17 @@ class DataIbuHamilController extends Controller
         }
     }
 
+    public function detail($id)
+    {
+        try {
+            $dataIbuHamil = DataIbuHamil::with('pasien')->findOrFail($id);
+            return view('anc.data-ibu-hamil-detail', compact('dataIbuHamil'));
+        } catch (\Exception $e) {
+            return redirect()->route('anc.data-ibu-hamil.index')
+                ->with('error', 'Data tidak ditemukan: ' . $e->getMessage());
+        }
+    }
+
     public function getDataPasien($nik)
     {
         try {
@@ -309,45 +448,73 @@ class DataIbuHamilController extends Controller
                 $ibuHamilStatus = null;
             }
             
-            // Cek struktur tabel kabupaten
-            $kabupatenColumns = Schema::getColumnListing('kabupaten');
-            $kecamatanColumns = Schema::getColumnListing('kecamatan');
-            $kelurahanColumns = Schema::getColumnListing('kelurahan');
+            // Mengambil data propinsi dari file assets/propinsi.iyem
+            $propinsiData = null;
+            $path = public_path('assets/propinsi.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $propinsiList = json_decode($content, true);
+                
+                if (isset($propinsiList['propinsi'])) {
+                    foreach ($propinsiList['propinsi'] as $prov) {
+                        if ($prov['id'] == $pasien->kd_prop) {
+                            $propinsiData = $prov;
+                            break;
+                        }
+                    }
+                }
+            }
             
-            // Ambil data propinsi
-            $propinsi = DB::table('propinsi')
-                ->where('kd_prop', $pasien->kd_prop)
-                ->first();
+            // Mengambil data kabupaten dari file assets/kabupaten.iyem
+            $kabupatenData = null;
+            $path = public_path('assets/kabupaten.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kabupatenList = json_decode($content, true);
                 
-            // Ambil data kabupaten dengan pengecekan kolom
-            $kabupatenQuery = DB::table('kabupaten')->where('kd_kab', $pasien->kd_kab);
-            if (in_array('kd_prop', $kabupatenColumns)) {
-                $kabupatenQuery->where('kd_prop', $pasien->kd_prop);
+                if (isset($kabupatenList['kabupaten'])) {
+                    foreach ($kabupatenList['kabupaten'] as $kab) {
+                        if ($kab['id'] == $pasien->kd_kab && $kab['id_propinsi'] == $pasien->kd_prop) {
+                            $kabupatenData = $kab;
+                            break;
+                        }
+                    }
+                }
             }
-            $kabupaten = $kabupatenQuery->first();
+            
+            // Mengambil data kecamatan dari file assets/kecamatan.iyem
+            $kecamatanData = null;
+            $path = public_path('assets/kecamatan.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kecamatanList = json_decode($content, true);
                 
-            // Ambil data kecamatan dengan pengecekan kolom
-            $kecamatanQuery = DB::table('kecamatan')->where('kd_kec', $pasien->kd_kec);
-            if (in_array('kd_kab', $kecamatanColumns)) {
-                $kecamatanQuery->where('kd_kab', $pasien->kd_kab);
+                if (isset($kecamatanList['kecamatan'])) {
+                    foreach ($kecamatanList['kecamatan'] as $kec) {
+                        if ($kec['id'] == $pasien->kd_kec && $kec['id_kabupaten'] == $pasien->kd_kab) {
+                            $kecamatanData = $kec;
+                            break;
+                        }
+                    }
+                }
             }
-            if (in_array('kd_prop', $kecamatanColumns)) {
-                $kecamatanQuery->where('kd_prop', $pasien->kd_prop);
-            }
-            $kecamatan = $kecamatanQuery->first();
+            
+            // Mengambil data kelurahan dari file assets/kelurahan.iyem
+            $kelurahanData = null;
+            $path = public_path('assets/kelurahan.iyem');
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $kelurahanList = json_decode($content, true);
                 
-            // Ambil data kelurahan dengan pengecekan kolom
-            $kelurahanQuery = DB::table('kelurahan')->where('kd_kel', $pasien->kd_kel);
-            if (in_array('kd_kec', $kelurahanColumns)) {
-                $kelurahanQuery->where('kd_kec', $pasien->kd_kec);
+                if (isset($kelurahanList['kelurahan'])) {
+                    foreach ($kelurahanList['kelurahan'] as $kel) {
+                        if ($kel['id'] == $pasien->kd_kel && $kel['id_kecamatan'] == $pasien->kd_kec) {
+                            $kelurahanData = $kel;
+                            break;
+                        }
+                    }
+                }
             }
-            if (in_array('kd_kab', $kelurahanColumns)) {
-                $kelurahanQuery->where('kd_kab', $pasien->kd_kab);
-            }
-            if (in_array('kd_prop', $kelurahanColumns)) {
-                $kelurahanQuery->where('kd_prop', $pasien->kd_prop);
-            }
-            $kelurahan = $kelurahanQuery->first();
 
             Log::info('Data pasien ditemukan:', ['pasien' => $pasien]);
 
@@ -362,19 +529,19 @@ class DataIbuHamilController extends Controller
                     'alamat' => $pasien->alamat,
                     'provinsi' => [
                         'kode' => (int) $pasien->kd_prop,
-                        'nama' => $propinsi ? $propinsi->nm_prop : 'Tidak Ada'
+                        'nama' => $propinsiData ? $propinsiData['nama'] : 'Tidak Ada'
                     ],
                     'kabupaten' => [
                         'kode' => (int) $pasien->kd_kab,
-                        'nama' => $kabupaten ? ($kabupaten->nm_kab ?? $kabupaten->nama_kabupaten ?? 'Tidak Ada') : 'Tidak Ada'
+                        'nama' => $kabupatenData ? $kabupatenData['nama'] : 'Tidak Ada'
                     ],
                     'kecamatan' => [
                         'kode' => (int) $pasien->kd_kec,
-                        'nama' => $kecamatan ? ($kecamatan->nm_kec ?? $kecamatan->nama_kecamatan ?? 'Tidak Ada') : 'Tidak Ada'
+                        'nama' => $kecamatanData ? $kecamatanData['nama'] : 'Tidak Ada'
                     ],
                     'desa' => [
-                        'kode' => (int) $pasien->kd_kel,
-                        'nama' => $kelurahan ? ($kelurahan->nm_kel ?? $kelurahan->nama_kelurahan ?? 'Tidak Ada') : 'Tidak Ada'
+                        'kode' => (string) $pasien->kd_kel,
+                        'nama' => $kelurahanData ? $kelurahanData['nama'] : 'Tidak Ada'
                     ],
                     'puskesmas' => 'KERJO',
                     'data_posyandu' => $pasien->data_posyandu,

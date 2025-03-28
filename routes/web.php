@@ -242,17 +242,5 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 // Rute pengujian dokter spesifik
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
 
-Route::prefix('anc')->name('anc.')->group(function () {
-    Route::get('data-ibu-hamil', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'index'])->name('data-ibu-hamil.index');
-    Route::get('data-ibu-hamil/create', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'create'])->name('data-ibu-hamil.create');
-    Route::post('data-ibu-hamil', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'store'])->name('data-ibu-hamil.store');
-    Route::get('data-ibu-hamil/{id}/edit', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'edit'])->name('data-ibu-hamil.edit');
-    Route::put('data-ibu-hamil/{id}', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'update'])->name('data-ibu-hamil.update');
-    Route::delete('data-ibu-hamil/{id}', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'destroy'])->name('data-ibu-hamil.destroy');
-    
-    // Perbaiki route untuk getDataPasien di controller ANC
-    Route::get('data-ibu-hamil/get-data-pasien/{nik}', [App\Http\Controllers\ANC\DataIbuHamilController::class, 'getDataPasien'])->name('data-ibu-hamil.get-data-pasien');
-});
-
 // Testing Routes
 Route::get('/test/data-ibu-hamil', [\App\Http\Controllers\API\TestController::class, 'testDataIbuHamil']);

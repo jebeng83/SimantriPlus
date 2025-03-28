@@ -10,6 +10,7 @@ Route::prefix('anc')->name('anc.')->group(function () {
     Route::resource('data-ibu-hamil', DataIbuHamilController::class);
     Route::get('data-ibu-hamil/get-data-pasien/{nik}', [DataIbuHamilController::class, 'getDataPasien'])->name('data-ibu-hamil.get-data-pasien');
     Route::get('data-ibu-hamil/{id}/edit', [DataIbuHamilController::class, 'edit'])->name('data-ibu-hamil.edit');
+    Route::get('data-ibu-hamil/{id}/detail', [DataIbuHamilController::class, 'detail'])->name('data-ibu-hamil.detail');
     
     // Data Balita Sakit Routes
     Route::resource('data-balita-sakit', DataBalitaSakitController::class);

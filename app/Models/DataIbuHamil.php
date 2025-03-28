@@ -29,6 +29,9 @@ class DataIbuHamil extends Model
         'imt_sebelum_hamil',
         'status_gizi',
         'jumlah_janin',
+        'usia_ibu',
+        'jumlah_anak_hidup',
+        'riwayat_keguguran',
         'jarak_kehamilan_tahun',
         'jarak_kehamilan_bulan',
         'hari_pertama_haid',
@@ -71,7 +74,7 @@ class DataIbuHamil extends Model
         'provinsi' => 'integer',
         'kabupaten' => 'integer',
         'kecamatan' => 'integer',
-        'desa' => 'integer',
+        'desa' => 'string',
     ];
 
     public static function boot()
