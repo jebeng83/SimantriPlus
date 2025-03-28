@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class DataIbuHamilController extends Controller
+/**
+ * @deprecated Gunakan App\Http\Controllers\ANC\DataIbuHamilController sebagai gantinya
+ */
+class OldDataIbuHamilController extends Controller
 {
     public function index()
     {

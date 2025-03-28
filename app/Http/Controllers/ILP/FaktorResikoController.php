@@ -328,6 +328,12 @@ class FaktorResikoController extends Controller
      */
     public function getPosyandu(Request $request)
     {
+        // Debug informasi
+        \Log::info('Request getPosyandu diterima', [
+            'desa' => $request->input('desa'),
+            'user_agent' => $request->header('User-Agent')
+        ]);
+        
         $desa = $request->input('desa');
         
         $query = DB::table('data_posyandu')
@@ -339,6 +345,11 @@ class FaktorResikoController extends Controller
         }
         
         $posyandu = $query->orderBy('nama_posyandu', 'asc')->get();
+        
+        \Log::info('Response getPosyandu', [
+            'count' => count($posyandu),
+            'data' => $posyandu
+        ]);
         
         return response()->json($posyandu);
     }

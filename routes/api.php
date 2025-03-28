@@ -10,6 +10,7 @@ use App\Http\Controllers\API\ResumePasienController;
 use App\Http\Controllers\API\RiwayatController;
 use App\Http\Controllers\API\ObatController;
 use App\Http\Controllers\API\ResepRanapController;
+use App\Http\Controllers\WilayahController;
 
 /*
 |--------------------------------------------------------------------------
@@ -128,3 +129,12 @@ Route::prefix('icare')->group(function () {
 
 // Endpoint untuk tes getObatRanap
 Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);
+
+// Routes untuk data wilayah dari file iyem
+Route::get('/propinsi', [WilayahController::class, 'getPropinsi']);
+Route::get('/kabupaten', [WilayahController::class, 'getKabupaten']);
+Route::get('/kecamatan', [WilayahController::class, 'getKecamatan']);
+Route::get('/kelurahan', [WilayahController::class, 'getKelurahan']);
+
+// Route untuk mendapatkan data posyandu berdasarkan desa/kelurahan
+Route::middleware('web')->get('/data-posyandu', [\App\Http\Controllers\ILP\FaktorResikoController::class, 'getPosyandu']);
