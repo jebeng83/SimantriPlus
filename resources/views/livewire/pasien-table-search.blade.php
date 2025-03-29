@@ -28,7 +28,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>No. Rekam Medis</label>
+                            <label>No. Rekam Medis / KTP / Peserta / Telp</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-id-card"></i></span>
@@ -39,7 +39,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label>Alamat</label>
+                            <label>Alamat / Kelurahan / Posyandu</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>

@@ -125,6 +125,47 @@
             transform: translateY(-20px);
          }
       }
+
+      /* Styles untuk informasi ibu hamil */
+      .info-ibu-hamil {
+         background-color: #f8f9fa;
+         border-left: 4px solid #17a2b8;
+         padding: 15px;
+         margin-bottom: 20px;
+         border-radius: 4px;
+      }
+
+      .info-ibu-hamil h5 {
+         color: #17a2b8;
+         margin-bottom: 10px;
+      }
+
+      .info-ibu-hamil .row {
+         margin-bottom: 5px;
+      }
+
+      .alert-not-registered {
+         background-color: #fff3cd;
+         border-left: 4px solid #ffc107;
+         color: #856404;
+         padding: 15px;
+         margin-bottom: 20px;
+         border-radius: 4px;
+      }
+
+      /* Warna biru tua untuk judul section */
+      .text-navy-blue {
+         color: #0d47a1 !important;
+      }
+
+      /* Style untuk bagian form */
+      .form-group {
+         border-left: 3px solid #e3f2fd;
+         padding-left: 15px;
+         margin-bottom: 20px;
+         padding-top: 10px;
+         padding-bottom: 10px;
+      }
    </style>
    @endpush
 
@@ -160,18 +201,6 @@
    </div>
    @endif
 
-   <!-- Perhatian Khusus - Keterangan field wajib -->
-   {{-- <div class="alert alert-info alert-dismissible fade show no-print" role="alert">
-      <h5><i class="icon fas fa-info"></i> Perhatian!</h5>
-      <p>Field dengan tanda <span class="text-danger">*</span> wajib diisi. Pastikan semua data terisi dengan benar
-         sebelum menyimpan.</p>
-      <p>Pemeriksaan ANC ini merupakan pemeriksaan untuk pasien <strong>{{ $noRm }}</strong> dengan No. Rawat <strong>{{
-            $noRawat }}</strong>.</p>
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-         <span aria-hidden="true">&times;</span>
-      </button>
-   </div> --}}
-
    <!-- Loading Indicator -->
    <div wire:loading class="text-center p-3">
       <div class="spinner-wave">
@@ -185,62 +214,246 @@
 
    <!-- Main Content -->
    <div wire:loading.remove>
+      @if(!$validIbuHamil && $errorMessage)
+      <div class="alert-not-registered">
+         <h5><i class="fas fa-exclamation-triangle mr-2"></i>Pasien Bukan Ibu Hamil Aktif</h5>
+         <p>{{ $errorMessage }}</p>
+         <p>Pasien harus terdaftar sebagai ibu hamil aktif di sistem untuk mengakses form Pemeriksaan ANC. Silakan
+            daftarkan pasien terlebih dahulu melalui menu Data Ibu Hamil.</p>
+      </div>
+      @else
+
+      <!-- Informasi Dasar Ibu Hamil -->
+      <div class="info-ibu-hamil">
+         <h5><i class="fas fa-female mr-2"></i>Informasi Ibu Hamil</h5>
+         <div class="row">
+            <div class="col-md-6">
+               <div class="row">
+                  <div class="col-md-4 font-weight-bold">Nama</div>
+                  <div class="col-md-8">: {{ $dataIbuHamil['nama'] ?? '-' }}</div>
+               </div>
+               <div class="row">
+                  <div class="col-md-4 font-weight-bold">Usia</div>
+                  <div class="col-md-8">: {{ $dataIbuHamil['usia'] ?? '-' }} tahun</div>
+               </div>
+               <div class="row">
+                  <div class="col-md-4 font-weight-bold">HPHT</div>
+                  <div class="col-md-8">: {{ $dataIbuHamil['hpht'] ?? '-' }}</div>
+               </div>
+            </div>
+            <div class="col-md-6">
+               <div class="row">
+                  <div class="col-md-4 font-weight-bold">HPL</div>
+                  <div class="col-md-8">: {{ $dataIbuHamil['hpl'] ?? '-' }}</div>
+               </div>
+               <div class="row">
+                  <div class="col-md-4 font-weight-bold">Usia Kehamilan</div>
+                  <div class="col-md-8">: {{ $dataIbuHamil['usia_kehamilan'] ?? '-' }} minggu</div>
+               </div>
+               @if($id_hamil)
+               <div class="row mt-1">
+                  <div class="col-md-12 text-right">
+                     <button type="button" class="btn btn-sm btn-primary"
+                        wire:click="showHistoriByIdHamil('{{ $id_hamil }}')">
+                        <i class="fas fa-history mr-1"></i> Tampilkan Riwayat Kunjungan ANC
+                     </button>
+                  </div>
+               </div>
+               @endif
+            </div>
+         </div>
+      </div>
+
       <form wire:submit.prevent="save">
          <!-- Navigation Pills -->
-         {{-- <div class="card mb-4 no-print">
-            <div class="card-header bg-primary text-white">
-               <h5 class="mb-0">Navigasi Cepat</h5>
-            </div> --}}
-            <div class="card-body">
-               <nav class="nav nav-pills flex-column flex-sm-row">
-                  <a class="flex-sm-fill text-sm-center nav-link active" href="#data-wajib"
-                     onclick="event.preventDefault(); document.getElementById('data-wajib').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-clipboard-list mr-1"></i> Data Wajib
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-bb-tb"
-                     onclick="event.preventDefault(); document.getElementById('ukur-bb-tb').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-weight mr-1"></i> Ukur BB & TB
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-td"
-                     onclick="event.preventDefault(); document.getElementById('ukur-td').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-heartbeat mr-1"></i> Ukur TD
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#tablet-tambah-darah"
-                     onclick="event.preventDefault(); document.getElementById('tablet-tambah-darah').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-capsules mr-1"></i> Tablet Fe
-                  </a>
-               </nav>
-               <nav class="nav nav-pills flex-column flex-sm-row mt-2">
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#pemeriksaan-lab"
-                     onclick="event.preventDefault(); document.getElementById('pemeriksaan-lab').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-flask mr-1"></i> Lab
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#tatalaksana-kasus"
-                     onclick="event.preventDefault(); document.getElementById('tatalaksana-kasus').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-procedures mr-1"></i> Tatalaksana
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#temu-wicara"
-                     onclick="event.preventDefault(); document.getElementById('temu-wicara').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-comments mr-1"></i> Konseling
-                  </a>
-                  <a class="flex-sm-fill text-sm-center nav-link" href="#keadaan-pulang"
-                     onclick="event.preventDefault(); document.getElementById('keadaan-pulang').scrollIntoView({behavior: 'smooth'})">
-                     <i class="fas fa-home mr-1"></i> Pulang
-                  </a>
-               </nav>
+         <div class="card-body">
+            <nav class="nav nav-pills flex-column flex-sm-row">
+               <a class="flex-sm-fill text-sm-center nav-link active" href="#anamnesis"
+                  onclick="event.preventDefault(); document.getElementById('anamnesis').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-list mr-1"></i> Anamnesis
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#data-wajib"
+                  onclick="event.preventDefault(); document.getElementById('data-wajib').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-check mr-1"></i> Data Wajib
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-bb-tb"
+                  onclick="event.preventDefault(); document.getElementById('ukur-bb-tb').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-weight mr-1"></i> T1: BB & TB
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-td"
+                  onclick="event.preventDefault(); document.getElementById('ukur-td').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-heartbeat mr-1"></i> T2: TD
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#status-gizi"
+                  onclick="event.preventDefault(); document.getElementById('status-gizi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-ruler mr-1"></i> T3: Status Gizi
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tinggi-fundus-uteri"
+                  onclick="event.preventDefault(); document.getElementById('tinggi-fundus-uteri').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-child mr-1"></i> T4: TFU
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#djj-presentasi"
+                  onclick="event.preventDefault(); document.getElementById('djj-presentasi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-baby mr-1"></i> T5: DJJ/Presentasi
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#status-imunisasi"
+                  onclick="event.preventDefault(); document.getElementById('status-imunisasi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-syringe mr-1"></i> T6: Imunisasi TT
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tablet-tambah-darah"
+                  onclick="event.preventDefault(); document.getElementById('tablet-tambah-darah').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-pills mr-1"></i> T7: Tablet Fe
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#pemeriksaan-lab"
+                  onclick="event.preventDefault(); document.getElementById('pemeriksaan-lab').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-flask mr-1"></i> T8: Lab
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tatalaksana-kasus"
+                  onclick="event.preventDefault(); document.getElementById('tatalaksana-kasus').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-procedures mr-1"></i> T9: Tatalaksana
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#temu-wicara"
+                  onclick="event.preventDefault(); document.getElementById('temu-wicara').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-comments mr-1"></i> T10: Konseling
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tindak-lanjut"
+                  onclick="event.preventDefault(); document.getElementById('tindak-lanjut').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-check mr-1"></i> Tindak Lanjut
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#keadaan-pulang"
+                  onclick="event.preventDefault(); document.getElementById('keadaan-pulang').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-home mr-1"></i> Keadaan Pulang
+               </a>
+            </nav>
+         </div>
+
+         <!-- Anamnesis -->
+         <div class="form-group" id="anamnesis">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">1</span> Anamnesis
+            </h5>
+
+            <div class="form-group row">
+               <label for="keluhan_utama" class="col-sm-2 col-form-label">Keluhan Utama</label>
+               <div class="col-sm-10">
+                  <textarea class="form-control @error('keluhan_utama') is-invalid @enderror" rows="2"
+                     wire:model.defer="keluhan_utama" id="keluhan_utama"></textarea>
+                  @error('keluhan_utama')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
+               </div>
+            </div>
+
+            <div class="form-group row">
+               <label for="riwayat_kehamilan" class="col-sm-2 col-form-label">Riwayat Obstetri</label>
+               <div class="col-sm-10">
+                  <div class="row">
+                     <div class="col-md-2">
+                        <div class="form-group">
+                           <label for="gravida">G (Gravida)</label>
+                           <input type="number" class="form-control @error('gravida') is-invalid @enderror"
+                              wire:model.defer="gravida" id="gravida" min="0">
+                           @error('gravida')
+                           <div class="invalid-feedback">{{ $message }}</div>
+                           @enderror
+                        </div>
+                     </div>
+                     <div class="col-md-2">
+                        <div class="form-group">
+                           <label for="partus">P (Partus)</label>
+                           <input type="number" class="form-control @error('partus') is-invalid @enderror"
+                              wire:model.defer="partus" id="partus" min="0">
+                           @error('partus')
+                           <div class="invalid-feedback">{{ $message }}</div>
+                           @enderror
+                        </div>
+                     </div>
+                     <div class="col-md-2">
+                        <div class="form-group">
+                           <label for="abortus">A (Abortus)</label>
+                           <input type="number" class="form-control @error('abortus') is-invalid @enderror"
+                              wire:model.defer="abortus" id="abortus" min="0">
+                           @error('abortus')
+                           <div class="invalid-feedback">{{ $message }}</div>
+                           @enderror
+                        </div>
+                     </div>
+                     <div class="col-md-2">
+                        <div class="form-group">
+                           <label for="hidup">Hidup</label>
+                           <input type="number" class="form-control @error('hidup') is-invalid @enderror"
+                              wire:model.defer="hidup" id="hidup" min="0">
+                           @error('hidup')
+                           <div class="invalid-feedback">{{ $message }}</div>
+                           @enderror
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group row">
+               <label for="riwayat_penyakit" class="col-sm-2 col-form-label">Riwayat Penyakit</label>
+               <div class="col-sm-10">
+                  <div class="row">
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox"
+                              wire:model.defer="riwayat_penyakit.hipertensi" id="hipertensi">
+                           <label class="form-check-label" for="hipertensi">Hipertensi</label>
+                        </div>
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.diabetes"
+                              id="diabetes">
+                           <label class="form-check-label" for="diabetes">Diabetes Mellitus</label>
+                        </div>
+                     </div>
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.jantung"
+                              id="jantung">
+                           <label class="form-check-label" for="jantung">Penyakit Jantung</label>
+                        </div>
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.asma"
+                              id="asma">
+                           <label class="form-check-label" for="asma">Asma</label>
+                        </div>
+                     </div>
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox"
+                              wire:model.defer="riwayat_penyakit.lainnya_check" id="lainnya_check">
+                           <label class="form-check-label" for="lainnya_check">Lainnya</label>
+                        </div>
+                        <input type="text" class="form-control mt-1" wire:model.defer="riwayat_penyakit.lainnya"
+                           placeholder="Sebutkan" id="riwayat_lainnya" @if(!isset($riwayat_penyakit['lainnya_check']) ||
+                           !$riwayat_penyakit['lainnya_check']) disabled @endif>
+                     </div>
+                  </div>
+               </div>
             </div>
          </div>
 
          <!-- Data Wajib Diisi -->
          <div class="form-group" id="data-wajib">
-            <h5 class="mb-3 font-weight-bold">Data Wajib Diisi</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">2</span> Data Wajib Diisi
+            </h5>
 
             <div class="form-group row">
                <label for="tanggal_anc" class="col-sm-2 col-form-label">Tanggal ANC</label>
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="datetime-local" class="form-control @error('tanggal_anc') is-invalid @enderror"
-                        wire:model="tanggal_anc" id="tanggal_anc">
+                        id="tanggal_anc" wire:model="tanggal_anc"
+                        value="{{ $tanggal_anc_formatted ?? now()->format('Y-m-d\TH:i') }}">
                      <div class="input-group-append">
                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                      </div>
@@ -252,8 +465,8 @@
 
                <label for="diperiksa_oleh" class="col-sm-2 col-form-label">Diperiksa Oleh</label>
                <div class="col-sm-4">
-                  <select class="form-control @error('diperiksa_oleh') is-invalid @enderror" wire:model="diperiksa_oleh"
-                     id="diperiksa_oleh">
+                  <select class="form-control @error('diperiksa_oleh') is-invalid @enderror"
+                     wire:model.defer="diperiksa_oleh" id="diperiksa_oleh">
                      <option value="">- Pilih Petugas -</option>
                      @if(isset($petugas) && $petugas->count() > 0)
                      @foreach($petugas as $p)
@@ -272,7 +485,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" class="form-control @error('usia_kehamilan') is-invalid @enderror"
-                        wire:model="usia_kehamilan" id="usia_kehamilan">
+                        wire:model.defer="usia_kehamilan" id="usia_kehamilan">
                      <div class="input-group-append">
                         <span class="input-group-text">Minggu</span>
                      </div>
@@ -287,17 +500,17 @@
                   <div class="d-flex">
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="trimester" id="trimester1"
-                           wire:model="trimester" value="1">
+                           wire:model.defer="trimester" value="1">
                         <label class="form-check-label" for="trimester1">1</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="trimester" id="trimester2"
-                           wire:model="trimester" value="2">
+                           wire:model.defer="trimester" value="2">
                         <label class="form-check-label" for="trimester2">2</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="trimester" id="trimester3"
-                           wire:model="trimester" value="3">
+                           wire:model.defer="trimester" value="3">
                         <label class="form-check-label" for="trimester3">3</label>
                      </div>
                   </div>
@@ -310,8 +523,8 @@
             <div class="form-group row">
                <label for="kunjungan_ke" class="col-sm-2 col-form-label">Kunjungan K</label>
                <div class="col-sm-4">
-                  <select class="form-control @error('kunjungan_ke') is-invalid @enderror" wire:model="kunjungan_ke"
-                     id="kunjungan_ke">
+                  <select class="form-control @error('kunjungan_ke') is-invalid @enderror"
+                     wire:model.defer="kunjungan_ke" id="kunjungan_ke">
                      <option value="">- Pilih -</option>
                      <option value="1">K1</option>
                      <option value="2">K2</option>
@@ -329,14 +542,16 @@
 
          <!-- Timbang Berat Badan dan Ukur Tinggi Badan -->
          <div class="form-group" id="ukur-bb-tb">
-            <h5 class="mb-3 font-weight-bold">Timbang Berat Badan dan Ukur Tinggi Badan</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">3</span> Timbang Berat Badan dan Ukur Tinggi Badan (T1)
+            </h5>
 
             <div class="form-group row">
                <label for="berat_badan" class="col-sm-2 col-form-label">Berat Badan (saat ini)</label>
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('berat_badan') is-invalid @enderror"
-                        wire:model="berat_badan" id="berat_badan" wire:change="hitungIMT">
+                        id="berat_badan" value="{{ $berat_badan }}">
                      <div class="input-group-append">
                         <span class="input-group-text">Kg</span>
                      </div>
@@ -350,7 +565,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('tinggi_badan') is-invalid @enderror"
-                        wire:model="tinggi_badan" id="tinggi_badan" wire:change="hitungIMT">
+                        id="tinggi_badan" value="{{ $tinggi_badan }}">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -364,12 +579,12 @@
             <div class="form-group row">
                <label for="imt" class="col-sm-2 col-form-label">IMT Saat ini</label>
                <div class="col-sm-4">
-                  <input type="number" step="0.01" class="form-control" wire:model="imt" id="imt" readonly>
+                  <input type="number" step="0.01" class="form-control bg-light" wire:model="imt" id="imt" readonly>
                </div>
 
                <label for="kategori_imt" class="col-sm-2 col-form-label">Kategori IMT</label>
                <div class="col-sm-4">
-                  <input type="text" class="form-control" wire:model="kategori_imt" id="kategori_imt" readonly>
+                  <input type="text" class="form-control bg-light" wire:model="kategori_imt" id="kategori_imt" readonly>
                </div>
             </div>
 
@@ -379,17 +594,17 @@
                   <div class="d-flex">
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="jumlah_janin" id="janin_tidak_diketahui"
-                           wire:model="jumlah_janin" value="Tidak Diketahui">
+                           wire:model.defer="jumlah_janin" value="Tidak Diketahui">
                         <label class="form-check-label" for="janin_tidak_diketahui">Tidak Diketahui</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="jumlah_janin" id="janin_tunggal"
-                           wire:model="jumlah_janin" value="Tunggal">
+                           wire:model.defer="jumlah_janin" value="Tunggal">
                         <label class="form-check-label" for="janin_tunggal">Tunggal</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="jumlah_janin" id="janin_ganda"
-                           wire:model="jumlah_janin" value="Ganda">
+                           wire:model.defer="jumlah_janin" value="Ganda">
                         <label class="form-check-label" for="janin_ganda">Ganda</label>
                      </div>
                   </div>
@@ -402,14 +617,16 @@
 
          <!-- Ukur Tekanan Darah -->
          <div class="form-group" id="ukur-td">
-            <h5 class="mb-3 font-weight-bold">Ukur Tekanan Darah</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">4</span> Ukur Tekanan Darah (T2)
+            </h5>
 
             <div class="form-group row">
                <label for="td_sistole" class="col-sm-2 col-form-label">TD Sistole</label>
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" class="form-control @error('td_sistole') is-invalid @enderror"
-                        wire:model="td_sistole" id="td_sistole">
+                        wire:model.defer="td_sistole" id="td_sistole">
                      <div class="input-group-append">
                         <span class="input-group-text">mm</span>
                      </div>
@@ -423,7 +640,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" class="form-control @error('td_diastole') is-invalid @enderror"
-                        wire:model="td_diastole" id="td_diastole">
+                        wire:model.defer="td_diastole" id="td_diastole">
                      <div class="input-group-append">
                         <span class="input-group-text">HG</span>
                      </div>
@@ -435,16 +652,158 @@
             </div>
          </div>
 
+         <!-- Status Gizi -->
+         <div class="form-group" id="status-gizi">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">5</span> Status Gizi (T3)
+            </h5>
+
+            <div class="form-group row">
+               <label for="lila" class="col-sm-2 col-form-label">Lingkar Lengan Atas (LILA)</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="number" step="0.1" class="form-control @error('lila') is-invalid @enderror" id="lila"
+                        value="{{ $lila }}">
+                     <div class="input-group-append">
+                        <span class="input-group-text">cm</span>
+                     </div>
+                     @error('lila')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
+               </div>
+
+               <label for="status_gizi" class="col-sm-2 col-form-label">Status Gizi</label>
+               <div class="col-sm-4">
+                  <input type="text" class="form-control bg-light" wire:model="status_gizi" id="status_gizi" readonly>
+               </div>
+            </div>
+         </div>
+
+         <!-- Tinggi Fundus Uteri -->
+         <div class="form-group" id="tinggi-fundus-uteri">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">6</span> Tinggi Fundus Uteri (T4)
+            </h5>
+
+            <div class="form-group row">
+               <label for="tfu" class="col-sm-2 col-form-label">TFU</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="number" step="0.1" class="form-control @error('tfu') is-invalid @enderror" id="tfu"
+                        value="{{ $tfu }}">
+                     <div class="input-group-append">
+                        <span class="input-group-text">cm</span>
+                     </div>
+                     @error('tfu')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
+               </div>
+
+               <label for="taksiran_berat_janin" class="col-sm-2 col-form-label">Taksiran Berat Janin</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="number" class="form-control bg-light" wire:model="taksiran_berat_janin"
+                        id="taksiran_berat_janin" readonly>
+                     <div class="input-group-append">
+                        <span class="input-group-text">gram</span>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Tentukan DJJ dan Presentasi Janin -->
+         <div class="form-group" id="djj-presentasi">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">7</span> Tentukan DJJ dan Presentasi Janin (T5)
+            </h5>
+
+            <div class="form-group row">
+               <label for="djj" class="col-sm-2 col-form-label">Detak Jantung Janin</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="number" class="form-control @error('djj') is-invalid @enderror" wire:model.defer="djj"
+                        id="djj">
+                     <div class="input-group-append">
+                        <span class="input-group-text">bpm</span>
+                     </div>
+                     @error('djj')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
+               </div>
+
+               <label for="presentasi" class="col-sm-2 col-form-label">Presentasi Janin</label>
+               <div class="col-sm-4">
+                  <select class="form-control @error('presentasi') is-invalid @enderror" wire:model.defer="presentasi"
+                     id="presentasi">
+                     <option value="">- Pilih -</option>
+                     <option value="Kepala">Kepala</option>
+                     <option value="Bokong">Bokong</option>
+                     <option value="Lintang">Lintang</option>
+                     <option value="Belum Diketahui">Belum Diketahui</option>
+                  </select>
+                  @error('presentasi')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
+               </div>
+            </div>
+         </div>
+
+         <!-- Status Imunisasi TT -->
+         <div class="form-group" id="status-imunisasi">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">8</span> Status Imunisasi TT (T6)
+            </h5>
+
+            <div class="form-group row">
+               <label for="status_tt" class="col-sm-2 col-form-label">Status Imunisasi TT</label>
+               <div class="col-sm-4">
+                  <select class="form-control @error('status_tt') is-invalid @enderror" wire:model.defer="status_tt"
+                     id="status_tt">
+                     <option value="">- Pilih -</option>
+                     <option value="TT1">TT1</option>
+                     <option value="TT2">TT2</option>
+                     <option value="TT3">TT3</option>
+                     <option value="TT4">TT4</option>
+                     <option value="TT5">TT5</option>
+                     <option value="TT Lengkap">TT Lengkap</option>
+                  </select>
+                  @error('status_tt')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
+               </div>
+
+               <label for="tanggal_imunisasi" class="col-sm-2 col-form-label">Tanggal Imunisasi</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="date" class="form-control @error('tanggal_imunisasi') is-invalid @enderror"
+                        wire:model.defer="tanggal_imunisasi" id="tanggal_imunisasi">
+                     <div class="input-group-append">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                     </div>
+                     @error('tanggal_imunisasi')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
+               </div>
+            </div>
+         </div>
+
          <!-- Pemberian Tablet Tambah Darah (TTD) -->
          <div class="form-group" id="tablet-tambah-darah">
-            <h5 class="mb-3 font-weight-bold">Pemberian Tablet Tambah Darah (TTD)</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">9</span> Pemberian Tablet Tambah Darah (T7)
+            </h5>
 
             <div class="form-group row">
                <label for="jumlah_fe" class="col-sm-2 col-form-label">Jumlah Tablet Fe</label>
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" class="form-control @error('jumlah_fe') is-invalid @enderror"
-                        wire:model="jumlah_fe" id="jumlah_fe">
+                        wire:model.defer="jumlah_fe" id="jumlah_fe">
                      <div class="input-group-append">
                         <span class="input-group-text">(Tab/Botol)</span>
                      </div>
@@ -456,8 +815,8 @@
 
                <label for="dosis" class="col-sm-2 col-form-label">Dosis (Tablet/hari)</label>
                <div class="col-sm-4">
-                  <input type="number" class="form-control @error('dosis') is-invalid @enderror" wire:model="dosis"
-                     id="dosis">
+                  <input type="number" class="form-control @error('dosis') is-invalid @enderror"
+                     wire:model.defer="dosis" id="dosis">
                   @error('dosis')
                   <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
@@ -467,42 +826,222 @@
 
          <!-- Pemeriksaan Laboratorium -->
          <div class="form-group" id="pemeriksaan-lab">
-            <h5 class="mb-3 font-weight-bold">Pemeriksaan Laboratorium</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">10</span> Pemeriksaan Laboratorium (T8)
+            </h5>
 
             <div class="form-group row">
-               <label for="pemeriksaan_lab" class="col-sm-2 col-form-label">Pemeriksaan</label>
-               <div class="col-sm-10">
-                  <select class="form-control @error('pemeriksaan_lab') is-invalid @enderror"
-                     wire:model="pemeriksaan_lab" id="pemeriksaan_lab">
-                     <option value="">- Pilih Pemeriksaan -</option>
-                     <option value="COVID-19">COVID-19</option>
-                     <option value="Hemoglobin (Hb)">Hemoglobin (Hb)</option>
-                     <option value="Anemia">Anemia</option>
-                     <option value="Protein Urin">Protein Urin</option>
-                     <option value="Reduksi Gula Darah">Reduksi Gula Darah</option>
-                     <option value="VDRL (Veneral Disease Research Lab)">VDRL (Veneral Disease Research Lab)</option>
-                     <option value="HIV">HIV</option>
-                     <option value="Sifilis">Sifilis</option>
-                     <option value="HBsAg">HBsAg</option>
-                     <option value="Thalasemia">Thalasemia</option>
-                     <option value="Lainnya">Lainnya</option>
-                  </select>
-                  @error('pemeriksaan_lab')
-                  <div class="invalid-feedback">{{ $message }}</div>
-                  @enderror
+               <label class="col-sm-3 col-form-label">Tanggal Pengambilan Sampel</label>
+               <div class="col-sm-9">
+                  <div class="input-group">
+                     <input type="date" class="form-control @error('tanggal_lab') is-invalid @enderror"
+                        wire:model.defer="tanggal_lab" id="tanggal_lab">
+                     <div class="input-group-append">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                     </div>
+                     @error('tanggal_lab')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Wajib diperiksa</h6>
+                  <div class="row">
+                     <!-- Hemoglobin -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hb.checked"
+                              id="lab_hb">
+                           <label class="form-check-label font-weight-bold" for="lab_hb">Hemoglobin (Hb)</label>
+                        </div>
+                        <div class="input-group mb-3" id="input_hb" @if(!isset($lab['hb']['checked']) ||
+                           !$lab['hb']['checked']) style="display:none" @endif>
+                           <input type="number" step="0.01" class="form-control" wire:model.defer="lab.hb.nilai"
+                              placeholder="Nilai">
+                           <div class="input-group-append">
+                              <span class="input-group-text">g/dL</span>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Golongan Darah -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.goldar.checked"
+                              id="lab_goldar">
+                           <label class="form-check-label font-weight-bold" for="lab_goldar">Golongan Darah</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.goldar.nilai" id="input_goldar"
+                           @if(!isset($lab['goldar']['checked']) || !$lab['goldar']['checked']) style="display:none"
+                           @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="A">A</option>
+                           <option value="B">B</option>
+                           <option value="AB">AB</option>
+                           <option value="O">O</option>
+                        </select>
+                     </div>
+
+                     <!-- Protein Urin -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.protein_urin.checked"
+                              id="lab_protein_urin">
+                           <label class="form-check-label font-weight-bold" for="lab_protein_urin">Protein Urin</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.protein_urin.nilai" id="input_protein_urin"
+                           @if(!isset($lab['protein_urin']['checked']) || !$lab['protein_urin']['checked'])
+                           style="display:none" @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="Negatif">Negatif</option>
+                           <option value="+1">+1</option>
+                           <option value="+2">+2</option>
+                           <option value="+3">+3</option>
+                           <option value="+4">+4</option>
+                        </select>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group mt-3">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Skrining HIV, Sifilis, Hepatitis B</h6>
+                  <div class="row">
+                     <!-- HIV -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hiv.checked"
+                              id="lab_hiv">
+                           <label class="form-check-label font-weight-bold" for="lab_hiv">HIV</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.hiv.nilai" id="input_hiv"
+                           @if(!isset($lab['hiv']['checked']) || !$lab['hiv']['checked']) style="display:none" @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="Non-Reaktif">Non-Reaktif</option>
+                           <option value="Reaktif">Reaktif</option>
+                        </select>
+                     </div>
+
+                     <!-- Sifilis -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.sifilis.checked"
+                              id="lab_sifilis">
+                           <label class="form-check-label font-weight-bold" for="lab_sifilis">Sifilis (VDRL)</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.sifilis.nilai" id="input_sifilis"
+                           @if(!isset($lab['sifilis']['checked']) || !$lab['sifilis']['checked']) style="display:none"
+                           @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="Non-Reaktif">Non-Reaktif</option>
+                           <option value="Reaktif">Reaktif</option>
+                        </select>
+                     </div>
+
+                     <!-- Hepatitis B -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hbsag.checked"
+                              id="lab_hbsag">
+                           <label class="form-check-label font-weight-bold" for="lab_hbsag">Hepatitis B (HBsAg)</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.hbsag.nilai" id="input_hbsag"
+                           @if(!isset($lab['hbsag']['checked']) || !$lab['hbsag']['checked']) style="display:none"
+                           @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="Non-Reaktif">Non-Reaktif</option>
+                           <option value="Reaktif">Reaktif</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  <div class="form-group row mt-3" id="rujukan_div" @if((!isset($lab['hiv']['checked']) ||
+                     !$lab['hiv']['checked'] || !isset($lab['hiv']['nilai']) || $lab['hiv']['nilai'] !='Reaktif' ) &&
+                     (!isset($lab['sifilis']['checked']) || !$lab['sifilis']['checked'] ||
+                     !isset($lab['sifilis']['nilai']) || $lab['sifilis']['nilai'] !='Reaktif' ) &&
+                     (!isset($lab['hbsag']['checked']) || !$lab['hbsag']['checked'] || !isset($lab['hbsag']['nilai']) ||
+                     $lab['hbsag']['nilai'] !='Reaktif' )) style="display:none" @endif>
+                     <label class="col-sm-3 col-form-label">Tindak Lanjut Rujukan</label>
+                     <div class="col-sm-9">
+                        <textarea class="form-control" wire:model.defer="rujukan_ims" rows="2"
+                           placeholder="Detail rujukan untuk pasien positif HIV/Sifilis/Hepatitis B"></textarea>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group mt-3">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Pemeriksaan Lainnya</h6>
+                  <div class="row">
+                     <!-- Gula Darah -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.gula_darah.checked"
+                              id="lab_gula_darah">
+                           <label class="form-check-label font-weight-bold" for="lab_gula_darah">Gula Darah</label>
+                        </div>
+                        <div class="input-group mb-3" id="input_gula_darah" @if(!isset($lab['gula_darah']['checked']) ||
+                           !$lab['gula_darah']['checked']) style="display:none" @endif>
+                           <input type="number" class="form-control" wire:model.defer="lab.gula_darah.nilai"
+                              placeholder="Nilai">
+                           <div class="input-group-append">
+                              <span class="input-group-text">mg/dL</span>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Malaria -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.malaria.checked"
+                              id="lab_malaria">
+                           <label class="form-check-label font-weight-bold" for="lab_malaria">Malaria</label>
+                        </div>
+                        <select class="form-control" wire:model.defer="lab.malaria.nilai" id="input_malaria"
+                           @if(!isset($lab['malaria']['checked']) || !$lab['malaria']['checked']) style="display:none"
+                           @endif>
+                           <option value="">- Pilih -</option>
+                           <option value="Negatif">Negatif</option>
+                           <option value="Positif">Positif</option>
+                        </select>
+                     </div>
+
+                     <!-- Pemeriksaan Lain -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.lainnya.checked"
+                              id="lab_lainnya">
+                           <label class="form-check-label font-weight-bold" for="lab_lainnya">Lainnya</label>
+                        </div>
+                        <div id="input_lab_lainnya" @if(!isset($lab['lainnya']['checked']) ||
+                           !$lab['lainnya']['checked']) style="display:none" @endif>
+                           <input type="text" class="form-control mb-2" wire:model.defer="lab.lainnya.nama"
+                              placeholder="Nama Pemeriksaan">
+                           <input type="text" class="form-control" wire:model.defer="lab.lainnya.nilai"
+                              placeholder="Hasil">
+                        </div>
+                     </div>
+                  </div>
                </div>
             </div>
          </div>
 
          <!-- Tatalaksana Kasus -->
          <div class="form-group" id="tatalaksana-kasus">
-            <h5 class="mb-3 font-weight-bold">Tatalaksana Kasus</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">11</span> Tatalaksana Kasus (T9)
+            </h5>
 
             <div class="form-group row">
                <label for="jenis_tatalaksana" class="col-sm-2 col-form-label">Jenis Tatalaksana</label>
                <div class="col-sm-10">
                   <select class="form-control @error('jenis_tatalaksana') is-invalid @enderror"
-                     wire:model="jenis_tatalaksana" id="jenis_tatalaksana" wire:change="onChangeTatalaksana">
+                     wire:model.defer="jenis_tatalaksana" id="jenis_tatalaksana">
                      <option value="">- Pilih Jenis tatalaksana -</option>
                      <option value="Anemia">Anemia</option>
                      <option value="Makanan Tambahan Ibu Hamil">Makanan Tambahan Ibu Hamil</option>
@@ -526,1150 +1065,34 @@
                </div>
             </div>
 
-            <!-- Form khusus untuk Anemia -->
+            <!-- Form khusus untuk berbagai jenis tatalaksana -->
             @if($jenis_tatalaksana == 'Anemia')
-            <div class="card mt-3 border-left-primary" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="diberikan_tablet_fe" class="col-sm-2 col-form-label">Diberikan Tablet FE <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diberikan_tablet_fe" id="tablet_fe_ya"
-                                 wire:model="diberikan_tablet_fe" value="Ya">
-                              <label class="form-check-label" for="tablet_fe_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diberikan_tablet_fe"
-                                 id="tablet_fe_tidak" wire:model="diberikan_tablet_fe" value="Tidak">
-                              <label class="form-check-label" for="tablet_fe_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('diberikan_tablet_fe')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="jumlah_tablet_dikonsumsi" class="col-sm-2 col-form-label">Jumlah Tablet Fe yang
-                        dikonsumsi
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-8">
-                        <input type="number"
-                           class="form-control @error('jumlah_tablet_dikonsumsi') is-invalid @enderror"
-                           wire:model="jumlah_tablet_dikonsumsi" id="jumlah_tablet_dikonsumsi" min="0">
-                        @error('jumlah_tablet_dikonsumsi')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                     <div class="col-sm-2">
-                        <div class="form-control bg-light text-center">(Tab/Botol)</div>
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="jumlah_tablet_ditambahkan" class="col-sm-2 col-form-label">Jumlah Tablet Fe yang
-                        ditambahkan saat ini <span class="text-danger">*</span></label>
-                     <div class="col-sm-8">
-                        <input type="number"
-                           class="form-control @error('jumlah_tablet_ditambahkan') is-invalid @enderror"
-                           wire:model="jumlah_tablet_ditambahkan" id="jumlah_tablet_ditambahkan" min="0">
-                        @error('jumlah_tablet_ditambahkan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                     <div class="col-sm-2">
-                        <div class="form-control bg-light text-center">(Tab/Botol)</div>
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="tatalaksana_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="tatalaksana_lainnya"
-                           id="tatalaksana_lainnya" placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormAnemia">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
+            <!-- Form anemia -->
             @endif
 
-            <!-- Form khusus untuk Makanan Tambahan Ibu Hamil -->
             @if($jenis_tatalaksana == 'Makanan Tambahan Ibu Hamil')
-            <div class="card mt-3 border-left-success" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="pemberian_mt" class="col-sm-2 col-form-label">Pemberian MT <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_mt" id="mt_lokal"
-                                 wire:model="pemberian_mt" value="MT Lokal">
-                              <label class="form-check-label" for="mt_lokal">MT Lokal</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_mt" id="mt_pabrikan"
-                                 wire:model="pemberian_mt" value="MT Pabrikan">
-                              <label class="form-check-label" for="mt_pabrikan">MT Pabrikan</label>
-                           </div>
-                        </div>
-                        @error('pemberian_mt')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="jumlah_mt" class="col-sm-2 col-form-label">Jumlah MT yang diberikan
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <input type="number" class="form-control @error('jumlah_mt') is-invalid @enderror"
-                           wire:model="jumlah_mt" id="jumlah_mt" min="0">
-                        @error('jumlah_mt')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormMT">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
+            <!-- Form Makanan Tambahan -->
             @endif
 
-            <!-- Form khusus untuk Hipertensi -->
             @if($jenis_tatalaksana == 'Hipertensi')
-            <div class="card mt-3 border-left-danger" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="pantau_tekanan_darah" class="col-sm-2 col-form-label">Pantau Tekanan Darah <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_tekanan_darah" id="td_ya"
-                                 wire:model="pantau_tekanan_darah" value="Ya">
-                              <label class="form-check-label" for="td_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_tekanan_darah" id="td_tidak"
-                                 wire:model="pantau_tekanan_darah" value="Tidak">
-                              <label class="form-check-label" for="td_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_tekanan_darah')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pantau_protein_urine" class="col-sm-2 col-form-label">Pantau Protein Urine <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_protein_urine" id="protein_ya"
-                                 wire:model="pantau_protein_urine" value="Ya">
-                              <label class="form-check-label" for="protein_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_protein_urine"
-                                 id="protein_tidak" wire:model="pantau_protein_urine" value="Tidak">
-                              <label class="form-check-label" for="protein_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_protein_urine')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pantau_kondisi_janin" class="col-sm-2 col-form-label">Pantau Kondisi Janin <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_kondisi_janin" id="janin_ya"
-                                 wire:model="pantau_kondisi_janin" value="Ya">
-                              <label class="form-check-label" for="janin_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_kondisi_janin" id="janin_tidak"
-                                 wire:model="pantau_kondisi_janin" value="Tidak">
-                              <label class="form-check-label" for="janin_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_kondisi_janin')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="hipertensi_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="hipertensi_lainnya" id="hipertensi_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormHipertensi">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
+            <!-- Form Hipertensi -->
             @endif
 
-            <!-- Form khusus untuk Eklampsia -->
-            @if($jenis_tatalaksana == 'Eklampsia')
-            <div class="card mt-3 border-left-warning" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="pantau_tekanan_darah_eklampsia" class="col-sm-2 col-form-label">Pantau Tekanan Darah
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_tekanan_darah_eklampsia"
-                                 id="td_eklampsia_ya" wire:model="pantau_tekanan_darah_eklampsia" value="Ya">
-                              <label class="form-check-label" for="td_eklampsia_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_tekanan_darah_eklampsia"
-                                 id="td_eklampsia_tidak" wire:model="pantau_tekanan_darah_eklampsia" value="Tidak">
-                              <label class="form-check-label" for="td_eklampsia_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_tekanan_darah_eklampsia')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
+            <!-- Bentuk tatalaksana lainnya... -->
 
-                  <div class="form-group row">
-                     <label for="pantau_protein_urine_eklampsia" class="col-sm-2 col-form-label">Pantau Protein Urine
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_protein_urine_eklampsia"
-                                 id="protein_eklampsia_ya" wire:model="pantau_protein_urine_eklampsia" value="Ya">
-                              <label class="form-check-label" for="protein_eklampsia_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_protein_urine_eklampsia"
-                                 id="protein_eklampsia_tidak" wire:model="pantau_protein_urine_eklampsia" value="Tidak">
-                              <label class="form-check-label" for="protein_eklampsia_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_protein_urine_eklampsia')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pantau_kondisi_janin_eklampsia" class="col-sm-2 col-form-label">Pantau Kondisi Janin
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_kondisi_janin_eklampsia"
-                                 id="janin_eklampsia_ya" wire:model="pantau_kondisi_janin_eklampsia" value="Ya">
-                              <label class="form-check-label" for="janin_eklampsia_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pantau_kondisi_janin_eklampsia"
-                                 id="janin_eklampsia_tidak" wire:model="pantau_kondisi_janin_eklampsia" value="Tidak">
-                              <label class="form-check-label" for="janin_eklampsia_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pantau_kondisi_janin_eklampsia')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pemberian_antihipertensi" class="col-sm-2 col-form-label">Pemberian Antihipertensi
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antihipertensi"
-                                 id="antihipertensi_ya" wire:model="pemberian_antihipertensi" value="Ya">
-                              <label class="form-check-label" for="antihipertensi_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antihipertensi"
-                                 id="antihipertensi_tidak" wire:model="pemberian_antihipertensi" value="Tidak">
-                              <label class="form-check-label" for="antihipertensi_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pemberian_antihipertensi')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pemberian_mgso4" class="col-sm-2 col-form-label">Pemberian MgSO4 <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_mgso4" id="mgso4_ya"
-                                 wire:model="pemberian_mgso4" value="Ya">
-                              <label class="form-check-label" for="mgso4_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_mgso4" id="mgso4_tidak"
-                                 wire:model="pemberian_mgso4" value="Tidak">
-                              <label class="form-check-label" for="mgso4_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pemberian_mgso4')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pemberian_diazepam" class="col-sm-2 col-form-label">Pemberian Diazepam Injeksi <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_diazepam" id="diazepam_ya"
-                                 wire:model="pemberian_diazepam" value="Ya">
-                              <label class="form-check-label" for="diazepam_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_diazepam" id="diazepam_tidak"
-                                 wire:model="pemberian_diazepam" value="Tidak">
-                              <label class="form-check-label" for="diazepam_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pemberian_diazepam')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormEklampsia">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk KEK -->
-            @if($jenis_tatalaksana == 'KEK')
-            <div class="card mt-3 border-left-info" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="edukasi_gizi" class="col-sm-2 col-form-label">Edukasi Gizi <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi_gizi" id="edukasi_gizi_ya"
-                                 wire:model="edukasi_gizi" value="Ya">
-                              <label class="form-check-label" for="edukasi_gizi_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi_gizi" id="edukasi_gizi_tidak"
-                                 wire:model="edukasi_gizi" value="Tidak">
-                              <label class="form-check-label" for="edukasi_gizi_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('edukasi_gizi')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="kek_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="kek_lainnya" id="kek_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormKEK">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk Obesitas -->
-            @if($jenis_tatalaksana == 'Obesitas')
-            <div class="card mt-3 border-left-dark" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="edukasi_gizi_obesitas" class="col-sm-2 col-form-label">Edukasi Gizi Ibu Hamil <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi_gizi_obesitas"
-                                 id="edukasi_gizi_obesitas_ya" wire:model="edukasi_gizi_obesitas" value="Ya">
-                              <label class="form-check-label" for="edukasi_gizi_obesitas_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi_gizi_obesitas"
-                                 id="edukasi_gizi_obesitas_tidak" wire:model="edukasi_gizi_obesitas" value="Tidak">
-                              <label class="form-check-label" for="edukasi_gizi_obesitas_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('edukasi_gizi_obesitas')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="obesitas_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="obesitas_lainnya" id="obesitas_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormObesitas">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk Infeksi -->
-            @if($jenis_tatalaksana == 'Infeksi')
-            <div class="card mt-3 border-left-secondary" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="pemberian_antipiretik" class="col-sm-2 col-form-label">Pemberian Antipiretik <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antipiretik"
-                                 id="antipiretik_ya" wire:model="pemberian_antipiretik" value="Ya">
-                              <label class="form-check-label" for="antipiretik_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antipiretik"
-                                 id="antipiretik_tidak" wire:model="pemberian_antipiretik" value="Tidak">
-                              <label class="form-check-label" for="antipiretik_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pemberian_antipiretik')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="pemberian_antibiotik" class="col-sm-2 col-form-label">Pemberian Antibiotik <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antibiotik"
-                                 id="antibiotik_ya" wire:model="pemberian_antibiotik" value="Ya">
-                              <label class="form-check-label" for="antibiotik_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="pemberian_antibiotik"
-                                 id="antibiotik_tidak" wire:model="pemberian_antibiotik" value="Tidak">
-                              <label class="form-check-label" for="antibiotik_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('pemberian_antibiotik')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="infeksi_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="infeksi_lainnya" id="infeksi_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormInfeksi">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk Penyakit Jantung -->
-            @if($jenis_tatalaksana == 'Penyakit Jantung')
-            <div class="card mt-3 border-left-danger" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="edukasi" class="col-sm-2 col-form-label">Edukasi <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi" id="edukasi_ya"
-                                 wire:model="edukasi" value="Ya">
-                              <label class="form-check-label" for="edukasi_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="edukasi" id="edukasi_tidak"
-                                 wire:model="edukasi" value="Tidak">
-                              <label class="form-check-label" for="edukasi_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('edukasi')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="jantung_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="jantung_lainnya" id="jantung_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormJantung">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk HIV -->
-            @if($jenis_tatalaksana == 'HIV')
-            <div class="card mt-3 border-left-warning" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="datang_dengan_hiv" class="col-sm-2 col-form-label">Datang Dengan HIV <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="datang_dengan_hiv"
-                                 id="datang_hiv_negatif" wire:model="datang_dengan_hiv" value="Negatif (-)">
-                              <label class="form-check-label" for="datang_hiv_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="datang_dengan_hiv"
-                                 id="datang_hiv_positif" wire:model="datang_dengan_hiv" value="Positif (+)">
-                              <label class="form-check-label" for="datang_hiv_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('datang_dengan_hiv')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="persalinan_pervaginam" class="col-sm-2 col-form-label">Persalinan Pervaginam <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="persalinan_pervaginam"
-                                 id="persalinan_pervaginam_negatif" wire:model="persalinan_pervaginam"
-                                 value="Negatif (-)">
-                              <label class="form-check-label" for="persalinan_pervaginam_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="persalinan_pervaginam"
-                                 id="persalinan_pervaginam_positif" wire:model="persalinan_pervaginam"
-                                 value="Positif (+)">
-                              <label class="form-check-label" for="persalinan_pervaginam_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('persalinan_pervaginam')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="persalinan_perapdoinam" class="col-sm-2 col-form-label">Persalinan Perapdoinam (SC)
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="persalinan_perapdoinam"
-                                 id="persalinan_perapdoinam_negatif" wire:model="persalinan_perapdoinam"
-                                 value="Negatif (-)">
-                              <label class="form-check-label" for="persalinan_perapdoinam_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="persalinan_perapdoinam"
-                                 id="persalinan_perapdoinam_positif" wire:model="persalinan_perapdoinam"
-                                 value="Positif (+)">
-                              <label class="form-check-label" for="persalinan_perapdoinam_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('persalinan_perapdoinam')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="ditawarkan_tes" class="col-sm-2 col-form-label">Ditawarkan Tes <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ditawarkan_tes" id="ditawarkan_tes_ya"
-                                 wire:model="ditawarkan_tes" value="Ya">
-                              <label class="form-check-label" for="ditawarkan_tes_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ditawarkan_tes"
-                                 id="ditawarkan_tes_tidak" wire:model="ditawarkan_tes" value="Tidak">
-                              <label class="form-check-label" for="ditawarkan_tes_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('ditawarkan_tes')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="dilakukan_tes" class="col-sm-2 col-form-label">Dilakukan Tes <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="dilakukan_tes" id="dilakukan_tes_ya"
-                                 wire:model="dilakukan_tes" value="Ya">
-                              <label class="form-check-label" for="dilakukan_tes_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="dilakukan_tes" id="dilakukan_tes_tidak"
-                                 wire:model="dilakukan_tes" value="Tidak">
-                              <label class="form-check-label" for="dilakukan_tes_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('dilakukan_tes')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="hasil_tes_hiv" class="col-sm-2 col-form-label">Hasil Tes HIV <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="hasil_tes_hiv"
-                                 id="hasil_tes_hiv_negatif" wire:model="hasil_tes_hiv" value="Negatif (-)">
-                              <label class="form-check-label" for="hasil_tes_hiv_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="hasil_tes_hiv"
-                                 id="hasil_tes_hiv_positif" wire:model="hasil_tes_hiv" value="Positif (+)">
-                              <label class="form-check-label" for="hasil_tes_hiv_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('hasil_tes_hiv')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="mendapatkan_art" class="col-sm-2 col-form-label">Mendapatkan ART <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="mendapatkan_art"
-                                 id="mendapatkan_art_ya" wire:model="mendapatkan_art" value="Ya">
-                              <label class="form-check-label" for="mendapatkan_art_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="mendapatkan_art"
-                                 id="mendapatkan_art_tidak" wire:model="mendapatkan_art" value="Tidak">
-                              <label class="form-check-label" for="mendapatkan_art_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('mendapatkan_art')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="vct_pict" class="col-sm-2 col-form-label">VCT (PICT) <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="vct_pict" id="vct_pict_ya"
-                                 wire:model="vct_pict" value="Ya">
-                              <label class="form-check-label" for="vct_pict_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="vct_pict" id="vct_pict_tidak"
-                                 wire:model="vct_pict" value="Tidak">
-                              <label class="form-check-label" for="vct_pict_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('vct_pict')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="periksa_darah" class="col-sm-2 col-form-label">Periksa Darah <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="periksa_darah" id="periksa_darah_ya"
-                                 wire:model="periksa_darah" value="Ya">
-                              <label class="form-check-label" for="periksa_darah_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="periksa_darah" id="periksa_darah_tidak"
-                                 wire:model="periksa_darah" value="Tidak">
-                              <label class="form-check-label" for="periksa_darah_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('periksa_darah')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="serologi" class="col-sm-2 col-form-label">Serologi <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="serologi" id="serologi_negatif"
-                                 wire:model="serologi" value="Negatif (-)">
-                              <label class="form-check-label" for="serologi_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="serologi" id="serologi_positif"
-                                 wire:model="serologi" value="Positif (+)">
-                              <label class="form-check-label" for="serologi_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('serologi')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="arv_profilaksis" class="col-sm-2 col-form-label">ARV Profilaksis</label>
-                     <div class="col-sm-10">
-                        <select class="form-control @error('arv_profilaksis') is-invalid @enderror"
-                           wire:model="arv_profilaksis" id="arv_profilaksis">
-                           <option value="">- Pilih -</option>
-                           <option value="Ya">Ya</option>
-                           <option value="Tidak">Tidak</option>
-                        </select>
-                        @error('arv_profilaksis')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="hiv_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="hiv_lainnya" id="hiv_lainnya"
-                           placeholder="TC Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormHIV">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk TB -->
-            @if($jenis_tatalaksana == 'TB')
-            <div class="card mt-3 border-left-info" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="diperiksa_dahak" class="col-sm-2 col-form-label">Diperiksa dahak <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diperiksa_dahak"
-                                 id="diperiksa_dahak_ya" wire:model="diperiksa_dahak" value="Ya">
-                              <label class="form-check-label" for="diperiksa_dahak_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diperiksa_dahak"
-                                 id="diperiksa_dahak_tidak" wire:model="diperiksa_dahak" value="Tidak">
-                              <label class="form-check-label" for="diperiksa_dahak_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('diperiksa_dahak')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="tbc" class="col-sm-2 col-form-label">TBC <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="tbc" id="tbc_negatif" wire:model="tbc"
-                                 value="Negatif (-)">
-                              <label class="form-check-label" for="tbc_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="tbc" id="tbc_positif" wire:model="tbc"
-                                 value="Positif (+)">
-                              <label class="form-check-label" for="tbc_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('tbc')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="obat_tb" class="col-sm-2 col-form-label">Obat TB</label>
-                     <div class="col-sm-10">
-                        <select class="form-control @error('obat_tb') is-invalid @enderror" wire:model="obat_tb"
-                           id="obat_tb">
-                           <option value="">- Pilih -</option>
-                           <option value="Kategori 1">Kategori 1</option>
-                           <option value="Kategori 2">Kategori 2</option>
-                           <option value="Kategori Anak">Kategori Anak</option>
-                        </select>
-                        @error('obat_tb')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="sisa_obat" class="col-sm-2 col-form-label">Sisa Obat</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="sisa_obat" id="sisa_obat"
-                           placeholder="TC Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="tb_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="tb_lainnya" id="tb_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormTB">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
-
-            <!-- Form khusus untuk Malaria -->
-            @if($jenis_tatalaksana == 'Malaria')
-            <div class="card mt-3 border-left-success" x-data="{ show: false }"
-               x-init="setTimeout(() => { show = true }, 50)" x-show="show"
-               x-transition:enter="transition ease-out duration-300"
-               x-transition:enter-start="opacity-0 transform scale-90"
-               x-transition:enter-end="opacity-100 transform scale-100">
-               <div class="card-body">
-                  <div class="form-group row">
-                     <label for="diberikan_kelambu" class="col-sm-2 col-form-label">Diberikan Kelambu Berinsektisida
-                        <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diberikan_kelambu" id="kelambu_ya"
-                                 wire:model="diberikan_kelambu" value="Ya">
-                              <label class="form-check-label" for="kelambu_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="diberikan_kelambu" id="kelambu_tidak"
-                                 wire:model="diberikan_kelambu" value="Tidak">
-                              <label class="form-check-label" for="kelambu_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('diberikan_kelambu')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="darah_malaria_rdt" class="col-sm-2 col-form-label">Darah malaria diperiksa - RDT <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="darah_malaria_rdt"
-                                 id="darah_malaria_rdt_ya" wire:model="darah_malaria_rdt" value="Ya">
-                              <label class="form-check-label" for="darah_malaria_rdt_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="darah_malaria_rdt"
-                                 id="darah_malaria_rdt_tidak" wire:model="darah_malaria_rdt" value="Tidak">
-                              <label class="form-check-label" for="darah_malaria_rdt_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('darah_malaria_rdt')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="darah_malaria_mikroskopis" class="col-sm-2 col-form-label">Darah malaria diperiksa -
-                        Mikroskopis <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="darah_malaria_mikroskopis"
-                                 id="darah_malaria_mikroskopis_ya" wire:model="darah_malaria_mikroskopis" value="Ya">
-                              <label class="form-check-label" for="darah_malaria_mikroskopis_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="darah_malaria_mikroskopis"
-                                 id="darah_malaria_mikroskopis_tidak" wire:model="darah_malaria_mikroskopis"
-                                 value="Tidak">
-                              <label class="form-check-label" for="darah_malaria_mikroskopis_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('darah_malaria_mikroskopis')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="ibu_hamil_malaria_rdt" class="col-sm-2 col-form-label">Ibu Hamil Malaria - RDT <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ibu_hamil_malaria_rdt"
-                                 id="ibu_hamil_malaria_rdt_ya" wire:model="ibu_hamil_malaria_rdt" value="Ya">
-                              <label class="form-check-label" for="ibu_hamil_malaria_rdt_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ibu_hamil_malaria_rdt"
-                                 id="ibu_hamil_malaria_rdt_tidak" wire:model="ibu_hamil_malaria_rdt" value="Tidak">
-                              <label class="form-check-label" for="ibu_hamil_malaria_rdt_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('ibu_hamil_malaria_rdt')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="ibu_hamil_malaria_mikroskopis" class="col-sm-2 col-form-label">Ibu Hamil Malaria -
-                        Mikroskopis <span class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ibu_hamil_malaria_mikroskopis"
-                                 id="ibu_hamil_malaria_mikroskopis_ya" wire:model="ibu_hamil_malaria_mikroskopis"
-                                 value="Ya">
-                              <label class="form-check-label" for="ibu_hamil_malaria_mikroskopis_ya">Ya</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="ibu_hamil_malaria_mikroskopis"
-                                 id="ibu_hamil_malaria_mikroskopis_tidak" wire:model="ibu_hamil_malaria_mikroskopis"
-                                 value="Tidak">
-                              <label class="form-check-label" for="ibu_hamil_malaria_mikroskopis_tidak">Tidak</label>
-                           </div>
-                        </div>
-                        @error('ibu_hamil_malaria_mikroskopis')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="hasil_test_malaria" class="col-sm-2 col-form-label">Hasil Test Darah Malaria <span
-                           class="text-danger">*</span></label>
-                     <div class="col-sm-10">
-                        <div class="d-flex">
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="hasil_test_malaria"
-                                 id="hasil_test_malaria_negatif" wire:model="hasil_test_malaria" value="Negatif (-)">
-                              <label class="form-check-label" for="hasil_test_malaria_negatif">Negatif (-)</label>
-                           </div>
-                           <div class="form-check form-check-inline">
-                              <input class="form-check-input" type="radio" name="hasil_test_malaria"
-                                 id="hasil_test_malaria_positif" wire:model="hasil_test_malaria" value="Positif (+)">
-                              <label class="form-check-label" for="hasil_test_malaria_positif">Positif (+)</label>
-                           </div>
-                        </div>
-                        @error('hasil_test_malaria')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="obat_malaria" class="col-sm-2 col-form-label">Obat Malaria/Kina/ACT</label>
-                     <div class="col-sm-10">
-                        <select class="form-control @error('obat_malaria') is-invalid @enderror"
-                           wire:model="obat_malaria" id="obat_malaria">
-                           <option value="">- Pilih -</option>
-                           <option value="Diberikan Obat">Diberikan Obat</option>
-                           <option value="Tidak Diberikan Obat">Tidak Diberikan Obat</option>
-                        </select>
-                        @error('obat_malaria')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <label for="malaria_lainnya" class="col-sm-2 col-form-label">Lain-lain</label>
-                     <div class="col-sm-10">
-                        <input type="text" class="form-control" wire:model="malaria_lainnya" id="malaria_lainnya"
-                           placeholder="Lainnya">
-                     </div>
-                  </div>
-
-                  <div class="form-group row">
-                     <div class="col-sm-12 text-right">
-                        <button type="button" class="btn btn-danger" wire:click="hapusFormMalaria">
-                           <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            @endif
          </div>
 
          <!-- Temu Wicara/Konseling -->
          <div class="form-group" id="temu-wicara">
-            <h5 class="mb-3 font-weight-bold">Temu Wicara/Konseling</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">12</span> Temu Wicara/Konseling (T10)
+            </h5>
 
             <div class="form-group row">
                <label for="materi" class="col-sm-2 col-form-label">Materi <span class="text-danger">*</span></label>
                <div class="col-sm-10">
-                  <textarea class="form-control @error('materi') is-invalid @enderror" rows="3" wire:model="materi"
-                     id="materi"></textarea>
+                  <textarea class="form-control @error('materi') is-invalid @enderror" rows="3"
+                     wire:model.defer="materi" id="materi"></textarea>
                   @error('materi')
                   <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
@@ -1681,7 +1104,7 @@
                   Laboratorium <span class="text-danger">*</span></label>
                <div class="col-sm-10">
                   <textarea class="form-control @error('rekomendasi') is-invalid @enderror" rows="3"
-                     wire:model="rekomendasi" id="rekomendasi"></textarea>
+                     wire:model.defer="rekomendasi" id="rekomendasi"></textarea>
                   @error('rekomendasi')
                   <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
@@ -1695,12 +1118,12 @@
                   <div class="d-flex">
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="konseling_menyusui" id="menyusui_ya"
-                           wire:model="konseling_menyusui" value="Ya">
+                           wire:model.defer="konseling_menyusui" value="Ya">
                         <label class="form-check-label" for="menyusui_ya">Ya</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="konseling_menyusui" id="menyusui_tidak"
-                           wire:model="konseling_menyusui" value="Tidak">
+                           wire:model.defer="konseling_menyusui" value="Tidak">
                         <label class="form-check-label" for="menyusui_tidak">Tidak</label>
                      </div>
                   </div>
@@ -1710,6 +1133,7 @@
                </div>
             </div>
 
+            <!-- Opsi konseling lainnya -->
             <div class="form-group row">
                <label for="tanda_bahaya_kehamilan" class="col-sm-2 col-form-label">Tanda Bahaya Kehamilan <span
                      class="text-danger">*</span></label>
@@ -1717,12 +1141,12 @@
                   <div class="d-flex">
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="tanda_bahaya_kehamilan" id="bahaya_hamil_ya"
-                           wire:model="tanda_bahaya_kehamilan" value="Ya">
+                           wire:model.defer="tanda_bahaya_kehamilan" value="Ya">
                         <label class="form-check-label" for="bahaya_hamil_ya">Ya</label>
                      </div>
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="tanda_bahaya_kehamilan"
-                           id="bahaya_hamil_tidak" wire:model="tanda_bahaya_kehamilan" value="Tidak">
+                           id="bahaya_hamil_tidak" wire:model.defer="tanda_bahaya_kehamilan" value="Tidak">
                         <label class="form-check-label" for="bahaya_hamil_tidak">Tidak</label>
                      </div>
                   </div>
@@ -1732,98 +1156,11 @@
                </div>
             </div>
 
-            <div class="form-group row">
-               <label for="tanda_bahaya_persalinan" class="col-sm-2 col-form-label">Tanda Bahaya Persalinan <span
-                     class="text-danger">*</span></label>
-               <div class="col-sm-10">
-                  <div class="d-flex">
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="tanda_bahaya_persalinan" id="bahaya_salin_ya"
-                           wire:model="tanda_bahaya_persalinan" value="Ya">
-                        <label class="form-check-label" for="bahaya_salin_ya">Ya</label>
-                     </div>
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="tanda_bahaya_persalinan"
-                           id="bahaya_salin_tidak" wire:model="tanda_bahaya_persalinan" value="Tidak">
-                        <label class="form-check-label" for="bahaya_salin_tidak">Tidak</label>
-                     </div>
-                  </div>
-                  @error('tanda_bahaya_persalinan')
-                  <div class="text-danger">{{ $message }}</div>
-                  @enderror
-               </div>
-            </div>
-
-            <div class="form-group row">
-               <label for="konseling_phbs" class="col-sm-2 col-form-label">Konseling PHBS <span
-                     class="text-danger">*</span></label>
-               <div class="col-sm-10">
-                  <div class="d-flex">
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_phbs" id="phbs_ya"
-                           wire:model="konseling_phbs" value="Ya">
-                        <label class="form-check-label" for="phbs_ya">Ya</label>
-                     </div>
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_phbs" id="phbs_tidak"
-                           wire:model="konseling_phbs" value="Tidak">
-                        <label class="form-check-label" for="phbs_tidak">Tidak</label>
-                     </div>
-                  </div>
-                  @error('konseling_phbs')
-                  <div class="text-danger">{{ $message }}</div>
-                  @enderror
-               </div>
-            </div>
-
-            <div class="form-group row">
-               <label for="konseling_gizi" class="col-sm-2 col-form-label">Konseling Gizi Ibu Hamil <span
-                     class="text-danger">*</span></label>
-               <div class="col-sm-10">
-                  <div class="d-flex">
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_gizi" id="gizi_ya"
-                           wire:model="konseling_gizi" value="Ya">
-                        <label class="form-check-label" for="gizi_ya">Ya</label>
-                     </div>
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_gizi" id="gizi_tidak"
-                           wire:model="konseling_gizi" value="Tidak">
-                        <label class="form-check-label" for="gizi_tidak">Tidak</label>
-                     </div>
-                  </div>
-                  @error('konseling_gizi')
-                  <div class="text-danger">{{ $message }}</div>
-                  @enderror
-               </div>
-            </div>
-
-            <div class="form-group row">
-               <label for="konseling_ibu_hamil" class="col-sm-2 col-form-label">Konseling Ibu Hamil <span
-                     class="text-danger">*</span></label>
-               <div class="col-sm-10">
-                  <div class="d-flex">
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_ibu_hamil" id="ibu_hamil_ya"
-                           wire:model="konseling_ibu_hamil" value="Ya">
-                        <label class="form-check-label" for="ibu_hamil_ya">Ya</label>
-                     </div>
-                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="konseling_ibu_hamil" id="ibu_hamil_tidak"
-                           wire:model="konseling_ibu_hamil" value="Tidak">
-                        <label class="form-check-label" for="ibu_hamil_tidak">Tidak</label>
-                     </div>
-                  </div>
-                  @error('konseling_ibu_hamil')
-                  <div class="text-danger">{{ $message }}</div>
-                  @enderror
-               </div>
-            </div>
-
+            <!-- Opsi konseling lainnya -->
             <div class="form-group row">
                <label for="konseling_lainnya" class="col-sm-2 col-form-label">Konseling Lainnya</label>
                <div class="col-sm-10">
-                  <input type="text" class="form-control" wire:model="konseling_lainnya" id="konseling_lainnya"
+                  <input type="text" class="form-control" wire:model.defer="konseling_lainnya" id="konseling_lainnya"
                      placeholder="Sebutkan">
                </div>
             </div>
@@ -1831,14 +1168,16 @@
 
          <!-- Keadaan Pulang -->
          <div class="form-group" id="keadaan-pulang">
-            <h5 class="mb-3 font-weight-bold">Keadaan Pulang</h5>
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">13</span> Keadaan Pulang
+            </h5>
 
             <div class="form-group row">
                <label for="keadaan_pulang" class="col-sm-2 col-form-label">Keadaan Pulang <span
                      class="text-danger">*</span></label>
                <div class="col-sm-10">
-                  <select class="form-control @error('keadaan_pulang') is-invalid @enderror" wire:model="keadaan_pulang"
-                     id="keadaan_pulang">
+                  <select class="form-control @error('keadaan_pulang') is-invalid @enderror"
+                     wire:model.defer="keadaan_pulang" id="keadaan_pulang">
                      <option value="">- Pilih -</option>
                      <option value="Baik">Baik</option>
                      <option value="Dirujuk">Dirujuk</option>
@@ -1848,6 +1187,60 @@
                   @error('keadaan_pulang')
                   <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
+               </div>
+            </div>
+         </div>
+
+         <!-- Tindak Lanjut -->
+         <div class="form-group" id="tindak-lanjut">
+            <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
+               <span class="badge badge-primary mr-2">14</span> Tindak Lanjut
+            </h5>
+
+            <div class="form-group row">
+               <label for="tindak_lanjut" class="col-sm-2 col-form-label">Jenis Tindak Lanjut</label>
+               <div class="col-sm-10">
+                  <select class="form-control @error('tindak_lanjut') is-invalid @enderror"
+                     wire:model.defer="tindak_lanjut" id="tindak_lanjut">
+                     <option value="">- Pilih -</option>
+                     <option value="Kunjungan ANC berikutnya">Kunjungan ANC berikutnya</option>
+                     <option value="Dirujuk ke Faskes Tingkat Lanjut">Dirujuk ke Faskes Tingkat Lanjut</option>
+                     <option value="Pemeriksaan USG">Pemeriksaan USG</option>
+                     <option value="Pemeriksaan Laboratorium">Pemeriksaan Laboratorium</option>
+                     <option value="Lainnya">Lainnya</option>
+                  </select>
+                  @error('tindak_lanjut')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
+               </div>
+            </div>
+
+            <div class="form-group row" id="detail_tindak_lanjut_div" @if(!isset($tindak_lanjut) ||
+               empty($tindak_lanjut)) style="display:none" @endif>
+               <label for="detail_tindak_lanjut" class="col-sm-2 col-form-label">Detail Tindak Lanjut</label>
+               <div class="col-sm-10">
+                  <textarea class="form-control @error('detail_tindak_lanjut') is-invalid @enderror" rows="3"
+                     wire:model.defer="detail_tindak_lanjut" id="detail_tindak_lanjut"></textarea>
+                  @error('detail_tindak_lanjut')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                  @enderror
+               </div>
+            </div>
+
+            <div class="form-group row">
+               <label for="tanggal_kunjungan_berikutnya" class="col-sm-2 col-form-label">Tanggal Kunjungan
+                  Berikutnya</label>
+               <div class="col-sm-4">
+                  <div class="input-group">
+                     <input type="date" class="form-control @error('tanggal_kunjungan_berikutnya') is-invalid @enderror"
+                        wire:model.defer="tanggal_kunjungan_berikutnya" id="tanggal_kunjungan_berikutnya">
+                     <div class="input-group-append">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                     </div>
+                     @error('tanggal_kunjungan_berikutnya')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
+                  </div>
                </div>
             </div>
          </div>
@@ -1870,91 +1263,270 @@
             </div>
          </div>
       </form>
+
+      <!-- Tabel Histori Pemeriksaan ANC -->
+      @if($riwayat && $riwayat->count() > 0)
+      <div class="card shadow mb-4">
+         <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Riwayat Pemeriksaan ANC</h6>
+         </div>
+         <div class="card-body">
+            <div class="table-responsive">
+               <table class="table table-bordered table-striped table-hover small" id="tabel-riwayat-anc" width="100%"
+                  cellspacing="0">
+                  <thead class="bg-primary text-white">
+                     <tr>
+                        <th>No</th>
+                        <th>ID ANC</th>
+                        <th>Tanggal</th>
+                        <th>Diperiksa Oleh</th>
+                        <th>UK</th>
+                        <th>BB</th>
+                        <th>TD</th>
+                        <th>TFU</th>
+                        <th>Keluhan</th>
+                        <th>Tatalaksana</th>
+                        <th>Tindak Lanjut</th>
+                        <th>Aksi</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     @foreach($riwayat as $index => $item)
+                     <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $item->id_anc }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal_anc)->format('d-m-Y H:i') }}</td>
+                        <td>{{ $item->diperiksa_oleh }}</td>
+                        <td>{{ $item->usia_kehamilan }} minggu</td>
+                        <td>{{ $item->berat_badan }} kg</td>
+                        <td>{{ $item->td_sistole }}/{{ $item->td_diastole }}</td>
+                        <td>{{ $item->tfu ?? '-' }}</td>
+                        <td>{{ Str::limit($item->keluhan_utama, 30) }}</td>
+                        <td>{{ $item->jenis_tatalaksana ?? '-' }}</td>
+                        <td>{{ $item->tindak_lanjut ?? '-' }}</td>
+                        <td class="text-center">
+                           <div class="btn-group">
+                              <button type="button" class="btn btn-xs btn-primary"
+                                 wire:click="showHistoriANC('{{ $item->id_anc }}')">
+                                 <i class="fas fa-eye"></i>
+                              </button>
+                              <button type="button" class="btn btn-xs btn-warning"
+                                 wire:click="edit('{{ $item->id_anc }}')">
+                                 <i class="fas fa-edit"></i>
+                              </button>
+                           </div>
+                        </td>
+                     </tr>
+                     @endforeach
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </div>
+      @endif
+
+      <!-- Riwayat Kunjungan ANC Berdasarkan Id Hamil -->
+      @if($id_hamil && $riwayatByIdHamil->count() > 0)
+      <div class="card shadow mb-4">
+         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">
+               <i class="fas fa-history mr-1"></i> Riwayat Kunjungan ANC (K1-K4)
+            </h6>
+         </div>
+         <div class="card-body">
+            <!-- Tab navigation untuk bulan-bulan -->
+            <ul class="nav nav-tabs" id="riwayat-tab" role="tablist">
+               @php
+               $riwayatByMonth = $riwayatByIdHamil->groupBy(function($item) {
+               return \Carbon\Carbon::parse($item->tanggal_anc)->format('Y-m');
+               });
+               $counter = 0;
+               @endphp
+
+               @foreach($riwayatByMonth as $yearMonth => $items)
+               @php
+               $monthName = \Carbon\Carbon::createFromFormat('Y-m', $yearMonth)->format('F Y');
+               $tabId = 'month-' . str_replace(' ', '-', strtolower($monthName));
+               $isActive = $counter === 0 ? 'active' : '';
+               $counter++;
+               @endphp
+               <li class="nav-item" role="presentation">
+                  <a class="nav-link {{ $isActive }}" id="{{ $tabId }}-tab" data-toggle="tab" href="#{{ $tabId }}"
+                     role="tab" aria-controls="{{ $tabId }}" aria-selected="{{ $counter === 1 ? 'true' : 'false' }}">
+                     {{ $monthName }}
+                  </a>
+               </li>
+               @endforeach
+            </ul>
+
+            <!-- Tab content untuk data setiap bulan -->
+            <div class="tab-content mt-3" id="riwayat-content">
+               @php $counter = 0; @endphp
+               @foreach($riwayatByMonth as $yearMonth => $items)
+               @php
+               $monthName = \Carbon\Carbon::createFromFormat('Y-m', $yearMonth)->format('F Y');
+               $tabId = 'month-' . str_replace(' ', '-', strtolower($monthName));
+               $isActive = $counter === 0 ? 'show active' : '';
+               $counter++;
+               @endphp
+               <div class="tab-pane fade {{ $isActive }}" id="{{ $tabId }}" role="tabpanel"
+                  aria-labelledby="{{ $tabId }}-tab">
+                  <div class="table-responsive">
+                     <table class="table table-bordered table-hover small" id="table-{{ $tabId }}">
+                        <thead class="bg-primary text-white">
+                           <tr>
+                              <th>No</th>
+                              <th>Tanggal</th>
+                              <th>Kunjungan Ke</th>
+                              <th>Usia Kehamilan</th>
+                              <th>BB (kg)</th>
+                              <th>TD</th>
+                              <th>TFU (cm)</th>
+                              <th>TBJ (gram)</th>
+                              <th>Keluhan</th>
+                              <th>Tindak Lanjut</th>
+                              <th>Aksi</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           @foreach($items as $index => $item)
+                           <tr>
+                              <td>{{ $index + 1 }}</td>
+                              <td>{{ \Carbon\Carbon::parse($item->tanggal_anc)->format('d-m-Y') }}</td>
+                              <td>K{{ $item->kunjungan_ke ?? '-' }}</td>
+                              <td>{{ $item->usia_kehamilan }} minggu</td>
+                              <td>{{ $item->berat_badan }}</td>
+                              <td>{{ $item->td_sistole }}/{{ $item->td_diastole }}</td>
+                              <td>{{ $item->tfu ?? '-' }}</td>
+                              <td>{{ $item->taksiran_berat_janin ?? '-' }}</td>
+                              <td>{{ Str::limit($item->keluhan_utama, 30) }}</td>
+                              <td>{{ $item->tindak_lanjut ?? '-' }}</td>
+                              <td class="text-center">
+                                 <div class="btn-group">
+                                    <button type="button" class="btn btn-xs btn-primary"
+                                       wire:click="showHistoriANC('{{ $item->id_anc }}')">
+                                       <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-warning"
+                                       wire:click="edit('{{ $item->id_anc }}')">
+                                       <i class="fas fa-edit"></i>
+                                    </button>
+                                 </div>
+                              </td>
+                           </tr>
+                           @endforeach
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+               @endforeach
+            </div>
+         </div>
+      </div>
+      @endif
+      @endif
    </div>
 
    @push('scripts')
+   <!-- Scripts jika diperlukan -->
    <script>
-      document.addEventListener('livewire:load', function () {
-         console.log('Pemeriksaan ANC component loaded');
-         
-         // Observer untuk menampilkan tooltip pada semua elemen dengan data-toggle="tooltip"
-         const tooltipEnabler = () => {
-            $('[data-toggle="tooltip"]').tooltip();
-         };
-         
-         tooltipEnabler();
-         
-         // Listener untuk error events
-         Livewire.on('showError', function(message) {
-            console.error('PemeriksaanANC Error:', message);
-            Swal.fire({
-               title: 'Error!',
-               text: message,
-               icon: 'error',
-               confirmButtonText: 'Ok'
+      document.addEventListener('DOMContentLoaded', function() {
+         // Format tanggal dari string ISO ke format datetime-local yang diterima HTML
+         function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            try {
+               const date = new Date(dateStr);
+               // Pastikan tanggal valid
+               if (isNaN(date.getTime())) return '';
+               
+               // Format ke YYYY-MM-DDThh:mm yang diterima oleh input datetime-local
+               return date.toISOString().slice(0, 16);
+            } catch (e) {
+               console.error('Error formatting date:', e);
+               return '';
+            }
+         }
+
+         // Fungsi untuk menghandle input dan output tanggal dihapus
+         // Jalankan tanpa setupDateTimeInput karena sudah ditangani oleh wire:model
+
+         // Inisialisasi DataTable untuk tabel riwayat ANC utama
+         if (document.getElementById('tabel-riwayat-anc')) {
+            $('#tabel-riwayat-anc').DataTable({
+               "language": {
+                  "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
+               },
+               "pageLength": 5,
+               "ordering": true,
+               "responsive": true,
+               "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
             });
+         }
+         
+         // Fungsi untuk inisialisasi DataTables pada tab yang aktif
+         function initDataTable(tabId) {
+            const tableId = 'table-' + tabId;
+            if (document.getElementById(tableId)) {
+               // Hancurkan instance sebelumnya jika ada
+               if ($.fn.DataTable.isDataTable('#' + tableId)) {
+                  $('#' + tableId).DataTable().destroy();
+               }
+               
+               // Inisialisasi DataTable baru
+               $('#' + tableId).DataTable({
+                  "language": {
+                     "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
+                  },
+                  "pageLength": 5,
+                  "ordering": true,
+                  "responsive": true,
+                  "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
+               });
+            }
+         }
+         
+         // Inisialisasi DataTable pada tab aktif pertama
+         const firstActiveTab = document.querySelector('.tab-pane.active');
+         if (firstActiveTab) {
+            const firstTabId = firstActiveTab.id;
+            initDataTable(firstTabId);
+         }
+         
+         // Handler untuk event saat tab diklik
+         $('#riwayat-tab a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const tabId = e.target.getAttribute('href').substring(1);
+            initDataTable(tabId);
          });
          
-         // Listener untuk form saved events
-         Livewire.on('formSaved', function(message) {
-            console.log('Pemeriksaan ANC saved');
-            Swal.fire({
-               title: 'Berhasil!',
-               text: message || 'Data pemeriksaan ANC berhasil disimpan',
-               icon: 'success',
-               confirmButtonText: 'Ok'
-            });
-         });
-         
-         // Ketika form berubah, refresh tooltips
-         Livewire.hook('message.processed', (message, component) => {
-            tooltipEnabler();
-         });
-         
-         // Menampilkan dialog konfirmasi untuk penghapusan
-         window.confirmDelete = function(action) {
-            Swal.fire({
-               title: 'Apakah Anda yakin?',
-               text: "Data yang dihapus tidak dapat dikembalikan!",
-               icon: 'warning',
-               showCancelButton: true,
-               confirmButtonColor: '#d33',
-               cancelButtonColor: '#3085d6',
-               confirmButtonText: 'Ya, hapus!',
-               cancelButtonText: 'Batal'
-            }).then((result) => {
-               if (result.isConfirmed) {
-                  Livewire.emit(action);
+         // Handler untuk update tabel setelah Livewire update
+         document.addEventListener('livewire:load', function () {
+            Livewire.hook('message.processed', (message, component) => {
+               // Reinisialisasi semua DataTables setelah update Livewire
+               if (document.getElementById('tabel-riwayat-anc')) {
+                  if ($.fn.DataTable.isDataTable('#tabel-riwayat-anc')) {
+                     $('#tabel-riwayat-anc').DataTable().destroy();
+                  }
+                  
+                  $('#tabel-riwayat-anc').DataTable({
+                     "language": {
+                        "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
+                     },
+                     "pageLength": 5,
+                     "ordering": true,
+                     "responsive": true,
+                     "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
+                  });
+               }
+               
+               // Reinisialisasi tab yang aktif
+               const activeTab = document.querySelector('.tab-pane.active');
+               if (activeTab) {
+                  const activeTabId = activeTab.id;
+                  initDataTable(activeTabId);
                }
             });
-         };
+         });
       });
-      
-      // Fungsi untuk mencetak form
-      function printForm() {
-         window.print();
-      }
    </script>
    @endpush
-
-   <!-- Floating Action Button untuk aksi cepat -->
-   <div class="position-fixed" style="bottom: 2rem; right: 2rem; z-index: 1030;">
-      <div class="dropdown">
-         <button class="btn btn-primary btn-lg rounded-circle shadow" type="button" id="dropdownMenuButton"
-            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <i class="fas fa-plus"></i>
-         </button>
-         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
-            <a class="dropdown-item" href="#" onclick="printForm()">
-               <i class="fas fa-print mr-2"></i> Cetak Formulir
-            </a>
-            <a class="dropdown-item" href="#" wire:click="resetForm">
-               <i class="fas fa-sync-alt mr-2"></i> Reset Formulir
-            </a>
-            <a class="dropdown-item" href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-               <i class="fas fa-arrow-up mr-2"></i> Ke Atas
-            </a>
-         </div>
-      </div>
-   </div>
 </div>

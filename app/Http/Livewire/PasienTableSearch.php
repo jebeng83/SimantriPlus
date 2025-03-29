@@ -62,11 +62,17 @@ class PasienTableSearch extends Component
         }
         
         if (!empty($this->searchRM)) {
-            $query->where('no_rkm_medis', 'like', '%' . $this->searchRM . '%');
+            $query->where('no_rkm_medis', 'like', '%' . $this->searchRM . '%')
+            ->orWhere('no_ktp', 'like', '%' . $this->searchRM . '%')
+            ->orWhere('no_peserta', 'like', '%' . $this->searchRM . '%')
+            ->orWhere('no_tlp', 'like', '%' . $this->searchRM . '%');
+
         }
-        
+
         if (!empty($this->searchAddress)) {
-            $query->where('alamat', 'like', '%' . $this->searchAddress . '%');
+            $query->where('alamat', 'like', '%' . $this->searchAddress . '%')
+            ->orWhere('kelurahanpj', 'like', '%' . $this->searchAddress . '%')
+            ->orWhere('data_posyandu', 'like', '%' . $this->searchAddress . '%');
         }
         
         $pasien = $query->orderBy('tgl_daftar', 'desc')->paginate($this->perPage);
