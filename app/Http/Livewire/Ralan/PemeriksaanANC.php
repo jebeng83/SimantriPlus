@@ -313,6 +313,16 @@ class PemeriksaanANC extends Component
             'diperiksa_oleh' => $this->diperiksa_oleh,
             'valid_ibu_hamil' => $this->validIbuHamil
         ]);
+
+        // Inisialisasi riwayat penyakit sebagai array dengan nilai default
+        $this->riwayat_penyakit = [
+            'hipertensi' => false,
+            'diabetes' => false,
+            'jantung' => false,
+            'asma' => false,
+            'lainnya_check' => false,
+            'lainnya' => null
+        ];
     }
 
     /**
@@ -1559,7 +1569,40 @@ class PemeriksaanANC extends Component
         $this->partus = $pemeriksaan->partus;
         $this->abortus = $pemeriksaan->abortus;
         $this->hidup = $pemeriksaan->hidup;
-        $this->riwayat_penyakit = $pemeriksaan->riwayat_penyakit;
+        
+        // Menangani riwayat penyakit (bisa saja tersimpan sebagai JSON)
+        if (is_string($pemeriksaan->riwayat_penyakit) && !empty($pemeriksaan->riwayat_penyakit)) {
+            try {
+                $this->riwayat_penyakit = json_decode($pemeriksaan->riwayat_penyakit, true);
+            } catch (\Exception $e) {
+                // Jika gagal parsing, inisialisasi ulang array
+                $this->riwayat_penyakit = [
+                    'hipertensi' => false,
+                    'diabetes' => false,
+                    'jantung' => false,
+                    'asma' => false,
+                    'lainnya_check' => false,
+                    'lainnya' => null
+                ];
+                \Log::error('Error decoding riwayat_penyakit', [
+                    'data' => $pemeriksaan->riwayat_penyakit,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        } else if (is_array($pemeriksaan->riwayat_penyakit)) {
+            $this->riwayat_penyakit = $pemeriksaan->riwayat_penyakit;
+        } else {
+            // Inisialisasi ulang array jika data tidak valid
+            $this->riwayat_penyakit = [
+                'hipertensi' => false,
+                'diabetes' => false,
+                'jantung' => false,
+                'asma' => false,
+                'lainnya_check' => false,
+                'lainnya' => null
+            ];
+        }
+        
         $this->lila = $pemeriksaan->lila;
         $this->status_gizi = $pemeriksaan->status_gizi;
         $this->tinggi_fundus = $pemeriksaan->tinggi_fundus;
@@ -1787,31 +1830,6 @@ class PemeriksaanANC extends Component
      */
     public function updateRiwayatPenyakit($key, $value)
     {
-        try {
-            // Jika riwayat_penyakit masih string JSON, parse terlebih dahulu
-            if (is_string($this->riwayat_penyakit) && !empty($this->riwayat_penyakit)) {
-                $this->riwayat_penyakit = json_decode($this->riwayat_penyakit, true);
-            }
-            
-            // Jika masih belum array, inisialisasi sebagai array kosong
-            if (!is_array($this->riwayat_penyakit)) {
-                $this->riwayat_penyakit = [];
-            }
-            
-            // Update nilai di array riwayat_penyakit
-            $this->riwayat_penyakit[$key] = $value;
-            
-            \Log::info('Riwayat penyakit diupdate', [
-                'key' => $key,
-                'value' => $value,
-                'result' => $this->riwayat_penyakit
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error mengupdate riwayat penyakit: ' . $e->getMessage(), [
-                'key' => $key,
-                'value' => $value,
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
+        $this->riwayat_penyakit[$key] = $value;
     }
 }
