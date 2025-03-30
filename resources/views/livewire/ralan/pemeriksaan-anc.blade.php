@@ -195,6 +195,21 @@
       .btn-sm.btn-primary:active {
          transform: translateY(1px);
       }
+
+      /* Styling untuk form lab */
+      .lab-input {
+         transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+         max-height: 0;
+         opacity: 0;
+         overflow: hidden;
+         margin-top: 0;
+      }
+
+      .lab-input.active {
+         max-height: 100px;
+         opacity: 1;
+         margin-top: 0.5rem;
+      }
    </style>
    @endpush
 
@@ -280,15 +295,6 @@
                   <div class="col-md-8">: {{ $dataIbuHamil['usia_kehamilan'] ?? '-' }} minggu</div>
                </div>
                @if($id_hamil)
-               <div class="row mt-1">
-                  <div class="col-md-12 text-right">
-                     <button type="button" class="btn btn-sm btn-primary"
-                        wire:click="showHistoriByIdHamil('{{ $id_hamil }}')">
-                        <i class="fas fa-history mr-1"></i> Tampilkan Riwayat Kunjungan ANC
-                     </button>
-                  </div>
-               </div>
-               @endif
             </div>
          </div>
       </div>
@@ -901,16 +907,17 @@
                      <!-- Hemoglobin -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hb.checked"
-                              id="lab_hb">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hb.checked" id="lab_hb" data-target="input_hb">
                            <label class="form-check-label font-weight-bold" for="lab_hb">Hemoglobin (Hb)</label>
                         </div>
-                        <div class="input-group mb-3" id="input_hb" @if(!isset($lab['hb']['checked']) ||
-                           !$lab['hb']['checked']) style="display:none" @endif>
-                           <input type="number" step="0.01" class="form-control" wire:model.defer="lab.hb.nilai"
-                              placeholder="Nilai">
-                           <div class="input-group-append">
-                              <span class="input-group-text">g/dL</span>
+                        <div class="lab-input" id="input_hb">
+                           <div class="input-group">
+                              <input type="number" step="0.01" class="form-control" wire:model.defer="lab.hb.nilai"
+                                 placeholder="Nilai" id="nilai_hb">
+                              <div class="input-group-append">
+                                 <span class="input-group-text">g/dL</span>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -918,38 +925,40 @@
                      <!-- Golongan Darah -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.goldar.checked"
-                              id="lab_goldar">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.goldar.checked" id="lab_goldar" data-target="input_goldar">
                            <label class="form-check-label font-weight-bold" for="lab_goldar">Golongan Darah</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.goldar.nilai" id="input_goldar"
-                           @if(!isset($lab['goldar']['checked']) || !$lab['goldar']['checked']) style="display:none"
-                           @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="A">A</option>
-                           <option value="B">B</option>
-                           <option value="AB">AB</option>
-                           <option value="O">O</option>
-                        </select>
+                        <div class="lab-input" id="input_goldar">
+                           <select class="form-control" wire:model.defer="lab.goldar.nilai" id="nilai_goldar">
+                              <option value="">- Pilih -</option>
+                              <option value="A">A</option>
+                              <option value="B">B</option>
+                              <option value="AB">AB</option>
+                              <option value="O">O</option>
+                           </select>
+                        </div>
                      </div>
 
                      <!-- Protein Urin -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.protein_urin.checked"
-                              id="lab_protein_urin">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.protein_urin.checked" id="lab_protein_urin"
+                              data-target="input_protein_urin">
                            <label class="form-check-label font-weight-bold" for="lab_protein_urin">Protein Urin</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.protein_urin.nilai" id="input_protein_urin"
-                           @if(!isset($lab['protein_urin']['checked']) || !$lab['protein_urin']['checked'])
-                           style="display:none" @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="Negatif">Negatif</option>
-                           <option value="+1">+1</option>
-                           <option value="+2">+2</option>
-                           <option value="+3">+3</option>
-                           <option value="+4">+4</option>
-                        </select>
+                        <div class="lab-input" id="input_protein_urin">
+                           <select class="form-control" wire:model.defer="lab.protein_urin.nilai"
+                              id="nilai_protein_urin">
+                              <option value="">- Pilih -</option>
+                              <option value="Negatif">Negatif</option>
+                              <option value="+1">+1</option>
+                              <option value="+2">+2</option>
+                              <option value="+3">+3</option>
+                              <option value="+4">+4</option>
+                           </select>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -962,57 +971,53 @@
                      <!-- HIV -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hiv.checked"
-                              id="lab_hiv">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hiv.checked" id="lab_hiv" data-target="input_hiv">
                            <label class="form-check-label font-weight-bold" for="lab_hiv">HIV</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.hiv.nilai" id="input_hiv"
-                           @if(!isset($lab['hiv']['checked']) || !$lab['hiv']['checked']) style="display:none" @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="Non-Reaktif">Non-Reaktif</option>
-                           <option value="Reaktif">Reaktif</option>
-                        </select>
+                        <div class="lab-input" id="input_hiv">
+                           <select class="form-control" wire:model.defer="lab.hiv.nilai" id="nilai_hiv">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
                      </div>
 
                      <!-- Sifilis -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.sifilis.checked"
-                              id="lab_sifilis">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.sifilis.checked" id="lab_sifilis" data-target="input_sifilis">
                            <label class="form-check-label font-weight-bold" for="lab_sifilis">Sifilis (VDRL)</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.sifilis.nilai" id="input_sifilis"
-                           @if(!isset($lab['sifilis']['checked']) || !$lab['sifilis']['checked']) style="display:none"
-                           @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="Non-Reaktif">Non-Reaktif</option>
-                           <option value="Reaktif">Reaktif</option>
-                        </select>
+                        <div class="lab-input" id="input_sifilis">
+                           <select class="form-control" wire:model.defer="lab.sifilis.nilai" id="nilai_sifilis">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
                      </div>
 
                      <!-- Hepatitis B -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.hbsag.checked"
-                              id="lab_hbsag">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hbsag.checked" id="lab_hbsag" data-target="input_hbsag">
                            <label class="form-check-label font-weight-bold" for="lab_hbsag">Hepatitis B (HBsAg)</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.hbsag.nilai" id="input_hbsag"
-                           @if(!isset($lab['hbsag']['checked']) || !$lab['hbsag']['checked']) style="display:none"
-                           @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="Non-Reaktif">Non-Reaktif</option>
-                           <option value="Reaktif">Reaktif</option>
-                        </select>
+                        <div class="lab-input" id="input_hbsag">
+                           <select class="form-control" wire:model.defer="lab.hbsag.nilai" id="nilai_hbsag">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
                      </div>
                   </div>
 
-                  <div class="form-group row mt-3" id="rujukan_div" @if((!isset($lab['hiv']['checked']) ||
-                     !$lab['hiv']['checked'] || !isset($lab['hiv']['nilai']) || $lab['hiv']['nilai'] !='Reaktif' ) &&
-                     (!isset($lab['sifilis']['checked']) || !$lab['sifilis']['checked'] ||
-                     !isset($lab['sifilis']['nilai']) || $lab['sifilis']['nilai'] !='Reaktif' ) &&
-                     (!isset($lab['hbsag']['checked']) || !$lab['hbsag']['checked'] || !isset($lab['hbsag']['nilai']) ||
-                     $lab['hbsag']['nilai'] !='Reaktif' )) style="display:none" @endif>
+                  <div class="form-group row mt-3" id="rujukan_div">
                      <label class="col-sm-3 col-form-label">Tindak Lanjut Rujukan</label>
                      <div class="col-sm-9">
                         <textarea class="form-control" wire:model.defer="rujukan_ims" rows="2"
@@ -1029,16 +1034,18 @@
                      <!-- Gula Darah -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.gula_darah.checked"
-                              id="lab_gula_darah">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.gula_darah.checked" id="lab_gula_darah"
+                              data-target="input_gula_darah">
                            <label class="form-check-label font-weight-bold" for="lab_gula_darah">Gula Darah</label>
                         </div>
-                        <div class="input-group mb-3" id="input_gula_darah" @if(!isset($lab['gula_darah']['checked']) ||
-                           !$lab['gula_darah']['checked']) style="display:none" @endif>
-                           <input type="number" class="form-control" wire:model.defer="lab.gula_darah.nilai"
-                              placeholder="Nilai">
-                           <div class="input-group-append">
-                              <span class="input-group-text">mg/dL</span>
+                        <div class="lab-input" id="input_gula_darah">
+                           <div class="input-group">
+                              <input type="number" class="form-control" wire:model.defer="lab.gula_darah.nilai"
+                                 placeholder="Nilai" id="nilai_gula_darah">
+                              <div class="input-group-append">
+                                 <span class="input-group-text">mg/dL</span>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -1046,32 +1053,31 @@
                      <!-- Malaria -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.malaria.checked"
-                              id="lab_malaria">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.malaria.checked" id="lab_malaria" data-target="input_malaria">
                            <label class="form-check-label font-weight-bold" for="lab_malaria">Malaria</label>
                         </div>
-                        <select class="form-control" wire:model.defer="lab.malaria.nilai" id="input_malaria"
-                           @if(!isset($lab['malaria']['checked']) || !$lab['malaria']['checked']) style="display:none"
-                           @endif>
-                           <option value="">- Pilih -</option>
-                           <option value="Negatif">Negatif</option>
-                           <option value="Positif">Positif</option>
-                        </select>
+                        <div class="lab-input" id="input_malaria">
+                           <select class="form-control" wire:model.defer="lab.malaria.nilai" id="nilai_malaria">
+                              <option value="">- Pilih -</option>
+                              <option value="Negatif">Negatif</option>
+                              <option value="Positif">Positif</option>
+                           </select>
+                        </div>
                      </div>
 
                      <!-- Pemeriksaan Lain -->
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="lab.lainnya.checked"
-                              id="lab_lainnya">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.lainnya.checked" id="lab_lainnya" data-target="input_lab_lainnya">
                            <label class="form-check-label font-weight-bold" for="lab_lainnya">Lainnya</label>
                         </div>
-                        <div id="input_lab_lainnya" @if(!isset($lab['lainnya']['checked']) ||
-                           !$lab['lainnya']['checked']) style="display:none" @endif>
+                        <div class="lab-input" id="input_lab_lainnya">
                            <input type="text" class="form-control mb-2" wire:model.defer="lab.lainnya.nama"
-                              placeholder="Nama Pemeriksaan">
+                              placeholder="Nama Pemeriksaan" id="nama_lab_lainnya">
                            <input type="text" class="form-control" wire:model.defer="lab.lainnya.nilai"
-                              placeholder="Hasil">
+                              placeholder="Hasil" id="nilai_lab_lainnya">
                         </div>
                      </div>
                   </div>
@@ -1472,13 +1478,242 @@
          </div>
       </div>
       @endif
+
+      <!-- Tampilan Tabel Bulanan Riwayat Pemeriksaan ANC -->
+      @if($id_hamil && $riwayatByIdHamil->count() > 0)
+      <div class="card shadow mb-4">
+         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">
+               <i class="fas fa-table mr-1"></i> Laporan Bulanan Pemeriksaan ANC
+            </h6>
+         </div>
+         <div class="card-body">
+            <div class="table-responsive">
+               <table class="table table-bordered table-striped table-hover small" id="tabel-laporan-bulanan"
+                  width="100%" cellspacing="0">
+                  <thead class="bg-primary text-white">
+                     <tr>
+                        <th rowspan="2" class="align-middle">Parameter</th>
+                        @php
+                        $months = $riwayatByIdHamil->sortBy('tanggal_anc')->groupBy(function($item) {
+                        return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y');
+                        })->keys();
+                        @endphp
+                        @foreach($months as $month)
+                        <th class="text-center">{{ $month }}</th>
+                        @endforeach
+                     </tr>
+                  </thead>
+                  <tbody>
+                     <!-- Usia Kehamilan -->
+                     <tr>
+                        <td class="font-weight-bold">Usia Kehamilan (minggu)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth ? $itemOfMonth->usia_kehamilan : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Berat Badan -->
+                     <tr>
+                        <td class="font-weight-bold">Berat Badan (kg)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth ? $itemOfMonth->berat_badan : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Tekanan Darah -->
+                     <tr>
+                        <td class="font-weight-bold">Tekanan Darah (mmHg)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth ? $itemOfMonth->td_sistole.'/'.$itemOfMonth->td_diastole : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Tinggi Fundus -->
+                     <tr>
+                        <td class="font-weight-bold">Tinggi Fundus (cm)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->tinggi_fundus ? $itemOfMonth->tinggi_fundus : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Taksiran Berat Janin -->
+                     <tr>
+                        <td class="font-weight-bold">Taksiran Berat Janin (gram)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->taksiran_berat_janin ? $itemOfMonth->taksiran_berat_janin :
+                           '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Detak Jantung Janin -->
+                     <tr>
+                        <td class="font-weight-bold">Detak Jantung Janin</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->denyut_jantung_janin ? $itemOfMonth->denyut_jantung_janin :
+                           '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Hemoglobin (Hb) -->
+                     <tr>
+                        <td class="font-weight-bold">Hemoglobin (Hb)</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+
+                           $labData = null;
+                           if ($itemOfMonth && $itemOfMonth->lab) {
+                           $lab = is_string($itemOfMonth->lab) ? json_decode($itemOfMonth->lab, true) :
+                           $itemOfMonth->lab;
+                           $labData = isset($lab['hb']) && isset($lab['hb']['nilai']) ? $lab['hb']['nilai'] : null;
+                           }
+                           @endphp
+                           {{ $labData ? $labData : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Protein Urin -->
+                     <tr>
+                        <td class="font-weight-bold">Protein Urin</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+
+                           $labData = null;
+                           if ($itemOfMonth && $itemOfMonth->lab) {
+                           $lab = is_string($itemOfMonth->lab) ? json_decode($itemOfMonth->lab, true) :
+                           $itemOfMonth->lab;
+                           $labData = isset($lab['protein_urin']) && isset($lab['protein_urin']['nilai']) ?
+                           $lab['protein_urin']['nilai'] : null;
+                           }
+                           @endphp
+                           {{ $labData ? $labData : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Status Tatalaksana -->
+                     <tr>
+                        <td class="font-weight-bold">Tatalaksana</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->jenis_tatalaksana ? $itemOfMonth->jenis_tatalaksana : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Keluhan -->
+                     <tr>
+                        <td class="font-weight-bold">Keluhan</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->keluhan_utama ? Str::limit($itemOfMonth->keluhan_utama, 30)
+                           : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                     <!-- Tindak Lanjut -->
+                     <tr>
+                        <td class="font-weight-bold">Tindak Lanjut</td>
+                        @foreach($months as $month)
+                        <td class="text-center">
+                           @php
+                           $itemOfMonth = $riwayatByIdHamil->filter(function($item) use ($month) {
+                           return \Carbon\Carbon::parse($item->tanggal_anc)->format('F Y') == $month;
+                           })->last();
+                           @endphp
+                           {{ $itemOfMonth && $itemOfMonth->tindak_lanjut ? $itemOfMonth->tindak_lanjut : '-' }}
+                        </td>
+                        @endforeach
+                     </tr>
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </div>
       @endif
+      @endif
+      @endif
+
    </div>
 
    @push('scripts')
    <!-- Scripts jika diperlukan -->
+   @endpush
+
+   @push('js')
    <script>
       document.addEventListener('DOMContentLoaded', function() {
+         // Definisi konfigurasi bahasa Indonesia untuk DataTables
+         const languageConfig = {
+            "emptyTable": "Tidak ada data yang tersedia pada tabel ini",
+            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+            "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+            "infoFiltered": "(disaring dari _MAX_ entri keseluruhan)",
+            "lengthMenu": "Tampilkan _MENU_ entri",
+            "loadingRecords": "Sedang memuat...",
+            "processing": "Sedang memproses...",
+            "search": "Cari:",
+            "zeroRecords": "Tidak ditemukan data yang sesuai",
+            "paginate": {
+               "first": "Pertama",
+               "last": "Terakhir",
+               "next": "Selanjutnya",
+               "previous": "Sebelumnya"
+            }
+         };
+
          // Format tanggal dari string ISO ke format datetime-local yang diterima HTML
          function formatDateForInput(dateStr) {
             if (!dateStr) return '';
@@ -1494,16 +1729,11 @@
                return '';
             }
          }
-
-         // Fungsi untuk menghandle input dan output tanggal dihapus
-         // Jalankan tanpa setupDateTimeInput karena sudah ditangani oleh wire:model
-
+   
          // Inisialisasi DataTable untuk tabel riwayat ANC utama
          if (document.getElementById('tabel-riwayat-anc')) {
             $('#tabel-riwayat-anc').DataTable({
-               "language": {
-                  "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
-               },
+               "language": languageConfig,
                "pageLength": 5,
                "ordering": true,
                "responsive": true,
@@ -1522,9 +1752,7 @@
                
                // Inisialisasi DataTable baru
                $('#' + tableId).DataTable({
-                  "language": {
-                     "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
-                  },
+                  "language": languageConfig,
                   "pageLength": 5,
                   "ordering": true,
                   "responsive": true,
@@ -1546,69 +1774,6 @@
             initDataTable(tabId);
          });
          
-         // Handler untuk update tabel setelah Livewire update
-         document.addEventListener('livewire:load', function () {
-            Livewire.hook('message.processed', (message, component) => {
-               // Reinisialisasi semua DataTables setelah update Livewire
-               if (document.getElementById('tabel-riwayat-anc')) {
-                  if ($.fn.DataTable.isDataTable('#tabel-riwayat-anc')) {
-                     $('#tabel-riwayat-anc').DataTable().destroy();
-                  }
-                  
-                  $('#tabel-riwayat-anc').DataTable({
-                     "language": {
-                        "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json"
-                     },
-                     "pageLength": 5,
-                     "ordering": true,
-                     "responsive": true,
-                     "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
-                  });
-               }
-               
-               // Reinisialisasi tab yang aktif
-               const activeTab = document.querySelector('.tab-pane.active');
-               if (activeTab) {
-                  const activeTabId = activeTab.id;
-                  initDataTable(activeTabId);
-               }
-            });
-            
-            // Menangani tampilan field lainnya pada Riwayat Penyakit
-            const lainnyaCheck = document.getElementById('lainnya_check');
-            const riwayatLainnya = document.getElementById('riwayat_lainnya');
-            
-            // Fungsi untuk update tampilan field lainnya
-            function updateRiwayatLainnyaVisibility() {
-               if (lainnyaCheck && riwayatLainnya) {
-                  if (lainnyaCheck.checked) {
-                     riwayatLainnya.style.display = 'block';
-                  } else {
-                     riwayatLainnya.style.display = 'none';
-                  }
-               }
-            }
-            
-            // Inisialisasi saat halaman dimuat
-            updateRiwayatLainnyaVisibility();
-            
-            // Tambahkan event listener untuk checkbox lainnya
-            if (lainnyaCheck) {
-               lainnyaCheck.addEventListener('change', updateRiwayatLainnyaVisibility);
-            }
-            
-            // Update setiap kali Livewire merender ulang
-            Livewire.hook('element.updated', (el, component) => {
-               updateRiwayatLainnyaVisibility();
-            });
-         });
-      });
-   </script>
-   @endpush
-
-   @push('js')
-   <script>
-      document.addEventListener('DOMContentLoaded', function () {
          // Integrasi dengan DataTables dipertahankan
          
          // Tampilkan pesan setelah update form berhasil
@@ -1652,17 +1817,63 @@
             lainnyaCheck.addEventListener('change', updateRiwayatLainnyaVisibility);
          }
          
-         // Update setiap kali Livewire melakukan rendering ulang
+         // Update saat Livewire load dan update
          document.addEventListener('livewire:load', function() {
             Livewire.hook('message.processed', (message, component) => {
+               // Reinisialisasi semua DataTables setelah update Livewire
+               if (document.getElementById('tabel-riwayat-anc')) {
+                  if ($.fn.DataTable.isDataTable('#tabel-riwayat-anc')) {
+                     $('#tabel-riwayat-anc').DataTable().destroy();
+                  }
+                  
+                  $('#tabel-riwayat-anc').DataTable({
+                     "language": languageConfig,
+                     "pageLength": 5,
+                     "ordering": true,
+                     "responsive": true,
+                     "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
+                  });
+               }
+               
+               // Reinisialisasi tab yang aktif
+               const activeTab = document.querySelector('.tab-pane.active');
+               if (activeTab) {
+                  const activeTabId = activeTab.id;
+                  initDataTable(activeTabId);
+               }
+               
                updateRiwayatLainnyaVisibility();
                
                // Update nilai dari formulir setelah perhitungan server
-               if (message.updateQueue.find(update => update.payload.event === 'hitungIMT' || 
+               if (message.updateQueue && message.updateQueue.find && message.updateQueue.find(update => 
+                    update.payload.event === 'hitungIMT' || 
                     update.payload.event === 'tentukanStatusGizi' || 
                     update.payload.event === 'hitungTaksiranBeratJanin')) {
                   console.log('Perhitungan dilakukan di server');
                }
+               
+               // Reset tampilan semua lab input setelah pemrosesan pesan Livewire
+               if (labCheckboxes) {
+                  labCheckboxes.forEach(checkbox => {
+                     toggleLabInput(checkbox);
+                  });
+               }
+               
+               // Update tampilan rujukan_div
+               updateRujukanDivVisibility();
+            });
+            
+            // Tambahkan listener untuk formSaved event
+            Livewire.on('formSaved', function() {
+               // Reset semua input lab
+               if (labCheckboxes) {
+                  labCheckboxes.forEach(checkbox => {
+                     toggleLabInput(checkbox);
+                  });
+               }
+               
+               // Reset rujukan_div
+               updateRujukanDivVisibility();
             });
          });
          
@@ -1764,6 +1975,81 @@
          if (lilaInput) {
             lilaInput.addEventListener('input', hitungStatusGiziClient);
          }
+         
+         // =========================================================
+         // HANDLE TAMPILAN FORM LAB BERDASARKAN CHECKBOX
+         // =========================================================
+         
+         // Ambil semua checkbox lab
+         const labCheckboxes = document.querySelectorAll('.lab-checkbox');
+         
+         // Fungsi untuk menampilkan/menyembunyikan input lab
+         function toggleLabInput(checkbox) {
+            const targetId = checkbox.dataset.target;
+            if (!targetId) return;
+            
+            const targetInput = document.getElementById(targetId);
+            if (!targetInput) return;
+            
+            if (checkbox.checked) {
+               targetInput.classList.add('active');
+            } else {
+               targetInput.classList.remove('active');
+            }
+         }
+         
+         // Inisialisasi semua checkbox lab
+         labCheckboxes.forEach(checkbox => {
+            // Set state awal
+            toggleLabInput(checkbox);
+            
+            // Tambahkan event listener
+            checkbox.addEventListener('change', () => {
+               toggleLabInput(checkbox);
+               updateRujukanDivVisibility();
+            });
+         });
+         
+         // Event listener untuk dropdown HIV/Sifilis/HBsAg
+         const hivSelect = document.getElementById('nilai_hiv');
+         const sifilisSelect = document.getElementById('nilai_sifilis');
+         const hbsagSelect = document.getElementById('nilai_hbsag');
+         const rujukanDiv = document.getElementById('rujukan_div');
+         
+         // Fungsi untuk menampilkan/menyembunyikan rujukan_div
+         function updateRujukanDivVisibility() {
+            let showRujukan = false;
+            
+            // Cek apakah ada yang reaktif
+            if (hivSelect && hivSelect.value === 'Reaktif' && document.getElementById('lab_hiv').checked) {
+               showRujukan = true;
+            }
+            
+            if (sifilisSelect && sifilisSelect.value === 'Reaktif' && document.getElementById('lab_sifilis').checked) {
+               showRujukan = true;
+            }
+            
+            if (hbsagSelect && hbsagSelect.value === 'Reaktif' && document.getElementById('lab_hbsag').checked) {
+               showRujukan = true;
+            }
+            
+            // Tampilkan/sembunyikan rujukan_div
+            if (rujukanDiv) {
+               if (showRujukan) {
+                  rujukanDiv.style.display = 'flex';
+               } else {
+                  rujukanDiv.style.display = 'none';
+               }
+            }
+         }
+         
+         // Inisialisasi tampilan rujukan_div
+         updateRujukanDivVisibility();
+         
+         // Tambahkan event listener untuk dropdown
+         if (hivSelect) hivSelect.addEventListener('change', updateRujukanDivVisibility);
+         if (sifilisSelect) sifilisSelect.addEventListener('change', updateRujukanDivVisibility);
+         if (hbsagSelect) hbsagSelect.addEventListener('change', updateRujukanDivVisibility);
       });
    </script>
    @endpush
