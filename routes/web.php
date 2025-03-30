@@ -244,3 +244,7 @@ Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPe
 
 // Testing Routes
 Route::get('/test/data-ibu-hamil', [\App\Http\Controllers\API\TestController::class, 'testDataIbuHamil']);
+
+// New route for testing ANC store
+Route::get('/test-anc-store', [App\Http\Controllers\TestAncController::class, 'testStore']);
+Route::get('/check-anc/{id}', [App\Http\Controllers\TestAncController::class, 'check']);

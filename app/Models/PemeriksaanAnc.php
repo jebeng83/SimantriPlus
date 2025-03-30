@@ -44,73 +44,90 @@ class PemeriksaanAnc extends Model
      * @var array
      */
     protected $fillable = [
+        // ID dan Informasi Dasar
         'id_anc',
         'no_rawat',
         'no_rkm_medis',
         'id_hamil',
         'tanggal_anc',
         'diperiksa_oleh',
+        
+        // Informasi Kunjungan
         'usia_kehamilan',
         'trimester',
         'kunjungan_ke',
-        'berat_badan',
-        'tinggi_badan',
-        'lila',
-        'imt',
-        'kategori_imt',
-        'jumlah_janin',
-        'td_sistole',
-        'td_diastole',
-        'jumlah_fe',
-        'dosis',
-        'pemeriksaan_lab',
-        'jenis_tatalaksana',
-        'materi',
-        'rekomendasi',
-        'konseling_menyusui',
-        'tanda_bahaya_kehamilan',
-        'tanda_bahaya_persalinan',
-        'konseling_phbs',
-        'konseling_gizi',
-        'konseling_ibu_hamil',
-        'konseling_lainnya',
         'keadaan_pulang',
-        // Data anamnesis
+        
+        // 1. Anamnesis
         'keluhan_utama',
         'gravida',
         'partus',
         'abortus',
         'hidup',
         'riwayat_penyakit',
-        // Data pemeriksaan fisik
+        
+        // 2. Pemeriksaan Fisik - BB & TB (T1)
+        'berat_badan',
+        'tinggi_badan',
+        'imt',
+        'kategori_imt',
+        'jumlah_janin',
+        
+        // 3. Status Gizi (T3)
+        'lila',
         'status_gizi',
-        'tfu',
+        
+        // 4. Tekanan Darah (T2)
+        'td_sistole',
+        'td_diastole',
+        
+        // 5. Tinggi Fundus Uteri (T4)
+        'tinggi_fundus',
         'taksiran_berat_janin',
-        'djj',
+        
+        // 6. DJJ dan Presentasi (T5)
+        'denyut_jantung_janin',
         'presentasi',
+        'presentasi_janin',
+        
+        // 7. Status Imunisasi TT (T6)
         'status_tt',
+        'imunisasi_tt',
         'tanggal_imunisasi',
-        // Lab
+        
+        // 8. Tablet Fe (T7)
+        'jumlah_fe',
+        'dosis',
+        
+        // 9. Pemeriksaan Lab (T8)
         'tanggal_lab',
         'lab',
+        'hasil_pemeriksaan_hb',
+        'hasil_pemeriksaan_urine_protein',
+        'hasil_pemeriksaan_urine_reduksi',
+        'pemeriksaan_lab',
         'rujukan_ims',
-        // Tindak lanjut
-        'tindak_lanjut',
-        'detail_tindak_lanjut',
-        'tanggal_kunjungan_berikutnya',
+        'perawatan_payudara',
+        
+        // 10. Tatalaksana Kasus (T9)
+        'jenis_tatalaksana',
+        
         // Tatalaksana - Anemia
         'diberikan_tablet_fe',
         'jumlah_tablet_dikonsumsi',
         'jumlah_tablet_ditambahkan',
         'tatalaksana_lainnya',
-        // Tatalaksana - Makanan Tambahan Ibu Hamil
+        
+        // Tatalaksana - Makanan Tambahan
         'pemberian_mt',
         'jumlah_mt',
+        
         // Tatalaksana - Hipertensi
         'pantau_tekanan_darah',
         'pantau_protein_urine',
         'pantau_kondisi_janin',
         'hipertensi_lainnya',
+        
         // Tatalaksana - Eklampsia
         'pantau_tekanan_darah_eklampsia',
         'pantau_protein_urine_eklampsia',
@@ -118,19 +135,24 @@ class PemeriksaanAnc extends Model
         'pemberian_antihipertensi',
         'pemberian_mgso4',
         'pemberian_diazepam',
+        
         // Tatalaksana - KEK
         'edukasi_gizi',
         'kek_lainnya',
+        
         // Tatalaksana - Obesitas
         'edukasi_gizi_obesitas',
         'obesitas_lainnya',
+        
         // Tatalaksana - Infeksi
         'pemberian_antipiretik',
         'pemberian_antibiotik',
         'infeksi_lainnya',
+        
         // Tatalaksana - Penyakit Jantung
         'edukasi',
         'jantung_lainnya',
+        
         // Tatalaksana - HIV
         'datang_dengan_hiv',
         'persalinan_pervaginam',
@@ -144,12 +166,14 @@ class PemeriksaanAnc extends Model
         'serologi',
         'arv_profilaksis',
         'hiv_lainnya',
+        
         // Tatalaksana - TB
         'diperiksa_dahak',
         'tbc',
         'obat_tb',
         'sisa_obat',
         'tb_lainnya',
+        
         // Tatalaksana - Malaria
         'diberikan_kelambu',
         'darah_malaria_rdt',
@@ -159,6 +183,22 @@ class PemeriksaanAnc extends Model
         'hasil_test_malaria',
         'obat_malaria',
         'malaria_lainnya',
+        
+        // 11. Konseling / Temu Wicara (T10)
+        'materi',
+        'rekomendasi',
+        'konseling_menyusui',
+        'tanda_bahaya_kehamilan',
+        'tanda_bahaya_persalinan',
+        'konseling_phbs',
+        'konseling_gizi',
+        'konseling_ibu_hamil',
+        'konseling_lainnya',
+        
+        // 12. Tindak Lanjut
+        'tindak_lanjut',
+        'detail_tindak_lanjut',
+        'tanggal_kunjungan_berikutnya',
     ];
     
     /**

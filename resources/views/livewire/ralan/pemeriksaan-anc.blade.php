@@ -292,11 +292,11 @@
                </a>
                <a class="flex-sm-fill text-sm-center nav-link" href="#tinggi-fundus-uteri"
                   onclick="event.preventDefault(); document.getElementById('tinggi-fundus-uteri').scrollIntoView({behavior: 'smooth'})">
-                  <i class="fas fa-child mr-1"></i> T4: TFU
+                  <i class="fas fa-child mr-1"></i> T4: Tinggi Fundus
                </a>
                <a class="flex-sm-fill text-sm-center nav-link" href="#djj-presentasi"
                   onclick="event.preventDefault(); document.getElementById('djj-presentasi').scrollIntoView({behavior: 'smooth'})">
-                  <i class="fas fa-baby mr-1"></i> T5: DJJ/Presentasi
+                  <i class="fas fa-baby mr-1"></i> T5: Denyut Jantung Janin dan Presentasi Janin
                </a>
                <a class="flex-sm-fill text-sm-center nav-link" href="#status-imunisasi"
                   onclick="event.preventDefault(); document.getElementById('status-imunisasi').scrollIntoView({behavior: 'smooth'})">
@@ -404,37 +404,37 @@
                   <div class="row">
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox"
-                              wire:model.defer="riwayat_penyakit.hipertensi" id="hipertensi">
+                           <input class="form-check-input" type="checkbox" id="hipertensi"
+                              wire:change="updateRiwayatPenyakit('hipertensi', $event.target.checked)">
                            <label class="form-check-label" for="hipertensi">Hipertensi</label>
                         </div>
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.diabetes"
-                              id="diabetes">
+                           <input class="form-check-input" type="checkbox" id="diabetes"
+                              wire:change="updateRiwayatPenyakit('diabetes', $event.target.checked)">
                            <label class="form-check-label" for="diabetes">Diabetes Mellitus</label>
                         </div>
                      </div>
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.jantung"
-                              id="jantung">
+                           <input class="form-check-input" type="checkbox" id="jantung"
+                              wire:change="updateRiwayatPenyakit('jantung', $event.target.checked)">
                            <label class="form-check-label" for="jantung">Penyakit Jantung</label>
                         </div>
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox" wire:model.defer="riwayat_penyakit.asma"
-                              id="asma">
+                           <input class="form-check-input" type="checkbox" id="asma"
+                              wire:change="updateRiwayatPenyakit('asma', $event.target.checked)">
                            <label class="form-check-label" for="asma">Asma</label>
                         </div>
                      </div>
                      <div class="col-md-4">
                         <div class="form-check mb-2">
-                           <input class="form-check-input" type="checkbox"
-                              wire:model.defer="riwayat_penyakit.lainnya_check" id="lainnya_check">
+                           <input class="form-check-input" type="checkbox" id="lainnya_check"
+                              wire:change="updateRiwayatPenyakit('lainnya_check', $event.target.checked)">
                            <label class="form-check-label" for="lainnya_check">Lainnya</label>
                         </div>
-                        <input type="text" class="form-control mt-1" wire:model.defer="riwayat_penyakit.lainnya"
-                           placeholder="Sebutkan" id="riwayat_lainnya" @if(!isset($riwayat_penyakit['lainnya_check']) ||
-                           !$riwayat_penyakit['lainnya_check']) disabled @endif>
+                        <input type="text" class="form-control mt-1" id="riwayat_lainnya"
+                           wire:change="updateRiwayatPenyakit('lainnya', $event.target.value)" placeholder="Sebutkan"
+                           id="riwayat_lainnya">
                      </div>
                   </div>
                </div>
@@ -451,9 +451,9 @@
                <label for="tanggal_anc" class="col-sm-2 col-form-label">Tanggal ANC</label>
                <div class="col-sm-4">
                   <div class="input-group">
-                     <input type="datetime-local" class="form-control @error('tanggal_anc') is-invalid @enderror"
-                        id="tanggal_anc" wire:model="tanggal_anc"
-                        value="{{ $tanggal_anc_formatted ?? now()->format('Y-m-d\TH:i') }}">
+                     <input type="text" class="form-control @error('tanggal_anc') is-invalid @enderror" id="tanggal_anc"
+                        wire:model.defer="tanggal_anc_input" placeholder="DD/MM/YYYY, HH:MM"
+                        value="{{ isset($tanggal_anc) ? \Carbon\Carbon::parse($tanggal_anc)->format('d/m/Y, H:i') : now()->format('d/m/Y, H:i') }}">
                      <div class="input-group-append">
                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                      </div>
@@ -461,6 +461,7 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
+                  <small class="text-muted">Format: DD/MM/YYYY, HH:MM (contoh: 30/03/2025, 06:49)</small>
                </div>
 
                <label for="diperiksa_oleh" class="col-sm-2 col-form-label">Diperiksa Oleh</label>
@@ -551,7 +552,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('berat_badan') is-invalid @enderror"
-                        id="berat_badan" value="{{ $berat_badan }}">
+                        id="berat_badan" wire:model="berat_badan">
                      <div class="input-group-append">
                         <span class="input-group-text">Kg</span>
                      </div>
@@ -565,7 +566,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('tinggi_badan') is-invalid @enderror"
-                        id="tinggi_badan" value="{{ $tinggi_badan }}">
+                        id="tinggi_badan" wire:model="tinggi_badan">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -663,7 +664,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.1" class="form-control @error('lila') is-invalid @enderror" id="lila"
-                        value="{{ $lila }}">
+                        wire:model="lila">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -687,15 +688,15 @@
             </h5>
 
             <div class="form-group row">
-               <label for="tfu" class="col-sm-2 col-form-label">TFU</label>
+               <label for="tinggi_fundus" class="col-sm-2 col-form-label">Tinggi Fundus</label>
                <div class="col-sm-4">
                   <div class="input-group">
-                     <input type="number" step="0.1" class="form-control @error('tfu') is-invalid @enderror" id="tfu"
-                        value="{{ $tfu }}">
+                     <input type="number" step="0.1" class="form-control @error('tinggi_fundus') is-invalid @enderror"
+                        id="tinggi_fundus" wire:model="tinggi_fundus">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
-                     @error('tfu')
+                     @error('tinggi_fundus')
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
@@ -717,19 +718,19 @@
          <!-- Tentukan DJJ dan Presentasi Janin -->
          <div class="form-group" id="djj-presentasi">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">7</span> Tentukan DJJ dan Presentasi Janin (T5)
+               <span class="badge badge-primary mr-2">7</span> Tentukan Denyut Jantung Janin dan Presentasi Janin (T5)
             </h5>
 
             <div class="form-group row">
-               <label for="djj" class="col-sm-2 col-form-label">Detak Jantung Janin</label>
+               <label for="denyut_jantung_janin" class="col-sm-2 col-form-label">Detak Jantung Janin</label>
                <div class="col-sm-4">
                   <div class="input-group">
-                     <input type="number" class="form-control @error('djj') is-invalid @enderror" wire:model.defer="djj"
-                        id="djj">
+                     <input type="number" class="form-control @error('denyut_jantung_janin') is-invalid @enderror"
+                        wire:model.defer="denyut_jantung_janin" id="denyut_jantung_janin">
                      <div class="input-group-append">
                         <span class="input-group-text">bpm</span>
                      </div>
-                     @error('djj')
+                     @error('denyut_jantung_janin')
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
@@ -1283,7 +1284,7 @@
                         <th>UK</th>
                         <th>BB</th>
                         <th>TD</th>
-                        <th>TFU</th>
+                        <th>Tinggi Fundus</th>
                         <th>Keluhan</th>
                         <th>Tatalaksana</th>
                         <th>Tindak Lanjut</th>
@@ -1300,7 +1301,7 @@
                         <td>{{ $item->usia_kehamilan }} minggu</td>
                         <td>{{ $item->berat_badan }} kg</td>
                         <td>{{ $item->td_sistole }}/{{ $item->td_diastole }}</td>
-                        <td>{{ $item->tfu ?? '-' }}</td>
+                        <td>{{ $item->tinggi_fundus ?? '-' }}</td>
                         <td>{{ Str::limit($item->keluhan_utama, 30) }}</td>
                         <td>{{ $item->jenis_tatalaksana ?? '-' }}</td>
                         <td>{{ $item->tindak_lanjut ?? '-' }}</td>
@@ -1381,7 +1382,7 @@
                               <th>Usia Kehamilan</th>
                               <th>BB (kg)</th>
                               <th>TD</th>
-                              <th>TFU (cm)</th>
+                              <th>Tinggi Fundus (cm)</th>
                               <th>TBJ (gram)</th>
                               <th>Keluhan</th>
                               <th>Tindak Lanjut</th>
@@ -1397,7 +1398,7 @@
                               <td>{{ $item->usia_kehamilan }} minggu</td>
                               <td>{{ $item->berat_badan }}</td>
                               <td>{{ $item->td_sistole }}/{{ $item->td_diastole }}</td>
-                              <td>{{ $item->tfu ?? '-' }}</td>
+                              <td>{{ $item->tinggi_fundus ?? '-' }}</td>
                               <td>{{ $item->taksiran_berat_janin ?? '-' }}</td>
                               <td>{{ Str::limit($item->keluhan_utama, 30) }}</td>
                               <td>{{ $item->tindak_lanjut ?? '-' }}</td>
@@ -1525,6 +1526,35 @@
                   initDataTable(activeTabId);
                }
             });
+         });
+      });
+   </script>
+   @endpush
+
+   @push('js')
+   <script>
+      document.addEventListener('DOMContentLoaded', function () {
+         // Integrasi dengan DataTables dipertahankan
+         
+         // Hapus binding event untuk input berat, tinggi, dan Tinggi Fundus (karena sudah ditangani oleh Livewire)
+         // Setiap kali mengubah nilai, Livewire akan memperbarui data secara otomatis
+         
+         // Tampilkan pesan setelah update form berhasil
+         Livewire.on('formSaved', function() {
+            setTimeout(function() {
+               const alerts = document.querySelectorAll('.alert');
+               alerts.forEach(function(alert) {
+                  const closeBtn = alert.querySelector('.close');
+                  if (closeBtn) {
+                     closeBtn.click();
+                  }
+               });
+            }, 3000); // Pesan akan hilang setelah 3 detik
+         });
+         
+         // Tampilkan error jika ada
+         Livewire.on('showError', function(message) {
+            console.error('Error:', message);
          });
       });
    </script>
