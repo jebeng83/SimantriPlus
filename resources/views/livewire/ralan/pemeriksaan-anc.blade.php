@@ -166,6 +166,35 @@
          padding-top: 10px;
          padding-bottom: 10px;
       }
+
+      /* Style untuk riwayat penyakit */
+      #riwayat_lainnya {
+         display: none;
+      }
+
+      .riwayat_penyakit_lainnya.active #riwayat_lainnya {
+         display: block;
+         margin-top: 0.5rem;
+         transition: all 0.3s ease;
+      }
+
+      .riwayat_penyakit_lainnya {
+         transition: all 0.3s ease;
+      }
+
+      /* Styling untuk tombol hitung */
+      .btn-sm.btn-primary {
+         transition: all 0.2s ease;
+      }
+
+      .btn-sm.btn-primary:hover {
+         background-color: #1565c0;
+         transform: translateY(-1px);
+      }
+
+      .btn-sm.btn-primary:active {
+         transform: translateY(1px);
+      }
    </style>
    @endpush
 
@@ -405,36 +434,37 @@
                      <div class="col-md-4">
                         <div class="form-check mb-2">
                            <input class="form-check-input" type="checkbox" id="hipertensi"
-                              wire:change="updateRiwayatPenyakit('hipertensi', $event.target.checked)">
+                              wire:model.defer="riwayat_penyakit.hipertensi">
                            <label class="form-check-label" for="hipertensi">Hipertensi</label>
                         </div>
                         <div class="form-check mb-2">
                            <input class="form-check-input" type="checkbox" id="diabetes"
-                              wire:change="updateRiwayatPenyakit('diabetes', $event.target.checked)">
+                              wire:model.defer="riwayat_penyakit.diabetes">
                            <label class="form-check-label" for="diabetes">Diabetes Mellitus</label>
                         </div>
                      </div>
                      <div class="col-md-4">
                         <div class="form-check mb-2">
                            <input class="form-check-input" type="checkbox" id="jantung"
-                              wire:change="updateRiwayatPenyakit('jantung', $event.target.checked)">
+                              wire:model.defer="riwayat_penyakit.jantung">
                            <label class="form-check-label" for="jantung">Penyakit Jantung</label>
                         </div>
                         <div class="form-check mb-2">
                            <input class="form-check-input" type="checkbox" id="asma"
-                              wire:change="updateRiwayatPenyakit('asma', $event.target.checked)">
+                              wire:model.defer="riwayat_penyakit.asma">
                            <label class="form-check-label" for="asma">Asma</label>
                         </div>
                      </div>
                      <div class="col-md-4">
                         <div class="form-check mb-2">
                            <input class="form-check-input" type="checkbox" id="lainnya_check"
-                              wire:change="updateRiwayatPenyakit('lainnya_check', $event.target.checked)">
+                              wire:model.defer="riwayat_penyakit.lainnya_check">
                            <label class="form-check-label" for="lainnya_check">Lainnya</label>
                         </div>
-                        <input type="text" class="form-control mt-1" id="riwayat_lainnya"
-                           wire:change="updateRiwayatPenyakit('lainnya', $event.target.value)" placeholder="Sebutkan"
-                           id="riwayat_lainnya">
+                        <div class="riwayat_penyakit_lainnya" id="riwayat_lainnya_container">
+                           <input type="text" class="form-control mt-1" id="riwayat_lainnya"
+                              wire:model.defer="riwayat_penyakit.lainnya" placeholder="Sebutkan" id="riwayat_lainnya">
+                        </div>
                      </div>
                   </div>
                </div>
@@ -552,7 +582,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('berat_badan') is-invalid @enderror"
-                        id="berat_badan" wire:model="berat_badan">
+                        wire:model.defer="berat_badan" id="berat_badan">
                      <div class="input-group-append">
                         <span class="input-group-text">Kg</span>
                      </div>
@@ -560,13 +590,16 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
+                  @if(isset($berat_badan) && $berat_badan < 20) <small class="text-danger">The berat badan must be at
+                     least 20.</small>
+                     @endif
                </div>
 
                <label for="tinggi_badan" class="col-sm-2 col-form-label">Tinggi Badan</label>
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.01" class="form-control @error('tinggi_badan') is-invalid @enderror"
-                        id="tinggi_badan" wire:model="tinggi_badan">
+                        wire:model.defer="tinggi_badan" id="tinggi_badan">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -578,9 +611,17 @@
             </div>
 
             <div class="form-group row">
+               <div class="col-sm-6 offset-sm-2">
+                  <button type="button" class="btn btn-sm btn-primary" wire:click="hitungIMT">
+                     <i class="fas fa-calculator mr-1"></i> Hitung IMT
+                  </button>
+               </div>
+            </div>
+
+            <div class="form-group row">
                <label for="imt" class="col-sm-2 col-form-label">IMT Saat ini</label>
                <div class="col-sm-4">
-                  <input type="number" step="0.01" class="form-control bg-light" wire:model="imt" id="imt" readonly>
+                  <input type="text" class="form-control bg-light" wire:model="imt" id="imt" readonly>
                </div>
 
                <label for="kategori_imt" class="col-sm-2 col-form-label">Kategori IMT</label>
@@ -664,7 +705,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.1" class="form-control @error('lila') is-invalid @enderror" id="lila"
-                        wire:model="lila">
+                        wire:model.defer="lila">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -672,6 +713,9 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
+                  <button type="button" class="btn btn-sm btn-primary mt-2" wire:click="tentukanStatusGizi">
+                     <i class="fas fa-calculator mr-1"></i> Hitung Status Gizi
+                  </button>
                </div>
 
                <label for="status_gizi" class="col-sm-2 col-form-label">Status Gizi</label>
@@ -692,7 +736,7 @@
                <div class="col-sm-4">
                   <div class="input-group">
                      <input type="number" step="0.1" class="form-control @error('tinggi_fundus') is-invalid @enderror"
-                        id="tinggi_fundus" wire:model="tinggi_fundus">
+                        id="tinggi_fundus" wire:model.defer="tinggi_fundus">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
                      </div>
@@ -700,6 +744,9 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
+                  <button type="button" class="btn btn-sm btn-primary mt-2" wire:click="hitungTaksiranBeratJanin">
+                     <i class="fas fa-calculator mr-1"></i> Hitung TBJ
+                  </button>
                </div>
 
                <label for="taksiran_berat_janin" class="col-sm-2 col-form-label">Taksiran Berat Janin</label>
@@ -1526,6 +1573,34 @@
                   initDataTable(activeTabId);
                }
             });
+            
+            // Menangani tampilan field lainnya pada Riwayat Penyakit
+            const lainnyaCheck = document.getElementById('lainnya_check');
+            const riwayatLainnya = document.getElementById('riwayat_lainnya');
+            
+            // Fungsi untuk update tampilan field lainnya
+            function updateRiwayatLainnyaVisibility() {
+               if (lainnyaCheck && riwayatLainnya) {
+                  if (lainnyaCheck.checked) {
+                     riwayatLainnya.style.display = 'block';
+                  } else {
+                     riwayatLainnya.style.display = 'none';
+                  }
+               }
+            }
+            
+            // Inisialisasi saat halaman dimuat
+            updateRiwayatLainnyaVisibility();
+            
+            // Tambahkan event listener untuk checkbox lainnya
+            if (lainnyaCheck) {
+               lainnyaCheck.addEventListener('change', updateRiwayatLainnyaVisibility);
+            }
+            
+            // Update setiap kali Livewire merender ulang
+            Livewire.hook('element.updated', (el, component) => {
+               updateRiwayatLainnyaVisibility();
+            });
          });
       });
    </script>
@@ -1535,9 +1610,6 @@
    <script>
       document.addEventListener('DOMContentLoaded', function () {
          // Integrasi dengan DataTables dipertahankan
-         
-         // Hapus binding event untuk input berat, tinggi, dan Tinggi Fundus (karena sudah ditangani oleh Livewire)
-         // Setiap kali mengubah nilai, Livewire akan memperbarui data secara otomatis
          
          // Tampilkan pesan setelah update form berhasil
          Livewire.on('formSaved', function() {
@@ -1556,6 +1628,142 @@
          Livewire.on('showError', function(message) {
             console.error('Error:', message);
          });
+         
+         // Handle checkbox Lainnya pada Riwayat Penyakit
+         const lainnyaCheck = document.getElementById('lainnya_check');
+         const riwayatLainnyaContainer = document.getElementById('riwayat_lainnya_container');
+         
+         // Fungsi untuk mengupdate tampilan
+         function updateRiwayatLainnyaVisibility() {
+            if (lainnyaCheck && riwayatLainnyaContainer) {
+               if (lainnyaCheck.checked) {
+                  riwayatLainnyaContainer.classList.add('active');
+               } else {
+                  riwayatLainnyaContainer.classList.remove('active');
+               }
+            }
+         }
+         
+         // Jalankan saat awal load
+         updateRiwayatLainnyaVisibility();
+         
+         // Tambahkan event listener
+         if (lainnyaCheck) {
+            lainnyaCheck.addEventListener('change', updateRiwayatLainnyaVisibility);
+         }
+         
+         // Update setiap kali Livewire melakukan rendering ulang
+         document.addEventListener('livewire:load', function() {
+            Livewire.hook('message.processed', (message, component) => {
+               updateRiwayatLainnyaVisibility();
+               
+               // Update nilai dari formulir setelah perhitungan server
+               if (message.updateQueue.find(update => update.payload.event === 'hitungIMT' || 
+                    update.payload.event === 'tentukanStatusGizi' || 
+                    update.payload.event === 'hitungTaksiranBeratJanin')) {
+                  console.log('Perhitungan dilakukan di server');
+               }
+            });
+         });
+         
+         // =========================================================
+         // PERHITUNGAN SISI KLIEN (JAVASCRIPT) UNTUK PREVIEW INSTANT
+         // =========================================================
+         // Perhitungan ini membantu menampilkan hasil sementara
+         // tanpa harus mengirim request ke server
+         // Nilai aktual tetap dihitung di server saat tombol Hitung diklik
+         // =========================================================
+         
+         // Preview perhitungan IMT di sisi klien (tanpa refresh)
+         const beratBadanInput = document.getElementById('berat_badan');
+         const tinggiBadanInput = document.getElementById('tinggi_badan');
+         const imtDisplay = document.getElementById('imt');
+         const kategoriImtDisplay = document.getElementById('kategori_imt');
+         
+         // Fungsi untuk menghitung IMT di sisi klien
+         function hitungImtClient() {
+            if (beratBadanInput && tinggiBadanInput && beratBadanInput.value && tinggiBadanInput.value) {
+               const beratBadan = parseFloat(beratBadanInput.value);
+               const tinggiBadan = parseFloat(tinggiBadanInput.value) / 100; // konversi ke meter
+               
+               if (beratBadan > 0 && tinggiBadan > 0) {
+                  const imt = beratBadan / (tinggiBadan * tinggiBadan);
+                  const imtRounded = Math.round(imt * 100) / 100;
+                  
+                  // Update display IMT
+                  if (imtDisplay) {
+                     imtDisplay.value = imtRounded;
+                  }
+                  
+                  // Update kategori IMT
+                  if (kategoriImtDisplay) {
+                     let kategori = '';
+                     if (imtRounded < 18.5) {
+                        kategori = 'KURUS';
+                     } else if (imtRounded >= 18.5 && imtRounded <= 24.9) {
+                        kategori = 'NORMAL';
+                     } else if (imtRounded >= 25 && imtRounded <= 29.9) {
+                        kategori = 'GEMUK';
+                     } else {
+                        kategori = 'OBESITAS';
+                     }
+                     kategoriImtDisplay.value = kategori;
+                  }
+               }
+            }
+         }
+         
+         // Event listeners untuk perubahan input
+         if (beratBadanInput && tinggiBadanInput) {
+            beratBadanInput.addEventListener('input', hitungImtClient);
+            tinggiBadanInput.addEventListener('input', hitungImtClient);
+         }
+         
+         // Preview perhitungan Taksiran Berat Janin di sisi klien
+         const tinggiFundusInput = document.getElementById('tinggi_fundus');
+         const tbjanDisplay = document.getElementById('taksiran_berat_janin');
+         
+         function hitungTbjanClient() {
+            if (tinggiFundusInput && tinggiFundusInput.value && tbjanDisplay) {
+               const tfu = parseFloat(tinggiFundusInput.value);
+               if (tfu > 0) {
+                  // Rumus Johnson-Toshach: BB (gram) = 155 x (tinggi fundus dalam cm - 13)
+                  const n = 13; // Asumsi kepala belum masuk PAP
+                  const beratJanin = 155 * (tfu - n);
+                  
+                  if (beratJanin > 0) {
+                     tbjanDisplay.value = Math.round(beratJanin);
+                  } else {
+                     tbjanDisplay.value = 0;
+                  }
+               }
+            }
+         }
+         
+         if (tinggiFundusInput) {
+            tinggiFundusInput.addEventListener('input', hitungTbjanClient);
+         }
+         
+         // Preview perhitungan Status Gizi berdasarkan LILA
+         const lilaInput = document.getElementById('lila');
+         const statusGiziDisplay = document.getElementById('status_gizi');
+         
+         function hitungStatusGiziClient() {
+            if (lilaInput && lilaInput.value && statusGiziDisplay) {
+               const lila = parseFloat(lilaInput.value);
+               if (lila > 0) {
+                  if (lila < 23.5) {
+                     statusGiziDisplay.value = 'KEK (Kurang Energi Kronis)';
+                  } else {
+                     statusGiziDisplay.value = 'Normal';
+                  }
+               }
+            }
+         }
+         
+         if (lilaInput) {
+            lilaInput.addEventListener('input', hitungStatusGiziClient);
+         }
       });
    </script>
    @endpush
