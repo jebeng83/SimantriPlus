@@ -40,135 +40,6 @@
          .form-check-input {
             margin-left: 0;
          }
-
-         .container {
-            width: 100%;
-            max-width: 100%;
-         }
-
-         body {
-            font-size: 12pt;
-         }
-
-         h1,
-         h2,
-         h3,
-         h4,
-         h5,
-         h6 {
-            page-break-after: avoid;
-         }
-
-         table {
-            page-break-inside: avoid;
-         }
-      }
-
-      /* Simpan style untuk 2 kolom di print mode */
-      @media print {
-         .col-md-6 {
-            width: 50%;
-            float: left;
-         }
-
-         .row::after {
-            content: "";
-            display: table;
-            clear: both;
-         }
-      }
-
-      .status-badge {
-         font-size: 0.9rem;
-         margin-left: 8px;
-      }
-
-      .lab-input {
-         padding: 10px;
-         border-radius: 5px;
-         margin-left: 25px;
-         border: 1px solid #e2e8f0;
-         background-color: #f8f9fa;
-         display: none;
-      }
-
-      .lab-input.active {
-         display: block;
-      }
-
-      /* Override untuk menampilkan input yang memiliki nilai */
-      .lab-input input[value]:not([value=""]),
-      .lab-input select:has(option[selected]:not([value=""])) {
-         background-color: #e8f4ff !important;
-      }
-
-      .hasil-lab-row {
-         border-bottom: 1px solid #dee2e6;
-      }
-
-      .riwayat_penyakit_lainnya {
-         display: none;
-      }
-
-      .riwayat_penyakit_lainnya.active {
-         display: block;
-      }
-
-      .riwayat-btn {
-         margin-right: 5px;
-         margin-bottom: 5px;
-      }
-
-      .text-navy-blue {
-         color: #0056b3;
-      }
-
-      .anc-navigation {
-         background-color: white;
-         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-         position: sticky;
-         top: 0;
-         z-index: 100;
-         padding: 10px 15px;
-         margin-bottom: 20px;
-         border-radius: 5px;
-         display: flex;
-         flex-wrap: nowrap;
-         overflow-x: auto;
-         -webkit-overflow-scrolling: touch;
-         scrollbar-width: none;
-         /* For Firefox */
-      }
-
-      .anc-navigation::-webkit-scrollbar {
-         display: none;
-         /* For Chrome, Safari, and Opera */
-      }
-
-      .anc-navigation a {
-         white-space: nowrap;
-         padding: 8px 16px;
-         margin-right: 10px;
-         border-radius: 20px;
-         color: #495057;
-         font-weight: 500;
-         transition: all 0.3s ease;
-         font-size: 0.85rem;
-      }
-
-      .anc-navigation a:hover {
-         background-color: #e9ecef;
-         text-decoration: none;
-         color: #0056b3;
-      }
-
-      .anc-navigation a.active {
-         background-color: #0056b3;
-         color: white;
-      }
-
-      .colored-toast.swal2-icon-success {
-         background-color: #a5dc86 !important;
       }
 
       /* Mengurangi margin dan padding berlebih */
@@ -410,49 +281,7 @@
          }
       }
 
-      /* SweetAlert2 Custom Styles */
-      .colored-toast.swal2-icon-success {
-         background-color: #a5dc86 !important;
-      }
-
-      .colored-toast.swal2-icon-error {
-         background-color: #f27474 !important;
-      }
-
-      .colored-toast .swal2-title {
-         color: white;
-      }
-
-      .colored-toast .swal2-close {
-         color: white;
-      }
-
-      .colored-toast .swal2-html-container {
-         color: white;
-      }
-
-      .swal2-popup.swal2-toast {
-         box-shadow: 0 0 0.625em #d9d9d9;
-         padding: 1em;
-         font-size: 1rem;
-      }
-
-      /* Animasi untuk toast */
-      @keyframes slideInFromTop {
-         0% {
-            transform: translateY(-150%);
-            opacity: 0;
-         }
-
-         100% {
-            transform: translateY(0);
-            opacity: 1;
-         }
-      }
-
-      .swal2-popup.swal2-toast {
-         animation: slideInFromTop 0.5s ease-out forwards;
-      }
+      /* Styling untuk form lab */
    </style>
    @endpush
 
@@ -543,6 +372,99 @@
       </div>
 
       <form wire:submit.prevent="save">
+         <!-- Navigation Pills -->
+         <div class="card-body">
+            <nav class="nav nav-pills flex-column flex-sm-row">
+               <a class="flex-sm-fill text-sm-center nav-link active" href="#anamnesis"
+                  onclick="event.preventDefault(); document.getElementById('anamnesis').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-list mr-1"></i> Anamnesis
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#data-wajib"
+                  onclick="event.preventDefault(); document.getElementById('data-wajib').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-check mr-1"></i> Data Wajib
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-bb-tb"
+                  onclick="event.preventDefault(); document.getElementById('ukur-bb-tb').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-weight mr-1"></i> T1: BB & TB
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-td"
+                  onclick="event.preventDefault(); document.getElementById('ukur-td').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-heartbeat mr-1"></i> T2: TD
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#status-gizi"
+                  onclick="event.preventDefault(); document.getElementById('status-gizi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-ruler mr-1"></i> T3: Status Gizi
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tinggi-fundus-uteri"
+                  onclick="event.preventDefault(); document.getElementById('tinggi-fundus-uteri').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-child mr-1"></i> T4: Tinggi Fundus
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#djj-presentasi"
+                  onclick="event.preventDefault(); document.getElementById('djj-presentasi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-baby mr-1"></i> T5: Denyut Jantung Janin dan Presentasi Janin
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#status-imunisasi"
+                  onclick="event.preventDefault(); document.getElementById('status-imunisasi').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-syringe mr-1"></i> T6: Imunisasi TT
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tablet-tambah-darah"
+                  onclick="event.preventDefault(); document.getElementById('tablet-tambah-darah').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-pills mr-1"></i> T7: Tablet Fe
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#pemeriksaan-lab"
+                  onclick="event.preventDefault(); document.getElementById('pemeriksaan-lab').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-flask mr-1"></i> T8: Lab
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tatalaksana-kasus"
+                  onclick="event.preventDefault(); document.getElementById('tatalaksana-kasus').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-procedures mr-1"></i> T9: Tatalaksana
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#temu-wicara"
+                  onclick="event.preventDefault(); document.getElementById('temu-wicara').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-comments mr-1"></i> T10: Konseling
+               </a>
+            </nav>
+            <nav class="nav nav-pills flex-column flex-sm-row mt-2">
+               <a class="flex-sm-fill text-sm-center nav-link" href="#tindak-lanjut"
+                  onclick="event.preventDefault(); document.getElementById('tindak-lanjut').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-check mr-1"></i> Tindak Lanjut
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#keadaan-pulang"
+                  onclick="event.preventDefault(); document.getElementById('keadaan-pulang').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-home mr-1"></i> Keadaan Pulang
+               </a>
+            </nav>
+         </div>
+
+         <!-- Navigation Pills (OLD - Hidden) -->
+         <div class="card-body" style="display: none;">
+            <!-- Navigasi Lama: Disembunyikan karena diganti dengan navigasi baru yang lebih elegan -->
+            <nav class="nav nav-pills flex-column flex-sm-row">
+               <a class="flex-sm-fill text-sm-center nav-link active" href="#anamnesis"
+                  onclick="event.preventDefault(); document.getElementById('anamnesis').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-list mr-1"></i> Anamnesis
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#data-wajib"
+                  onclick="event.preventDefault(); document.getElementById('data-wajib').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-clipboard-check mr-1"></i> Data Wajib
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-bb-tb"
+                  onclick="event.preventDefault(); document.getElementById('ukur-bb-tb').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-weight mr-1"></i> T1: BB & TB
+               </a>
+               <a class="flex-sm-fill text-sm-center nav-link" href="#ukur-td"
+                  onclick="event.preventDefault(); document.getElementById('ukur-td').scrollIntoView({behavior: 'smooth'})">
+                  <i class="fas fa-heartbeat mr-1"></i> T2: TD
+               </a>
+            </nav>
+            <!-- Sisanya dari navigasi lama disembunyikan... -->
+         </div>
+
+         <!-- Navigation Pills (Modern Redesign) -->
          <div class="card mb-4 shadow-sm">
             <div class="card-body p-0">
                <div class="anc-navigation">
@@ -864,21 +786,24 @@
                <label for="berat_badan" class="col-sm-2 col-form-label">Berat Badan (saat ini)</label>
                <div class="col-sm-4">
                   <div class="input-group">
-                     <input type="number" step="0.1" class="form-control @error('berat_badan') is-invalid @enderror"
+                     <input type="number" step="0.01" class="form-control @error('berat_badan') is-invalid @enderror"
                         wire:model.defer="berat_badan" id="berat_badan">
                      <div class="input-group-append">
-                        <span class="input-group-text">kg</span>
+                        <span class="input-group-text">Kg</span>
                      </div>
                      @error('berat_badan')
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
+                  @if(isset($berat_badan) && $berat_badan < 20) <small class="text-danger">The berat badan must be at
+                     least 20.</small>
+                     @endif
                </div>
 
                <label for="tinggi_badan" class="col-sm-2 col-form-label">Tinggi Badan</label>
                <div class="col-sm-4">
                   <div class="input-group">
-                     <input type="number" step="0.1" class="form-control @error('tinggi_badan') is-invalid @enderror"
+                     <input type="number" step="0.01" class="form-control @error('tinggi_badan') is-invalid @enderror"
                         wire:model.defer="tinggi_badan" id="tinggi_badan">
                      <div class="input-group-append">
                         <span class="input-group-text">cm</span>
@@ -891,9 +816,8 @@
             </div>
 
             <div class="form-group row">
-               <div class="col-sm-2"></div>
-               <div class="col-sm-4">
-                  <button type="button" class="btn btn-sm btn-primary" wire:click.prevent="hitungIMT">
+               <div class="col-sm-6 offset-sm-2">
+                  <button type="button" class="btn btn-sm btn-primary" wire:click="hitungIMT">
                      <i class="fas fa-calculator mr-1"></i> Hitung IMT
                   </button>
                </div>
@@ -902,19 +826,18 @@
             <div class="form-group row">
                <label for="imt" class="col-sm-2 col-form-label">IMT Saat ini</label>
                <div class="col-sm-4">
-                  <input type="text" class="form-control bg-light" wire:model.defer="imt" id="imt" readonly>
+                  <input type="text" class="form-control bg-light" wire:model="imt" id="imt" readonly>
                </div>
 
                <label for="kategori_imt" class="col-sm-2 col-form-label">Kategori IMT</label>
                <div class="col-sm-4">
-                  <input type="text" class="form-control bg-light" wire:model.defer="kategori_imt" id="kategori_imt"
-                     readonly>
+                  <input type="text" class="form-control bg-light" wire:model="kategori_imt" id="kategori_imt" readonly>
                </div>
             </div>
 
             <div class="form-group row">
                <label for="jumlah_janin" class="col-sm-2 col-form-label">Jumlah Janin</label>
-               <div class="col-sm-10">
+               <div class="col-sm-4">
                   <div class="d-flex">
                      <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" name="jumlah_janin" id="janin_tidak_diketahui"
@@ -995,7 +918,7 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
-                  <button type="button" class="btn btn-sm btn-primary mt-2" wire:click.prevent="tentukanStatusGizi">
+                  <button type="button" class="btn btn-sm btn-primary mt-2" wire:click="tentukanStatusGizi">
                      <i class="fas fa-calculator mr-1"></i> Hitung Status Gizi
                   </button>
                </div>
@@ -1026,8 +949,7 @@
                      <div class="invalid-feedback">{{ $message }}</div>
                      @enderror
                   </div>
-                  <button type="button" class="btn btn-sm btn-primary mt-2"
-                     wire:click.prevent="hitungTaksiranBeratJanin">
+                  <button type="button" class="btn btn-sm btn-primary mt-2" wire:click="hitungTaksiranBeratJanin">
                      <i class="fas fa-calculator mr-1"></i> Hitung TBJ
                   </button>
                </div>
@@ -1158,185 +1080,203 @@
          <!-- Pemeriksaan Laboratorium -->
          <div class="form-group" id="pemeriksaan-lab">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">9</span> Pemeriksaan Lab (T8)
+               <span class="badge badge-primary mr-2">10</span> Pemeriksaan Laboratorium (T8)
             </h5>
 
             <div class="form-group row">
-               <label for="tanggal_lab" class="col-sm-2 col-form-label">Tanggal Pemeriksaan Lab</label>
-               <div class="col-sm-4">
+               <label class="col-sm-3 col-form-label">Tanggal Pengambilan Sampel</label>
+               <div class="col-sm-9">
                   <div class="input-group">
-                     <input type="date" class="form-control" wire:model.defer="tanggal_lab" id="tanggal_lab">
+                     <input type="date" class="form-control @error('tanggal_lab') is-invalid @enderror"
+                        wire:model.defer="tanggal_lab" id="tanggal_lab">
                      <div class="input-group-append">
                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                      </div>
+                     @error('tanggal_lab')
+                     <div class="invalid-feedback">{{ $message }}</div>
+                     @enderror
                   </div>
                </div>
             </div>
 
-            <div class="form-group row">
-               <label class="col-sm-2 col-form-label">Jenis Pemeriksaan Lab</label>
-               <div class="col-sm-10">
+            <div class="form-group">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Wajib diperiksa</h6>
                   <div class="row">
-                     <div class="col-md-6">
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_hb"
-                              wire:model.defer="lab.hb.checked" data-target="input_hb">
-                           <label class="custom-control-label" for="lab_hb">Hemoglobin (Hb)</label>
+                     <!-- Hemoglobin -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hb.checked" id="lab_hb" data-target="input_hb">
+                           <label class="form-check-label font-weight-bold" for="lab_hb">Hemoglobin (Hb)</label>
                         </div>
-
-                        <div id="input_hb" class="lab-input mb-3">
+                        <div class="lab-input" id="input_hb">
                            <div class="input-group">
-                              <input type="text" class="form-control" placeholder="Nilai Hb"
-                                 wire:model.defer="lab.hb.nilai" id="nilai_hb">
+                              <input type="number" step="0.01" class="form-control" wire:model.defer="lab.hb.nilai"
+                                 placeholder="Nilai" id="nilai_hb">
                               <div class="input-group-append">
                                  <span class="input-group-text">g/dL</span>
                               </div>
                            </div>
                         </div>
+                     </div>
 
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_goldar"
-                              wire:model.defer="lab.goldar.checked" data-target="input_goldar">
-                           <label class="custom-control-label" for="lab_goldar">Golongan Darah</label>
+                     <!-- Golongan Darah -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.goldar.checked" id="lab_goldar" data-target="input_goldar">
+                           <label class="form-check-label font-weight-bold" for="lab_goldar">Golongan Darah</label>
                         </div>
-
-                        <div id="input_goldar" class="lab-input mb-3">
+                        <div class="lab-input" id="input_goldar">
                            <select class="form-control" wire:model.defer="lab.goldar.nilai" id="nilai_goldar">
-                              <option value="">Pilih Golongan Darah</option>
+                              <option value="">- Pilih -</option>
                               <option value="A">A</option>
                               <option value="B">B</option>
                               <option value="AB">AB</option>
                               <option value="O">O</option>
                            </select>
                         </div>
+                     </div>
 
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_protein_urin"
-                              wire:model.defer="lab.protein_urin.checked" data-target="input_protein_urin">
-                           <label class="custom-control-label" for="lab_protein_urin">Protein Urin</label>
+                     <!-- Protein Urin -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.protein_urin.checked" id="lab_protein_urin"
+                              data-target="input_protein_urin">
+                           <label class="form-check-label font-weight-bold" for="lab_protein_urin">Protein Urin</label>
                         </div>
-
-                        <div id="input_protein_urin" class="lab-input mb-3">
+                        <div class="lab-input" id="input_protein_urin">
                            <select class="form-control" wire:model.defer="lab.protein_urin.nilai"
                               id="nilai_protein_urin">
-                              <option value="">Pilih Hasil</option>
+                              <option value="">- Pilih -</option>
                               <option value="Negatif">Negatif</option>
-                              <option value="Positif 1">Positif 1</option>
-                              <option value="Positif 2">Positif 2</option>
-                              <option value="Positif 3">Positif 3</option>
+                              <option value="+1">+1</option>
+                              <option value="+2">+2</option>
+                              <option value="+3">+3</option>
+                              <option value="+4">+4</option>
                            </select>
                         </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
 
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_gula_darah"
-                              wire:model.defer="lab.gula_darah.checked" data-target="input_gula_darah">
-                           <label class="custom-control-label" for="lab_gula_darah">Gula Darah</label>
+            <div class="form-group mt-3">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Skrining HIV, Sifilis, Hepatitis B</h6>
+                  <div class="row">
+                     <!-- HIV -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hiv.checked" id="lab_hiv" data-target="input_hiv">
+                           <label class="form-check-label font-weight-bold" for="lab_hiv">HIV</label>
                         </div>
+                        <div class="lab-input" id="input_hiv">
+                           <select class="form-control" wire:model.defer="lab.hiv.nilai" id="nilai_hiv">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
+                     </div>
 
-                        <div id="input_gula_darah" class="lab-input mb-3">
+                     <!-- Sifilis -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.sifilis.checked" id="lab_sifilis" data-target="input_sifilis">
+                           <label class="form-check-label font-weight-bold" for="lab_sifilis">Sifilis (VDRL)</label>
+                        </div>
+                        <div class="lab-input" id="input_sifilis">
+                           <select class="form-control" wire:model.defer="lab.sifilis.nilai" id="nilai_sifilis">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
+                     </div>
+
+                     <!-- Hepatitis B -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.hbsag.checked" id="lab_hbsag" data-target="input_hbsag">
+                           <label class="form-check-label font-weight-bold" for="lab_hbsag">Hepatitis B (HBsAg)</label>
+                        </div>
+                        <div class="lab-input" id="input_hbsag">
+                           <select class="form-control" wire:model.defer="lab.hbsag.nilai" id="nilai_hbsag">
+                              <option value="">- Pilih -</option>
+                              <option value="Non-Reaktif">Non-Reaktif</option>
+                              <option value="Reaktif">Reaktif</option>
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="form-group row mt-3" id="rujukan_div">
+                     <label class="col-sm-3 col-form-label">Tindak Lanjut Rujukan</label>
+                     <div class="col-sm-9">
+                        <textarea class="form-control" wire:model.defer="rujukan_ims" rows="2"
+                           placeholder="Detail rujukan untuk pasien positif HIV/Sifilis/Hepatitis B"></textarea>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group mt-3">
+               <div class="card card-body bg-light">
+                  <h6 class="font-weight-bold mb-3">Pemeriksaan Lainnya</h6>
+                  <div class="row">
+                     <!-- Gula Darah -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.gula_darah.checked" id="lab_gula_darah"
+                              data-target="input_gula_darah">
+                           <label class="form-check-label font-weight-bold" for="lab_gula_darah">Gula Darah</label>
+                        </div>
+                        <div class="lab-input" id="input_gula_darah">
                            <div class="input-group">
-                              <input type="text" class="form-control" placeholder="Nilai Gula Darah"
-                                 wire:model.defer="lab.gula_darah.nilai" id="nilai_gula_darah">
+                              <input type="number" class="form-control" wire:model.defer="lab.gula_darah.nilai"
+                                 placeholder="Nilai" id="nilai_gula_darah">
                               <div class="input-group-append">
                                  <span class="input-group-text">mg/dL</span>
                               </div>
                            </div>
                         </div>
-
                      </div>
-                     <div class="col-md-6">
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_hiv"
-                              wire:model.defer="lab.hiv.checked" data-target="input_hiv">
-                           <label class="custom-control-label" for="lab_hiv">HIV</label>
-                        </div>
 
-                        <div id="input_hiv" class="lab-input mb-3">
-                           <select class="form-control" wire:model.defer="lab.hiv.nilai" id="nilai_hiv">
-                              <option value="">Pilih Hasil</option>
-                              <option value="Non Reaktif">Non Reaktif</option>
-                              <option value="Reaktif">Reaktif</option>
-                           </select>
+                     <!-- Malaria -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.malaria.checked" id="lab_malaria" data-target="input_malaria">
+                           <label class="form-check-label font-weight-bold" for="lab_malaria">Malaria</label>
                         </div>
-
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_sifilis"
-                              wire:model.defer="lab.sifilis.checked" data-target="input_sifilis">
-                           <label class="custom-control-label" for="lab_sifilis">Sifilis</label>
-                        </div>
-
-                        <div id="input_sifilis" class="lab-input mb-3">
-                           <select class="form-control" wire:model.defer="lab.sifilis.nilai" id="nilai_sifilis">
-                              <option value="">Pilih Hasil</option>
-                              <option value="Non Reaktif">Non Reaktif</option>
-                              <option value="Reaktif">Reaktif</option>
-                           </select>
-                        </div>
-
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_hbsag"
-                              wire:model.defer="lab.hbsag.checked" data-target="input_hbsag">
-                           <label class="custom-control-label" for="lab_hbsag">HBsAg</label>
-                        </div>
-
-                        <div id="input_hbsag" class="lab-input mb-3">
-                           <select class="form-control" wire:model.defer="lab.hbsag.nilai" id="nilai_hbsag">
-                              <option value="">Pilih Hasil</option>
-                              <option value="Non Reaktif">Non Reaktif</option>
-                              <option value="Reaktif">Reaktif</option>
-                           </select>
-                        </div>
-
-                        <div class="custom-control custom-checkbox mb-2">
-                           <input type="checkbox" class="custom-control-input lab-checkbox" id="lab_malaria"
-                              wire:model.defer="lab.malaria.checked" data-target="input_malaria">
-                           <label class="custom-control-label" for="lab_malaria">Malaria</label>
-                        </div>
-
-                        <div id="input_malaria" class="lab-input mb-3">
+                        <div class="lab-input" id="input_malaria">
                            <select class="form-control" wire:model.defer="lab.malaria.nilai" id="nilai_malaria">
-                              <option value="">Pilih Hasil</option>
-                              <option value="Positif">Positif</option>
+                              <option value="">- Pilih -</option>
                               <option value="Negatif">Negatif</option>
+                              <option value="Positif">Positif</option>
                            </select>
                         </div>
+                     </div>
 
-                     </div>
-                  </div>
-
-                  <!-- Tampilan hasil lab dalam format mudah dibaca -->
-                  <div class="card mt-3 border-primary">
-                     <div class="card-header bg-primary text-white">
-                        <i class="fas fa-flask mr-2"></i> Ringkasan Hasil Pemeriksaan Lab
-                        <!-- Tombol debug khusus developer -->
-                        <button type="button" class="btn btn-sm btn-light float-right" id="debug-lab-btn">Debug
-                           Lab</button>
-                     </div>
-                     <div class="card-body p-0">
-                        {!! $this->displayLabResults($lab) !!}
-                     </div>
-                     <div class="card-footer bg-light">
-                        <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> Hasil pemeriksaan akan
-                           disimpan dalam format ini</small>
-                     </div>
-                  </div>
-
-                  <div class="row mt-3" id="rujukan_div" style="display: none;">
-                     <div class="col-12">
-                        <div class="alert alert-warning">
-                           <i class="fas fa-exclamation-triangle mr-2"></i>
-                           <strong>Perhatian!</strong> Hasil pemeriksaan reaktif terdeteksi. Perlu tindak lanjut
-                           rujukan.
+                     <!-- Pemeriksaan Lain -->
+                     <div class="col-md-4">
+                        <div class="form-check mb-2">
+                           <input class="form-check-input lab-checkbox" type="checkbox"
+                              wire:model.defer="lab.lainnya.checked" id="lab_lainnya" data-target="input_lab_lainnya">
+                           <label class="form-check-label font-weight-bold" for="lab_lainnya">Lainnya</label>
                         </div>
-                        <div class="form-group">
-                           <label for="rujukan_ims">Tindak Lanjut Rujukan</label>
-                           <select class="form-control" wire:model.defer="rujukan_ims" id="rujukan_ims">
-                              <option value="-">- Pilih -</option>
-                              <option value="Dirujuk ke Poli IMS">Dirujuk ke Poli IMS</option>
-                              <option value="Dirujuk ke Poli Penyakit Dalam">Dirujuk ke Poli Penyakit Dalam</option>
-                              <option value="Dirujuk ke Poli Kebidanan">Dirujuk ke Poli Kebidanan</option>
-                              <option value="Lainnya">Lainnya</option>
-                           </select>
+                        <div class="lab-input" id="input_lab_lainnya">
+                           <input type="text" class="form-control mb-2" wire:model.defer="lab.lainnya.nama"
+                              placeholder="Nama Pemeriksaan" id="nama_lab_lainnya">
+                           <input type="text" class="form-control" wire:model.defer="lab.lainnya.nilai"
+                              placeholder="Hasil" id="nilai_lab_lainnya">
                         </div>
                      </div>
                   </div>
@@ -1954,242 +1894,318 @@
    @push('js')
    <script>
       document.addEventListener('DOMContentLoaded', function() {
-         // Debugging untuk lab values - tambahkan ini untuk melihat nilai di console browser
-         console.log("Lab form initialized");
-         
-         // Fungsi untuk memeriksa apakah elemen memiliki nilai
-         function debugLabValues() {
-            const labInputs = document.querySelectorAll('.lab-input input, .lab-input select');
-            console.log(`Found ${labInputs.length} lab input elements`);
-            
-            labInputs.forEach(input => {
-               const labKey = input.id.replace('nilai_', '');
-               const value = input.value;
-               const hasValue = value !== null && value !== '';
-               console.log(`Lab [${labKey}]: value="${value}", hasValue=${hasValue}`);
-               
-               // Jika memiliki nilai, aktifkan tampilan inputnya
-               if (hasValue) {
-                  const inputContainer = input.closest('.lab-input');
-                  if (inputContainer) {
-                     inputContainer.classList.add('active');
-                     console.log(`Activated display for ${labKey} input`);
-                     
-                     // Aktifkan juga checkboxnya
-                     const checkbox = document.getElementById(`lab_${labKey}`);
-                     if (checkbox && !checkbox.checked) {
-                        checkbox.checked = true;
-                        console.log(`Auto-checked checkbox for ${labKey}`);
-                     }
-                  }
-               }
-            });
-            
-            // Log hasil lab yang ditampilkan di tabel ringkasan
-            const labTable = document.querySelector('.card-body .table-responsive');
-            if (labTable) {
-               console.log('Tabel hasil lab:');
-               const rows = labTable.querySelectorAll('tbody tr');
-               if (rows.length > 0) {
-                  rows.forEach((row, index) => {
-                     const cells = row.querySelectorAll('td');
-                     if (cells.length >= 2) {
-                        const jenisPemeriksaan = cells[0].textContent.trim();
-                        const hasil = cells[1].textContent.trim();
-                        console.log(`  Row ${index+1}: ${jenisPemeriksaan} = ${hasil}`);
-                     }
-                  });
-               } else {
-                  console.log('  Tidak ada baris data di tabel hasil lab');
-               }
-            } else {
-               console.log('Tabel hasil lab tidak ditemukan');
+         // Definisi konfigurasi bahasa Indonesia untuk DataTables
+         const languageConfig = {
+            "emptyTable": "Tidak ada data yang tersedia pada tabel ini",
+            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+            "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+            "infoFiltered": "(disaring dari _MAX_ entri keseluruhan)",
+            "lengthMenu": "Tampilkan _MENU_ entri",
+            "loadingRecords": "Sedang memuat...",
+            "processing": "Sedang memproses...",
+            "search": "Cari:",
+            "zeroRecords": "Tidak ditemukan data yang sesuai",
+            "paginate": {
+               "first": "Pertama",
+               "last": "Terakhir",
+               "next": "Selanjutnya",
+               "previous": "Sebelumnya"
             }
-         }
-         
-         // Jalankan debugging setelah halaman dimuat
-         setTimeout(debugLabValues, 500);
-         
-         // Livewire event listener untuk debug data lab
-         window.addEventListener('debug-lab-data', event => {
-            console.log('DEBUG LAB DATA dari Livewire:', event.detail.lab_data);
-            
-            // Cek apakah ada data lab yang memiliki nilai
-            let hasValue = false;
-            if (event.detail.lab_data) {
-               Object.entries(event.detail.lab_data).forEach(([key, item]) => {
-                  if (item.nilai) {
-                     console.log(`Lab [${key}] memiliki nilai: ${item.nilai}, checked: ${item.checked}`);
-                     hasValue = true;
-                     
-                     // Aktifkan input dan checkbox secara manual
-                     setTimeout(() => {
-                        const input = document.getElementById(`nilai_${key}`);
-                        const checkbox = document.getElementById(`lab_${key}`);
-                        const container = document.getElementById(`input_${key}`);
-                        
-                        if (input) {
-                           console.log(`Setting manual value for ${key} to ${item.nilai}`);
-                           input.value = item.nilai;
-                        }
-                        
-                        if (checkbox) {
-                           console.log(`Setting manual checked for ${key} to true`);
-                           checkbox.checked = true;
-                        }
-                        
-                        if (container) {
-                           console.log(`Activating manual display for ${key}`);
-                           container.classList.add('active');
-                        }
-                     }, 1000);
-                  }
-               });
-            }
-            
-            if (!hasValue) {
-               console.log('Tidak ada data lab yang memiliki nilai');
-            }
-         });
+         };
 
-         const siswaMirIkTabs = document.querySelectorAll('.anc-navigation a');
-         siswaMirIkTabs.forEach(tab => {
-            tab.addEventListener('click', function(event) {
-               event.preventDefault();
+         // Format tanggal dari string ISO ke format datetime-local yang diterima HTML
+         function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            try {
+               const date = new Date(dateStr);
+               // Pastikan tanggal valid
+               if (isNaN(date.getTime())) return '';
                
-               // Hapus class active dari semua tab
-               siswaMirIkTabs.forEach(t => t.classList.remove('active'));
+               // Format ke YYYY-MM-DDThh:mm yang diterima oleh input datetime-local
+               return date.toISOString().slice(0, 16);
+            } catch (e) {
+               console.error('Error formatting date:', e);
+               return '';
+            }
+         }
+   
+         // Inisialisasi DataTable untuk tabel riwayat ANC utama
+         if (document.getElementById('tabel-riwayat-anc')) {
+            $('#tabel-riwayat-anc').DataTable({
+               "language": languageConfig,
+               "pageLength": 5,
+               "ordering": true,
+               "responsive": true,
+               "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
+            });
+         }
+         
+         // Fungsi untuk inisialisasi DataTables pada tab yang aktif
+         function initDataTable(tabId) {
+            const tableId = 'table-' + tabId;
+            if (document.getElementById(tableId)) {
+               // Hancurkan instance sebelumnya jika ada
+               if ($.fn.DataTable.isDataTable('#' + tableId)) {
+                  $('#' + tableId).DataTable().destroy();
+               }
                
-               // Tambahkan class active ke tab yang diklik
-               this.classList.add('active');
-               
-               // Scroll ke section yang sesuai
-               const targetId = this.getAttribute('href').substring(1);
-               const targetElement = document.getElementById(targetId);
-               
-               window.scrollTo({
-                  top: targetElement.offsetTop - 70,
-                  behavior: 'smooth'
+               // Inisialisasi DataTable baru
+               $('#' + tableId).DataTable({
+                  "language": languageConfig,
+                  "pageLength": 5,
+                  "ordering": true,
+                  "responsive": true,
+                  "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
                });
+            }
+         }
+         
+         // Inisialisasi DataTable pada tab aktif pertama
+         const firstActiveTab = document.querySelector('.tab-pane.active');
+         if (firstActiveTab) {
+            const firstTabId = firstActiveTab.id;
+            initDataTable(firstTabId);
+         }
+         
+         // Handler untuk event saat tab diklik
+         $('#riwayat-tab a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const tabId = e.target.getAttribute('href').substring(1);
+            initDataTable(tabId);
+         });
+         
+         // Integrasi dengan DataTables dipertahankan
+         
+         // Tampilkan pesan setelah update form berhasil
+         Livewire.on('formSaved', function() {
+            setTimeout(function() {
+               const alerts = document.querySelectorAll('.alert');
+               alerts.forEach(function(alert) {
+                  const closeBtn = alert.querySelector('.close');
+                  if (closeBtn) {
+                     closeBtn.click();
+                  }
+               });
+            }, 3000); // Pesan akan hilang setelah 3 detik
+         });
+         
+         // Tampilkan error jika ada
+         Livewire.on('showError', function(message) {
+            console.error('Error:', message);
+         });
+         
+         // Handle checkbox Lainnya pada Riwayat Penyakit
+         const lainnyaCheck = document.getElementById('lainnya_check');
+         const riwayatLainnyaContainer = document.getElementById('riwayat_lainnya_container');
+         
+         // Fungsi untuk mengupdate tampilan
+         function updateRiwayatLainnyaVisibility() {
+            if (lainnyaCheck && riwayatLainnyaContainer) {
+               if (lainnyaCheck.checked) {
+                  riwayatLainnyaContainer.classList.add('active');
+               } else {
+                  riwayatLainnyaContainer.classList.remove('active');
+               }
+            }
+         }
+         
+         // Jalankan saat awal load
+         updateRiwayatLainnyaVisibility();
+         
+         // Tambahkan event listener
+         if (lainnyaCheck) {
+            lainnyaCheck.addEventListener('change', updateRiwayatLainnyaVisibility);
+         }
+         
+         // Update saat Livewire load dan update
+         document.addEventListener('livewire:load', function() {
+            Livewire.hook('message.processed', (message, component) => {
+               // Reinisialisasi semua DataTables setelah update Livewire
+               if (document.getElementById('tabel-riwayat-anc')) {
+                  if ($.fn.DataTable.isDataTable('#tabel-riwayat-anc')) {
+                     $('#tabel-riwayat-anc').DataTable().destroy();
+                  }
+                  
+                  $('#tabel-riwayat-anc').DataTable({
+                     "language": languageConfig,
+                     "pageLength": 5,
+                     "ordering": true,
+                     "responsive": true,
+                     "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Semua"]]
+                  });
+               }
+               
+               // Reinisialisasi tab yang aktif
+               const activeTab = document.querySelector('.tab-pane.active');
+               if (activeTab) {
+                  const activeTabId = activeTab.id;
+                  initDataTable(activeTabId);
+               }
+               
+               updateRiwayatLainnyaVisibility();
+               
+               // Update nilai dari formulir setelah perhitungan server
+               if (message.updateQueue && message.updateQueue.find && message.updateQueue.find(update => 
+                    update.payload.event === 'hitungIMT' || 
+                    update.payload.event === 'tentukanStatusGizi' || 
+                    update.payload.event === 'hitungTaksiranBeratJanin')) {
+                  console.log('Perhitungan dilakukan di server');
+               }
+               
+               // Reset tampilan semua lab input setelah pemrosesan pesan Livewire
+               if (labCheckboxes) {
+                  labCheckboxes.forEach(checkbox => {
+                     toggleLabInput(checkbox);
+                  });
+               }
+               
+               // Update tampilan rujukan_div
+               updateRujukanDivVisibility();
+            });
+            
+            // Tambahkan listener untuk formSaved event
+            Livewire.on('formSaved', function() {
+               // Reset semua input lab
+               if (labCheckboxes) {
+                  labCheckboxes.forEach(checkbox => {
+                     toggleLabInput(checkbox);
+                  });
+               }
+               
+               // Reset rujukan_div
+               updateRujukanDivVisibility();
             });
          });
          
-         // Event listener untuk select tindak lanjut
-         const tindakLanjutSelect = document.getElementById('tindak_lanjut');
-         const detailTindakLanjutDiv = document.getElementById('detail_tindak_lanjut_div');
+         // =========================================================
+         // PERHITUNGAN SISI KLIEN (JAVASCRIPT) UNTUK PREVIEW INSTANT
+         // =========================================================
+         // Perhitungan ini membantu menampilkan hasil sementara
+         // tanpa harus mengirim request ke server
+         // Nilai aktual tetap dihitung di server saat tombol Hitung diklik
+         // =========================================================
          
-         if (tindakLanjutSelect && detailTindakLanjutDiv) {
-            const updateDetailDiv = () => {
-               if (tindakLanjutSelect.value === 'Dirujuk') {
-                  detailTindakLanjutDiv.style.display = 'block';
-               } else {
-                  detailTindakLanjutDiv.style.display = 'none';
-               }
-            };
-            
-            // Set initial state
-            updateDetailDiv();
-            
-            // Add event listener
-            tindakLanjutSelect.addEventListener('change', updateDetailDiv);
-         }
+         // Preview perhitungan IMT di sisi klien (tanpa refresh)
+         const beratBadanInput = document.getElementById('berat_badan');
+         const tinggiBadanInput = document.getElementById('tinggi_badan');
+         const imtDisplay = document.getElementById('imt');
+         const kategoriImtDisplay = document.getElementById('kategori_imt');
          
-         // Event listener untuk checkbox riwayat lainnya
-         const riwayatLainnyaCheck = document.getElementById('riwayat_penyakit_lainnya_check');
-         const riwayatLainnyaDiv = document.querySelector('.riwayat_penyakit_lainnya');
-         
-         if (riwayatLainnyaCheck && riwayatLainnyaDiv) {
-            const toggleRiwayatLainnya = () => {
-               if (riwayatLainnyaCheck.checked) {
-                  riwayatLainnyaDiv.classList.add('active');
-               } else {
-                  riwayatLainnyaDiv.classList.remove('active');
-               }
-            };
-            
-            // Set initial state
-            toggleRiwayatLainnya();
-            
-            // Add event listener
-            riwayatLainnyaCheck.addEventListener('change', toggleRiwayatLainnya);
-         }
-         
-         // Event listener untuk select jenis tatalaksana
-         const jenisTatalaksanaSelect = document.getElementById('jenis_tatalaksana');
-         const tatalaksanaForms = document.querySelectorAll('.tatalaksana-form');
-         
-         if (jenisTatalaksanaSelect && tatalaksanaForms.length > 0) {
-            const updateTatalaksanaForm = () => {
-               const selectedValue = jenisTatalaksanaSelect.value;
+         // Fungsi untuk menghitung IMT di sisi klien
+         function hitungImtClient() {
+            if (beratBadanInput && tinggiBadanInput && beratBadanInput.value && tinggiBadanInput.value) {
+               const beratBadan = parseFloat(beratBadanInput.value);
+               const tinggiBadan = parseFloat(tinggiBadanInput.value) / 100; // konversi ke meter
                
-               // Sembunyikan semua form terlebih dahulu
-               tatalaksanaForms.forEach(form => {
-                  form.style.display = 'none';
-               });
-               
-               // Tampilkan form yang sesuai dengan jenis tatalaksana yang dipilih
-               if (selectedValue && selectedValue !== '') {
-                  const targetForm = document.getElementById('form-' + selectedValue.toLowerCase().replace(/ /g, '-'));
-                  if (targetForm) {
-                     targetForm.style.display = 'block';
+               if (beratBadan > 0 && tinggiBadan > 0) {
+                  const imt = beratBadan / (tinggiBadan * tinggiBadan);
+                  const imtRounded = Math.round(imt * 100) / 100;
+                  
+                  // Update display IMT
+                  if (imtDisplay) {
+                     imtDisplay.value = imtRounded;
+                  }
+                  
+                  // Update kategori IMT
+                  if (kategoriImtDisplay) {
+                     let kategori = '';
+                     if (imtRounded < 18.5) {
+                        kategori = 'KURUS';
+                     } else if (imtRounded >= 18.5 && imtRounded <= 24.9) {
+                        kategori = 'NORMAL';
+                     } else if (imtRounded >= 25 && imtRounded <= 29.9) {
+                        kategori = 'GEMUK';
+                     } else {
+                        kategori = 'OBESITAS';
+                     }
+                     kategoriImtDisplay.value = kategori;
                   }
                }
-            };
-            
-            // Set initial state
-            updateTatalaksanaForm();
-            
-            // Add event listener
-            jenisTatalaksanaSelect.addEventListener('change', updateTatalaksanaForm);
+            }
          }
          
-         // Function to handle lab checkboxes and related input fields
+         // Event listeners untuk perubahan input
+         if (beratBadanInput && tinggiBadanInput) {
+            beratBadanInput.addEventListener('input', hitungImtClient);
+            tinggiBadanInput.addEventListener('input', hitungImtClient);
+         }
+         
+         // Preview perhitungan Taksiran Berat Janin di sisi klien
+         const tinggiFundusInput = document.getElementById('tinggi_fundus');
+         const tbjanDisplay = document.getElementById('taksiran_berat_janin');
+         
+         function hitungTbjanClient() {
+            if (tinggiFundusInput && tinggiFundusInput.value && tbjanDisplay) {
+               const tfu = parseFloat(tinggiFundusInput.value);
+               if (tfu > 0) {
+                  // Rumus Johnson-Toshach: BB (gram) = 155 x (tinggi fundus dalam cm - 13)
+                  const n = 13; // Asumsi kepala belum masuk PAP
+                  const beratJanin = 155 * (tfu - n);
+                  
+                  if (beratJanin > 0) {
+                     tbjanDisplay.value = Math.round(beratJanin);
+                  } else {
+                     tbjanDisplay.value = 0;
+                  }
+               }
+            }
+         }
+         
+         if (tinggiFundusInput) {
+            tinggiFundusInput.addEventListener('input', hitungTbjanClient);
+         }
+         
+         // Preview perhitungan Status Gizi berdasarkan LILA
+         const lilaInput = document.getElementById('lila');
+         const statusGiziDisplay = document.getElementById('status_gizi');
+         
+         function hitungStatusGiziClient() {
+            if (lilaInput && lilaInput.value && statusGiziDisplay) {
+               const lila = parseFloat(lilaInput.value);
+               if (lila > 0) {
+                  if (lila < 23.5) {
+                     statusGiziDisplay.value = 'KEK (Kurang Energi Kronis)';
+                  } else {
+                     statusGiziDisplay.value = 'Normal';
+                  }
+               }
+            }
+         }
+         
+         if (lilaInput) {
+            lilaInput.addEventListener('input', hitungStatusGiziClient);
+         }
+         
+         // =========================================================
+         // HANDLE TAMPILAN FORM LAB BERDASARKAN CHECKBOX
+         // =========================================================
+         
+         // Ambil semua checkbox lab
          const labCheckboxes = document.querySelectorAll('.lab-checkbox');
          
+         // Fungsi untuk menampilkan/menyembunyikan input lab
          function toggleLabInput(checkbox) {
-            const checkboxId = checkbox.id;
-            const targetInputId = checkboxId.replace('lab_', 'input_');
-            const targetInput = document.getElementById(targetInputId);
+            const targetId = checkbox.dataset.target;
+            if (!targetId) return;
             
+            const targetInput = document.getElementById(targetId);
             if (!targetInput) return;
             
             if (checkbox.checked) {
                targetInput.classList.add('active');
             } else {
                targetInput.classList.remove('active');
-               
-               // Penting: Tidak mengosongkan nilai input saat checkbox dinonaktifkan
-               // Input tetap mempertahankan nilai, hanya tampilannya yang diubah
             }
          }
          
-         // Inisialisasi state awal semua checkbox lab dan aktifkan semua input yang memiliki nilai
+         // Inisialisasi semua checkbox lab
          labCheckboxes.forEach(checkbox => {
-            // Inisialisasi berdasarkan status checked
+            // Set state awal
             toggleLabInput(checkbox);
             
-            // Ambil input terkait
-            const targetInputId = checkbox.id.replace('lab_', 'input_');
-            const targetInput = document.getElementById(targetInputId);
-            const labKey = checkbox.id.replace('lab_', '');
-            
-            // Cek nilai yang tersimpan pada input
-            if (targetInput) {
-               // Cari elemen input di dalam target (input atau select)
-               const inputField = targetInput.querySelector('input') || targetInput.querySelector('select');
-               
-               if (inputField && inputField.value) {
-                  // Jika input punya nilai, kita perlu mengaktifkan tampilan
-                  targetInput.classList.add('active');
-                  
-                  // Log debug
-                  console.log(`Activated input for ${labKey} with value: ${inputField.value}`);
-               }
-            }
-            
-            // Tambahkan event listener untuk checkbox
-            checkbox.addEventListener('change', function() {
-               toggleLabInput(this);
+            // Tambahkan event listener
+            checkbox.addEventListener('change', () => {
+               toggleLabInput(checkbox);
+               updateRujukanDivVisibility();
             });
          });
          
@@ -2233,130 +2249,6 @@
          if (hivSelect) hivSelect.addEventListener('change', updateRujukanDivVisibility);
          if (sifilisSelect) sifilisSelect.addEventListener('change', updateRujukanDivVisibility);
          if (hbsagSelect) hbsagSelect.addEventListener('change', updateRujukanDivVisibility);
-      });
-      
-      // SweetAlert2 event listeners
-      document.addEventListener('livewire:load', function() {
-          window.addEventListener('swal:success', event => {
-              Swal.fire({
-                  icon: event.detail.type,
-                  title: event.detail.title,
-                  text: event.detail.text,
-                  timer: event.detail.timer,
-                  showConfirmButton: event.detail.showConfirmButton,
-                  position: 'top-end',
-                  toast: true,
-                  background: '#a5dc86',
-                  iconColor: 'white',
-                  customClass: {
-                      popup: 'colored-toast'
-                  }
-         });
-      });
-          
-          window.addEventListener('swal:error', event => {
-              Swal.fire({
-                  icon: event.detail.type,
-                  title: event.detail.title,
-                  text: event.detail.text,
-                  confirmButtonText: event.detail.confirmButtonText
-              });
-          });
-          
-          // Event listener untuk browser events dari Livewire
-          window.addEventListener('imt-updated', event => {
-              document.getElementById('imt').value = event.detail.imt;
-              document.getElementById('kategori_imt').value = event.detail.kategori;
-          });
-          
-          window.addEventListener('status-gizi-updated', event => {
-              document.getElementById('status_gizi').value = event.detail.status;
-          });
-          
-          window.addEventListener('tbj-updated', event => {
-              document.getElementById('taksiran_berat_janin').value = event.detail.tbj;
-          });
-          
-          // Pencegahan scroll ke atas halaman untuk tombol hitung
-          const calcButtons = document.querySelectorAll('button[wire\\:click\\.prevent]');
-          calcButtons.forEach(button => {
-              button.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  // Simpan posisi scroll saat ini
-                  const scrollPos = window.scrollY;
-                  
-                  // Kembalikan ke posisi scroll yang sama setelah perhitungan
-                  setTimeout(() => {
-                      window.scrollTo(0, scrollPos);
-                  }, 100);
-              });
-         });
-      });
-
-      // Debug button action
-      document.getElementById('debug-lab-btn').addEventListener('click', function() {
-         console.log("==== DEBUG LAB BUTTON CLICKED ====");
-         
-         // Cek status lab property dari Livewire
-         @this.getLabProperty().then(lab => {
-            console.log("Lab property dari Livewire:", lab);
-         });
-         
-         // Debug JSON manual dari database
-         const dbJson = `{\"malaria\":{\"nilai\":\"Positif\",\"checked\":true},\"gula_darah\":{\"nilai\":\"100\",\"checked\":true},\"hbsag\":{\"nilai\":\"Non Reaktif\",\"checked\":true},\"protein_urin\":{\"nilai\":\"Negatif\",\"checked\":true},\"sifilis\":{\"nilai\":\"Non Reaktif\",\"checked\":true},\"goldar\":{\"nilai\":\"B\",\"checked\":true},\"hiv\":{\"nilai\":\"Non Reaktif\",\"checked\":true},\"hb\":{\"nilai\":\"15\",\"checked\":true}}`;
-         
-         try {
-            const dbData = JSON.parse(dbJson);
-            console.log("Parsed data from DB JSON:", dbData);
-            
-            // Set nilai secara manual untuk semua item lab
-            Object.entries(dbData).forEach(([key, item]) => {
-               if (item.nilai) {
-                  const input = document.getElementById(`nilai_${key}`);
-                  const checkbox = document.getElementById(`lab_${key}`);
-                  const container = document.getElementById(`input_${key}`);
-                  
-                  if (input) {
-                     console.log(`Force setting value for ${key} to ${item.nilai}`);
-                     if (input.tagName === 'SELECT') {
-                        // Cari option yang cocok
-                        const options = Array.from(input.options);
-                        const option = options.find(opt => opt.value === item.nilai || opt.text === item.nilai);
-                        if (option) {
-                           input.value = option.value;
-                           option.selected = true;
-                        }
-                     } else {
-                        input.value = item.nilai;
-                     }
-                  }
-                  
-                  if (checkbox) {
-                     console.log(`Force setting checked for ${key} to true`);
-                     checkbox.checked = true;
-                  }
-                  
-                  if (container) {
-                     console.log(`Force activating display for ${key}`);
-                     container.classList.add('active');
-                  }
-               }
-            });
-            
-            // Update UI
-            @this.lab = dbData;
-            
-            // Trigger Livewire update
-            setTimeout(() => {
-               @this.$refresh();
-            }, 500);
-            
-         } catch (e) {
-            console.error("Error parsing DB JSON:", e);
-         }
-         
-         // Re-run debug values
-         debugLabValues();
       });
    </script>
    @endpush

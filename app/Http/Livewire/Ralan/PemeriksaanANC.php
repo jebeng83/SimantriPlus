@@ -285,6 +285,114 @@ class PemeriksaanANC extends Component
                         $this->abortus = $dataIbuHamil->riwayat_keguguran ?? 0;
                         $this->hidup = $dataIbuHamil->jumlah_anak_hidup ?? 0;
                         
+                        // Cek apakah sudah ada data pemeriksaan ANC terakhir untuk no_rawat ini
+                        $existingExam = null;
+                        
+                        if ($this->noRawat) {
+                            // Pertama cek berdasarkan no_rawat
+                            $existingExam = DB::table('pemeriksaan_anc')
+                                ->where('no_rawat', $this->noRawat)
+                                ->orderBy('tanggal_anc', 'desc')
+                                ->first();
+                                
+                            if ($existingExam) {
+                                \Log::info('Ditemukan data pemeriksaan ANC untuk no_rawat ini', [
+                                    'no_rawat' => $this->noRawat,
+                                    'id_anc' => $existingExam->id_anc
+                                ]);
+                            }
+                        }
+                        
+                        // Jika tidak ditemukan berdasarkan no_rawat, cek berdasarkan id_hamil
+                        if (!$existingExam && $this->id_hamil) {
+                            \Log::info('Mencari data pemeriksaan ANC terakhir berdasarkan id_hamil', [
+                                'id_hamil' => $this->id_hamil
+                            ]);
+                            
+                            $existingExam = DB::table('pemeriksaan_anc')
+                                ->where('id_hamil', $this->id_hamil)
+                                ->orderBy('tanggal_anc', 'desc')
+                                ->first();
+                                
+                            if ($existingExam) {
+                                \Log::info('Ditemukan data pemeriksaan ANC terakhir berdasarkan id_hamil', [
+                                    'id_hamil' => $this->id_hamil,
+                                    'id_anc' => $existingExam->id_anc,
+                                    'tanggal' => $existingExam->tanggal_anc
+                                ]);
+                            } else {
+                                \Log::info('Tidak ditemukan data pemeriksaan ANC untuk id_hamil ini', [
+                                    'id_hamil' => $this->id_hamil
+                                ]);
+                            }
+                        }
+                        
+                        // Muat data lab jika ada data pemeriksaan
+                        if ($existingExam && !empty($existingExam->lab)) {
+                            try {
+                                \Log::info('Data lab dari database:', [
+                                    'raw_lab_data' => $existingExam->lab
+                                ]);
+                                
+                                // Cek apakah data JSON di-encoded dua kali
+                                $labData = null;
+                                $rawData = $existingExam->lab;
+                                
+                                // Coba decode pertama
+                                $firstDecode = json_decode($rawData, true);
+                                
+                                if (json_last_error() === JSON_ERROR_NONE) {
+                                    // Jika sukses, cek apakah hasilnya masih string (JSON di dalam JSON)
+                                    if (is_string($firstDecode)) {
+                                        \Log::info('Terdeteksi double JSON encoding, mencoba decode kedua kali', [
+                                            'first_decode' => $firstDecode
+                                        ]);
+                                        // Decode lagi
+                                        $labData = json_decode($firstDecode, true);
+                                    } else {
+                                        // Jika hasil decode pertama sudah array, gunakan langsung
+                                        $labData = $firstDecode;
+                                    }
+                                } else {
+                                    // Jika decode gagal, log error
+                                    \Log::error('Gagal decode data lab JSON', [
+                                        'error' => json_last_error_msg()
+                                    ]);
+                                    $labData = [];
+                                }
+                                
+                                if (is_array($labData) && !empty($labData)) {
+                                    \Log::info('Memuat data lab dari pemeriksaan yang ada', [
+                                        'id_anc' => $existingExam->id_anc,
+                                        'labData' => $labData
+                                    ]);
+                                    $this->lab = $labData;
+                                    
+                                    // Pastikan semua checkbox diaktifkan untuk lab yang memiliki nilai
+                                    foreach ($this->lab as $key => $value) {
+                                        if (isset($value['nilai']) && !empty($value['nilai'])) {
+                                            $this->lab[$key]['checked'] = true;
+                                            \Log::info("Mengaktifkan checkbox untuk lab $key dengan nilai: " . $value['nilai']);
+                                        }
+                                    }
+                                    
+                                    // Log status akhir lab setelah modifikasi
+                                    \Log::info('Status lab setelah diproses:', [
+                                        'lab' => $this->lab
+                                    ]);
+                                }
+                            } catch (\Exception $e) {
+                                \Log::error('Error saat decode data lab', [
+                                    'id_anc' => $existingExam->id_anc,
+                                    'lab' => $existingExam->lab,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        } else if ($existingExam) {
+                            \Log::info('Pemeriksaan ditemukan tetapi tidak ada data lab', [
+                                'id_anc' => $existingExam->id_anc
+                            ]);
+                        }
                     } else {
                         $this->validIbuHamil = false;
                         $this->errorMessage = "Pasien dengan nomor RM {$this->noRm} tidak terdaftar sebagai ibu hamil aktif di sistem. Silakan daftarkan terlebih dahulu.";
@@ -449,74 +557,85 @@ class PemeriksaanANC extends Component
     }
 
     /**
-     * Metode khusus untuk menangani update properti lab
+     * Handle updates ke properti lab
      */
     protected function handleLabPropertyUpdate($propertyName)
     {
-        \Log::info('Handling lab property update', ['property' => $propertyName]);
-        
-        // Parse properti lab dengan format lab.jenis.atribut
-        $parts = explode('.', $propertyName);
-        
-        if (count($parts) === 3) {
-            $jenis = $parts[1];
-            $atribut = $parts[2];
+        // Extract the property name from the wire:model binding (lab.*.*)
+        $matches = [];
+        if (preg_match('/^lab\.([^.]+)\.([^.]+)$/', $propertyName, $matches)) {
+            $labKey = $matches[1]; // e.g., 'hb', 'goldar', etc.
+            $labProperty = $matches[2]; // e.g., 'checked', 'nilai'
             
-            // Pastikan struktur lab sudah diinisialisasi dengan benar
-            if (!isset($this->lab)) {
-                $this->initLabProperty();
-            }
+            // Log untuk debugging
+            \Log::info("Handling lab property update", [
+                'key' => $labKey,
+                'property' => $labProperty,
+                'value' => data_get($this, $propertyName)
+            ]);
             
-            // Pastikan jenis pemeriksaan lab sudah diinisialisasi
-            if (!isset($this->lab[$jenis])) {
-                $this->lab[$jenis] = ['checked' => false, 'nilai' => null];
-                if ($jenis === 'lainnya') {
-                    $this->lab[$jenis]['nama'] = null;
+            // Hanya proses jika properti adalah 'nilai'
+            // Untuk properti 'checked', kita biarkan itu hanya mengontrol UI
+            if ($labProperty === 'nilai') {
+                $value = data_get($this, $propertyName);
+                
+                // Jika nilai kosong, jangan reset ke false/null
+                if ($value !== null && $value !== '') {
+                    \Log::info("Setting lab property value", [
+                        'key' => $labKey,
+                        'value' => $value
+                    ]);
+                } else {
+                    \Log::info("Empty lab property value, keeping existing", [
+                        'key' => $labKey
+                    ]);
                 }
             }
-            
-            // Ambil nilai dari $this->{$propertyName} dan simpan ke array lab
-            $value = null;
-            
-            // Gunakan registry untuk mengakses nilai karena dot notation tidak akan bekerja
-            if (isset($this->getPublicPropertiesDefinedBySubClass()[$propertyName])) {
-                $value = $this->getPublicPropertiesDefinedBySubClass()[$propertyName];
-            }
-            
-            // Update nilai berdasarkan atribut
-            if ($atribut === 'checked') {
-                $this->lab[$jenis]['checked'] = (bool) $value;
-            } else if ($atribut === 'nilai') {
-                $this->lab[$jenis]['nilai'] = $value;
-            } else if ($atribut === 'nama' && $jenis === 'lainnya') {
-                $this->lab[$jenis]['nama'] = $value;
-            }
-            
-            \Log::info('Updated lab property', [
-                'jenis' => $jenis, 
-                'atribut' => $atribut, 
-                'value' => $value,
-                'lab_array' => $this->lab
-            ]);
         }
     }
 
     /**
-     * Inisialisasi properti lab
+     * Menginisialisasi properti lab dengan struktur yang konsisten
      */
     protected function initLabProperty()
     {
-        $this->lab = [
-            'hb' => ['checked' => false, 'nilai' => null],
-            'goldar' => ['checked' => false, 'nilai' => null],
-            'protein_urin' => ['checked' => false, 'nilai' => null],
-            'hiv' => ['checked' => false, 'nilai' => null],
-            'sifilis' => ['checked' => false, 'nilai' => null],
-            'hbsag' => ['checked' => false, 'nilai' => null],
-            'gula_darah' => ['checked' => false, 'nilai' => null],
-            'malaria' => ['checked' => false, 'nilai' => null],
-            'lainnya' => ['checked' => false, 'nama' => null, 'nilai' => null]
+        // Log untuk debugging
+        \Log::info('Menginisialisasi properti lab');
+        
+        // Struktur standar lab properti
+        $labProperties = [
+            'hb', 'goldar', 'gula_darah', 'protein_urin', 'hiv', 'sifilis', 'hbsag', 'malaria'
         ];
+        
+        // Jika lab belum diinisialisasi atau bukan array
+        if (!is_array($this->lab)) {
+            $this->lab = [];
+            \Log::info('Lab properti diinisialisasi sebagai array kosong');
+        }
+        
+        // Pastikan setiap properti lab memiliki struktur yang benar
+        foreach ($labProperties as $property) {
+            if (!isset($this->lab[$property]) || !is_array($this->lab[$property])) {
+                $this->lab[$property] = [
+                    'checked' => false,
+                    'nilai' => null
+                ];
+                \Log::info("Lab properti $property diinisialisasi");
+            } else {
+                // Pastikan setiap properti lab memiliki kunci checked dan nilai
+                if (!array_key_exists('checked', $this->lab[$property])) {
+                    $this->lab[$property]['checked'] = false;
+                    \Log::info("Lab properti $property.checked diinisialisasi ke false");
+                }
+                
+                if (!array_key_exists('nilai', $this->lab[$property])) {
+                    $this->lab[$property]['nilai'] = null;
+                    \Log::info("Lab properti $property.nilai diinisialisasi ke null");
+                }
+            }
+        }
+        
+        \Log::info('Struktur lab setelah inisialisasi', ['lab' => $this->lab]);
     }
     
     /**
@@ -657,6 +776,12 @@ class PemeriksaanANC extends Component
             } else {
                 $this->kategori_imt = 'OBESITAS';
             }
+
+            // Dispatch event untuk memberitahu browser bahwa data telah berubah
+            $this->dispatchBrowserEvent('imt-updated', [
+                'imt' => $this->imt,
+                'kategori' => $this->kategori_imt
+            ]);
         }
     }
     
@@ -672,6 +797,11 @@ class PemeriksaanANC extends Component
             } else {
                 $this->status_gizi = 'Normal';
             }
+            
+            // Dispatch event untuk memberitahu browser bahwa data telah berubah
+            $this->dispatchBrowserEvent('status-gizi-updated', [
+                'status' => $this->status_gizi
+            ]);
         }
     }
 
@@ -694,6 +824,11 @@ class PemeriksaanANC extends Component
             } else {
                 $this->taksiran_berat_janin = 0;
             }
+            
+            // Dispatch event untuk memberitahu browser bahwa data telah berubah
+            $this->dispatchBrowserEvent('tbj-updated', [
+                'tbj' => $this->taksiran_berat_janin
+            ]);
         } else {
             $this->taksiran_berat_janin = 0;
         }
@@ -751,6 +886,15 @@ class PemeriksaanANC extends Component
             session()->flash('success', $message);
             $this->emit('formSaved');
             
+            // Tampilkan SweetAlert untuk sukses
+            $this->dispatchBrowserEvent('swal:success', [
+                'type' => 'success',
+                'title' => 'Berhasil!',
+                'text' => $message,
+                'timer' => 3000,
+                'showConfirmButton' => false,
+            ]);
+            
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Error saving ANC data', [
@@ -759,6 +903,14 @@ class PemeriksaanANC extends Component
             ]);
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
             $this->emit('showError', $e->getMessage());
+            
+            // Tampilkan SweetAlert untuk error
+            $this->dispatchBrowserEvent('swal:error', [
+                'type' => 'error',
+                'title' => 'Error!',
+                'text' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'confirmButtonText' => 'OK',
+            ]);
         }
     }
     
@@ -819,6 +971,9 @@ class PemeriksaanANC extends Component
             'jenis_tatalaksana' => $this->jenis_tatalaksana,
             'hasil_pemeriksaan_hb' => isset($this->lab['hb']['nilai']) ? $this->lab['hb']['nilai'] : null,
             'hasil_pemeriksaan_urine_protein' => isset($this->lab['protein_urin']['nilai']) ? $this->lab['protein_urin']['nilai'] : null,
+            'hasil_tes_hiv' => $this->hasil_tes_hiv,
+            'hasil_tes_sifilis' => isset($this->lab['sifilis']['nilai']) ? $this->lab['sifilis']['nilai'] : null,
+            'hasil_tes_hbsag' => isset($this->lab['hbsag']['nilai']) ? $this->lab['hbsag']['nilai'] : null,
             'imunisasi_tt' => $this->status_tt, // Memetakan status_tt ke imunisasi_tt
             'pemberian_mt' => $this->pemberian_mt ?? '-',
             'jumlah_mt' => $this->jumlah_mt ?? 0,
@@ -1142,6 +1297,11 @@ class PemeriksaanANC extends Component
         $riwayat = collect([]);
         $petugas = collect([]);
         $riwayatByIdHamil = collect([]);
+        
+        // Debug lab data untuk JavaScript console
+        $this->dispatchBrowserEvent('debug-lab-data', [
+            'lab_data' => $this->lab
+        ]);
         
         try {
             // Ambil data petugas dengan kd_jbtn j008
@@ -1831,5 +1991,221 @@ class PemeriksaanANC extends Component
     public function updateRiwayatPenyakit($key, $value)
     {
         $this->riwayat_penyakit[$key] = $value;
+    }
+
+    /**
+     * Mendapatkan data lab dalam format yang lebih mudah dibaca
+     */
+    public function getFormattedLabData($jsonData)
+    {
+        try {
+            // Decode JSON data
+            $data = json_decode($jsonData, true);
+            if (!$data || !is_array($data)) {
+                return 'Tidak ada data lab';
+            }
+            
+            // Format data dalam bentuk yang lebih mudah dibaca
+            $formattedData = [];
+            
+            foreach ($data as $key => $item) {
+                if (isset($item['checked']) && $item['checked'] && isset($item['nilai']) && $item['nilai']) {
+                    $label = $this->getLabLabel($key);
+                    $formattedData[] = "$label: " . $item['nilai'];
+                }
+            }
+            
+            if (empty($formattedData)) {
+                return 'Tidak ada hasil lab yang tercatat';
+            }
+            
+            return implode(', ', $formattedData);
+        } catch (\Exception $e) {
+            \Log::error('Error formatting lab data', [
+                'data' => $jsonData,
+                'error' => $e->getMessage()
+            ]);
+            return 'Error: Data lab tidak valid';
+        }
+    }
+
+    /**
+     * Mendapatkan label yang lebih manusiawi untuk jenis pemeriksaan lab
+     */
+    private function getLabLabel($key)
+    {
+        $labels = [
+            'hb' => 'Hemoglobin',
+            'goldar' => 'Golongan Darah',
+            'protein_urin' => 'Protein Urin',
+            'hiv' => 'HIV',
+            'sifilis' => 'Sifilis',
+            'hbsag' => 'HBsAg',
+            'gula_darah' => 'Gula Darah',
+            'malaria' => 'Malaria',
+            'lainnya' => 'Lainnya'
+        ];
+        
+        return $labels[$key] ?? ucfirst($key);
+    }
+
+    /**
+     * Menampilkan hasil pemeriksaan lab dari data JSON
+     */
+    public function displayLabResults($jsonString)
+    {
+        // Log string JSON untuk debugging
+        \Log::info('JSON Lab Data Received', ['jsonString' => $jsonString]);
+        
+        // Jika input adalah array, dump untuk debugging
+        if (is_array($jsonString)) {
+            // Error: parameter kedua harus array, bukan string
+            // Perbaiki format parameter logging
+            \Log::info('Input adalah array, detail isi:', ['data' => json_encode($jsonString, JSON_PRETTY_PRINT)]);
+            
+            // Cek nilai untuk setiap elemen lab
+            foreach ($jsonString as $key => $item) {
+                $nilai = isset($item['nilai']) ? $item['nilai'] : 'null';
+                $checked = isset($item['checked']) && $item['checked'] ? 'true' : 'false';
+                \Log::info("Elemen lab[$key] info", [
+                    'nilai' => $nilai,
+                    'checked' => $checked
+                ]);
+            }
+        }
+        
+        $output = '<div class="table-responsive">';
+        $output .= '<table class="table table-bordered table-striped">';
+        $output .= '<thead class="thead-light">';
+        $output .= '<tr>';
+        $output .= '<th width="40%">Jenis Pemeriksaan</th>';
+        $output .= '<th width="30%">Hasil</th>';
+        $output .= '<th width="30%">Satuan/Keterangan</th>';
+        $output .= '</tr>';
+        $output .= '</thead>';
+        $output .= '<tbody>';
+        
+        try {
+            // Jika jsonString sudah dalam bentuk array/object
+            if (is_array($jsonString) || is_object($jsonString)) {
+                $labData = $jsonString;
+                \Log::info('Input adalah array/object, menggunakan langsung');
+            } else {
+                // Coba decode JSON string
+                if (empty($jsonString) || $jsonString === 'null' || $jsonString === '[]') {
+                    \Log::info('Empty JSON data received');
+                    $labData = [];
+                } else {
+                    \Log::info('Attempting to decode JSON', ['data' => $jsonString]);
+                    $labData = json_decode($jsonString, true);
+                    
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \Log::error('JSON Decode Error', [
+                            'error' => json_last_error_msg(),
+                            'jsonString' => $jsonString
+                        ]);
+                        return '<div class="alert alert-warning">Format data lab tidak valid: ' . json_last_error_msg() . '</div>';
+                    }
+                }
+            }
+            
+            \Log::info('Decoded Lab Data', ['labData' => $labData]);
+            
+            $hasResults = false;
+            
+            if (empty($labData)) {
+                \Log::warning('Lab data is empty after decoding');
+                $output .= '<tr><td colspan="3" class="text-center text-muted">Tidak ada data lab yang tersedia</td></tr>';
+            } else {
+                foreach ($labData as $key => $item) {
+                    \Log::info('Processing lab item', ['key' => $key, 'item' => $item]);
+                    
+                    // Periksa apakah nilai tersedia dan tidak kosong, TERLEPAS dari status checked
+                    if (isset($item['nilai']) && $item['nilai'] !== '' && $item['nilai'] !== null) {
+                        $hasResults = true;
+                        $label = $this->getLabLabel($key);
+                        
+                        // Format nilai berdasarkan jenis lab
+                        $nilai = $item['nilai'];
+                        
+                        // Tentukan satuan berdasarkan jenis lab
+                        $satuan = '';
+                        if ($key === 'hb') {
+                            $satuan = 'g/dL';
+                        } elseif ($key === 'gula_darah') {
+                            $satuan = 'mg/dL';
+                        }
+                        
+                        // Tambahkan class warna berdasarkan hasil
+                        $rowClass = '';
+                        $badgeHtml = '';
+                        
+                        if (in_array($key, ['hiv', 'sifilis', 'hbsag']) && 
+                            (strtolower($nilai) === 'reaktif' || strtolower($nilai) === 'positif')) {
+                            $rowClass = 'table-danger';
+                            $badgeHtml = '<span class="badge badge-danger">Perlu Perhatian</span>';
+                        } elseif ($key === 'malaria' && strtolower($nilai) === 'positif') {
+                            $rowClass = 'table-warning';
+                            $badgeHtml = '<span class="badge badge-warning">Perlu Perhatian</span>';
+                        } elseif ($key === 'protein_urin' && in_array(strtolower($nilai), ['positif', '+1', '+2', '+3', '+4'])) {
+                            $rowClass = 'table-warning';
+                            $badgeHtml = '<span class="badge badge-warning">Perlu Perhatian</span>';
+                        }
+                        
+                        $output .= "<tr class=\"{$rowClass}\">";
+                        $output .= "<td><strong>{$label}</strong></td>";
+                        $output .= "<td>{$nilai}</td>";
+                        $output .= "<td>{$satuan} {$badgeHtml}</td>";
+                        $output .= '</tr>';
+                        
+                        \Log::info("Menambahkan baris untuk lab", [
+                            'label' => $label,
+                            'nilai' => $nilai
+                        ]);
+                    } else {
+                        \Log::info("Mengabaikan lab", [
+                            'key' => $key,
+                            'nilai_tersedia' => isset($item['nilai']),
+                            'nilai_value' => isset($item['nilai']) ? $item['nilai'] : 'undefined'
+                        ]);
+                    }
+                }
+                
+                if (!$hasResults) {
+                    \Log::info('Has Lab Results', ['hasResults' => $hasResults]);
+                    $output .= '<tr><td colspan="3" class="text-center text-muted">Tidak ada hasil lab yang tercatat</td></tr>';
+                }
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('Error processing lab results', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $output .= '<tr><td colspan="3" class="text-center text-danger">Error: ' . $e->getMessage() . '</td></tr>';
+        }
+        
+        $output .= '</tbody>';
+        $output .= '</table>';
+        $output .= '</div>';
+        
+        return $output;
+    }
+
+    /**
+     * Getter lab property untuk debugging dari JavaScript
+     */
+    public function getLabProperty()
+    {
+        return $this->lab;
+    }
+    
+    /**
+     * Method untuk force refresh lab property
+     */
+    public function refreshLabProperty()
+    {
+        \Log::info('Refresh lab property dipanggil dari JavaScript');
+        return $this->lab;
     }
 }
