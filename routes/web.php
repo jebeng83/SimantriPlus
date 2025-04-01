@@ -153,6 +153,9 @@ Route::middleware(['loginauth'])->group(function () {
         Route::delete('/obat/{noResep}/{kdObat}', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'hapusObat']);
     });
     
+    // Route untuk Partograf
+    Route::get('/partograf-klasik/{id_hamil}', [App\Http\Controllers\PartografController::class, 'showKlasik'])->name('partograf.klasik');
+    
     // Route menu ILP
     Route::prefix('ilp')->name('ilp.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard');

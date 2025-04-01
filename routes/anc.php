@@ -4,6 +4,7 @@ use App\Http\Controllers\ANC\DataIbuHamilController;
 use App\Http\Controllers\ANC\DataBalitaSakitController;
 use App\Http\Controllers\ANC\DataRematriController;
 use App\Http\Controllers\ANC\DataIbuNifasController;
+use App\Http\Controllers\ANC\PartografController;
 
 Route::prefix('anc')->name('anc.')->group(function () {
     // Data Ibu Hamil Routes
@@ -11,6 +12,11 @@ Route::prefix('anc')->name('anc.')->group(function () {
     Route::get('data-ibu-hamil/get-data-pasien/{nik}', [DataIbuHamilController::class, 'getDataPasien'])->name('data-ibu-hamil.get-data-pasien');
     Route::get('data-ibu-hamil/{id}/edit', [DataIbuHamilController::class, 'edit'])->name('data-ibu-hamil.edit');
     Route::get('data-ibu-hamil/{id}/detail', [DataIbuHamilController::class, 'detail'])->name('data-ibu-hamil.detail');
+    
+    // Partograf Routes
+    Route::resource('partograf', PartografController::class);
+    Route::get('partograf/pasien/{id_hamil}', [PartografController::class, 'showByIdHamil'])->name('partograf.by-id-hamil');
+    Route::get('partograf/export/{id}', [PartografController::class, 'exportPdf'])->name('partograf.export');
     
     // Data Balita Sakit Routes
     Route::resource('data-balita-sakit', DataBalitaSakitController::class);
