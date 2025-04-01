@@ -1,0 +1,1379 @@
+<div>
+   <x-adminlte-card title="Partograf (WHO Labour Care Guide)" icon="fas fa-chart-line" theme="primary" maximizable>
+      <style>
+         .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+         }
+
+         #partografChart {
+            display: block;
+            height: 100%;
+            width: 100%;
+         }
+      </style>
+
+      @if(isset($dataIbuHamil) && $dataIbuHamil)
+      <div class="partograf-container">
+         <div class="row mb-4">
+            <div class="col-md-12">
+               <div class="alert alert-info">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  <strong>Partograf:</strong> {{ $dataIbuHamil->nama }} (ID Hamil: {{ $dataIbuHamil->id_hamil }})
+               </div>
+            </div>
+         </div>
+
+         <ul class="nav nav-tabs" id="partografTab" role="tablist">
+            <li class="nav-item">
+               <a class="nav-link active" id="data-tab" data-toggle="tab" href="#data-content" role="tab"
+                  aria-controls="data-content" aria-selected="true">
+                  <i class="fas fa-file-medical mr-1"></i> Data Partograf
+               </a>
+            </li>
+            <li class="nav-item">
+               <a class="nav-link" id="grafik-tab" data-toggle="tab" href="#grafik-content" role="tab"
+                  aria-controls="grafik-content" aria-selected="false">
+                  <i class="fas fa-chart-line mr-1"></i> Grafik Partograf
+               </a>
+            </li>
+            <li class="nav-item">
+               <a class="nav-link" id="riwayat-tab" data-toggle="tab" href="#riwayat-content" role="tab"
+                  aria-controls="riwayat-content" aria-selected="false">
+                  <i class="fas fa-history mr-1"></i> Riwayat
+               </a>
+            </li>
+         </ul>
+
+         <div class="tab-content p-3 border border-top-0 rounded-bottom" id="partografTabContent">
+            <div class="tab-pane fade show active" id="data-content" role="tabpanel" aria-labelledby="data-tab">
+               <form wire:submit.prevent="savePartograf">
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">1. Informasi Persalinan Awal</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="paritas">Paritas</label>
+                                 <select class="form-control" id="paritas" wire:model="partograf.paritas">
+                                    <option value="">Pilih Paritas</option>
+                                    <option value="Primigravida">Primigravida</option>
+                                    <option value="Multigravida">Multigravida</option>
+                                 </select>
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="onset_persalinan">Onset Persalinan</label>
+                                 <select class="form-control" id="onset_persalinan"
+                                    wire:model="partograf.onset_persalinan">
+                                    <option value="">Pilih Onset</option>
+                                    <option value="Spontan">Spontan</option>
+                                    <option value="Induksi">Induksi</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="waktu_pecah_ketuban">Waktu Pecah Ketuban</label>
+                                 <input type="datetime-local" class="form-control" id="waktu_pecah_ketuban"
+                                    wire:model="partograf.waktu_pecah_ketuban">
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="faktor_risiko">Faktor Risiko</label>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="hipertensi"
+                                       wire:model="faktorRisiko.hipertensi">
+                                    <label class="form-check-label" for="hipertensi">Hipertensi</label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="preeklampsia"
+                                       wire:model="faktorRisiko.preeklampsia">
+                                    <label class="form-check-label" for="preeklampsia">Preeklampsia</label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="diabetes"
+                                       wire:model="faktorRisiko.diabetes">
+                                    <label class="form-check-label" for="diabetes">Diabetes</label>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">2. Supportive Care</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label>Pendamping</label>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="pendamping_y"
+                                       wire:model="partograf.pendamping" value="Y">
+                                    <label class="form-check-label" for="pendamping_y">Ya</label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="pendamping_n"
+                                       wire:model="partograf.pendamping" value="N">
+                                    <label class="form-check-label" for="pendamping_n">Tidak</label>
+                                 </div>
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label>Mobilitas</label>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="mobilitas_y"
+                                       wire:model="partograf.mobilitas" value="Y">
+                                    <label class="form-check-label" for="mobilitas_y">Ya</label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="mobilitas_n"
+                                       wire:model="partograf.mobilitas" value="N">
+                                    <label class="form-check-label" for="mobilitas_n">Tidak</label>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="manajemen_nyeri">Manajemen Nyeri</label>
+                                 <select class="form-control" id="manajemen_nyeri"
+                                    wire:model="partograf.manajemen_nyeri">
+                                    <option value="">Pilih Metode</option>
+                                    <option value="Farmakologis">Farmakologis</option>
+                                    <option value="Non-Farmakologis">Non-Farmakologis</option>
+                                    <option value="Kombinasi">Kombinasi</option>
+                                 </select>
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="intake_cairan">Intake Cairan</label>
+                                 <select class="form-control" id="intake_cairan" wire:model="partograf.intake_cairan">
+                                    <option value="">Pilih Intake</option>
+                                    <option value="Oral">Oral</option>
+                                    <option value="Intravena">Intravena</option>
+                                    <option value="Kombinasi">Kombinasi</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">3. Informasi Janin</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="denyut_jantung_janin">Denyut Jantung Janin (bpm)</label>
+                                 <input type="number" class="form-control" id="denyut_jantung_janin"
+                                    wire:model="partograf.denyut_jantung_janin">
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="kondisi_cairan_ketuban">Kondisi Cairan Ketuban</label>
+                                 <select class="form-control" id="kondisi_cairan_ketuban"
+                                    wire:model="partograf.kondisi_cairan_ketuban">
+                                    <option value="">Pilih Kondisi</option>
+                                    <option value="I">Intact (I)</option>
+                                    <option value="C">Clear (C)</option>
+                                    <option value="M">Meconium (M)</option>
+                                    <option value="B">Blood-stained (B)</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="presentasi_janin">Presentasi Janin</label>
+                                 <select class="form-control" id="presentasi_janin"
+                                    wire:model="partograf.presentasi_janin">
+                                    <option value="">Pilih Presentasi</option>
+                                    <option value="A">Occiput Anterior (A)</option>
+                                    <option value="P">Occiput Posterior (P)</option>
+                                    <option value="T">Occiput Transverse (T)</option>
+                                 </select>
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="bentuk_kepala_janin">Bentuk Kepala Janin</label>
+                                 <select class="form-control" id="bentuk_kepala_janin"
+                                    wire:model="partograf.bentuk_kepala_janin">
+                                    <option value="">Pilih Bentuk</option>
+                                    <option value="0">Normal (0)</option>
+                                    <option value="1">Sedikit Molding (+)</option>
+                                    <option value="2">Molding Sedang (++)</option>
+                                    <option value="3">Molding Berat (+++)</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">4. Informasi Ibu</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-4">
+                              <div class="form-group">
+                                 <label for="nadi">Nadi (bpm)</label>
+                                 <input type="number" class="form-control" id="nadi" wire:model="partograf.nadi">
+                              </div>
+                           </div>
+                           <div class="col-md-4">
+                              <div class="form-group">
+                                 <label for="tekanan_darah_sistole">Tekanan Darah Sistole (mmHg)</label>
+                                 <input type="number" class="form-control" id="tekanan_darah_sistole"
+                                    wire:model="partograf.tekanan_darah_sistole">
+                              </div>
+                           </div>
+                           <div class="col-md-4">
+                              <div class="form-group">
+                                 <label for="tekanan_darah_diastole">Tekanan Darah Diastole (mmHg)</label>
+                                 <input type="number" class="form-control" id="tekanan_darah_diastole"
+                                    wire:model="partograf.tekanan_darah_diastole">
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="suhu">Suhu (°C)</label>
+                                 <input type="number" step="0.1" class="form-control" id="suhu"
+                                    wire:model="partograf.suhu">
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="urine_output">Urine Output (ml)</label>
+                                 <input type="number" class="form-control" id="urine_output"
+                                    wire:model="partograf.urine_output">
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">5. Proses Persalinan</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="frekuensi_kontraksi">Frekuensi Kontraksi (per 10 menit)</label>
+                                 <input type="number" class="form-control" id="frekuensi_kontraksi"
+                                    wire:model="partograf.frekuensi_kontraksi">
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="durasi_kontraksi">Durasi Kontraksi (detik)</label>
+                                 <input type="number" class="form-control" id="durasi_kontraksi"
+                                    wire:model="partograf.durasi_kontraksi">
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="dilatasi_serviks">Dilatasi Serviks (cm)</label>
+                                 <input type="number" class="form-control" id="dilatasi_serviks"
+                                    wire:model="partograf.dilatasi_serviks">
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="penurunan_posisi_janin">Penurunan Posisi Janin</label>
+                                 <select class="form-control" id="penurunan_posisi_janin"
+                                    wire:model="partograf.penurunan_posisi_janin">
+                                    <option value="">Pilih Penurunan</option>
+                                    <option value="-5">-5</option>
+                                    <option value="-4">-4</option>
+                                    <option value="-3">-3</option>
+                                    <option value="-2">-2</option>
+                                    <option value="-1">-1</option>
+                                    <option value="0">0</option>
+                                    <option value="+1">+1</option>
+                                    <option value="+2">+2</option>
+                                    <option value="+3">+3</option>
+                                    <option value="+4">+4</option>
+                                    <option value="+5">+5</option>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">6. Pengobatan</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="form-group">
+                                 <label for="obat_dan_dosis">Obat dan Dosis</label>
+                                 <textarea class="form-control" id="obat_dan_dosis" rows="3"
+                                    wire:model="partograf.obat_dan_dosis"></textarea>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="form-group">
+                                 <label for="cairan_infus">Cairan Infus</label>
+                                 <textarea class="form-control" id="cairan_infus" rows="2"
+                                    wire:model="partograf.cairan_infus"></textarea>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="card mb-3">
+                     <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">7. Perencanaan</h5>
+                     </div>
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="tindakan_yang_direncanakan">Tindakan yang Direncanakan</label>
+                                 <textarea class="form-control" id="tindakan_yang_direncanakan" rows="3"
+                                    wire:model="partograf.tindakan_yang_direncanakan"></textarea>
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <div class="form-group">
+                                 <label for="hasil_tindakan">Hasil Tindakan</label>
+                                 <textarea class="form-control" id="hasil_tindakan" rows="3"
+                                    wire:model="partograf.hasil_tindakan"></textarea>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-md-12">
+                              <div class="form-group">
+                                 <label for="keputusan_bersama">Keputusan Bersama</label>
+                                 <textarea class="form-control" id="keputusan_bersama" rows="2"
+                                    wire:model="partograf.keputusan_bersama"></textarea>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="row">
+                     <div class="col-md-12">
+                        <button type="submit" class="btn btn-success btn-block">
+                           <i class="fas fa-save mr-1"></i> Simpan Partograf
+                        </button>
+                     </div>
+                  </div>
+               </form>
+            </div>
+
+            <div class="tab-pane fade" id="grafik-content" role="tabpanel" aria-labelledby="grafik-tab">
+               <div class="row">
+                  <div class="col-md-12 mb-3">
+                     <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Grafik partograf menunjukkan perkembangan persalinan. Data diambil dari entri partograf
+                        terakhir.
+                     </div>
+                  </div>
+               </div>
+               <div class="row">
+                  <div class="col-md-12">
+                     <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                           <h5 class="mb-0">Grafik Partograf</h5>
+                        </div>
+                        <div class="card-body text-center">
+                           <p class="mb-3">Grafik partograf akan ditampilkan dalam jendela terpisah dengan tampilan
+                              layar penuh untuk visualisasi yang lebih baik.</p>
+                           <button type="button" class="btn btn-lg btn-primary" id="bukaPartograf" onclick="(function(){
+                              console.log('Membuka modal partograf dengan Bootstrap');
+                              try {
+                                 if (typeof jQuery === 'undefined') {
+                                    alert('jQuery tidak tersedia!');
+                                    return;
+                                 }
+                                 if (typeof jQuery.fn.modal === 'undefined') {
+                                    alert('Bootstrap modal tidak tersedia!');
+                                    return;
+                                 }
+                                 jQuery('#partografFullscreenModal').modal('show');
+                                 jQuery('#partografFullscreenModal').on('shown.bs.modal', function() {
+                                    setTimeout(function() {
+                                       if (typeof Chart === 'undefined') {
+                                          alert('Chart.js tidak tersedia!');
+                                          return;
+                                       }
+                                       console.log('Membuat grafik partograf setelah modal terbuka');
+                                       try {
+                                          // Reset canvas terlebih dahulu
+                                          var container = document.querySelector('#partografFullscreenModal .chart-container');
+                                          if (!container) {
+                                             console.error('Container chart tidak ditemukan');
+                                             return;
+                                          }
+                                          
+                                          var oldCanvas = document.getElementById('partografChartFullscreen');
+                                          if (oldCanvas) {
+                                             if (window.partografChart) {
+                                                window.partografChart.destroy();
+                                                window.partografChart = null;
+                                             }
+                                             container.removeChild(oldCanvas);
+                                          }
+                                          
+                                          var newCanvas = document.createElement('canvas');
+                                          newCanvas.id = 'partografChartFullscreen';
+                                          container.appendChild(newCanvas);
+                                          
+                                          // Buat grafik
+                                          var canvas = document.getElementById('partografChartFullscreen');
+                                          if (!canvas) {
+                                             console.error('Canvas tidak ditemukan');
+                                             return;
+                                          }
+                                          
+                                          var ctx = canvas.getContext('2d');
+                                          if (!ctx) {
+                                             console.error('Context tidak dapat diambil');
+                                             return;
+                                          }
+                                          
+                                          window.partografChart = new Chart(ctx, {
+                                             type: 'line',
+                                             data: {
+                                                labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+                                                datasets: [
+                                                   {
+                                                      label: 'Dilatasi Serviks',
+                                                      data: [2, 3, null, 5, 7, 8, null, null, null, null, null, null, null],
+                                                      borderColor: 'rgb(54, 162, 235)',
+                                                      backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                                      borderWidth: 3,
+                                                      pointRadius: 6,
+                                                      pointHoverRadius: 8,
+                                                      fill: false,
+                                                      tension: 0.1
+                                                   },
+                                                   {
+                                                      label: 'Garis Alert',
+                                                      data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null],
+                                                      borderColor: 'rgb(255, 159, 64)',
+                                                      borderDash: [5, 5],
+                                                      pointRadius: 0,
+                                                      fill: false
+                                                   },
+                                                   {
+                                                      label: 'Garis Action',
+                                                      data: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, null],
+                                                      borderColor: 'rgb(255, 99, 132)',
+                                                      borderDash: [5, 5],
+                                                      pointRadius: 0,
+                                                      fill: false
+                                                   }
+                                                ]
+                                             },
+                                             options: {
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                animation: false,
+                                                plugins: {
+                                                   title: {
+                                                      display: true,
+                                                      text: 'Grafik Partograf - Dilatasi Serviks'
+                                                   }
+                                                },
+                                                scales: {
+                                                   x: {
+                                                      title: {
+                                                         display: true,
+                                                         text: 'Waktu (jam)'
+                                                      }
+                                                   },
+                                                   y: {
+                                                      min: 0,
+                                                      max: 12,
+                                                      title: {
+                                                         display: true,
+                                                         text: 'Dilatasi Serviks (cm)'
+                                                      }
+                                                   }
+                                                }
+                                             }
+                                          });
+                                          
+                                          console.log('Grafik berhasil dibuat');
+                                          var statusElement = document.getElementById('chart-status-fullscreen');
+                                          if (statusElement) {
+                                             statusElement.textContent = 'Status: Grafik berhasil dibuat';
+                                          }
+                                       } catch (error) {
+                                          console.error('Error saat membuat grafik:', error);
+                                          alert('Terjadi kesalahan saat membuat grafik: ' + error.message);
+                                       }
+                                    }, 500);
+                                 });
+                              } catch (error) {
+                                 console.error('Error:', error);
+                                 alert('Terjadi kesalahan: ' + error.message);
+                              }
+                           })();">
+                              <i class="fas fa-chart-line mr-2"></i> Tampilkan Grafik Partograf
+                           </button>
+                           <button type="button" class="btn btn-lg btn-warning mt-2" id="bukaPartografAlt" onclick="(function(){
+                              console.log('Membuka modal partograf dengan JS Native');
+                              try {
+                                 var modal = document.getElementById('partografFullscreenModal');
+                                 if (!modal) {
+                                    alert('Modal tidak ditemukan!');
+                                    return;
+                                 }
+                                 var backdrop = document.createElement('div');
+                                 backdrop.className = 'modal-backdrop-js';
+                                 backdrop.id = 'modalBackdropJS';
+                                 document.body.appendChild(backdrop);
+                                 modal.style.display = 'block';
+                                 modal.classList.add('show-js');
+                                 document.body.classList.add('modal-open');
+                                 document.body.style.overflow = 'hidden';
+                                 setTimeout(function() {
+                                    if (typeof Chart === 'undefined') {
+                                       alert('Chart.js tidak tersedia!');
+                                       return;
+                                    }
+                                    console.log('Membuat grafik partograf setelah modal terbuka');
+                                    try {
+                                       // Reset canvas terlebih dahulu
+                                       var container = document.querySelector('#partografFullscreenModal .chart-container');
+                                       if (!container) {
+                                          console.error('Container chart tidak ditemukan');
+                                          return;
+                                       }
+                                       
+                                       var oldCanvas = document.getElementById('partografChartFullscreen');
+                                       if (oldCanvas) {
+                                          if (window.partografChart) {
+                                             window.partografChart.destroy();
+                                             window.partografChart = null;
+                                          }
+                                          container.removeChild(oldCanvas);
+                                       }
+                                       
+                                       var newCanvas = document.createElement('canvas');
+                                       newCanvas.id = 'partografChartFullscreen';
+                                       container.appendChild(newCanvas);
+                                       
+                                       // Buat grafik
+                                       var canvas = document.getElementById('partografChartFullscreen');
+                                       if (!canvas) {
+                                          console.error('Canvas tidak ditemukan');
+                                          return;
+                                       }
+                                       
+                                       var ctx = canvas.getContext('2d');
+                                       if (!ctx) {
+                                          console.error('Context tidak dapat diambil');
+                                          return;
+                                       }
+                                       
+                                       window.partografChart = new Chart(ctx, {
+                                          type: 'line',
+                                          data: {
+                                             labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+                                             datasets: [
+                                                {
+                                                   label: 'Dilatasi Serviks',
+                                                   data: [2, 3, null, 5, 7, 8, null, null, null, null, null, null, null],
+                                                   borderColor: 'rgb(54, 162, 235)',
+                                                   backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                                   borderWidth: 3,
+                                                   pointRadius: 6,
+                                                   pointHoverRadius: 8,
+                                                   fill: false,
+                                                   tension: 0.1
+                                                },
+                                                {
+                                                   label: 'Garis Alert',
+                                                   data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null],
+                                                   borderColor: 'rgb(255, 159, 64)',
+                                                   borderDash: [5, 5],
+                                                   pointRadius: 0,
+                                                   fill: false
+                                                },
+                                                {
+                                                   label: 'Garis Action',
+                                                   data: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, null],
+                                                   borderColor: 'rgb(255, 99, 132)',
+                                                   borderDash: [5, 5],
+                                                   pointRadius: 0,
+                                                   fill: false
+                                                }
+                                             ]
+                                          },
+                                          options: {
+                                             responsive: true,
+                                             maintainAspectRatio: false,
+                                             animation: false,
+                                             plugins: {
+                                                title: {
+                                                   display: true,
+                                                   text: 'Grafik Partograf - Dilatasi Serviks'
+                                                }
+                                             },
+                                             scales: {
+                                                x: {
+                                                   title: {
+                                                      display: true,
+                                                      text: 'Waktu (jam)'
+                                                   }
+                                                },
+                                                y: {
+                                                   min: 0,
+                                                   max: 12,
+                                                   title: {
+                                                      display: true,
+                                                      text: 'Dilatasi Serviks (cm)'
+                                                   }
+                                                }
+                                             }
+                                          }
+                                       });
+                                       
+                                       console.log('Grafik berhasil dibuat');
+                                       var statusElement = document.getElementById('chart-status-fullscreen');
+                                       if (statusElement) {
+                                          statusElement.textContent = 'Status: Grafik berhasil dibuat';
+                                       }
+                                    } catch (error) {
+                                       console.error('Error saat membuat grafik:', error);
+                                       alert('Terjadi kesalahan saat membuat grafik: ' + error.message);
+                                    }
+                                 }, 500);
+                              } catch (error) {
+                                 console.error('Error:', error);
+                                 alert('Terjadi kesalahan: ' + error.message);
+                              }
+                           })();" style="display: none;">
+                              <i class="fas fa-chart-line mr-2"></i> Tampilkan Grafik (Alternatif)
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div class="row">
+                  <div class="col-md-12">
+                     <button type="button" class="btn btn-info" wire:click="exportPartograf">
+                        <i class="fas fa-file-pdf mr-1"></i> Ekspor PDF
+                     </button>
+                  </div>
+               </div>
+
+               <!-- Modal Partograf Fullscreen -->
+               <div class="modal fade" id="partografFullscreenModal" tabindex="-1" role="dialog"
+                  aria-labelledby="partografFullscreenModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-fullscreen" role="document">
+                     <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                           <h5 class="modal-title" id="partografFullscreenModalLabel">
+                              <i class="fas fa-chart-line mr-2"></i> Grafik Partograf
+                           </h5>
+                           <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                           </button>
+                        </div>
+                        <div class="modal-body">
+                           <div class="container-fluid">
+                              <div class="row mb-3">
+                                 <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                       <strong>Pasien:</strong> {{ isset($dataIbuHamil) ? $dataIbuHamil->nama : '' }}
+                                       {{ isset($dataIbuHamil) ? '(ID Hamil: '.$dataIbuHamil->id_hamil.')' : '' }}
+                                       <br>
+                                       <strong>Info:</strong> Grafik partograf menunjukkan perkembangan persalinan. Data
+                                       diambil dari entri partograf terakhir.
+                                    </div>
+                                    <div id="debug-log-area" class="alert alert-warning"
+                                       style="max-height: 150px; overflow-y: auto; display: none;">
+                                       <strong>Debug Log:</strong>
+                                       <div id="debug-log-content"></div>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div class="row">
+                                 <div class="col-md-12">
+                                    <div class="chart-container"
+                                       style="position: relative; height: 75vh; border: 2px solid #36A2EB; border-radius: 5px; background: white; padding: 20px;">
+                                       <canvas id="partografChartFullscreen"></canvas>
+                                    </div>
+                                    <div class="text-center mt-4">
+                                       <div id="chart-status-fullscreen" class="text-muted mb-3">Status: Menunggu
+                                          inisialisasi grafik...</div>
+                                       <div class="btn-toolbar justify-content-center">
+                                          <div class="btn-group mr-2">
+                                             <button type="button" class="btn btn-primary" id="buatChart" onclick="(function(){
+                                                console.log('Membuat grafik partograf dari tombol internal modal');
+                                                if (typeof Chart === 'undefined') {
+                                                   alert('Chart.js tidak tersedia!');
+                                                   return;
+                                                }
+                                                try {
+                                                   // Reset canvas terlebih dahulu
+                                                   var container = document.querySelector('#partografFullscreenModal .chart-container');
+                                                   if (!container) {
+                                                      console.error('Container chart tidak ditemukan');
+                                                      return;
+                                                   }
+                                                   
+                                                   var oldCanvas = document.getElementById('partografChartFullscreen');
+                                                   if (oldCanvas) {
+                                                      if (window.partografChart) {
+                                                         window.partografChart.destroy();
+                                                         window.partografChart = null;
+                                                      }
+                                                      container.removeChild(oldCanvas);
+                                                   }
+                                                   
+                                                   var newCanvas = document.createElement('canvas');
+                                                   newCanvas.id = 'partografChartFullscreen';
+                                                   container.appendChild(newCanvas);
+                                                   
+                                                   // Buat grafik
+                                                   var canvas = document.getElementById('partografChartFullscreen');
+                                                   if (!canvas) {
+                                                      console.error('Canvas tidak ditemukan');
+                                                      return;
+                                                   }
+                                                   
+                                                   var ctx = canvas.getContext('2d');
+                                                   if (!ctx) {
+                                                      console.error('Context tidak dapat diambil');
+                                                      return;
+                                                   }
+                                                   
+                                                   window.partografChart = new Chart(ctx, {
+                                                      type: 'line',
+                                                      data: {
+                                                         labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+                                                         datasets: [
+                                                            {
+                                                               label: 'Dilatasi Serviks',
+                                                               data: [2, 3, null, 5, 7, 8, null, null, null, null, null, null, null],
+                                                               borderColor: 'rgb(54, 162, 235)',
+                                                               backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                                               borderWidth: 3,
+                                                               pointRadius: 6,
+                                                               pointHoverRadius: 8,
+                                                               fill: false,
+                                                               tension: 0.1
+                                                            },
+                                                            {
+                                                               label: 'Garis Alert',
+                                                               data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null],
+                                                               borderColor: 'rgb(255, 159, 64)',
+                                                               borderDash: [5, 5],
+                                                               pointRadius: 0,
+                                                               fill: false
+                                                            },
+                                                            {
+                                                               label: 'Garis Action',
+                                                               data: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, null],
+                                                               borderColor: 'rgb(255, 99, 132)',
+                                                               borderDash: [5, 5],
+                                                               pointRadius: 0,
+                                                               fill: false
+                                                            }
+                                                         ]
+                                                      },
+                                                      options: {
+                                                         responsive: true,
+                                                         maintainAspectRatio: false,
+                                                         animation: false,
+                                                         plugins: {
+                                                            title: {
+                                                               display: true,
+                                                               text: 'Grafik Partograf - Dilatasi Serviks'
+                                                            }
+                                                         },
+                                                         scales: {
+                                                            x: {
+                                                               title: {
+                                                                  display: true,
+                                                                  text: 'Waktu (jam)'
+                                                               }
+                                                            },
+                                                            y: {
+                                                               min: 0,
+                                                               max: 12,
+                                                               title: {
+                                                                  display: true,
+                                                                  text: 'Dilatasi Serviks (cm)'
+                                                               }
+                                                            }
+                                                         }
+                                                      }
+                                                   });
+                                                   
+                                                   console.log('Grafik berhasil dibuat');
+                                                   var statusElement = document.getElementById('chart-status-fullscreen');
+                                                   if (statusElement) {
+                                                      statusElement.textContent = 'Status: Grafik berhasil dibuat';
+                                                   }
+                                                } catch (error) {
+                                                   console.error('Error saat membuat grafik:', error);
+                                                   alert('Terjadi kesalahan saat membuat grafik: ' + error.message);
+                                                }
+                                             })();">
+                                                <i class="fas fa-chart-line mr-1"></i> Tampilkan Grafik Partograf
+                                             </button>
+                                          </div>
+                                          <div class="btn-group mr-2">
+                                             <button type="button" class="btn btn-info" id="tampilPartografKlasik"
+                                                onclick="(function(){
+                                                console.log('Menampilkan partograf klasik');
+                                                var url = '{{ route('partograf.klasik', ['id_hamil' => isset($dataIbuHamil) ? $dataIbuHamil->id_hamil : 0]) }}';
+                                                window.open(url, '_blank', 'width=800,height=600');
+                                             })();">
+                                                <i class="fas fa-table mr-1"></i> Format Klasik
+                                             </button>
+                                          </div>
+                                          <div class="btn-group mr-2">
+                                             <button type="button" class="btn btn-info" id="tampilkanPartografModern"
+                                                onclick="(function(){
+                                                console.log('Menampilkan partograf modern');
+                                                document.getElementById('partograf-klasik').style.display = 'none';
+                                                document.getElementById('partograf-modern').style.display = 'block';
+                                             })();">
+                                                <i class="fas fa-chart-line mr-1"></i> Tampilan Modern
+                                             </button>
+                                          </div>
+                                          <div class="btn-group">
+                                             <button type="button" class="btn btn-success" id="eksporChart" onclick="(function(){
+                                                console.log('Mengekspor grafik...');
+                                                if (!window.partografChart) {
+                                                   alert('Tidak ada grafik untuk diekspor!');
+                                                   return;
+                                                }
+                                                try {
+                                                   var canvas = document.getElementById('partografChartFullscreen');
+                                                   var image = canvas.toDataURL('image/png');
+                                                   var link = document.createElement('a');
+                                                   link.href = image;
+                                                   link.download = 'partograf_' + new Date().toISOString().slice(0, 10) + '.png';
+                                                   document.body.appendChild(link);
+                                                   link.click();
+                                                   document.body.removeChild(link);
+                                                } catch (error) {
+                                                   console.error('Error:', error);
+                                                   alert('Gagal mengekspor grafik: ' + error.message);
+                                                }
+                                             })();">
+                                                <i class="fas fa-file-export mr-1"></i> Ekspor Gambar
+                                             </button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Tampilan Partograf Modern (Chart.js) -->
+                              <div id="partograf-modern" class="mt-4">
+                                 <div class="chart-container"
+                                    style="position: relative; height: 75vh; border: 2px solid #36A2EB; border-radius: 5px; background: white; padding: 20px;">
+                                    <canvas id="partografChartFullscreen"></canvas>
+                                 </div>
+                              </div>
+
+                              <!-- Tampilan Partograf Klasik (seperti gambar) -->
+                              <div id="partograf-klasik" class="mt-4"
+                                 style="display: none; background-color: white; padding: 20px;">
+                                 <div style="max-width: 1200px; margin: 0 auto;">
+                                    <div class="text-center mb-4">
+                                       <h3>LEMBAR PARTOGRAF</h3>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                       <div class="col-md-6">
+                                          <table class="table table-bordered">
+                                             <tr>
+                                                <td style="width: 120px;">No. Register</td>
+                                                <td style="width: 200px;">
+                                                   <div style="display: flex;">
+                                                      @for ($i = 0; $i < 8; $i++) <div
+                                                         style="width: 25px; height: 25px; border: 1px solid #000; text-align: center;">
+                                                   </div>
+                                                   @endfor
+                                       </div>
+                                       </td>
+                                       </tr>
+                                       <tr>
+                                          <td>No Puskesmas<br>Ketuban pecah</td>
+                                          <td>
+                                             <div style="display: flex; margin-bottom: 5px;">
+                                                @for ($i = 0; $i < 8; $i++) <div
+                                                   style="width: 25px; height: 25px; border: 1px solid #000; text-align: center;">
+                                             </div>
+                                             @endfor
+                                    </div>
+                                    <div>sejak jam ____________</div>
+                                    </td>
+                                    </tr>
+                                    </table>
+                                 </div>
+                                 <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                       <tr>
+                                          <td style="width: 120px;">Nama Ibu:</td>
+                                          <td>{{ isset($dataIbuHamil) ? $dataIbuHamil->nama : '_________________' }}
+                                          </td>
+                                       </tr>
+                                       <tr>
+                                          <td>Tanggal:</td>
+                                          <td>
+                                             <div class="row">
+                                                <div class="col-6">_________________</div>
+                                                <div class="col-6">mules sejak jam _________________</div>
+                                             </div>
+                                          </td>
+                                       </tr>
+                                       <tr>
+                                          <td>Umur:</td>
+                                          <td>
+                                             <div class="row">
+                                                <div class="col-3">_______</div>
+                                                <div class="col-3">G: _______</div>
+                                                <div class="col-3">P: _______</div>
+                                                <div class="col-3">A: _______</div>
+                                             </div>
+                                          </td>
+                                       </tr>
+                                    </table>
+                                 </div>
+                              </div>
+
+                              <!-- Denyut Jantung Janin -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div
+                                       style="writing-mode: vertical-rl; transform: rotate(180deg); height: 200px; text-align: center;">
+                                       Denyut<br>Jantung<br>Janin<br>(/ menit)
+                                    </div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 200px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                       <div style="position: absolute; left: -40px; top: 0;">200</div>
+                                       <div style="position: absolute; left: -40px; top: 20px;">190</div>
+                                       <div style="position: absolute; left: -40px; top: 40px;">180</div>
+                                       <div style="position: absolute; left: -40px; top: 60px;">170</div>
+                                       <div style="position: absolute; left: -40px; top: 80px;">160</div>
+                                       <div style="position: absolute; left: -40px; top: 100px;">150</div>
+                                       <div style="position: absolute; left: -40px; top: 120px;">140</div>
+                                       <div style="position: absolute; left: -40px; top: 140px;">130</div>
+                                       <div style="position: absolute; left: -40px; top: 160px;">120</div>
+                                       <div style="position: absolute; left: -40px; top: 180px;">110</div>
+                                       <div style="position: absolute; left: -40px; top: 200px;">100</div>
+                                       <div style="position: absolute; left: -40px; top: 220px;">90</div>
+                                       <div style="position: absolute; left: -40px; top: 240px;">80</div>
+
+                                       <!-- Data DJJ akan ditampilkan di sini -->
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Air ketuban dan penyusupan -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Air ketuban<br>Penyusupan</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 40px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                       <!-- Data air ketuban dan penyusupan akan ditampilkan di sini -->
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Dilatasi Serviks -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div
+                                       style="writing-mode: vertical-rl; transform: rotate(180deg); height: 200px; text-align: center;">
+                                       pembukaan serviks (cm)<br>Garis waspada & garis bertindak
+                                    </div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 200px; position: relative; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                       <!-- Garis Alert dan Action -->
+                                       <div
+                                          style="position: absolute; width: 100%; height: 1px; background-color: orange; top: 40px; transform: rotate(-15deg); transform-origin: left;">
+                                       </div>
+                                       <div
+                                          style="position: absolute; width: 100%; height: 1px; background-color: red; top: 80px; transform: rotate(-15deg); transform-origin: left;">
+                                       </div>
+
+                                       <!-- Label sumbu Y -->
+                                       <div style="position: absolute; left: -40px; top: 0;">10</div>
+                                       <div style="position: absolute; left: -40px; top: 20px;">9</div>
+                                       <div style="position: absolute; left: -40px; top: 40px;">8</div>
+                                       <div style="position: absolute; left: -40px; top: 60px;">7</div>
+                                       <div style="position: absolute; left: -40px; top: 80px;">6</div>
+                                       <div style="position: absolute; left: -40px; top: 100px;">5</div>
+                                       <div style="position: absolute; left: -40px; top: 120px;">4</div>
+                                       <div style="position: absolute; left: -40px; top: 140px;">3</div>
+                                       <div style="position: absolute; left: -40px; top: 160px;">2</div>
+                                       <div style="position: absolute; left: -40px; top: 180px;">1</div>
+
+                                       <!-- Label fasa -->
+                                       <div style="position: absolute; top: 40px; left: 60px;">L A T E N</div>
+                                       <div style="position: absolute; top: 100px; left: 240px;">A K T I F</div>
+
+                                       <!-- Data dilatasi serviks akan ditampilkan di sini -->
+                                    </div>
+
+                                    <!-- Label sumbu X -->
+                                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                                       <div>0</div>
+                                       <div>1</div>
+                                       <div>2</div>
+                                       <div>3</div>
+                                       <div>4</div>
+                                       <div>5</div>
+                                       <div>6</div>
+                                       <div>7</div>
+                                       <div>8</div>
+                                       <div>9</div>
+                                       <div>10</div>
+                                       <div>11</div>
+                                       <div>12</div>
+                                    </div>
+                                    <div class="text-center">waktu (jam)</div>
+                                 </div>
+                              </div>
+
+                              <!-- Kontraksi tiap 10 menit -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Kontraksi<br>tiap<br>10mnt</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 80px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                       <!-- Legenda -->
+                                       <div style="position: absolute; left: -40px; top: 0px;">5</div>
+                                       <div style="position: absolute; left: -40px; top: 20px;">4</div>
+                                       <div style="position: absolute; left: -40px; top: 40px;">3</div>
+                                       <div style="position: absolute; left: -40px; top: 60px;">2</div>
+                                       <div style="position: absolute; left: -40px; top: 80px;">1</div>
+
+                                       <!-- Keterangan -->
+                                       <div style="position: absolute; left: -100px; top: 0px;">≤20</div>
+                                       <div style="position: absolute; left: -100px; top: 20px;">20-40</div>
+                                       <div style="position: absolute; left: -100px; top: 60px;">≥40</div>
+
+                                       <!-- Data kontraksi akan ditampilkan di sini -->
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Oksitosin, Obat dan Cairan IV -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>oksitosin U/L<br>tetes/menit</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 40px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Obat dan<br>Cairan IV</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 40px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Tekanan Darah -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div
+                                       style="writing-mode: vertical-rl; transform: rotate(180deg); height: 200px; text-align: center;">
+                                       <span style="font-size: 8px;">•</span> Nadi<br>
+                                       <span style="font-size: 14px; margin-top: 5px;">↕</span> Tekanan Darah
+                                    </div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 200px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                       <!-- Legenda tekanan darah -->
+                                       <div style="position: absolute; left: -40px; top: 0px;">180</div>
+                                       <div style="position: absolute; left: -40px; top: 20px;">170</div>
+                                       <div style="position: absolute; left: -40px; top: 40px;">160</div>
+                                       <div style="position: absolute; left: -40px; top: 60px;">150</div>
+                                       <div style="position: absolute; left: -40px; top: 80px;">140</div>
+                                       <div style="position: absolute; left: -40px; top: 100px;">130</div>
+                                       <div style="position: absolute; left: -40px; top: 120px;">120</div>
+                                       <div style="position: absolute; left: -40px; top: 140px;">110</div>
+                                       <div style="position: absolute; left: -40px; top: 160px;">100</div>
+                                       <div style="position: absolute; left: -40px; top: 180px;">90</div>
+                                       <div style="position: absolute; left: -40px; top: 200px;">80</div>
+                                       <div style="position: absolute; left: -40px; top: 220px;">70</div>
+                                       <div style="position: absolute; left: -40px; top: 240px;">60</div>
+
+                                       <!-- Data tekanan darah dan nadi akan ditampilkan di sini -->
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <!-- Suhu, Urin -->
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Suhu</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 40px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Urin</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="row">
+                                       <div class="col-6">
+                                          <div style="display: flex; align-items: center;">
+                                             <div style="width: 80px;">Protein</div>
+                                             <div class="partograf-grid"
+                                                style="height: 20px; flex-grow: 1; background: repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                             </div>
+                                          </div>
+                                       </div>
+                                       <div class="col-6">
+                                          <div style="display: flex; align-items: center;">
+                                             <div style="width: 80px;">Aseton</div>
+                                             <div class="partograf-grid"
+                                                style="height: 20px; flex-grow: 1; background: repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div class="row mb-2">
+                                 <div class="col-2">
+                                    <div>Volume</div>
+                                 </div>
+                                 <div class="col-10">
+                                    <div class="partograf-grid"
+                                       style="height: 40px; background: repeating-linear-gradient(0deg, #ddd, #ddd 1px, transparent 1px, transparent 20px) repeating-linear-gradient(90deg, #ddd, #ddd 1px, transparent 1px, transparent 20px);">
+                                    </div>
+                                    <div>Minum :</div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="modal-footer">
+                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                     <button type="button" class="btn btn-warning" id="tutupModalAlt" onclick="(function(){
+                              console.log('Menutup modal...');
+                              try {
+                                 var modal = document.getElementById('partografFullscreenModal');
+                                 if (modal) {
+                                    modal.style.display = 'none';
+                                    modal.classList.remove('show-js');
+                                    document.body.classList.remove('modal-open');
+                                    document.body.style.overflow = '';
+                                 }
+                                 var backdrop = document.getElementById('modalBackdropJS');
+                                 if (backdrop) {
+                                    document.body.removeChild(backdrop);
+                                 }
+                              } catch (error) {
+                                 console.error('Error:', error);
+                              }
+                           })();">Tutup (Alternatif)</button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="tab-pane fade" id="riwayat-content" role="tabpanel" aria-labelledby="riwayat-tab">
+         <div class="row">
+            <div class="col-md-12">
+               <div class="table-responsive">
+                  <table class="table table-bordered table-striped">
+                     <thead class="thead-dark">
+                        <tr>
+                           <th>Tanggal & Jam</th>
+                           <th>Dilatasi</th>
+                           <th>DJJ</th>
+                           <th>Kontraksi</th>
+                           <th>Tensi</th>
+                           <th>Petugas</th>
+                           <th>Aksi</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        @if($riwayatPartograf && count($riwayatPartograf) > 0)
+                        @foreach($riwayatPartograf as $riwayat)
+                        <tr>
+                           <td>{{ is_object($riwayat) ? $riwayat->tanggal_partograf :
+                              $riwayat['tanggal_partograf'] }}</td>
+                           <td>{{ is_object($riwayat) ? $riwayat->dilatasi_serviks : $riwayat['dilatasi_serviks']
+                              }} cm</td>
+                           <td>{{ is_object($riwayat) ? $riwayat->denyut_jantung_janin :
+                              $riwayat['denyut_jantung_janin'] }} bpm</td>
+                           <td>{{ is_object($riwayat) ? $riwayat->frekuensi_kontraksi :
+                              $riwayat['frekuensi_kontraksi'] }}/10 menit</td>
+                           <td>{{ is_object($riwayat) ? $riwayat->tekanan_darah_sistole :
+                              $riwayat['tekanan_darah_sistole'] }}/{{ is_object($riwayat) ?
+                              $riwayat->tekanan_darah_diastole : $riwayat['tekanan_darah_diastole'] }}</td>
+                           <td>{{ is_object($riwayat) ? $riwayat->diperiksa_oleh : $riwayat['diperiksa_oleh'] }}
+                           </td>
+                           <td>
+                              <button class="btn btn-sm btn-info"
+                                 wire:click="viewPartograf('{{ is_object($riwayat) ? $riwayat->id_partograf : $riwayat['id_partograf'] }}')">
+                                 <i class="fas fa-eye"></i>
+                              </button>
+                           </td>
+                        </tr>
+                        @endforeach
+                        @else
+                        <tr>
+                           <td colspan="7" class="text-center">Belum ada data partograf</td>
+                        </tr>
+                        @endif
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </div>
+</div>
+</div>
+@else
+<div class="alert alert-warning">
+   <i class="fas fa-exclamation-triangle mr-2"></i>
+   <strong>Perhatian!</strong> Modul partograf hanya dapat diakses jika pasien memiliki data ibu hamil. Silahkan
+   daftarkan pasien sebagai ibu hamil terlebih dahulu.
+</div>
+@endif
+</x-adminlte-card>
+
+@push('scripts')
+<!-- Load Chart.js secara langsung -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+   // Tambahkan CSS untuk modal fullscreen
+      document.head.insertAdjacentHTML('beforeend', `
+         <style>
+            .modal-fullscreen {
+               width: 100vw;
+               max-width: none;
+               height: 100%;
+               margin: 0;
+            }
+            .modal-fullscreen .modal-content {
+               height: 100vh;
+               border: 0;
+               border-radius: 0;
+            }
+            .modal-fullscreen .modal-body {
+               overflow-y: auto;
+            }
+            .chart-container {
+               position: relative;
+               height: 75vh;
+               width: 100%;
+               background: white;
+               padding: 20px;
+               border: 1px solid #ddd;
+               margin-bottom: 20px;
+            }
+            #partografChartFullscreen {
+               display: block;
+               height: 100%;
+               width: 100%;
+            }
+            .modal-backdrop-js {
+               position: fixed;
+               top: 0;
+               left: 0;
+               width: 100vw;
+               height: 100vh;
+               background-color: rgba(0, 0, 0, 0.5);
+               z-index: 1040;
+            }
+            .show-js {
+               display: block !important;
+            }
+         </style>
+      `);
+
+      // Tampilkan tombol alternatif jika diperlukan
+      document.addEventListener('DOMContentLoaded', function() {
+         console.log('DOM telah dimuat, memeriksa jQuery dan Bootstrap');
+         setTimeout(function() {
+            if (typeof jQuery === 'undefined' || typeof jQuery.fn.modal === 'undefined') {
+               console.log('jQuery atau Bootstrap tidak tersedia');
+               var tombolAlt = document.getElementById('bukaPartografAlt');
+               if (tombolAlt) {
+                  tombolAlt.style.display = 'inline-block';
+               }
+            }
+         }, 1000);
+      });
+</script>
+@endpush
+</div>

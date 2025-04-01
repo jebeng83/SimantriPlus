@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             PosyanduSeeder::class,
+            IbuHamilSeeder::class,
+            PartografSeeder::class,
             // Seeder lainnya...
         ]);
     }

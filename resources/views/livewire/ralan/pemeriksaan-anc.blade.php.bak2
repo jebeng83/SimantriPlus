@@ -534,7 +534,7 @@
                   <div class="col-md-8">: {{ $dataIbuHamil['hpl'] ?? '-' }}</div>
                </div>
                <div class="row">
-                  <div class="col-md-4 font-weight-bold">Kehamilan</div>
+                  <div class="col-md-4 font-weight-bold">Usia Kehamilan</div>
                   <div class="col-md-8">: {{ $dataIbuHamil['usia_kehamilan'] ?? '-' }} </div>
                </div>
                @if($id_hamil)
@@ -550,7 +550,7 @@
                      <div class="col-md-3 p-0">
                         <a class="anc-nav-item active" href="#anamnesis"
                            onclick="event.preventDefault(); document.getElementById('anamnesis').scrollIntoView({behavior: 'smooth'})">
-                           <i class="fas fa-clipboard-list"></i> <span class="text-primary">Anamnesis</span>
+                           <i class="fas fa-clipboard-list"></i> Anamnesis
                         </a>
                      </div>
                      <div class="col-md-3 p-0">
@@ -648,7 +648,7 @@
          <!-- Anamnesis -->
          <div class="form-group" id="anamnesis">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">1</span> <span class="text-primary">Anamnesis</span>
+               <span class="badge badge-primary mr-2">1</span> Anamnesis
             </h5>
 
             <div class="form-group row">
@@ -758,7 +758,7 @@
          <div class="form-group" id="data-wajib">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
                <span class="badge badge-primary mr-2">2</span>
-               <span class="text-primary">Data Wajib Diisi</span>
+               <span class="text-navy-blue">Data Wajib Diisi</span>
             </h5>
 
             <div class="form-group row">
@@ -858,8 +858,7 @@
          <!-- Timbang Berat Badan dan Ukur Tinggi Badan -->
          <div class="form-group" id="ukur-bb-tb">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">3</span> <span class="text-primary">Timbang Berat Badan dan Ukur
-                  Tinggi Badan (T1)</span>
+               <span class="badge badge-primary mr-2">3</span> Timbang Berat Badan dan Ukur Tinggi Badan (T1)
             </h5>
 
             <div class="form-group row">
@@ -944,7 +943,7 @@
          <!-- Ukur Tekanan Darah -->
          <div class="form-group" id="ukur-td">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">4</span> <span class="text-primary">Ukur Tekanan Darah (T2)</span>
+               <span class="badge badge-primary mr-2">4</span> Ukur Tekanan Darah (T2)
             </h5>
 
             <div class="form-group row">
@@ -981,7 +980,7 @@
          <!-- Status Gizi -->
          <div class="form-group" id="status-gizi">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">5</span> <span class="text-primary">Status Gizi (T3)</span>
+               <span class="badge badge-primary mr-2">5</span> Status Gizi (T3)
             </h5>
 
             <div class="form-group row">
@@ -1012,8 +1011,7 @@
          <!-- Tinggi Fundus Uteri -->
          <div class="form-group" id="tinggi-fundus-uteri">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">6</span> <span class="text-primary">Tinggi Fundus Uteri
-                  (T4)</span>
+               <span class="badge badge-primary mr-2">6</span> Tinggi Fundus Uteri (T4)
             </h5>
 
             <div class="form-group row">
@@ -1051,8 +1049,7 @@
          <!-- Tentukan DJJ dan Presentasi Janin -->
          <div class="form-group" id="djj-presentasi">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">7</span> <span class="text-primary">Tentukan Denyut Jantung Janin
-                  dan Presentasi Janin (T5)</span>
+               <span class="badge badge-primary mr-2">7</span> Tentukan Denyut Jantung Janin dan Presentasi Janin (T5)
             </h5>
 
             <div class="form-group row">
@@ -1090,8 +1087,7 @@
          <!-- Status Imunisasi TT -->
          <div class="form-group" id="status-imunisasi">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">8</span> <span class="text-primary">Status Imunisasi TT
-                  (T6)</span>
+               <span class="badge badge-primary mr-2">8</span> Status Imunisasi TT (T6)
             </h5>
 
             <div class="form-group row">
@@ -1131,8 +1127,7 @@
          <!-- Pemberian Tablet Tambah Darah (TTD) -->
          <div class="form-group" id="tablet-tambah-darah">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">9</span> <span class="text-primary">Pemberian Tablet Tambah Darah
-                  (T7)</span>
+               <span class="badge badge-primary mr-2">9</span> Pemberian Tablet Tambah Darah (T7)
             </h5>
 
             <div class="form-group row">
@@ -1164,7 +1159,7 @@
          <!-- Pemeriksaan Laboratorium -->
          <div class="form-group" id="pemeriksaan-lab">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">9</span> <span class="text-primary">Pemeriksaan Lab (T8)</span>
+               <span class="badge badge-primary mr-2">9</span> Pemeriksaan Lab (T8)
             </h5>
 
             <div class="form-group row">
@@ -1350,7 +1345,7 @@
          <!-- Tatalaksana Kasus -->
          <div class="form-group" id="tatalaksana-kasus">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">11</span> <span class="text-primary">Tatalaksana Kasus (T9)</span>
+               <span class="badge badge-primary mr-2">11</span> Tatalaksana Kasus (T9)
             </h5>
 
             <div class="form-group row">
@@ -1380,23 +1375,12 @@
                   @enderror
                </div>
             </div>
-
-            <div class="form-group row">
-               <label for="tatalaksana_lainnya" class="col-sm-2 col-form-label">Tatalaksana</label>
-               <div class="col-sm-10">
-                  <textarea class="form-control @error('tatalaksana_lainnya') is-invalid @enderror" rows="3"
-                     wire:model.defer="tatalaksana_lainnya" id="tatalaksana_lainnya"></textarea>
-                  @error('tatalaksana_lainnya')
-                  <div class="invalid-feedback">{{ $message }}</div>
-                  @enderror
-               </div>
-            </div>
          </div>
 
          <!-- Konseling -->
          <div class="form-group" id="konseling">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">12</span> <span class="text-primary">Konseling (T10)</span>
+               <span class="badge badge-primary mr-2">12</span> Konseling (T10)
             </h5>
 
             <div class="form-group row">
@@ -1480,7 +1464,7 @@
          <!-- Keadaan Pulang -->
          <div class="form-group" id="keadaan-pulang">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">13</span> <span class="text-primary">Keadaan Pulang</span>
+               <span class="badge badge-primary mr-2">13</span> Keadaan Pulang
             </h5>
 
             <div class="form-group row">
@@ -1505,7 +1489,7 @@
          <!-- Tindak Lanjut -->
          <div class="form-group" id="tindak-lanjut">
             <h5 class="mb-3 font-weight-bold text-navy-blue d-flex align-items-center">
-               <span class="badge badge-primary mr-2">14</span> <span class="text-primary">Tindak Lanjut</span>
+               <span class="badge badge-primary mr-2">14</span> Tindak Lanjut
             </h5>
 
             <div class="form-group row">
@@ -2028,20 +2012,10 @@
                // Simpan posisi scroll saat ini
                const scrollPos = window.scrollY;
                
-               // Tambahkan event listener untuk satu kali eksekusi
-               const restoreScroll = () => {
-                  window.scrollTo(0, scrollPos);
-                  // Hapus event listener setelah digunakan
-                  document.removeEventListener('livewire:load', restoreScroll);
-               };
-               
-               // Tambahkan listener untuk livewire:load
-               document.addEventListener('livewire:load', restoreScroll);
-               
-               // Tambahkan timeout juga sebagai fallback
+               // Kembalikan ke posisi scroll yang sama setelah perhitungan
                setTimeout(() => {
                   window.scrollTo(0, scrollPos);
-               }, 300);
+               }, 100);
             });
          });
 
@@ -2131,60 +2105,15 @@
          window.addEventListener('imt-updated', event => {
             document.getElementById('imt').value = event.detail.imt;
             document.getElementById('kategori_imt').value = event.detail.kategori;
-            
-            // Pertahankan posisi scroll setelah update IMT
-            if (window.lastScrollPosition) {
-               window.scrollTo(0, window.lastScrollPosition);
-               window.lastScrollPosition = null;
-            }
          });
           
          window.addEventListener('status-gizi-updated', event => {
             document.getElementById('status_gizi').value = event.detail.status;
-            
-            // Pertahankan posisi scroll setelah update status gizi
-            if (window.lastScrollPosition) {
-               window.scrollTo(0, window.lastScrollPosition);
-               window.lastScrollPosition = null;
-            }
          });
           
          window.addEventListener('tbj-updated', event => {
             document.getElementById('taksiran_berat_janin').value = event.detail.tbj;
-            
-            // Pertahankan posisi scroll setelah update TBJ
-            if (window.lastScrollPosition) {
-               window.scrollTo(0, window.lastScrollPosition);
-               window.lastScrollPosition = null;
-            }
          });
-         
-         // Event listener untuk tombol hitungIMT
-         const hitungImtBtn = document.querySelector('button[wire\\:click\\.prevent="hitungIMT"]');
-         if (hitungImtBtn) {
-            hitungImtBtn.addEventListener('click', function() {
-               // Simpan posisi scroll saat ini
-               window.lastScrollPosition = window.scrollY;
-            });
-         }
-         
-         // Event listener untuk tombol tentukanStatusGizi
-         const hitungStatusGiziBtn = document.querySelector('button[wire\\:click\\.prevent="tentukanStatusGizi"]');
-         if (hitungStatusGiziBtn) {
-            hitungStatusGiziBtn.addEventListener('click', function() {
-               // Simpan posisi scroll saat ini
-               window.lastScrollPosition = window.scrollY;
-            });
-         }
-         
-         // Event listener untuk tombol hitungTaksiranBeratJanin
-         const hitungTbjBtn = document.querySelector('button[wire\\:click\\.prevent="hitungTaksiranBeratJanin"]');
-         if (hitungTbjBtn) {
-            hitungTbjBtn.addEventListener('click', function() {
-               // Simpan posisi scroll saat ini
-               window.lastScrollPosition = window.scrollY;
-            });
-         }
       });
    </script>
    @endpush

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * Class PemeriksaanANC
@@ -195,6 +196,14 @@ class PemeriksaanANC extends Component
             $this->noRm = $noRm;
             $this->tanggal_anc = now()->format('Y-m-d H:i:s');
             $this->tanggal_anc_input = now()->format('d/m/Y, H:i'); // Format untuk input user
+            
+            // Set default untuk konseling
+            $this->konseling_menyusui = 'Ya';
+            $this->tanda_bahaya_kehamilan = 'Ya';
+            $this->tanda_bahaya_persalinan = 'Ya';
+            $this->konseling_phbs = 'Ya';
+            $this->konseling_gizi = 'Ya';
+            $this->konseling_ibu_hamil = 'Ya';
             
             // Ambil nama petugas dari tabel petugas dengan kd_jbtn j008
             $petugas = DB::table('petugas')
@@ -524,6 +533,37 @@ class PemeriksaanANC extends Component
      */
     public function updated($propertyName)
     {
+        // Jika properti yang berubah adalah tindak_lanjut, pembaruan JavaScript untuk menampilkan detail jika diperlukan
+        if ($propertyName === 'tindak_lanjut') {
+            $this->dispatchBrowserEvent('tindak-lanjut-changed', [
+                'value' => $this->tindak_lanjut
+            ]);
+        }
+        
+        // Jika properti yang berubah adalah jenis_tatalaksana, panggil onChangeTatalaksana
+        if ($propertyName === 'jenis_tatalaksana' && !empty($this->jenis_tatalaksana)) {
+            $this->onChangeTatalaksana();
+        }
+        
+        // Jika properti lab berubah, handle dengan fungsi khusus
+        if (Str::startsWith($propertyName, 'lab.')) {
+            $this->handleLabPropertyUpdate($propertyName);
+        }
+        
+        // Jika properti berat_badan atau tinggi_badan berubah, hitung IMT
+        if ($propertyName === 'berat_badan' || $propertyName === 'tinggi_badan') {
+            if ($this->berat_badan && $this->tinggi_badan) {
+                $this->hitungIMT();
+            }
+        }
+        
+        // Jika properti tinggi_fundus berubah, hitung TBJ
+        if ($propertyName === 'tinggi_fundus') {
+            if ($this->tinggi_fundus) {
+                $this->hitungTaksiranBeratJanin();
+            }
+        }
+        
         \Log::info('Property updated: ' . $propertyName, ['value' => $this->{$propertyName} ?? 'null']);
         
         // Jika tanggal ANC input yang diupdate
@@ -544,12 +584,6 @@ class PemeriksaanANC extends Component
         // Jika lila diupdate, tentukan status gizi
         if ($propertyName === 'lila') {
             $this->tentukanStatusGizi();
-        }
-        
-        // Jika properti lab yang diupdate, handle dengan metode khusus
-        if (strpos($propertyName, 'lab.') === 0) {
-            $this->handleLabPropertyUpdate($propertyName);
-            return; // Skip validasi untuk properti lab
         }
         
         // Validasi properti yang diupdate
@@ -782,7 +816,22 @@ class PemeriksaanANC extends Component
                 'imt' => $this->imt,
                 'kategori' => $this->kategori_imt
             ]);
+            
+            \Log::info('IMT berhasil dihitung', [
+                'berat_badan' => $this->berat_badan,
+                'tinggi_badan' => $this->tinggi_badan,
+                'imt' => $this->imt,
+                'kategori_imt' => $this->kategori_imt
+            ]);
+            
+            return;
         }
+        
+        // Jika berat badan atau tinggi badan tidak ada
+        \Log::warning('Gagal menghitung IMT: nilai tidak lengkap', [
+            'berat_badan' => $this->berat_badan,
+            'tinggi_badan' => $this->tinggi_badan
+        ]);
     }
     
     /**
@@ -802,36 +851,47 @@ class PemeriksaanANC extends Component
             $this->dispatchBrowserEvent('status-gizi-updated', [
                 'status' => $this->status_gizi
             ]);
+            
+            \Log::info('Status gizi berhasil ditentukan', [
+                'lila' => $this->lila,
+                'status_gizi' => $this->status_gizi
+            ]);
+            
+            return;
         }
+        
+        // Jika LILA tidak ada
+        \Log::warning('Gagal menentukan status gizi: nilai LILA tidak ada', [
+            'lila' => $this->lila
+        ]);
     }
-
+    
     /**
-     * Hitung taksiran berat janin berdasarkan TFU
+     * Hitung taksiran berat janin berdasarkan tinggi fundus
      */
     public function hitungTaksiranBeratJanin()
     {
-        if (!empty($this->tinggi_fundus) && is_numeric($this->tinggi_fundus)) {
-            // Rumus Johnson-Toshach: BB (gram) = 155 x (tinggi fundus dalam cm - n)
-            // Dimana n=13 jika kepala belum masuk PAP, n=12 jika kepala sudah masuk PAP
-            $n = 13; // Asumsi kepala belum masuk PAP
-            
-            $tfu = (float) $this->tinggi_fundus;
-            $beratJanin = 155 * ($tfu - $n);
-            
-            // Pastikan nilainya tidak negatif
-            if ($beratJanin > 0) {
-                $this->taksiran_berat_janin = round($beratJanin);
-            } else {
-                $this->taksiran_berat_janin = 0;
-            }
+        if ($this->tinggi_fundus && is_numeric($this->tinggi_fundus)) {
+            // Rumus McDonald: TBJ = tinggi fundus dalam cm x 155
+            $this->taksiran_berat_janin = round($this->tinggi_fundus * 155);
             
             // Dispatch event untuk memberitahu browser bahwa data telah berubah
             $this->dispatchBrowserEvent('tbj-updated', [
                 'tbj' => $this->taksiran_berat_janin
             ]);
-        } else {
-            $this->taksiran_berat_janin = 0;
+            
+            \Log::info('Taksiran berat janin berhasil dihitung', [
+                'tinggi_fundus' => $this->tinggi_fundus,
+                'taksiran_berat_janin' => $this->taksiran_berat_janin
+            ]);
+            
+            return;
         }
+        
+        // Jika tinggi fundus tidak ada atau bukan angka
+        \Log::warning('Gagal menghitung taksiran berat janin: nilai tidak valid', [
+            'tinggi_fundus' => $this->tinggi_fundus
+        ]);
     }
 
     public function save()
@@ -878,6 +938,11 @@ class PemeriksaanANC extends Component
                 \App\Models\PemeriksaanAnc::create($data);
                 
                 $message = 'Pemeriksaan ANC berhasil disimpan';
+            }
+            
+            // Simpan data tatalaksana jika ada
+            if (!empty($this->jenis_tatalaksana)) {
+                $this->saveTatalaksana();
             }
             
             DB::commit();
@@ -969,6 +1034,7 @@ class PemeriksaanANC extends Component
             'detail_tindak_lanjut' => $this->detail_tindak_lanjut ?? '-',
             'tanggal_kunjungan_berikutnya' => $this->tanggal_kunjungan_berikutnya,
             'jenis_tatalaksana' => $this->jenis_tatalaksana,
+            'tatalaksana_lainnya' => $this->tatalaksana_lainnya, 
             'hasil_pemeriksaan_hb' => isset($this->lab['hb']['nilai']) ? $this->lab['hb']['nilai'] : null,
             'hasil_pemeriksaan_urine_protein' => isset($this->lab['protein_urin']['nilai']) ? $this->lab['protein_urin']['nilai'] : null,
             'hasil_tes_hiv' => $this->hasil_tes_hiv,
@@ -990,12 +1056,14 @@ class PemeriksaanANC extends Component
      */
     private function addTatalaksanaDataToArray(&$data)
     {
+        // Tambahkan data tatalaksana_lainnya untuk semua jenis tatalaksana
+        $data['tatalaksana_lainnya'] = $this->tatalaksana_lainnya;
+        
         // Tambahkan data anemia jika jenis tatalaksana adalah Anemia
         if ($this->jenis_tatalaksana === 'Anemia') {
             $data['diberikan_tablet_fe'] = $this->diberikan_tablet_fe;
             $data['jumlah_tablet_dikonsumsi'] = $this->jumlah_tablet_dikonsumsi;
             $data['jumlah_tablet_ditambahkan'] = $this->jumlah_tablet_ditambahkan;
-            $data['tatalaksana_lainnya'] = $this->tatalaksana_lainnya;
         }
         
         // Tambahkan data MT jika jenis tatalaksana adalah MT
@@ -1351,108 +1419,178 @@ class PemeriksaanANC extends Component
     // Fungsi untuk menangani perubahan pada jenis tatalaksana
     public function onChangeTatalaksana()
     {
-        // Reset semua formulir tatalaksana
+        // Reset semua form tatalaksana terlebih dahulu
         $this->resetTatalaksanaForms($this->jenis_tatalaksana);
+        
+        // Set nilai default berdasarkan jenis tatalaksana
+        switch($this->jenis_tatalaksana) {
+            case 'Anemia':
+                $this->diberikan_tablet_fe = true;
+                $this->jumlah_tablet_dikonsumsi = 0;
+                $this->jumlah_tablet_ditambahkan = 0;
+                break;
+                
+            case 'Makanan Tambahan Ibu Hamil':
+                $this->pemberian_mt = true;
+                $this->jumlah_mt = 0;
+                break;
+                
+            case 'Hipertensi':
+                $this->pantau_tekanan_darah = true;
+                $this->pantau_protein_urine = true;
+                $this->pantau_kondisi_janin = true;
+                $this->hipertensi_lainnya = '';
+                break;
+                
+            case 'Eklampsia':
+                $this->pantau_tekanan_darah = true;
+                $this->pantau_protein_urine = true;
+                $this->pantau_kondisi_janin = true;
+                $this->pemberian_antihipertensi = true;
+                $this->pemberian_mgso4 = true;
+                $this->pemberian_diazepam = true;
+                $this->eklampsia_lainnya = '';
+                break;
+                
+            case 'KEK':
+                $this->edukasi_gizi = true;
+                $this->pemberian_mt = true;
+                $this->jumlah_mt = 0;
+                $this->kek_lainnya = '';
+                break;
+                
+            case 'Obesitas':
+                $this->edukasi_gizi_obesitas = true;
+                $this->pantau_berat_badan = true;
+                $this->konseling_gizi = 'Ya';
+                $this->obesitas_lainnya = '';
+                break;
+                
+            case 'Infeksi':
+                $this->pemberian_antipiretik = true;
+                $this->pemberian_antibiotik = true;
+                $this->jenis_infeksi = '';
+                $this->infeksi_lainnya = '';
+                break;
+                
+            case 'Penyakit Jantung':
+                $this->pantau_tekanan_darah = true;
+                $this->pantau_kondisi_janin = true;
+                $this->edukasi = true;
+                $this->jantung_lainnya = '';
+                break;
+                
+            case 'HIV':
+                $this->datang_dengan_hiv = true;
+                $this->persalinan_pervaginam = true;
+                $this->ditawarkan_tes = true;
+                $this->dilakukan_tes = true;
+                $this->hasil_tes_hiv = 'Negatif';
+                $this->mendapatkan_art = true;
+                $this->vct_pict = true;
+                $this->periksa_darah = true;
+                $this->serologi = true;
+                $this->arv_profilaksis = true;
+                $this->pemberian_arv = true;
+                $this->konseling_hiv = true;
+                $this->hiv_lainnya = '';
+                break;
+                
+            case 'TB':
+                $this->diperiksa_dahak = true;
+                $this->tbc = true;
+                $this->obat_tb = true;
+                $this->sisa_obat = '';
+                $this->pemberian_obat_tb = true;
+                $this->konseling_tb = true;
+                $this->tb_lainnya = '';
+                break;
+                
+            case 'Malaria':
+                $this->diberikan_kelambu = true;
+                $this->darah_malaria_rdt = true;
+                $this->darah_malaria_mikroskopis = true;
+                $this->ibu_hamil_malaria_rdt = true;
+                $this->ibu_hamil_malaria_mikroskopis = true;
+                $this->hasil_test_malaria = 'Negatif';
+                $this->obat_malaria = true;
+                $this->pemberian_obat_malaria = true;
+                $this->konseling_malaria = true;
+                $this->malaria_lainnya = '';
+                break;
+                
+            case 'Kecacingan':
+                $this->pemberian_obat_cacing = true;
+                $this->konseling_kecacingan = true;
+                $this->kecacingan_lainnya = '';
+                break;
+                
+            case 'Infeksi Menular Seksual (IMS)':
+                $this->jenis_ims = '';
+                $this->pemberian_obat_ims = true;
+                $this->konseling_ims = true;
+                $this->ims_lainnya = '';
+                break;
+                
+            case 'Hepatitis':
+                $this->jenis_hepatitis = '';
+                $this->pemberian_obat_hepatitis = true;
+                $this->konseling_hepatitis = true;
+                $this->hepatitis_lainnya = '';
+                break;
+                
+            case 'Lainnya':
+                $this->tatalaksana_lainnya = '';
+                break;
+        }
     }
-    
-    /**
-     * Reset semua form tatalaksana kecuali yang dipilih
-     */
+
     private function resetTatalaksanaForms($kecualiJenis = null)
     {
-        // Reset form anemia jika tatalaksana bukan anemia
-        if ($kecualiJenis != 'Anemia') {
-            $this->diberikan_tablet_fe = null;
-            $this->jumlah_tablet_dikonsumsi = 0;
-            $this->jumlah_tablet_ditambahkan = 0;
-            $this->tatalaksana_lainnya = null;
-        }
+        // Reset semua form tatalaksana
+        $this->diberikan_tablet_fe = false;
+        $this->jumlah_tablet_dikonsumsi = null;
+        $this->jumlah_tablet_ditambahkan = null;
+        $this->pemberian_mt = false;
+        $this->jumlah_mt = null;
+        $this->pantau_tekanan_darah = false;
+        $this->pantau_protein_urine = false;
+        $this->pantau_kondisi_janin = false;
+        $this->pantau_berat_badan = false;
+        $this->konseling_gizi = 'Tidak';
+        $this->pemberian_antibiotik = false;
+        $this->pemberian_arv = false;
+        $this->konseling_hiv = false;
+        $this->pemberian_obat_tb = false;
+        $this->konseling_tb = false;
+        $this->pemberian_obat_malaria = false;
+        $this->konseling_malaria = false;
+        $this->pemberian_obat_cacing = false;
+        $this->konseling_kecacingan = false;
+        $this->pemberian_obat_ims = false;
+        $this->konseling_ims = false;
+        $this->pemberian_obat_hepatitis = false;
+        $this->konseling_hepatitis = false;
         
-        // Reset form Makanan Tambahan Ibu Hamil jika tatalaksana bukan MT
-        if ($kecualiJenis != 'Makanan Tambahan Ibu Hamil') {
-            $this->pemberian_mt = null;
-            $this->jumlah_mt = 0;
-        }
+        // Reset semua field lainnya
+        $this->tatalaksana_lainnya = null;
+        $this->hipertensi_lainnya = null;
+        $this->eklampsia_lainnya = null;
+        $this->kek_lainnya = null;
+        $this->obesitas_lainnya = null;
+        $this->infeksi_lainnya = null;
+        $this->jantung_lainnya = null;
+        $this->hiv_lainnya = null;
+        $this->tb_lainnya = null;
+        $this->malaria_lainnya = null;
+        $this->kecacingan_lainnya = null;
+        $this->ims_lainnya = null;
+        $this->hepatitis_lainnya = null;
         
-        // Reset form Hipertensi jika tatalaksana bukan Hipertensi
-        if ($kecualiJenis != 'Hipertensi') {
-            $this->pantau_tekanan_darah = null;
-            $this->pantau_protein_urine = null;
-            $this->pantau_kondisi_janin = null;
-            $this->hipertensi_lainnya = null;
-        }
-        
-        // Reset form Eklampsia jika tatalaksana bukan Eklampsia
-        if ($kecualiJenis != 'Eklampsia') {
-            $this->pantau_tekanan_darah_eklampsia = null;
-            $this->pantau_protein_urine_eklampsia = null;
-            $this->pantau_kondisi_janin_eklampsia = null;
-            $this->pemberian_antihipertensi = null;
-            $this->pemberian_mgso4 = null;
-            $this->pemberian_diazepam = null;
-        }
-        
-        // Reset form KEK jika tatalaksana bukan KEK
-        if ($kecualiJenis != 'KEK') {
-            $this->edukasi_gizi = null;
-            $this->kek_lainnya = null;
-        }
-        
-        // Reset form Obesitas jika tatalaksana bukan Obesitas
-        if ($kecualiJenis != 'Obesitas') {
-            $this->edukasi_gizi_obesitas = null;
-            $this->obesitas_lainnya = null;
-        }
-        
-        // Reset form Infeksi jika tatalaksana bukan Infeksi
-        if ($kecualiJenis != 'Infeksi') {
-            $this->pemberian_antipiretik = null;
-            $this->pemberian_antibiotik = null;
-            $this->infeksi_lainnya = null;
-        }
-        
-        // Reset form Penyakit Jantung jika tatalaksana bukan Penyakit Jantung
-        if ($kecualiJenis != 'Penyakit Jantung') {
-            $this->edukasi = null;
-            $this->jantung_lainnya = null;
-        }
-        
-        // Reset form HIV jika tatalaksana bukan HIV
-        if ($kecualiJenis != 'HIV') {
-            $this->datang_dengan_hiv = null;
-            $this->persalinan_pervaginam = null;
-            $this->persalinan_perapdoinam = null;
-            $this->ditawarkan_tes = null;
-            $this->dilakukan_tes = null;
-            $this->hasil_tes_hiv = null;
-            $this->mendapatkan_art = null;
-            $this->vct_pict = null;
-            $this->periksa_darah = null;
-            $this->serologi = null;
-            $this->arv_profilaksis = null;
-            $this->hiv_lainnya = null;
-        }
-        
-        // Reset form TB jika tatalaksana bukan TB
-        if ($kecualiJenis != 'TB') {
-            $this->diperiksa_dahak = null;
-            $this->tbc = null;
-            $this->obat_tb = null;
-            $this->sisa_obat = null;
-            $this->tb_lainnya = null;
-        }
-        
-        // Reset form Malaria jika tatalaksana bukan Malaria
-        if ($kecualiJenis != 'Malaria') {
-            $this->diberikan_kelambu = null;
-            $this->darah_malaria_rdt = null;
-            $this->darah_malaria_mikroskopis = null;
-            $this->ibu_hamil_malaria_rdt = null;
-            $this->ibu_hamil_malaria_mikroskopis = null;
-            $this->hasil_test_malaria = null;
-            $this->obat_malaria = null;
-            $this->malaria_lainnya = null;
-        }
+        // Reset field spesifik
+        $this->jenis_infeksi = null;
+        $this->jenis_ims = null;
+        $this->jenis_hepatitis = null;
     }
     
     /**
@@ -2054,26 +2192,6 @@ class PemeriksaanANC extends Component
      */
     public function displayLabResults($jsonString)
     {
-        // Log string JSON untuk debugging
-        \Log::info('JSON Lab Data Received', ['jsonString' => $jsonString]);
-        
-        // Jika input adalah array, dump untuk debugging
-        if (is_array($jsonString)) {
-            // Error: parameter kedua harus array, bukan string
-            // Perbaiki format parameter logging
-            \Log::info('Input adalah array, detail isi:', ['data' => json_encode($jsonString, JSON_PRETTY_PRINT)]);
-            
-            // Cek nilai untuk setiap elemen lab
-            foreach ($jsonString as $key => $item) {
-                $nilai = isset($item['nilai']) ? $item['nilai'] : 'null';
-                $checked = isset($item['checked']) && $item['checked'] ? 'true' : 'false';
-                \Log::info("Elemen lab[$key] info", [
-                    'nilai' => $nilai,
-                    'checked' => $checked
-                ]);
-            }
-        }
-        
         $output = '<div class="table-responsive">';
         $output .= '<table class="table table-bordered table-striped">';
         $output .= '<thead class="thead-light">';
@@ -2089,43 +2207,28 @@ class PemeriksaanANC extends Component
             // Jika jsonString sudah dalam bentuk array/object
             if (is_array($jsonString) || is_object($jsonString)) {
                 $labData = $jsonString;
-                \Log::info('Input adalah array/object, menggunakan langsung');
             } else {
                 // Coba decode JSON string
                 if (empty($jsonString) || $jsonString === 'null' || $jsonString === '[]') {
-                    \Log::info('Empty JSON data received');
                     $labData = [];
                 } else {
-                    \Log::info('Attempting to decode JSON', ['data' => $jsonString]);
                     $labData = json_decode($jsonString, true);
                     
                     if (json_last_error() !== JSON_ERROR_NONE) {
-                        \Log::error('JSON Decode Error', [
-                            'error' => json_last_error_msg(),
-                            'jsonString' => $jsonString
-                        ]);
-                        return '<div class="alert alert-warning">Format data lab tidak valid: ' . json_last_error_msg() . '</div>';
+                        return '<div class="alert alert-warning">Format data lab tidak valid</div>';
                     }
                 }
             }
             
-            \Log::info('Decoded Lab Data', ['labData' => $labData]);
-            
             $hasResults = false;
             
             if (empty($labData)) {
-                \Log::warning('Lab data is empty after decoding');
                 $output .= '<tr><td colspan="3" class="text-center text-muted">Tidak ada data lab yang tersedia</td></tr>';
             } else {
                 foreach ($labData as $key => $item) {
-                    \Log::info('Processing lab item', ['key' => $key, 'item' => $item]);
-                    
-                    // Periksa apakah nilai tersedia dan tidak kosong, TERLEPAS dari status checked
                     if (isset($item['nilai']) && $item['nilai'] !== '' && $item['nilai'] !== null) {
                         $hasResults = true;
                         $label = $this->getLabLabel($key);
-                        
-                        // Format nilai berdasarkan jenis lab
                         $nilai = $item['nilai'];
                         
                         // Tentukan satuan berdasarkan jenis lab
@@ -2157,31 +2260,15 @@ class PemeriksaanANC extends Component
                         $output .= "<td>{$nilai}</td>";
                         $output .= "<td>{$satuan} {$badgeHtml}</td>";
                         $output .= '</tr>';
-                        
-                        \Log::info("Menambahkan baris untuk lab", [
-                            'label' => $label,
-                            'nilai' => $nilai
-                        ]);
-                    } else {
-                        \Log::info("Mengabaikan lab", [
-                            'key' => $key,
-                            'nilai_tersedia' => isset($item['nilai']),
-                            'nilai_value' => isset($item['nilai']) ? $item['nilai'] : 'undefined'
-                        ]);
                     }
                 }
                 
                 if (!$hasResults) {
-                    \Log::info('Has Lab Results', ['hasResults' => $hasResults]);
                     $output .= '<tr><td colspan="3" class="text-center text-muted">Tidak ada hasil lab yang tercatat</td></tr>';
                 }
             }
             
         } catch (\Exception $e) {
-            \Log::error('Error processing lab results', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             $output .= '<tr><td colspan="3" class="text-center text-danger">Error: ' . $e->getMessage() . '</td></tr>';
         }
         
@@ -2207,5 +2294,218 @@ class PemeriksaanANC extends Component
     {
         \Log::info('Refresh lab property dipanggil dari JavaScript');
         return $this->lab;
+    }
+
+    public function updatedJenisTatalaksana($value)
+    {
+        // Log perubahan jenis tatalaksana
+        \Log::info('Jenis Tatalaksana berubah', ['value' => $value]);
+        
+        if (!empty($value)) {
+            // Panggil onChangeTatalaksana
+            $this->onChangeTatalaksana();
+            
+            // Dispatch event untuk memberi tahu browser bahwa tatalaksana telah berubah
+            $this->dispatchBrowserEvent('jenis-tatalaksana-changed', [
+                'jenis' => $value
+            ]);
+        }
+    }
+
+    protected function resetTatalaksanaFields()
+    {
+        // Reset semua field tatalaksana
+        $this->diberikan_tablet_fe = null;
+        $this->jumlah_tablet_dikonsumsi = 0;
+        $this->jumlah_tablet_ditambahkan = 0;
+        $this->tatalaksana_lainnya = null;
+        
+        $this->pemberian_mt = null;
+        $this->jumlah_mt = 0;
+        
+        $this->pantau_tekanan_darah = null;
+        $this->pantau_protein_urine = null;
+        $this->pantau_kondisi_janin = null;
+        $this->hipertensi_lainnya = null;
+        
+        $this->pantau_tekanan_darah_eklampsia = null;
+        $this->pantau_protein_urine_eklampsia = null;
+        $this->pantau_kondisi_janin_eklampsia = null;
+        $this->pemberian_antihipertensi = null;
+        $this->pemberian_mgso4 = null;
+        $this->pemberian_diazepam = null;
+        
+        $this->edukasi_gizi = null;
+        $this->kek_lainnya = null;
+        
+        $this->edukasi_gizi_obesitas = null;
+        $this->obesitas_lainnya = null;
+        
+        $this->pemberian_antipiretik = null;
+        $this->pemberian_antibiotik = null;
+        $this->infeksi_lainnya = null;
+        
+        $this->edukasi = null;
+        $this->jantung_lainnya = null;
+        
+        $this->datang_dengan_hiv = null;
+        $this->persalinan_pervaginam = null;
+        $this->persalinan_perapdoinam = null;
+        $this->ditawarkan_tes = null;
+        $this->dilakukan_tes = null;
+        $this->hasil_tes_hiv = null;
+        $this->mendapatkan_art = null;
+        $this->vct_pict = null;
+        $this->periksa_darah = null;
+        $this->serologi = null;
+        $this->arv_profilaksis = null;
+        $this->hiv_lainnya = null;
+        
+        $this->diperiksa_dahak = null;
+        $this->tbc = null;
+        $this->obat_tb = null;
+        $this->sisa_obat = null;
+        $this->tb_lainnya = null;
+        
+        $this->diberikan_kelambu = null;
+        $this->darah_malaria_rdt = null;
+        $this->darah_malaria_mikroskopis = null;
+        $this->ibu_hamil_malaria_rdt = null;
+        $this->ibu_hamil_malaria_mikroskopis = null;
+        $this->hasil_test_malaria = null;
+        $this->obat_malaria = null;
+        $this->malaria_lainnya = null;
+    }
+
+    protected function saveTatalaksana()
+    {
+        $tatalaksanaData = [
+            'no_rawat' => $this->noRawat,
+            'tanggal' => $this->tanggal_anc,
+            'jenis_tatalaksana' => $this->jenis_tatalaksana
+        ];
+
+        switch ($this->jenis_tatalaksana) {
+            case 'Anemia':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'diberikan_tablet_fe' => $this->diberikan_tablet_fe ? 1 : 0,
+                    'jumlah_tablet_dikonsumsi' => $this->jumlah_tablet_dikonsumsi,
+                    'jumlah_tablet_ditambahkan' => $this->jumlah_tablet_ditambahkan,
+                    'tatalaksana_lainnya' => $this->tatalaksana_lainnya
+                ]);
+                break;
+            
+            case 'Makanan Tambahan Ibu Hamil':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'pemberian_mt' => $this->pemberian_mt ? 1 : 0,
+                    'jumlah_mt' => $this->jumlah_mt
+                ]);
+                break;
+            
+            case 'Hipertensi':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'pantau_tekanan_darah' => $this->pantau_tekanan_darah ? 1 : 0,
+                    'pantau_protein_urine' => $this->pantau_protein_urine ? 1 : 0,
+                    'pantau_kondisi_janin' => $this->pantau_kondisi_janin ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->hipertensi_lainnya
+                ]);
+                break;
+            
+            case 'Eklampsia':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'pantau_tekanan_darah' => $this->pantau_tekanan_darah_eklampsia ? 1 : 0,
+                    'pantau_protein_urine' => $this->pantau_protein_urine_eklampsia ? 1 : 0,
+                    'pantau_kondisi_janin' => $this->pantau_kondisi_janin_eklampsia ? 1 : 0,
+                    'pemberian_antihipertensi' => $this->pemberian_antihipertensi ? 1 : 0,
+                    'pemberian_mgso4' => $this->pemberian_mgso4 ? 1 : 0,
+                    'pemberian_diazepam' => $this->pemberian_diazepam ? 1 : 0
+                ]);
+                break;
+            
+            case 'KEK':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'edukasi_gizi' => $this->edukasi_gizi ? 1 : 0,
+                    'pemberian_mt' => $this->pemberian_mt ? 1 : 0,
+                    'jumlah_mt' => $this->jumlah_mt,
+                    'tatalaksana_lainnya' => $this->kek_lainnya
+                ]);
+                break;
+            
+            case 'Obesitas':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'edukasi_gizi' => $this->edukasi_gizi_obesitas ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->obesitas_lainnya
+                ]);
+                break;
+            
+            case 'Infeksi':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'pemberian_antipiretik' => $this->pemberian_antipiretik ? 1 : 0,
+                    'pemberian_antibiotik' => $this->pemberian_antibiotik ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->infeksi_lainnya
+                ]);
+                break;
+            
+            case 'Penyakit Jantung':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'edukasi' => $this->edukasi ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->jantung_lainnya
+                ]);
+                break;
+            
+            case 'HIV':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'datang_dengan_hiv' => $this->datang_dengan_hiv ? 1 : 0,
+                    'persalinan_pervaginam' => $this->persalinan_pervaginam ? 1 : 0,
+                    'persalinan_perapdoinam' => $this->persalinan_perapdoinam ? 1 : 0,
+                    'ditawarkan_tes' => $this->ditawarkan_tes ? 1 : 0,
+                    'dilakukan_tes' => $this->dilakukan_tes ? 1 : 0,
+                    'hasil_tes_hiv' => $this->hasil_tes_hiv,
+                    'mendapatkan_art' => $this->mendapatkan_art ? 1 : 0,
+                    'vct_pict' => $this->vct_pict ? 1 : 0,
+                    'periksa_darah' => $this->periksa_darah ? 1 : 0,
+                    'serologi' => $this->serologi ? 1 : 0,
+                    'arv_profilaksis' => $this->arv_profilaksis ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->hiv_lainnya
+                ]);
+                break;
+            
+            case 'TB':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'diperiksa_dahak' => $this->diperiksa_dahak ? 1 : 0,
+                    'tbc' => $this->tbc ? 1 : 0,
+                    'obat_tb' => $this->obat_tb ? 1 : 0,
+                    'sisa_obat' => $this->sisa_obat,
+                    'tatalaksana_lainnya' => $this->tb_lainnya
+                ]);
+                break;
+            
+            case 'Malaria':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'diberikan_kelambu' => $this->diberikan_kelambu ? 1 : 0,
+                    'darah_malaria_rdt' => $this->darah_malaria_rdt ? 1 : 0,
+                    'darah_malaria_mikroskopis' => $this->darah_malaria_mikroskopis ? 1 : 0,
+                    'ibu_hamil_malaria_rdt' => $this->ibu_hamil_malaria_rdt ? 1 : 0,
+                    'ibu_hamil_malaria_mikroskopis' => $this->ibu_hamil_malaria_mikroskopis ? 1 : 0,
+                    'hasil_test_malaria' => $this->hasil_test_malaria,
+                    'obat_malaria' => $this->obat_malaria ? 1 : 0,
+                    'tatalaksana_lainnya' => $this->malaria_lainnya
+                ]);
+                break;
+            
+            case 'Lainnya':
+                $tatalaksanaData = array_merge($tatalaksanaData, [
+                    'tatalaksana_lainnya' => $this->tatalaksana_lainnya
+                ]);
+                break;
+        }
+
+        try {
+            DB::table('tatalaksana_anc')->insert($tatalaksanaData);
+            session()->flash('message', 'Data tatalaksana berhasil disimpan.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Gagal menyimpan data tatalaksana: ' . $e->getMessage());
+            \Log::error('Error saving tatalaksana: ' . $e->getMessage());
+        }
     }
 }
