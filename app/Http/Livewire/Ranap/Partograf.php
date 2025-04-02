@@ -575,7 +575,8 @@ class Partograf extends Component
         'resetFormCatatanPersalinan' => 'resetFormCatatanPersalinan',
         'saveCatatanPersalinanForm' => 'saveCatatanPersalinanForm',
         'tambahBarisKala4' => 'tambahBarisKala4',
-        'hapusBarisKala4' => 'hapusBarisKala4'
+        'hapusBarisKala4' => 'hapusBarisKala4',
+        'setRadioValue' => 'setRadioValue'
     ];
     
     public function handleChartDataRequest()
@@ -817,5 +818,28 @@ class Partograf extends Component
     public function hapusBarisKala4($index)
     {
         $this->hapusPemantauanKala4($index);
+    }
+
+    public function setRadioValue($property, $value)
+    {
+        // Log aksi untuk debug
+        Log::info("setRadioValue dipanggil", ['property' => $property, 'value' => $value]);
+        
+        // Cek jika property memiliki format x.y (nested property)
+        if (strpos($property, '.') !== false) {
+            list($parent, $child) = explode('.', $property);
+            
+            // Pastikan parent property ada
+            if (isset($this->$parent) && is_array($this->$parent)) {
+                $this->$parent[$child] = $value;
+                Log::info("Nilai property {$property} berhasil diubah ke {$value}");
+            } else {
+                Log::error("Property {$parent} tidak ditemukan atau bukan array");
+            }
+        } else {
+            // Property langsung (tidak nested)
+            $this->$property = $value;
+            Log::info("Nilai property {$property} berhasil diubah ke {$value}");
+        }
     }
 } 

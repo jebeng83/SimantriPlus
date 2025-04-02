@@ -1,5 +1,5 @@
 <div>
-   <x-adminlte-card title="Partograf (WHO Labour Care Guide)" icon="fas fa-chart-line" theme="primary" maximizable>
+   <x-adminlte-card title="Isi data partograf" icon="fas fa-file-medical" theme="success" maximizable>
       <style>
          .chart-container {
             position: relative;
@@ -80,7 +80,7 @@
                                  <label for="onset_persalinan">Onset Persalinan</label>
                                  <select class="form-control" id="onset_persalinan"
                                     wire:model="partograf.onset_persalinan">
-                                    <option value="">Pilih Onset</option>
+                                    <option value="">Spontan</option>
                                     <option value="Spontan">Spontan</option>
                                     <option value="Induksi">Induksi</option>
                                  </select>
@@ -129,13 +129,15 @@
                               <div class="form-group">
                                  <label>Pendamping</label>
                                  <div class="form-check">
-                                    <input class="form-check-input" type="radio" id="pendamping_y"
-                                       wire:model="partograf.pendamping" value="Y">
+                                    <input class="form-check-input" type="radio" id="pendamping_y" name="pendamping"
+                                       value="Y" wire:model="partograf.pendamping" data-field="partograf.pendamping"
+                                       @if($partograf['pendamping']=='Y' ) checked @endif>
                                     <label class="form-check-label" for="pendamping_y">Ya</label>
                                  </div>
                                  <div class="form-check">
-                                    <input class="form-check-input" type="radio" id="pendamping_n"
-                                       wire:model="partograf.pendamping" value="N">
+                                    <input class="form-check-input" type="radio" id="pendamping_n" name="pendamping"
+                                       value="N" wire:model="partograf.pendamping" data-field="partograf.pendamping"
+                                       @if($partograf['pendamping']=='N' ) checked @endif>
                                     <label class="form-check-label" for="pendamping_n">Tidak</label>
                                  </div>
                               </div>
@@ -144,13 +146,15 @@
                               <div class="form-group">
                                  <label>Mobilitas</label>
                                  <div class="form-check">
-                                    <input class="form-check-input" type="radio" id="mobilitas_y"
-                                       wire:model="partograf.mobilitas" value="Y">
+                                    <input class="form-check-input" type="radio" id="mobilitas_y" name="mobilitas"
+                                       value="Y" wire:model="partograf.mobilitas" data-field="partograf.mobilitas"
+                                       @if($partograf['mobilitas']=='Y' ) checked @endif>
                                     <label class="form-check-label" for="mobilitas_y">Ya</label>
                                  </div>
                                  <div class="form-check">
-                                    <input class="form-check-input" type="radio" id="mobilitas_n"
-                                       wire:model="partograf.mobilitas" value="N">
+                                    <input class="form-check-input" type="radio" id="mobilitas_n" name="mobilitas"
+                                       value="N" wire:model="partograf.mobilitas" data-field="partograf.mobilitas"
+                                       @if($partograf['mobilitas']=='N' ) checked @endif>
                                     <label class="form-check-label" for="mobilitas_n">Tidak</label>
                                  </div>
                               </div>
@@ -162,7 +166,7 @@
                                  <label for="manajemen_nyeri">Manajemen Nyeri</label>
                                  <select class="form-control" id="manajemen_nyeri"
                                     wire:model="partograf.manajemen_nyeri">
-                                    <option value="">Pilih Metode</option>
+                                    <option value="">Farmakologis</option>
                                     <option value="Farmakologis">Farmakologis</option>
                                     <option value="Non-Farmakologis">Non-Farmakologis</option>
                                     <option value="Kombinasi">Kombinasi</option>
@@ -173,7 +177,7 @@
                               <div class="form-group">
                                  <label for="intake_cairan">Intake Cairan</label>
                                  <select class="form-control" id="intake_cairan" wire:model="partograf.intake_cairan">
-                                    <option value="">Pilih Intake</option>
+                                    <option value="">Kombinasi</option>
                                     <option value="Oral">Oral</option>
                                     <option value="Intravena">Intravena</option>
                                     <option value="Kombinasi">Kombinasi</option>
@@ -1320,18 +1324,21 @@
                         <div class="form-group">
                            <label for="kala1_garis_waspada">Partogram melewati garis waspada</label>
                            <div class="d-flex">
+                              <!-- Contoh radio button kala1_garis_waspada -->
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala1_garis_waspada_y"
                                     name="kala1_garis_waspada" value="Ya" {{
                                     $catatanPersalinan['kala1_garis_waspada']=='Ya' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala1_garis_waspada', 'Ya')">
+                                    wire:model.defer="catatanPersalinan.kala1_garis_waspada"
+                                    data-field="catatanPersalinan.kala1_garis_waspada">
                                  <label class="form-check-label" for="kala1_garis_waspada_y">Ya</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala1_garis_waspada_n"
                                     name="kala1_garis_waspada" value="Tidak" {{
                                     $catatanPersalinan['kala1_garis_waspada']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala1_garis_waspada', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala1_garis_waspada"
+                                    data-field="catatanPersalinan.kala1_garis_waspada">
                                  <label class="form-check-label" for="kala1_garis_waspada_n">Tidak</label>
                               </div>
                            </div>
@@ -1380,14 +1387,16 @@
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala2_episiotomi_y"
                                     name="kala2_episiotomi" value="Ya" {{ $catatanPersalinan['kala2_episiotomi']=='Ya'
-                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala2_episiotomi', 'Ya')">
+                                    ? 'checked' : '' }} wire:model.defer="catatanPersalinan.kala2_episiotomi"
+                                    data-field="catatanPersalinan.kala2_episiotomi">
                                  <label class="form-check-label" for="kala2_episiotomi_y">Ya, indikasi</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala2_episiotomi_n"
                                     name="kala2_episiotomi" value="Tidak" {{
                                     $catatanPersalinan['kala2_episiotomi']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala2_episiotomi', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala2_episiotomi"
+                                    data-field="catatanPersalinan.kala2_episiotomi">
                                  <label class="form-check-label" for="kala2_episiotomi_n">Tidak</label>
                               </div>
                            </div>
@@ -1440,14 +1449,16 @@
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala2_gawat_janin_y"
                                     name="kala2_gawat_janin" value="Ya" {{ $catatanPersalinan['kala2_gawat_janin']=='Ya'
-                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala2_gawat_janin', 'Ya')">
+                                    ? 'checked' : '' }} wire:model.defer="catatanPersalinan.kala2_gawat_janin"
+                                    data-field="catatanPersalinan.kala2_gawat_janin">
                                  <label class="form-check-label" for="kala2_gawat_janin_y">Ya, tindakan</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala2_gawat_janin_n"
                                     name="kala2_gawat_janin" value="Tidak" {{
                                     $catatanPersalinan['kala2_gawat_janin']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala2_gawat_janin', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala2_gawat_janin"
+                                    data-field="catatanPersalinan.kala2_gawat_janin">
                                  <label class="form-check-label" for="kala2_gawat_janin_n">Tidak</label>
                               </div>
                            </div>
@@ -1462,7 +1473,8 @@
                                  <input class="form-check-input" type="radio" id="kala2_distosia_bahu_y"
                                     name="kala2_distosia_bahu" value="Ya" {{
                                     $catatanPersalinan['kala2_distosia_bahu']=='Ya' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala2_distosia_bahu', 'Ya')">
+                                    wire:model.defer="catatanPersalinan.kala2_distosia_bahu"
+                                    data-field="catatanPersalinan.kala2_distosia_bahu">
                                  <label class="form-check-label" for="kala2_distosia_bahu_y">Ya, tindakan yang
                                     dilakukan</label>
                               </div>
@@ -1470,7 +1482,8 @@
                                  <input class="form-check-input" type="radio" id="kala2_distosia_bahu_n"
                                     name="kala2_distosia_bahu" value="Tidak" {{
                                     $catatanPersalinan['kala2_distosia_bahu']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala2_distosia_bahu', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala2_distosia_bahu"
+                                    data-field="catatanPersalinan.kala2_distosia_bahu">
                                  <label class="form-check-label" for="kala2_distosia_bahu_n">Tidak</label>
                               </div>
                            </div>
@@ -1497,17 +1510,20 @@
                         <div class="form-group">
                            <label for="kala3_oksitosin">Pemberian Oksitosin 10 U im</label>
                            <div class="d-flex">
+                              <!-- Radio button kala3_oksitosin -->
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala3_oksitosin_y"
                                     name="kala3_oksitosin" value="Ya" {{ $catatanPersalinan['kala3_oksitosin']=='Ya'
-                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala3_oksitosin', 'Ya')">
+                                    ? 'checked' : '' }} wire:model.defer="catatanPersalinan.kala3_oksitosin"
+                                    data-field="catatanPersalinan.kala3_oksitosin">
                                  <label class="form-check-label" for="kala3_oksitosin_y">Ya, waktu</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala3_oksitosin_n"
                                     name="kala3_oksitosin" value="Tidak" {{
                                     $catatanPersalinan['kala3_oksitosin']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala3_oksitosin', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala3_oksitosin"
+                                    data-field="catatanPersalinan.kala3_oksitosin">
                                  <label class="form-check-label" for="kala3_oksitosin_n">Tidak</label>
                               </div>
                            </div>
@@ -1519,16 +1535,19 @@
                         <div class="form-group">
                            <label for="kala3_oks_2x">Pemberian ulang Oksitosin (2x)</label>
                            <div class="d-flex">
+                              <!-- Radio button kala3_oks_2x -->
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala3_oks_2x_y" name="kala3_oks_2x"
                                     value="Ya" {{ $catatanPersalinan['kala3_oks_2x']=='Ya' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala3_oks_2x', 'Ya')">
+                                    wire:model.defer="catatanPersalinan.kala3_oks_2x"
+                                    data-field="catatanPersalinan.kala3_oks_2x">
                                  <label class="form-check-label" for="kala3_oks_2x_y">Ya, alasan</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala3_oks_2x_n" name="kala3_oks_2x"
                                     value="Tidak" {{ $catatanPersalinan['kala3_oks_2x']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala3_oks_2x', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala3_oks_2x"
+                                    data-field="catatanPersalinan.kala3_oks_2x">
                                  <label class="form-check-label" for="kala3_oks_2x_n">Tidak</label>
                               </div>
                            </div>
@@ -1538,18 +1557,21 @@
                         <div class="form-group">
                            <label for="kala3_penegangan_tali_pusat">Penegangan tali pusat terkendali</label>
                            <div class="d-flex">
+                              <!-- Radio button kala3_penegangan_tali_pusat -->
                               <div class="form-check mr-3">
                                  <input class="form-check-input" type="radio" id="kala3_penegangan_tali_pusat_y"
                                     name="kala3_penegangan_tali_pusat" value="Ya" {{
                                     $catatanPersalinan['kala3_penegangan_tali_pusat']=='Ya' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala3_penegangan_tali_pusat', 'Ya')">
+                                    wire:model.defer="catatanPersalinan.kala3_penegangan_tali_pusat"
+                                    data-field="catatanPersalinan.kala3_penegangan_tali_pusat">
                                  <label class="form-check-label" for="kala3_penegangan_tali_pusat_y">Ya</label>
                               </div>
                               <div class="form-check">
                                  <input class="form-check-input" type="radio" id="kala3_penegangan_tali_pusat_n"
                                     name="kala3_penegangan_tali_pusat" value="Tidak" {{
                                     $catatanPersalinan['kala3_penegangan_tali_pusat']=='Tidak' ? 'checked' : '' }}
-                                    wire:click="$set('catatanPersalinan.kala3_penegangan_tali_pusat', 'Tidak')">
+                                    wire:model.defer="catatanPersalinan.kala3_penegangan_tali_pusat"
+                                    data-field="catatanPersalinan.kala3_penegangan_tali_pusat">
                                  <label class="form-check-label" for="kala3_penegangan_tali_pusat_n">Tidak</label>
                               </div>
                            </div>
@@ -2157,6 +2179,64 @@
             }
          });
       });
+
+      // Tambahkan script khusus untuk radio button pada partograf
+      document.addEventListener('livewire:load', function() {
+         // Inisialisasi semua radio button dalam form partograf
+         function initRadioButtons() {
+            console.log('Menginisialisasi radio buttons...');
+            
+            // Menangani SEMUA radio button di form partograf
+            document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+               // Hapus event listener yang mungkin sudah ada untuk mencegah duplikasi
+               radio.removeEventListener('click', handleRadioClick);
+               
+               // Tambahkan event listener baru
+               radio.addEventListener('click', handleRadioClick);
+            });
+         }
+         
+         // Handler untuk radio button click
+         function handleRadioClick(e) {
+            // Hentikan perilaku default
+            e.preventDefault();
+            
+            // Dapatkan property dan nilai
+            var property = this.getAttribute('data-field') || this.getAttribute('wire:model');
+            var value = this.value;
+            
+            console.log('Radio button diklik:', property, value);
+            
+            // Set nilai menggunakan Livewire
+            if (property) {
+               console.log('Mengirim nilai ke Livewire:', property, value);
+               Livewire.emit('setRadioValue', property, value);
+               
+               // Update UI - tandai radio button sebagai checked
+               var name = this.getAttribute('name');
+               if (name) {
+                  document.querySelectorAll('input[name="' + name + '"]').forEach(function(r) {
+                     r.checked = (r.value === value);
+                  });
+               }
+            } else {
+               console.warn('Radio button tidak memiliki property yang valid:', this);
+            }
+         }
+         
+         // Inisialisasi pada awal load
+         initRadioButtons();
+         
+         // Inisialisasi ulang setelah setiap update Livewire
+         Livewire.hook('message.processed', function(message, component) {
+            if (component.fingerprint.name === 'ranap.partograf') {
+               console.log('Komponen partograf diupdate, menginisialisasi ulang radio buttons...');
+               setTimeout(initRadioButtons, 100);
+            }
+         });
+      });
+
+      // Script khusus untuk tabs
 </script>
 @endpush
 </div>
