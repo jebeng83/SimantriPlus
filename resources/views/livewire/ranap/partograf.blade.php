@@ -48,6 +48,12 @@
                   <i class="fas fa-history mr-1"></i> Riwayat
                </a>
             </li>
+            <li class="nav-item">
+               <a class="nav-link" id="catatan-persalinan-tab" data-toggle="tab" href="#catatan-persalinan-content"
+                  role="tab" aria-controls="catatan-persalinan-content" aria-selected="false">
+                  <i class="fas fa-book-medical mr-1"></i> Catatan Persalinan
+               </a>
+            </li>
          </ul>
 
          <div class="tab-content p-3 border border-top-0 rounded-bottom" id="partografTabContent">
@@ -1299,6 +1305,597 @@
             </div>
          </div>
       </div>
+
+      <div class="tab-pane fade" id="catatan-persalinan-content" role="tabpanel"
+         aria-labelledby="catatan-persalinan-tab">
+         <form id="formCatatanPersalinan" method="javascript:void(0);" onsubmit="event.preventDefault(); return false;"
+            class="nosubmit">
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">1. Kala I</h5>
+               </div>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-4">
+                        <div class="form-group">
+                           <label for="kala1_garis_waspada">Partogram melewati garis waspada</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala1_garis_waspada_y"
+                                    name="kala1_garis_waspada" value="Ya" {{
+                                    $catatanPersalinan['kala1_garis_waspada']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala1_garis_waspada', 'Ya')">
+                                 <label class="form-check-label" for="kala1_garis_waspada_y">Ya</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala1_garis_waspada_n"
+                                    name="kala1_garis_waspada" value="Tidak" {{
+                                    $catatanPersalinan['kala1_garis_waspada']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala1_garis_waspada', 'Tidak')">
+                                 <label class="form-check-label" for="kala1_garis_waspada_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-8">
+                        <div class="form-group">
+                           <label for="kala1_masalah_lain">Masalah lain, sebutkan</label>
+                           <input type="text" class="form-control" id="kala1_masalah_lain"
+                              wire:model.defer="catatanPersalinan.kala1_masalah_lain">
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="kala1_penatalaksanaan">Penatalaksanaan masalah Tsb</label>
+                           <textarea class="form-control" id="kala1_penatalaksanaan" rows="3"
+                              wire:model.defer="catatanPersalinan.kala1_penatalaksanaan"></textarea>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="kala1_hasil">Hasilnya</label>
+                           <textarea class="form-control" id="kala1_hasil" rows="2"
+                              wire:model.defer="catatanPersalinan.kala1_hasil"></textarea>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">2. Kala II</h5>
+               </div>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-4">
+                        <div class="form-group">
+                           <label for="kala2_episiotomi">Episiotomi</label>
+                           <div class="d-flex">
+                              <!-- Radio button Kala II Episiotomi -->
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala2_episiotomi_y"
+                                    name="kala2_episiotomi" value="Ya" {{ $catatanPersalinan['kala2_episiotomi']=='Ya'
+                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala2_episiotomi', 'Ya')">
+                                 <label class="form-check-label" for="kala2_episiotomi_y">Ya, indikasi</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala2_episiotomi_n"
+                                    name="kala2_episiotomi" value="Tidak" {{
+                                    $catatanPersalinan['kala2_episiotomi']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala2_episiotomi', 'Tidak')">
+                                 <label class="form-check-label" for="kala2_episiotomi_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-8">
+                        <div class="form-group">
+                           <label for="kala2_pendamping">Pendamping pada saat persalinan</label>
+                           <div class="d-flex flex-wrap">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_bidan"
+                                    wire:model.defer="pendampingPersalinan.bidan">
+                                 <label class="form-check-label" for="pendamping_bidan">Bidan</label>
+                              </div>
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_suami"
+                                    wire:model.defer="pendampingPersalinan.suami">
+                                 <label class="form-check-label" for="pendamping_suami">Suami</label>
+                              </div>
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_keluarga"
+                                    wire:model.defer="pendampingPersalinan.keluarga">
+                                 <label class="form-check-label" for="pendamping_keluarga">Keluarga</label>
+                              </div>
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_teman"
+                                    wire:model.defer="pendampingPersalinan.teman">
+                                 <label class="form-check-label" for="pendamping_teman">Teman</label>
+                              </div>
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_dukun"
+                                    wire:model.defer="pendampingPersalinan.dukun">
+                                 <label class="form-check-label" for="pendamping_dukun">Dukun</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="checkbox" id="pendamping_tidak_ada"
+                                    wire:model.defer="pendampingPersalinan.tidak_ada">
+                                 <label class="form-check-label" for="pendamping_tidak_ada">Tidak Ada</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala2_gawat_janin">Gawat Janin</label>
+                           <div class="d-flex">
+                              <!-- Radio button Kala II Gawat Janin -->
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala2_gawat_janin_y"
+                                    name="kala2_gawat_janin" value="Ya" {{ $catatanPersalinan['kala2_gawat_janin']=='Ya'
+                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala2_gawat_janin', 'Ya')">
+                                 <label class="form-check-label" for="kala2_gawat_janin_y">Ya, tindakan</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala2_gawat_janin_n"
+                                    name="kala2_gawat_janin" value="Tidak" {{
+                                    $catatanPersalinan['kala2_gawat_janin']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala2_gawat_janin', 'Tidak')">
+                                 <label class="form-check-label" for="kala2_gawat_janin_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala2_distosia_bahu">Distosia bahu</label>
+                           <div class="d-flex">
+                              <!-- Radio button Kala II Distosia Bahu -->
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala2_distosia_bahu_y"
+                                    name="kala2_distosia_bahu" value="Ya" {{
+                                    $catatanPersalinan['kala2_distosia_bahu']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala2_distosia_bahu', 'Ya')">
+                                 <label class="form-check-label" for="kala2_distosia_bahu_y">Ya, tindakan yang
+                                    dilakukan</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala2_distosia_bahu_n"
+                                    name="kala2_distosia_bahu" value="Tidak" {{
+                                    $catatanPersalinan['kala2_distosia_bahu']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala2_distosia_bahu', 'Tidak')">
+                                 <label class="form-check-label" for="kala2_distosia_bahu_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">3. Kala III</h5>
+               </div>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_lama">Lama kala III</label>
+                           <input type="text" class="form-control" id="kala3_lama"
+                              wire:model.defer="catatanPersalinan.kala3_lama" placeholder="Menit">
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_oksitosin">Pemberian Oksitosin 10 U im</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala3_oksitosin_y"
+                                    name="kala3_oksitosin" value="Ya" {{ $catatanPersalinan['kala3_oksitosin']=='Ya'
+                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.kala3_oksitosin', 'Ya')">
+                                 <label class="form-check-label" for="kala3_oksitosin_y">Ya, waktu</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala3_oksitosin_n"
+                                    name="kala3_oksitosin" value="Tidak" {{
+                                    $catatanPersalinan['kala3_oksitosin']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_oksitosin', 'Tidak')">
+                                 <label class="form-check-label" for="kala3_oksitosin_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_oks_2x">Pemberian ulang Oksitosin (2x)</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala3_oks_2x_y" name="kala3_oks_2x"
+                                    value="Ya" {{ $catatanPersalinan['kala3_oks_2x']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_oks_2x', 'Ya')">
+                                 <label class="form-check-label" for="kala3_oks_2x_y">Ya, alasan</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala3_oks_2x_n" name="kala3_oks_2x"
+                                    value="Tidak" {{ $catatanPersalinan['kala3_oks_2x']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_oks_2x', 'Tidak')">
+                                 <label class="form-check-label" for="kala3_oks_2x_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_penegangan_tali_pusat">Penegangan tali pusat terkendali</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala3_penegangan_tali_pusat_y"
+                                    name="kala3_penegangan_tali_pusat" value="Ya" {{
+                                    $catatanPersalinan['kala3_penegangan_tali_pusat']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_penegangan_tali_pusat', 'Ya')">
+                                 <label class="form-check-label" for="kala3_penegangan_tali_pusat_y">Ya</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala3_penegangan_tali_pusat_n"
+                                    name="kala3_penegangan_tali_pusat" value="Tidak" {{
+                                    $catatanPersalinan['kala3_penegangan_tali_pusat']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_penegangan_tali_pusat', 'Tidak')">
+                                 <label class="form-check-label" for="kala3_penegangan_tali_pusat_n">Tidak</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_plasenta_lengkap">Plasenta lahir lengkap (intact)</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala3_plasenta_lengkap_y"
+                                    name="kala3_plasenta_lengkap" value="Ya" {{
+                                    $catatanPersalinan['kala3_plasenta_lengkap']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_plasenta_lengkap', 'Ya')">
+                                 <label class="form-check-label" for="kala3_plasenta_lengkap_y">Ya</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala3_plasenta_lengkap_n"
+                                    name="kala3_plasenta_lengkap" value="Tidak" {{
+                                    $catatanPersalinan['kala3_plasenta_lengkap']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_plasenta_lengkap', 'Tidak')">
+                                 <label class="form-check-label" for="kala3_plasenta_lengkap_n">Tidak</label>
+                              </div>
+                           </div>
+                           <small class="text-muted">Jika tidak lengkap, tindakan yang dilakukan:</small>
+                           <div class="mt-2">
+                              <input type="text" class="form-control" placeholder="Tindakan a"
+                                 wire:model.defer="tindakanPlasenta.a">
+                              <input type="text" class="form-control mt-1" placeholder="Tindakan b"
+                                 wire:model.defer="tindakanPlasenta.b">
+                              <input type="text" class="form-control mt-1" placeholder="Tindakan c"
+                                 wire:model.defer="tindakanPlasenta.c">
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="kala3_plasenta_lebih_30">Plasenta tidak lahir > 30 menit</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="kala3_plasenta_lebih_30_y"
+                                    name="kala3_plasenta_lebih_30" value="Ya" {{
+                                    $catatanPersalinan['kala3_plasenta_lebih_30']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_plasenta_lebih_30', 'Ya')">
+                                 <label class="form-check-label" for="kala3_plasenta_lebih_30_y">Ya, tindakan</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="kala3_plasenta_lebih_30_n"
+                                    name="kala3_plasenta_lebih_30" value="Tidak" {{
+                                    $catatanPersalinan['kala3_plasenta_lebih_30']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.kala3_plasenta_lebih_30', 'Tidak')">
+                                 <label class="form-check-label" for="kala3_plasenta_lebih_30_n">Tidak</label>
+                              </div>
+                           </div>
+                           <small class="text-muted">Jika ya, tindakan yang dilakukan:</small>
+                           <div class="mt-2">
+                              <input type="text" class="form-control" placeholder="Tindakan a"
+                                 wire:model.defer="tindakanPlasenta30.a">
+                              <input type="text" class="form-control mt-1" placeholder="Tindakan b"
+                                 wire:model.defer="tindakanPlasenta30.b">
+                              <input type="text" class="form-control mt-1" placeholder="Tindakan c"
+                                 wire:model.defer="tindakanPlasenta30.c">
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">4. Bayi Baru Lahir</h5>
+               </div>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-4">
+                        <div class="form-group">
+                           <label for="bayi_berat_badan">Berat badan</label>
+                           <div class="input-group">
+                              <input type="text" class="form-control" id="bayi_berat_badan"
+                                 wire:model.defer="catatanPersalinan.bayi_berat_badan">
+                              <div class="input-group-append">
+                                 <span class="input-group-text">gram</span>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-4">
+                        <div class="form-group">
+                           <label for="bayi_panjang">Panjang</label>
+                           <div class="input-group">
+                              <input type="text" class="form-control" id="bayi_panjang"
+                                 wire:model.defer="catatanPersalinan.bayi_panjang">
+                              <div class="input-group-append">
+                                 <span class="input-group-text">cm</span>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-4">
+                        <div class="form-group">
+                           <label for="bayi_jenis_kelamin">Jenis kelamin</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="bayi_jenis_kelamin_l"
+                                    name="bayi_jenis_kelamin" value="L" {{ $catatanPersalinan['bayi_jenis_kelamin']=='L'
+                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.bayi_jenis_kelamin', 'L')">
+                                 <label class="form-check-label" for="bayi_jenis_kelamin_l">L</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="bayi_jenis_kelamin_p"
+                                    name="bayi_jenis_kelamin" value="P" {{ $catatanPersalinan['bayi_jenis_kelamin']=='P'
+                                    ? 'checked' : '' }} wire:click="$set('catatanPersalinan.bayi_jenis_kelamin', 'P')">
+                                 <label class="form-check-label" for="bayi_jenis_kelamin_p">P</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="bayi_penilaian_bbl">Penilaian bayi baru lahir</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="bayi_penilaian_bbl_baik"
+                                    name="bayi_penilaian_bbl" value="Baik" {{
+                                    $catatanPersalinan['bayi_penilaian_bbl']=='Baik' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.bayi_penilaian_bbl', 'Baik')">
+                                 <label class="form-check-label" for="bayi_penilaian_bbl_baik">Baik</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="bayi_penilaian_bbl_ada_penyulit"
+                                    name="bayi_penilaian_bbl" value="Ada penyulit" {{
+                                    $catatanPersalinan['bayi_penilaian_bbl']=='Ada penyulit' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.bayi_penilaian_bbl', 'Ada penyulit')">
+                                 <label class="form-check-label" for="bayi_penilaian_bbl_ada_penyulit">Ada
+                                    penyulit</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="form-group">
+                           <label for="bayi_pemberian_asi">Pemberian ASI</label>
+                           <div class="d-flex">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="bayi_pemberian_asi_y"
+                                    name="bayi_pemberian_asi" value="Ya" {{
+                                    $catatanPersalinan['bayi_pemberian_asi']=='Ya' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.bayi_pemberian_asi', 'Ya')">
+                                 <label class="form-check-label" for="bayi_pemberian_asi_y">Ya, jam setelah bayi
+                                    lahir</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="bayi_pemberian_asi_n"
+                                    name="bayi_pemberian_asi" value="Tidak" {{
+                                    $catatanPersalinan['bayi_pemberian_asi']=='Tidak' ? 'checked' : '' }}
+                                    wire:click="$set('catatanPersalinan.bayi_pemberian_asi', 'Tidak')">
+                                 <label class="form-check-label" for="bayi_pemberian_asi_n">Tidak, alasan</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="bayi_lahir">Bayi lahir</label>
+                           <div class="d-flex flex-wrap">
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="bayi_lahir_normal"
+                                    name="kondisiBayi_status" value="Normal" {{ $kondisiBayi['status']=='Normal'
+                                    ? 'checked' : '' }} wire:click="$set('kondisiBayi.status', 'Normal')">
+                                 <label class="form-check-label" for="bayi_lahir_normal">Normal, tindakan:</label>
+                              </div>
+                              <div class="form-check mr-3">
+                                 <input class="form-check-input" type="radio" id="bayi_lahir_asfiksia"
+                                    name="kondisiBayi_status" value="Asfiksia" {{ $kondisiBayi['status']=='Asfiksia'
+                                    ? 'checked' : '' }} wire:click="$set('kondisiBayi.status', 'Asfiksia')">
+                                 <label class="form-check-label" for="bayi_lahir_asfiksia">Asfiksia
+                                    ringan/sedang/biru/lemas, tindakan:</label>
+                              </div>
+                              <div class="form-check">
+                                 <input class="form-check-input" type="radio" id="bayi_lahir_hipoterm"
+                                    name="kondisiBayi_status" value="Hipoterm" {{ $kondisiBayi['status']=='Hipoterm'
+                                    ? 'checked' : '' }} wire:click="$set('kondisiBayi.status', 'Hipoterm')">
+                                 <label class="form-check-label" for="bayi_lahir_hipoterm">Hipoterm, tindakan:</label>
+                              </div>
+                           </div>
+                           <div class="mt-2">
+                              <div class="form-check mr-3 d-inline-block">
+                                 <input class="form-check-input" type="checkbox" id="tindakan_keringkan"
+                                    wire:model.defer="kondisiBayi.keringkan">
+                                 <label class="form-check-label" for="tindakan_keringkan">mengeringkan</label>
+                              </div>
+                              <div class="form-check mr-3 d-inline-block">
+                                 <input class="form-check-input" type="checkbox" id="tindakan_hangat"
+                                    wire:model.defer="kondisiBayi.hangat">
+                                 <label class="form-check-label" for="tindakan_hangat">menghangatkan</label>
+                              </div>
+                              <div class="form-check mr-3 d-inline-block">
+                                 <input class="form-check-input" type="checkbox" id="tindakan_rangsang"
+                                    wire:model.defer="kondisiBayi.rangsang">
+                                 <label class="form-check-label" for="tindakan_rangsang">rangsang taktil</label>
+                              </div>
+                              <div class="form-check mr-3 d-inline-block">
+                                 <input class="form-check-input" type="checkbox" id="tindakan_bebaskan"
+                                    wire:model.defer="kondisiBayi.bebaskan">
+                                 <label class="form-check-label" for="tindakan_bebaskan">bebaskan jalan napas</label>
+                              </div>
+                              <div class="form-check mr-3 d-inline-block">
+                                 <input class="form-check-input" type="checkbox" id="tindakan_bungkus"
+                                    wire:model.defer="kondisiBayi.bungkus">
+                                 <label class="form-check-label" for="tindakan_bungkus">bungkus bayi dan tempatkan di
+                                    sisi ibu</label>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Akan ditambahkan bagian Kala IV setelah ini -->
+
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">5. Kala IV</h5>
+               </div>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="kala4_masalah">Masalah kala IV</label>
+                           <textarea class="form-control" id="kala4_masalah" rows="2"
+                              wire:model.defer="catatanPersalinan.kala4_masalah"></textarea>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="kala4_penatalaksanaan">Penatalaksanaan masalah tersebut</label>
+                           <textarea class="form-control" id="kala4_penatalaksanaan" rows="2"
+                              wire:model.defer="catatanPersalinan.kala4_penatalaksanaan"></textarea>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="form-group">
+                           <label for="kala4_hasil">Hasilnya</label>
+                           <textarea class="form-control" id="kala4_hasil" rows="2"
+                              wire:model.defer="catatanPersalinan.kala4_hasil"></textarea>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="card mb-3">
+               <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">6. Pemantauan Kala IV</h5>
+               </div>
+               <div class="card-body">
+                  <div class="table-responsive">
+                     <table class="table table-bordered table-striped">
+                        <thead class="thead-dark">
+                           <tr>
+                              <th>Jam Ke</th>
+                              <th>Waktu</th>
+                              <th>Tekanan Darah</th>
+                              <th>Nadi</th>
+                              <th>Tinggi Fundus</th>
+                              <th>Kontraksi</th>
+                              <th>Kandung Kemih</th>
+                              <th>Perdarahan</th>
+                              <th>Aksi</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           @foreach($pemantauanKala4 as $index => $pemantauan)
+                           <tr>
+                              <td>
+                                 <input type="number" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.jam_ke">
+                              </td>
+                              <td>
+                                 <input type="time" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.waktu">
+                              </td>
+                              <td>
+                                 <input type="text" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.tekanan_darah" placeholder="120/80">
+                              </td>
+                              <td>
+                                 <input type="number" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.nadi">
+                              </td>
+                              <td>
+                                 <input type="text" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.tinggi_fundus">
+                              </td>
+                              <td>
+                                 <input type="text" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.kontraksi">
+                              </td>
+                              <td>
+                                 <input type="text" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.kandung_kemih">
+                              </td>
+                              <td>
+                                 <input type="text" class="form-control form-control-sm"
+                                    wire:model.defer="pemantauanKala4.{{ $index }}.perdarahan">
+                              </td>
+                              <td>
+                                 <button type="button" class="btn btn-sm btn-danger btn-hapus-baris"
+                                    data-index="{{ $index }}">
+                                    <i class="fas fa-trash"></i>
+                                 </button>
+                              </td>
+                           </tr>
+                           @endforeach
+                        </tbody>
+                     </table>
+                     <button type="button" id="btnTambahBarisKala4" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus"></i> Tambah Baris
+                     </button>
+                  </div>
+               </div>
+            </div>
+
+            <div class="form-group">
+               <button type="button" id="btnSimpanCatatanPersalinan" class="btn btn-primary">
+                  <i class="fas fa-save mr-1"></i> Simpan Catatan Persalinan
+               </button>
+               <button type="button" id="btnResetCatatanPersalinan" class="btn btn-secondary">
+                  <i class="fas fa-redo mr-1"></i> Reset
+               </button>
+            </div>
+         </form>
+      </div>
+</div>
 </div>
 </div>
 @else
@@ -1373,6 +1970,192 @@
                }
             }
          }, 1000);
+         
+         // Mencegah form melakukan submit dengan berbagai cara
+         const formCatatanPersalinan = document.getElementById('formCatatanPersalinan');
+         if (formCatatanPersalinan) {
+            // Cara 1: Event listener submit
+            formCatatanPersalinan.addEventListener('submit', function(e) {
+               console.log('Form submit dicegah');
+               e.preventDefault();
+               e.stopPropagation();
+               return false;
+            });
+            
+            // Cara 2: Mengganti fungsi asli submit
+            const originalSubmit = formCatatanPersalinan.submit;
+            formCatatanPersalinan.submit = function() {
+               console.log('Form submit native dicegah');
+               return false;
+            };
+            
+            // Cara 3: Mencegah keypress Enter menyebabkan submit form
+            formCatatanPersalinan.addEventListener('keypress', function(e) {
+               if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return false;
+               }
+            });
+         }
+         
+         // Tambahkan event listener untuk tab catatan persalinan
+         $('#catatan-persalinan-tab').on('click', function(event) {
+            event.preventDefault();
+            var tabPane = $('#catatan-persalinan-content');
+            
+            $('.nav-link').removeClass('active');
+            $('.tab-pane').removeClass('show active');
+            
+            $(this).addClass('active');
+            tabPane.addClass('show active');
+         });
+         
+         // Tombol Simpan - mencegah default dan menggunakan Livewire emit
+         const btnSimpan = document.getElementById('btnSimpanCatatanPersalinan');
+         if (btnSimpan) {
+            btnSimpan.addEventListener('click', function(e) {
+               e.preventDefault();
+               e.stopPropagation();
+               console.log('Klik tombol Simpan Catatan Persalinan');
+               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
+               setTimeout(function() {
+                  try {
+                     if(typeof Livewire !== 'undefined') {
+                        Livewire.emit('saveCatatanPersalinanForm');
+                        console.log('Event saveCatatanPersalinanForm dikirim');
+                     }
+                  } catch (err) {
+                     console.error('Error pada emit Livewire:', err);
+                  }
+               }, 10);
+               return false;
+            });
+         }
+         
+         // Tombol Reset - mencegah default dan menggunakan Livewire emit
+         const btnReset = document.getElementById('btnResetCatatanPersalinan');
+         if (btnReset) {
+            btnReset.addEventListener('click', function(e) {
+               e.preventDefault();
+               e.stopPropagation();
+               console.log('Klik tombol Reset Catatan Persalinan');
+               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
+               setTimeout(function() {
+                  try {
+                     if(typeof Livewire !== 'undefined') {
+                        Livewire.emit('resetFormCatatanPersalinan');
+                        console.log('Event resetFormCatatanPersalinan dikirim');
+                     }
+                  } catch (err) {
+                     console.error('Error pada emit Livewire:', err);
+                  }
+               }, 10);
+               return false;
+            });
+         }
+         
+         // Tombol Tambah Baris - mencegah default dan menggunakan Livewire emit
+         const btnTambahBaris = document.getElementById('btnTambahBarisKala4');
+         if (btnTambahBaris) {
+            btnTambahBaris.addEventListener('click', function(e) {
+               e.preventDefault();
+               e.stopPropagation();
+               console.log('Klik tombol Tambah Baris');
+               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
+               setTimeout(function() {
+                  try {
+                     if(typeof Livewire !== 'undefined') {
+                        Livewire.emit('tambahBarisKala4');
+                        console.log('Event tambahBarisKala4 dikirim');
+                     }
+                  } catch (err) {
+                     console.error('Error pada emit Livewire:', err);
+                  }
+               }, 10);
+               return false;
+            });
+         }
+         
+         // Delegate event untuk tombol hapus baris
+         document.addEventListener('click', function(e) {
+            if (e.target && (e.target.classList.contains('btn-hapus-baris') || e.target.closest('.btn-hapus-baris'))) {
+               e.preventDefault();
+               e.stopPropagation();
+               
+               const btn = e.target.classList.contains('btn-hapus-baris') ? e.target : e.target.closest('.btn-hapus-baris');
+               const index = btn.getAttribute('data-index');
+               
+               console.log('Klik tombol Hapus Baris dengan index:', index);
+               
+               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
+               setTimeout(function() {
+                  try {
+                     if(typeof Livewire !== 'undefined' && index !== null) {
+                        Livewire.emit('hapusBarisKala4', parseInt(index));
+                        console.log('Event hapusBarisKala4 dikirim dengan index:', index);
+                     }
+                  } catch (err) {
+                     console.error('Error pada emit Livewire:', err);
+                  }
+               }, 10);
+               return false;
+            }
+         }, true);
+         
+         // Patch semua input untuk mencegah submit form
+         document.querySelectorAll('#formCatatanPersalinan input, #formCatatanPersalinan textarea, #formCatatanPersalinan select').forEach(function(input) {
+            input.addEventListener('keydown', function(e) {
+               if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return false;
+               }
+            });
+         });
+      });
+      
+      // Livewire event handling untuk perpindahan tab
+      window.addEventListener('switch-to-tab', function(event) {
+         var tabId = event.detail.tabId;
+         $('#' + tabId).tab('show');
+      });
+      
+      window.addEventListener('show-data-tab', function() {
+         $('#data-tab').tab('show');
+      });
+      
+      window.addEventListener('show-grafik-tab', function() {
+         $('#grafik-tab').tab('show');
+      });
+      
+      // Event listener untuk tetap di tab catatan persalinan setelah simpan/reset
+      window.addEventListener('catatan-persalinan-saved', function() {
+         console.log('Event catatan-persalinan-saved diterima, tetap di tab catatan persalinan');
+         $('#catatan-persalinan-tab').tab('show');
+      });
+      
+      window.addEventListener('catatan-persalinan-reset', function() {
+         console.log('Event catatan-persalinan-reset diterima, tetap di tab catatan persalinan');
+         $('#catatan-persalinan-tab').tab('show');
+      });
+      
+      // Tambahan event untuk menerima update Livewire tanpa refresh
+      document.addEventListener('livewire:load', function() {
+         console.log('Livewire loaded, menyiapkan hooks...');
+         Livewire.hook('message.processed', function(message, component) {
+            console.log('Livewire message processed, cek komponen...');
+            if (component.fingerprint.name === 'ranap.partograf') {
+               console.log('Komponen partograf diupdate, memastikan tetap di tab catatan persalinan...');
+               // Periksa jika sebelumnya tab catatan persalinan aktif
+               if ($('#catatan-persalinan-tab').hasClass('active')) {
+                  // Pastikan tab catatan persalinan tetap aktif
+                  setTimeout(function() {
+                     $('#catatan-persalinan-tab').tab('show');
+                  }, 50);
+               }
+            }
+         });
       });
 </script>
 @endpush

@@ -66,12 +66,77 @@ class Partograf extends Component
     public $riwayatPartograf = [];
     public $chartData = [];
     public $currentPartografId = null;
+    
+    // Properti untuk Catatan Persalinan
+    public $catatanPersalinan = [
+        'kala1_garis_waspada' => 'Tidak',
+        'kala1_masalah_lain' => null,
+        'kala1_penatalaksanaan' => null,
+        'kala1_hasil' => null,
+        'kala2_episiotomi' => 'Tidak',
+        'kala2_pendamping' => null,
+        'kala2_gawat_janin' => 'Tidak',
+        'kala2_distosia_bahu' => 'Tidak',
+        'kala3_lama' => null,
+        'kala3_oksitosin' => 'Tidak',
+        'kala3_oks_2x' => 'Tidak',
+        'kala3_penegangan_tali_pusat' => 'Tidak',
+        'kala3_plasenta_lengkap' => 'Ya',
+        'kala3_plasenta_lebih_30' => 'Tidak',
+        'bayi_berat_badan' => null,
+        'bayi_panjang' => null,
+        'bayi_jenis_kelamin' => null,
+        'bayi_penilaian_bbl' => 'Baik',
+        'bayi_pemberian_asi' => 'Ya',
+        'kala4_masalah' => null,
+        'kala4_penatalaksanaan' => null,
+        'kala4_hasil' => null
+    ];
+    
+    // Array untuk Pendamping Persalinan
+    public $pendampingPersalinan = [
+        'bidan' => false,
+        'suami' => false,
+        'keluarga' => false,
+        'teman' => false,
+        'dukun' => false,
+        'tidak_ada' => false
+    ];
+    
+    // Array untuk Kondisi Bayi
+    public $kondisiBayi = [
+        'status' => 'Normal',
+        'keringkan' => false,
+        'hangat' => false,
+        'rangsang' => false,
+        'bebaskan' => false,
+        'bungkus' => false
+    ];
+    
+    // Array untuk Tindakan Plasenta
+    public $tindakanPlasenta = [
+        'a' => null,
+        'b' => null,
+        'c' => null
+    ];
+    
+    // Array untuk Tindakan Plasenta > 30 menit
+    public $tindakanPlasenta30 = [
+        'a' => null,
+        'b' => null,
+        'c' => null
+    ];
+    
+    // Array untuk Pemantauan Kala 4
+    public $pemantauanKala4 = [];
+    public $currentCatatanId = null;
 
     public function mount($noRawat)
     {
         $this->noRawat = $noRawat;
         $this->loadDataIbuHamil();
         $this->loadRiwayatPartograf();
+        $this->loadCatatanPersalinan();
         $this->loadChartData();
     }
 
@@ -118,6 +183,67 @@ class Partograf extends Component
             
         // Memastikan data dikembalikan sebagai array objek, bukan array asosiatif
         $this->riwayatPartograf = json_decode(json_encode($data), false);
+    }
+    
+    protected function loadCatatanPersalinan()
+    {
+        if (!$this->dataIbuHamil) {
+            return;
+        }
+        
+        try {
+            // Cari catatan persalinan terakhir
+            $catatan = DB::table('partograf_catatan')
+                ->where('id_hamil', $this->dataIbuHamil->id_hamil)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($catatan) {
+                $this->currentCatatanId = $catatan->id_catatan;
+                $this->catatanPersalinan = (array) $catatan;
+                
+                // Load pendamping persalinan dari string ke array
+                if (!empty($catatan->kala2_pendamping)) {
+                    $pendampingArray = explode(',', $catatan->kala2_pendamping);
+                    foreach ($pendampingArray as $pendamping) {
+                        $pendamping = trim($pendamping);
+                        if (array_key_exists(strtolower($pendamping), $this->pendampingPersalinan)) {
+                            $this->pendampingPersalinan[strtolower($pendamping)] = true;
+                        }
+                    }
+                }
+                
+                // Load pemantauan kala 4
+                $this->loadPemantauanKala4($catatan->id_catatan);
+            } else {
+                // Inisialisasi dengan catatan baru
+                $this->resetCatatanPersalinanForm();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error loading catatan persalinan: ' . $e->getMessage());
+        }
+    }
+    
+    protected function loadPemantauanKala4($idCatatan)
+    {
+        try {
+            $pemantauan = DB::table('partograf_pemantauan_kala4')
+                ->where('id_catatan', $idCatatan)
+                ->orderBy('jam_ke', 'asc')
+                ->get()
+                ->toArray();
+            
+            $this->pemantauanKala4 = $pemantauan ? json_decode(json_encode($pemantauan), true) : [];
+            
+            // Jika tidak ada data, tambahkan satu baris kosong
+            if (empty($this->pemantauanKala4)) {
+                $this->tambahPemantauanKala4();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error loading pemantauan kala 4: ' . $e->getMessage());
+            $this->pemantauanKala4 = [];
+            $this->tambahPemantauanKala4();
+        }
     }
     
     protected function loadChartData()
@@ -444,12 +570,252 @@ class Partograf extends Component
     }
 
     protected $listeners = [
-        'chartDataRequest' => 'handleChartDataRequest'
+        'chartDataRequest' => 'handleChartDataRequest',
+        'switchToTab' => 'switchToTab',
+        'resetFormCatatanPersalinan' => 'resetFormCatatanPersalinan',
+        'saveCatatanPersalinanForm' => 'saveCatatanPersalinanForm',
+        'tambahBarisKala4' => 'tambahBarisKala4',
+        'hapusBarisKala4' => 'hapusBarisKala4'
     ];
     
     public function handleChartDataRequest()
     {
         \Log::info('Menerima event chartDataRequest');
         $this->loadChartData();
+    }
+    
+    public function switchToTab($tabId)
+    {
+        $this->dispatchBrowserEvent('switch-to-tab', ['tabId' => $tabId]);
+    }
+
+    public function saveCatatanPersalinan()
+    {
+        if (!$this->dataIbuHamil) {
+            session()->flash('error', 'Data ibu hamil tidak ditemukan. Catatan persalinan tidak dapat disimpan.');
+            return;
+        }
+        
+        try {
+            // Persiapkan array pendamping persalinan
+            $pendampingList = [];
+            foreach ($this->pendampingPersalinan as $key => $value) {
+                if ($value) {
+                    $pendampingList[] = ucfirst($key);
+                }
+            }
+            
+            // Generate ID catatan jika belum ada
+            if (!$this->currentCatatanId) {
+                $this->currentCatatanId = $this->generateIdCatatan();
+            }
+            
+            // Siapkan data untuk disimpan
+            $dataToSave = array_merge($this->catatanPersalinan, [
+                'id_catatan' => $this->currentCatatanId,
+                'id_hamil' => $this->dataIbuHamil->id_hamil,
+                'no_rawat' => $this->noRawat,
+                'no_rkm_medis' => $this->dataIbuHamil->no_rkm_medis,
+                'kala2_pendamping' => implode(', ', $pendampingList),
+                'petugas' => Auth::user()->nama,
+                'updated_at' => now()
+            ]);
+            
+            // Cek apakah record sudah ada
+            $existing = DB::table('partograf_catatan')
+                ->where('id_catatan', $this->currentCatatanId)
+                ->first();
+            
+            if ($existing) {
+                // Update record yang sudah ada
+                DB::table('partograf_catatan')
+                    ->where('id_catatan', $this->currentCatatanId)
+                    ->update($dataToSave);
+            } else {
+                // Tambahkan record baru
+                $dataToSave['created_at'] = now();
+                DB::table('partograf_catatan')->insert($dataToSave);
+            }
+            
+            // Simpan pemantauan kala 4
+            $this->savePemantauanKala4();
+            
+            session()->flash('success', 'Catatan persalinan berhasil disimpan.');
+            
+            // Trigger event untuk tetap di tab catatan persalinan
+            $this->dispatchBrowserEvent('catatan-persalinan-saved');
+            
+        } catch (\Exception $e) {
+            Log::error('Error saving catatan persalinan: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat menyimpan catatan persalinan: ' . $e->getMessage());
+        }
+    }
+
+    protected function savePemantauanKala4()
+    {
+        try {
+            // Hapus data pemantauan yang ada
+            DB::table('partograf_pemantauan_kala4')
+                ->where('id_catatan', $this->currentCatatanId)
+                ->delete();
+            
+            // Insert data pemantauan baru
+            foreach ($this->pemantauanKala4 as $pemantauan) {
+                // Skip item kosong
+                if (empty($pemantauan['jam_ke']) && empty($pemantauan['waktu'])) {
+                    continue;
+                }
+                
+                DB::table('partograf_pemantauan_kala4')->insert([
+                    'id_catatan' => $this->currentCatatanId,
+                    'id_hamil' => $this->dataIbuHamil->id_hamil,
+                    'jam_ke' => $pemantauan['jam_ke'] ?? 0,
+                    'waktu' => $pemantauan['waktu'] ?? null,
+                    'tekanan_darah' => $pemantauan['tekanan_darah'] ?? null,
+                    'nadi' => $pemantauan['nadi'] ?? null,
+                    'tinggi_fundus' => $pemantauan['tinggi_fundus'] ?? null,
+                    'kontraksi' => $pemantauan['kontraksi'] ?? null,
+                    'kandung_kemih' => $pemantauan['kandung_kemih'] ?? null,
+                    'perdarahan' => $pemantauan['perdarahan'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error saving pemantauan kala 4: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function tambahPemantauanKala4()
+    {
+        $this->pemantauanKala4[] = [
+            'jam_ke' => count($this->pemantauanKala4) + 1,
+            'waktu' => null,
+            'tekanan_darah' => null,
+            'nadi' => null,
+            'tinggi_fundus' => null,
+            'kontraksi' => null,
+            'kandung_kemih' => null,
+            'perdarahan' => null
+        ];
+    }
+
+    public function hapusPemantauanKala4($index)
+    {
+        if (isset($this->pemantauanKala4[$index])) {
+            unset($this->pemantauanKala4[$index]);
+            $this->pemantauanKala4 = array_values($this->pemantauanKala4);
+        }
+    }
+
+    protected function generateIdCatatan()
+    {
+        $prefix = 'CAT' . date('ymd');
+        $lastId = DB::table('partograf_catatan')
+            ->where('id_catatan', 'like', $prefix . '%')
+            ->orderBy('id_catatan', 'desc')
+            ->value('id_catatan');
+
+        if (!$lastId) {
+            return $prefix . '0001';
+        }
+
+        $lastNumber = intval(substr($lastId, -4));
+        $newNumber = $lastNumber + 1;
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function resetFormCatatanPersalinan()
+    {
+        $this->resetCatatanPersalinanForm();
+        
+        // Trigger event untuk tetap di tab catatan persalinan
+        $this->dispatchBrowserEvent('catatan-persalinan-reset');
+    }
+
+    public function resetForm()
+    {
+        $this->resetCatatanPersalinanForm();
+        
+        // Trigger event untuk tetap di tab catatan persalinan
+        $this->dispatchBrowserEvent('catatan-persalinan-reset');
+    }
+
+    public function resetCatatanPersalinanForm()
+    {
+        $this->catatanPersalinan = [
+            'kala1_garis_waspada' => 'Tidak',
+            'kala1_masalah_lain' => null,
+            'kala1_penatalaksanaan' => null,
+            'kala1_hasil' => null,
+            'kala2_episiotomi' => 'Tidak',
+            'kala2_pendamping' => null,
+            'kala2_gawat_janin' => 'Tidak',
+            'kala2_distosia_bahu' => 'Tidak',
+            'kala3_lama' => null,
+            'kala3_oksitosin' => 'Tidak',
+            'kala3_oks_2x' => 'Tidak',
+            'kala3_penegangan_tali_pusat' => 'Tidak',
+            'kala3_plasenta_lengkap' => 'Ya',
+            'kala3_plasenta_lebih_30' => 'Tidak',
+            'bayi_berat_badan' => null,
+            'bayi_panjang' => null,
+            'bayi_jenis_kelamin' => null,
+            'bayi_penilaian_bbl' => 'Baik',
+            'bayi_pemberian_asi' => 'Ya',
+            'kala4_masalah' => null,
+            'kala4_penatalaksanaan' => null,
+            'kala4_hasil' => null
+        ];
+        
+        $this->pendampingPersalinan = [
+            'bidan' => false,
+            'suami' => false,
+            'keluarga' => false,
+            'teman' => false,
+            'dukun' => false,
+            'tidak_ada' => false
+        ];
+        
+        $this->kondisiBayi = [
+            'status' => 'Normal',
+            'keringkan' => false,
+            'hangat' => false,
+            'rangsang' => false,
+            'bebaskan' => false,
+            'bungkus' => false
+        ];
+        
+        $this->tindakanPlasenta = [
+            'a' => null,
+            'b' => null,
+            'c' => null
+        ];
+        
+        $this->tindakanPlasenta30 = [
+            'a' => null,
+            'b' => null,
+            'c' => null
+        ];
+        
+        $this->pemantauanKala4 = [];
+        $this->tambahPemantauanKala4();
+        $this->currentCatatanId = null;
+    }
+
+    public function saveCatatanPersalinanForm()
+    {
+        $this->saveCatatanPersalinan();
+    }
+
+    public function tambahBarisKala4()
+    {
+        $this->tambahPemantauanKala4();
+    }
+
+    public function hapusBarisKala4($index)
+    {
+        $this->hapusPemantauanKala4($index);
     }
 } 
