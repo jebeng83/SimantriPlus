@@ -331,6 +331,68 @@
          font-weight: 600;
          color: var(--primary-color);
       }
+
+      .partograf-overlay {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         pointer-events: none;
+         z-index: 1;
+      }
+
+      .garis-waspada {
+         position: absolute;
+         top: 0;
+         left: calc(4 * (100% / 16));
+         /* Posisi pada jam ke-4 */
+         width: 3px;
+         height: 100%;
+         background-color: #FF9800;
+         z-index: 2;
+      }
+
+      .garis-bertindak {
+         position: absolute;
+         top: 0;
+         left: calc(8 * (100% / 16));
+         /* Posisi pada jam ke-8 */
+         width: 3px;
+         height: 100%;
+         background-color: #F44336;
+         z-index: 2;
+      }
+
+      .garis-label {
+         position: absolute;
+         top: 30%;
+         left: -33px;
+         transform: rotate(-45deg);
+         font-weight: bold;
+      }
+
+      .waspada-label {
+         color: #FF9800;
+      }
+
+      .bertindak-label {
+         color: #F44336;
+      }
+
+      .text-purple {
+         color: #775DD0;
+      }
+
+      .bg-purple {
+         background-color: #775DD0;
+      }
+
+      .alert-purple {
+         background-color: rgba(119, 93, 208, 0.1);
+         border: 1px solid rgba(119, 93, 208, 0.3);
+         color: #775DD0;
+      }
    </style>
 </head>
 
@@ -380,6 +442,14 @@
                      <div class="info-label">HPHT</div>
                      <div class="info-value">{{ $hpht ?? 'N/A' }}</div>
                   </div>
+                  <div class="info-item">
+                     <div class="info-label">Riwayat Persalinan</div>
+                     <div class="info-value">G{{ $hamilke }} P{{ $anakhidup }} A{{ $keguguran }}</div>
+                  </div>
+                  <div class="info-item">
+                     <div class="info-label">Usia Ibu</div>
+                     <div class="info-value">{{ $umur ?? 'N/A' }} Tahun</div>
+                  </div>
                </div>
             </div>
          </div>
@@ -403,13 +473,7 @@
                <div class="fetal-heart-rate-grid">
                   <div class="fhr-header">Jam</div>
                   <div class="fhr-value-container">
-                     @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">
-                        @if(isset($waktu_mulai_partograf))
-                        {{ \Carbon\Carbon::parse($waktu_mulai_partograf)->addHours($i)->format('H:i') }}
-                        @else
-                        {{ $i }}
-                        @endif
-                  </div>
+                     @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">Jam {{ $i }}</div>
                   @endfor
                </div>
 
@@ -582,32 +646,21 @@
       <div class="card-body">
          <div class="position-relative">
             <!-- Overlay untuk garis waspada dan bertindak -->
-            <div
-               style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
-               <!-- Garis waspada -->
-               <div
-                  style="position: absolute; top: 0; left: 30%; width: 2px; height: 100%; background-color: #FF9800; z-index: 2;">
-                  <span
-                     style="position: absolute; top: 10px; left: -30px; transform: rotate(-45deg); color: #FF9800; font-weight: bold;">WASPADA</span>
+            <div class="partograf-overlay">
+               <!-- Garis waspada - pada jam ke-4 -->
+               <div class="garis-waspada">
+                  <span class="garis-label waspada-label">WASPADA</span>
                </div>
-               <!-- Garis bertindak -->
-               <div
-                  style="position: absolute; top: 0; left: 60%; width: 2px; height: 100%; background-color: #F44336; z-index: 2;">
-                  <span
-                     style="position: absolute; top: 10px; left: -33px; transform: rotate(-45deg); color: #F44336; font-weight: bold;">BERTINDAK</span>
+               <!-- Garis bertindak - pada jam ke-8 -->
+               <div class="garis-bertindak">
+                  <span class="garis-label bertindak-label">BERTINDAK</span>
                </div>
             </div>
 
             <div class="fetal-heart-rate-grid">
                <div class="fhr-header">Jam</div>
                <div class="fhr-value-container">
-                  @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">
-                     @if(isset($waktu_mulai_partograf))
-                     {{ \Carbon\Carbon::parse($waktu_mulai_partograf)->addHours($i)->format('H:i') }}
-                     @else
-                     {{ $i }}
-                     @endif
-               </div>
+                  @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">Jam {{ $i }}</div>
                @endfor
             </div>
 
@@ -652,13 +705,7 @@
          <div class="fetal-heart-rate-grid">
             <div class="fhr-header">Jam</div>
             <div class="fhr-value-container">
-               @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">
-                  @if(isset($waktu_mulai_partograf))
-                  {{ \Carbon\Carbon::parse($waktu_mulai_partograf)->addHours($i)->format('H:i') }}
-                  @else
-                  {{ $i }}
-                  @endif
-            </div>
+               @for ($i = 0; $i < 16; $i++) <div class="fhr-value time-label">Jam {{ $i }}</div>
             @endfor
          </div>
 
@@ -701,13 +748,7 @@
             </thead>
             <tbody>
                @for ($i = 0; $i < 16; $i++) <tr>
-                  <td class="time-label">
-                     @if(isset($waktu_mulai_partograf))
-                     {{ \Carbon\Carbon::parse($waktu_mulai_partograf)->addHours($i)->format('H:i') }}
-                     @else
-                     {{ $i }}
-                     @endif
-                  </td>
+                  <td>Jam {{ $i }}</td>
                   <td>
                      @foreach($tensiData ?? [] as $tensi)
                      @if($tensi['jam'] == $i)
@@ -879,14 +920,14 @@
                      @if(isset($pemantauanKala4) && count($pemantauanKala4) > 0)
                      @foreach($pemantauanKala4 as $pemantauan)
                      <tr>
-                        <td>{{ $pemantauan->jam_ke ?? $pemantauan['jam_ke'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->waktu ?? $pemantauan['waktu'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->tekanan_darah ?? $pemantauan['tekanan_darah'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->nadi ?? $pemantauan['nadi'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->tinggi_fundus ?? $pemantauan['tinggi_fundus'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->kontraksi ?? $pemantauan['kontraksi'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->kandung_kemih ?? $pemantauan['kandung_kemih'] ?? '-' }}</td>
-                        <td>{{ $pemantauan->perdarahan ?? $pemantauan['perdarahan'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['jam_ke'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['waktu'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['tekanan_darah'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['nadi'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['tinggi_fundus'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['kontraksi'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['kandung_kemih'] ?? '-' }}</td>
+                        <td>{{ $pemantauan['perdarahan'] ?? '-' }}</td>
                      </tr>
                      @endforeach
                      @else
@@ -930,6 +971,49 @@
    </div>
    </div>
 
+   <div class="card">
+      <div class="card-header">
+         <h5 class="card-title">
+            <i class="fas fa-chart-line"></i> Grafik Penurunan Posisi Janin
+         </h5>
+      </div>
+      <div class="card-body">
+         <div id="posisiJaninChart"></div>
+         <div class="mt-3 p-3 bg-light border rounded">
+            <h6 class="mb-2">Keterangan Stasiun Penurunan Posisi Janin:</h6>
+            <div class="row">
+               <div class="col-md-6">
+                  <ul class="list-unstyled mb-0">
+                     <li><strong>Stasiun -5:</strong> 5 cm di atas spina ischiadica</li>
+                     <li><strong>Stasiun -4:</strong> 4 cm di atas spina ischiadica</li>
+                     <li><strong>Stasiun -3:</strong> 3 cm di atas spina ischiadica</li>
+                     <li><strong>Stasiun -2:</strong> 2 cm di atas spina ischiadica</li>
+                     <li><strong>Stasiun -1:</strong> 1 cm di atas spina ischiadica</li>
+                     <li><strong class="text-purple">Stasiun 0:</strong> <span class="text-purple">Sejajar dengan spina
+                           ischiadica</span> <span class="badge bg-purple">Bidang referensi</span></li>
+                  </ul>
+               </div>
+               <div class="col-md-6">
+                  <ul class="list-unstyled mb-0">
+                     <li><strong>Stasiun +1:</strong> 1 cm di bawah spina ischiadica</li>
+                     <li><strong>Stasiun +2:</strong> 2 cm di bawah spina ischiadica</li>
+                     <li><strong>Stasiun +3:</strong> 3 cm di bawah spina ischiadica</li>
+                     <li><strong>Stasiun +4:</strong> 4 cm di bawah spina ischiadica</li>
+                     <li><strong>Stasiun +5:</strong> 5 cm di bawah spina ischiadica (kepala janin hampir lahir)</li>
+                  </ul>
+               </div>
+            </div>
+            <div class="mt-2 alert alert-purple p-2">
+               <small><i class="fas fa-info-circle me-1"></i> Bidang spina ischiadica (0) ditandai dengan garis ungu
+                  pada grafik dan merupakan titik referensi untuk mengukur penurunan kepala janin dalam panggul
+                  ibu.</small>
+            </div>
+         </div>
+      </div>
+   </div>
+   </div>
+   </div>
+
    <script>
       document.addEventListener('DOMContentLoaded', function() {
          // Data dari controller
@@ -945,12 +1029,58 @@
          const pembukaanData = grafikData.pembukaan || [];
          const penurunanData = grafikData.penurunan || [];
          
+         // Log data untuk debugging
+         console.log('Grafik Data Lengkap:', grafikData);
+         console.log('Waktu Labels:', waktuLabels);
+         console.log('Data Pembukaan:', pembukaanData);
+         console.log('Data Penurunan:', penurunanData);
+         
+         // Buat array baru untuk label jam yang konsisten
+         const jamLabels = [];
+         for (let i = 0; i <= 16; i++) {
+            jamLabels.push(i);
+         }
+         
+         // Pemetaan data pembukaan ke jam yang benar
+         const mappedPembukaanData = [];
+         const mappedPenurunanData = [];
+         
+         // Inisialisasi array data dengan null
+         for (let i = 0; i <= 16; i++) {
+            mappedPembukaanData[i] = null;
+            mappedPenurunanData[i] = null;
+         }
+         
+         // Petakan data dari waktuLabels ke jamLabels
+         if (waktuLabels.length > 0 && pembukaanData.length > 0) {
+            for (let i = 0; i < waktuLabels.length; i++) {
+               const jamIndex = parseInt(waktuLabels[i]);
+               if (!isNaN(jamIndex) && jamIndex >= 0 && jamIndex <= 16) {
+                  mappedPembukaanData[jamIndex] = pembukaanData[i];
+                  if (i < penurunanData.length) {
+                     mappedPenurunanData[jamIndex] = penurunanData[i];
+                  }
+               }
+            }
+         } else {
+            // Jika tidak ada data waktu atau data kosong, gunakan data asli
+            for (let i = 0; i < pembukaanData.length && i <= 16; i++) {
+               mappedPembukaanData[i] = pembukaanData[i];
+               if (i < penurunanData.length) {
+                  mappedPenurunanData[i] = penurunanData[i];
+               }
+            }
+         }
+         
+         console.log('Mapped Pembukaan Data:', mappedPembukaanData);
+         console.log('Mapped Penurunan Data:', mappedPenurunanData);
+         
          // Membuat data untuk garis waspada dan bertindak
          let garisWaspadaData = [];
          let garisBertindakData = [];
-         
+           
          // Garis waspada dimulai dari 4 cm pada jam ke-0 dan naik 1 cm per jam
-         for (let i = 0; i < 16; i++) {
+         for (let i = 0; i <= 16; i++) {
             if (i < 10) { // Batas 10 jam untuk garis waspada
                garisWaspadaData.push(Math.min(4 + i, 10)); // Maksimal 10 cm
             } else {
@@ -959,7 +1089,7 @@
          }
          
          // Garis bertindak dimulai dari 4 cm pada jam ke-4 (4 jam setelah garis waspada)
-         for (let i = 0; i < 16; i++) {
+         for (let i = 0; i <= 16; i++) {
             if (i < 4) {
                garisBertindakData.push(null); // Belum ada nilai di 4 jam pertama
             } else if (i < 14) { // Batas 10 jam untuk garis bertindak setelah mulai
@@ -968,31 +1098,109 @@
                garisBertindakData.push(null);
             }
          }
-         
+           
          // Konfigurasi chart
          const options = {
             chart: {
-               height: 350,
                type: 'line',
+               height: 400,
                toolbar: {
-                  show: true
+                  show: true,
+                  tools: {
+                     download: true,
+                     selection: true,
+                     zoom: true,
+                     zoomin: true,
+                     zoomout: true,
+                     pan: true,
+                     reset: true
+                  }
                },
-               fontFamily: 'Roboto, sans-serif',
+               animations: {
+                  enabled: true,
+                  easing: 'easeinout',
+                  speed: 800,
+                  animateGradually: {
+                     enabled: true,
+                     delay: 150
+                  },
+                  dynamicAnimation: {
+                     enabled: true,
+                     speed: 350
+                  }
+               },
+               zoom: {
+                  enabled: true,
+                  type: 'x',
+                  autoScaleYaxis: true
+               }
+            },
+            dataLabels: {
+               enabled: true,
+               formatter: function(val, { seriesIndex, dataPointIndex, w }) {
+                  if (seriesIndex === 0 && val !== null) { // Hanya untuk seri pembukaan
+                     return val + ' cm';
+                  }
+                  return '';
+               },
+               style: {
+                  colors: ['#1a73e8']
+               },
+               background: {
+                  enabled: true,
+                  foreColor: '#fff',
+                  borderWidth: 0
+               }
             },
             stroke: {
-               width: [3, 3, 2, 2],
+               width: [4, 4, 3, 3],
                curve: 'straight',
-               dashArray: [0, 0, 0, 0]
+               dashArray: [0, 0, 0, 0],
+               colors: ['#1a73e8', '#28a745', '#FF9800', '#F44336']
             },
-            colors: ['#1a73e8', '#28a745', '#FF9800', '#F44336'], // Warna: pembukaan, penurunan (hijau), waspada, bertindak
+            grid: {
+               borderColor: '#dee2e6',
+               strokeDashArray: 0,
+               xaxis: {
+                  lines: {
+                     show: true
+                  }
+               },
+               yaxis: {
+                  lines: {
+                     show: true
+                  }
+               },
+               row: {
+                  colors: ['#f8f9fa', 'transparent'],
+                  opacity: 0.5
+               },
+               column: {
+                  colors: ['#f8f9fa', 'transparent'],
+                  opacity: 0.2
+               },
+               padding: {
+                  left: 10,
+                  right: 10
+               }
+            },
+            markers: {
+               size: 6,
+               colors: ['#1a73e8', '#28a745', '#FF9800', '#F44336'],
+               strokeWidth: 0,
+               hover: {
+                  size: 9,
+                  sizeOffset: 3
+               }
+            },
             series: [
                {
                   name: 'Pembukaan (cm)',
-                  data: pembukaanData
+                  data: mappedPembukaanData
                },
                {
                   name: 'Penurunan Kepala',
-                  data: penurunanData
+                  data: mappedPenurunanData
                },
                {
                   name: 'Garis Waspada',
@@ -1004,64 +1212,96 @@
                }
             ],
             xaxis: {
-               categories: waktuLabels,
+               categories: jamLabels.map(jam => `Jam ${jam}`),
                title: {
-                  text: 'Waktu Pemeriksaan'
+                  text: 'Waktu (Jam)'
+               },
+               axisBorder: {
+                  show: true,
+                  color: '#dee2e6'
+               },
+               axisTicks: {
+                  show: true,
+                  borderType: 'solid',
+                  color: '#dee2e6'
                }
             },
-            yaxis: [
-               {
-                  title: {
-                     text: 'Pembukaan (cm)',
-                     style: {
-                        color: '#1a73e8'
-                     }
-                  },
-                  min: 0,
-                  max: 10,
-                  reversed: false
+            yaxis: {
+               reversed: false,
+               title: {
+                  text: 'Pembukaan Serviks (cm)'
                },
-               {
-                  opposite: true,
-                  title: {
-                     text: 'Penurunan Kepala',
-                     style: {
-                        color: '#28a745'
-                     }
-                  },
-                  min: 0,
-                  max: 5,
-                  reversed: true
-               }
-            ],
-            markers: {
-               size: 5,
-               colors: ['#1a73e8', '#28a745', '#FF9800', '#F44336'], // Warna titik-titik marker sesuai dengan warna garis
-               strokeColors: '#fff',
-               strokeWidth: 2
+               min: 0,
+               max: 10,
+               tickAmount: 10
             },
             legend: {
-               position: 'top',
-               labels: {
-                  colors: ['#1a73e8', '#28a745', '#FF9800', '#F44336'] // Warna label pada legenda
+               position: 'top'
+            },
+            title: {
+               text: 'Grafik Dilatasi Serviks',
+               align: 'center',
+               margin: 10,
+               offsetY: 20,
+               style: {
+                  fontSize: '16px',
+                  fontWeight: 600
                }
             },
-            grid: {
-               borderColor: '#e7e7e7',
-               row: {
-                  colors: ['#f5f7fa', 'transparent'],
-                  opacity: 0.5
-               },
+            annotations: {
+               texts: [
+                  {
+                     x: 'Jam 4',
+                     y: 7,
+                     text: 'WASPADA',
+                     textAnchor: 'start',
+                     borderWidth: 0,
+                     fontSize: '12px',
+                     fontWeight: 'bold',
+                     foreColor: '#FF9800',
+                     backgroundColor: 'transparent',
+                     rotate: -45,
+                     offsetX: -45
+                  },
+                  {
+                     x: 'Jam 8',
+                     y: 7,
+                     text: 'BERTINDAK',
+                     textAnchor: 'start',
+                     borderWidth: 0,
+                     fontSize: '12px',
+                     fontWeight: 'bold',
+                     foreColor: '#F44336',
+                     backgroundColor: 'transparent',
+                     rotate: -45,
+                     offsetX: -50
+                  }
+               ]
             },
             tooltip: {
+               enabled: true,
+               shared: true,
+               intersect: false,
+               followCursor: true,
+               marker: {
+                  show: true
+               },
+               x: {
+                  show: true,
+                  formatter: function(val) {
+                     return 'Waktu: ' + val;
+                  }
+               },
                y: {
                   formatter: function(val, { seriesIndex }) {
                      if (seriesIndex === 0) {
-                        return val + ' cm';
+                        return 'Pembukaan: ' + val + ' cm';
                      } else if (seriesIndex === 1) {
-                        return 'Stasiun ' + val;
+                        return 'Penurunan Kepala: Stasiun ' + val;
+                     } else if (seriesIndex === 2) {
+                        return 'Garis Waspada: ' + val + ' cm';
                      } else {
-                        return val + ' cm';
+                        return 'Garis Bertindak: ' + val + ' cm';
                      }
                   }
                }
@@ -1071,6 +1311,258 @@
          // Render chart
          const chart = new ApexCharts(document.getElementById('partografChart'), options);
          chart.render();
+
+         // Data untuk grafik posisi janin
+         const posisiJaninData = grafikData && grafikData.penurunan ? grafikData.penurunan : [];
+         
+         // Membuat array posisi janin yang dipetakan ke jam 0-16
+         const mappedPosisiJaninData = [];
+         
+         // Inisialisasi array data dengan null
+         for (let i = 0; i <= 16; i++) {
+            mappedPosisiJaninData[i] = null;
+         }
+         
+         // Petakan data posisi janin ke jam yang benar
+         if (waktuLabels.length > 0 && posisiJaninData.length > 0) {
+            for (let i = 0; i < waktuLabels.length; i++) {
+               const jamIndex = parseInt(waktuLabels[i]);
+               if (!isNaN(jamIndex) && jamIndex >= 0 && jamIndex <= 16 && i < posisiJaninData.length) {
+                  // Konversi data penurunan ke format -5 sampai +5 untuk tampilan
+                  const nilaiStasiun = posisiJaninData[i] !== null ? parseInt(posisiJaninData[i]) : null;
+                  mappedPosisiJaninData[jamIndex] = nilaiStasiun;
+               }
+            }
+         }
+         
+         console.log('Mapped Posisi Janin Data:', mappedPosisiJaninData);
+         
+         // Konfigurasi chart posisi janin
+         const posisiJaninOptions = {
+            chart: {
+               type: 'line',
+               height: 350,
+               toolbar: {
+                  show: true,
+                  tools: {
+                     download: true,
+                     selection: true,
+                     zoom: true,
+                     zoomin: true,
+                     zoomout: true,
+                     pan: true,
+                     reset: true
+                  }
+               },
+               animations: {
+                  enabled: true,
+                  easing: 'easeinout',
+                  speed: 800,
+                  animateGradually: {
+                     enabled: true,
+                     delay: 150
+                  },
+                  dynamicAnimation: {
+                     enabled: true,
+                     speed: 350
+                  }
+               },
+               zoom: {
+                  enabled: true,
+                  type: 'x',
+                  autoScaleYaxis: true
+               }
+            },
+            dataLabels: {
+               enabled: true,
+               formatter: function(val) {
+                  return val !== null ? val.toString() : '';
+               },
+               style: {
+                  colors: ['#1a73e8']
+               },
+               background: {
+                  enabled: true,
+                  foreColor: '#fff',
+                  borderWidth: 0
+               }
+            },
+            stroke: {
+               width: 4,
+               curve: 'straight',
+               dashArray: 0,
+               colors: ['#1a73e8']
+            },
+            grid: {
+               borderColor: '#dee2e6',
+               strokeDashArray: 0,
+               xaxis: {
+                  lines: {
+                     show: true
+                  }
+               },
+               yaxis: {
+                  lines: {
+                     show: true
+                  }
+               },
+               row: {
+                  colors: ['#f8f9fa', 'transparent'],
+                  opacity: 0.5
+               },
+               column: {
+                  colors: ['#f8f9fa', 'transparent'],
+                  opacity: 0.2
+               },
+               padding: {
+                  left: 10,
+                  right: 10
+               }
+            },
+            markers: {
+               size: 6,
+               colors: ['#1a73e8'],
+               strokeWidth: 0,
+               hover: {
+                  size: 9,
+                  sizeOffset: 3
+               }
+            },
+            series: [
+               {
+                  name: 'Posisi Janin',
+                  data: mappedPosisiJaninData
+               }
+            ],
+            xaxis: {
+               categories: jamLabels.map(jam => `Jam ${jam}`),
+               title: {
+                  text: 'Waktu (Jam)'
+               },
+               axisBorder: {
+                  show: true,
+                  color: '#dee2e6'
+               },
+               axisTicks: {
+                  show: true,
+                  borderType: 'solid',
+                  color: '#dee2e6'
+               }
+            },
+            yaxis: {
+               title: {
+                  text: 'Stasiun (-5 sampai +5)'
+               },
+               min: -5,
+               max: 5,
+               tickAmount: 10,
+               labels: {
+                  formatter: function(val) {
+                     return val === 0 ? '0' : val > 0 ? '+' + val : val.toString();
+                  }
+               }
+            },
+            tooltip: {
+               enabled: true,
+               shared: false,
+               intersect: true,
+               followCursor: true,
+               marker: {
+                  show: true
+               },
+               x: {
+                  show: true,
+                  formatter: function(val) {
+                     return 'Waktu: ' + val;
+                  }
+               },
+               y: {
+                  formatter: function(val) {
+                     if (val === null) return 'Tidak ada data';
+                     let posisi = '';
+                     if (val === 0) {
+                        posisi = 'Sejajar dengan spina ischiadica';
+                     } else if (val > 0) {
+                        posisi = val + ' cm di bawah spina ischiadica';
+                     } else {
+                        posisi = Math.abs(val) + ' cm di atas spina ischiadica';
+                     }
+                     return 'Stasiun: ' + (val === 0 ? '0' : val > 0 ? '+' + val : val) + '\n' + posisi;
+                  }
+               }
+            },
+            legend: {
+               position: 'top'
+            },
+            title: {
+               text: 'Grafik Penurunan Posisi Janin',
+               align: 'center',
+               margin: 10,
+               offsetY: 20,
+               style: {
+                  fontSize: '16px',
+                  fontWeight: 600
+               }
+            },
+            annotations: {
+               yaxis: [
+                  {
+                     y: 0,
+                     strokeDashArray: 0,
+                     borderColor: '#775DD0',
+                     fillColor: '#775DD0',
+                     opacity: 0.3,
+                     width: '100%',
+                     label: {
+                        borderColor: '#775DD0',
+                        style: {
+                           color: '#fff',
+                           background: '#775DD0'
+                        },
+                        text: 'Bidang Spina Ischiadica'
+                     }
+                  },
+                  {
+                     y: -3,
+                     strokeDashArray: 2,
+                     borderColor: '#E91E63',
+                     fillColor: '#E91E63',
+                     opacity: 0.1,
+                     width: '100%',
+                     label: {
+                        borderColor: '#E91E63',
+                        style: {
+                           color: '#fff',
+                           background: '#E91E63'
+                        },
+                        text: 'Stasiun -3'
+                     }
+                  },
+                  {
+                     y: 3,
+                     strokeDashArray: 2,
+                     borderColor: '#33b2df',
+                     fillColor: '#33b2df',
+                     opacity: 0.1,
+                     width: '100%',
+                     label: {
+                        borderColor: '#33b2df',
+                        style: {
+                           color: '#fff',
+                           background: '#33b2df'
+                        },
+                        text: 'Stasiun +3'
+                     }
+                  }
+               ]
+            }
+         };
+         
+         // Inisialisasi chart posisi janin jika ada data
+         if (document.getElementById('posisiJaninChart')) {
+            const posisiJaninChart = new ApexCharts(document.getElementById('posisiJaninChart'), posisiJaninOptions);
+            posisiJaninChart.render();
+         }
       });
    </script>
 </body>

@@ -15,6 +15,7 @@ class Partograf extends Component
 {
     public $noRawat;
     public $dataIbuHamil;
+    public $tab = 'data';
     public $partograf = [
         // Bagian 1: Informasi Persalinan Awal
         'paritas' => '',
@@ -309,53 +310,22 @@ class Partograf extends Component
     
     public function savePartograf()
     {
-        if (!$this->dataIbuHamil) {
-            session()->flash('error', 'Data ibu hamil tidak ditemukan. Partograf tidak dapat disimpan.');
-            return;
-        }
-        
-        // Validasi input
-        $this->validate([
-            'partograf.dilatasi_serviks' => 'required|numeric|min:0|max:10',
-            'partograf.denyut_jantung_janin' => 'required|numeric|min:100|max:200',
-            'partograf.tekanan_darah_sistole' => 'required|numeric|min:80|max:200',
-            'partograf.tekanan_darah_diastole' => 'required|numeric|min:40|max:120',
-        ], [
-            'partograf.dilatasi_serviks.required' => 'Dilatasi serviks harus diisi',
-            'partograf.denyut_jantung_janin.required' => 'Denyut jantung janin harus diisi',
-            'partograf.tekanan_darah_sistole.required' => 'Tekanan darah sistole harus diisi',
-            'partograf.tekanan_darah_diastole.required' => 'Tekanan darah diastole harus diisi',
-        ]);
+        $idPartograf = $this->generateIdPartograf();
         
         try {
-            // Mendapatkan data reg_periksa
-            $regPeriksa = RegPeriksa::where('no_rawat', $this->noRawat)->first();
-            
-            if (!$regPeriksa) {
-                session()->flash('error', 'Data registrasi tidak ditemukan');
-                return;
-            }
-            
-            // Generate ID partograf
-            $idPartograf = $this->generateIdPartograf();
-            
-            // Konversi faktor risiko ke JSON
-            $faktorRisikoJson = json_encode($this->faktorRisiko);
-            
-            // Data untuk disimpan ke database
+            // Buat data partograf
             $dataPartograf = [
                 'id_partograf' => $idPartograf,
-                'no_rawat' => $this->noRawat,
-                'no_rkm_medis' => $regPeriksa->no_rkm_medis,
                 'id_hamil' => $this->dataIbuHamil->id_hamil,
+                'no_rawat' => $this->noRawat,
+                'no_rkm_medis' => $this->dataIbuHamil->no_rkm_medis,
                 'tanggal_partograf' => now(),
-                'diperiksa_oleh' => Auth::user()->name ?? 'Petugas',
+                'diperiksa_oleh' => Auth::user() ? (Auth::user()->name ?? 'System') : 'System',
                 
                 // Bagian 1: Informasi Persalinan Awal
                 'paritas' => $this->partograf['paritas'],
                 'onset_persalinan' => $this->partograf['onset_persalinan'],
                 'waktu_pecah_ketuban' => $this->partograf['waktu_pecah_ketuban'],
-                'faktor_risiko' => $faktorRisikoJson,
                 
                 // Bagian 2: Supportive Care
                 'pendamping' => $this->partograf['pendamping'],
@@ -368,7 +338,6 @@ class Partograf extends Component
                 'kondisi_cairan_ketuban' => $this->partograf['kondisi_cairan_ketuban'],
                 'presentasi_janin' => $this->partograf['presentasi_janin'],
                 'bentuk_kepala_janin' => $this->partograf['bentuk_kepala_janin'],
-                'caput_succedaneum' => $this->partograf['caput_succedaneum'],
                 
                 // Bagian 4: Informasi Ibu
                 'nadi' => $this->partograf['nadi'],
@@ -392,28 +361,96 @@ class Partograf extends Component
                 'hasil_tindakan' => $this->partograf['hasil_tindakan'],
                 'keputusan_bersama' => $this->partograf['keputusan_bersama'],
                 
+                // Timestamp
                 'created_at' => now(),
                 'updated_at' => now()
             ];
             
-            // Simpan data partograf ke database
+            // Simpan faktor risiko sebagai JSON (bukan string)
+            // Menggunakan json_encode untuk menyimpan array ke kolom JSON
+            $dataPartograf['faktor_risiko'] = json_encode($this->faktorRisiko);
+            
+            // Validasi no_rawat (periksa relasi dengan reg_periksa)
+            $regPeriksa = DB::table('reg_periksa')->where('no_rawat', $this->noRawat)->first();
+            if (!$regPeriksa) {
+                throw new \Exception('No. Rawat tidak valid atau tidak ditemukan di tabel reg_periksa.');
+            }
+            
+            // Simpan ke database
             DB::table('partograf')->insert($dataPartograf);
             
-            // Perbarui data grafik
+            // Reload riwayat partograf
             $this->loadRiwayatPartograf();
+            
+            // Reload chart data
             $this->loadChartData();
             
-            // Reset form partograf untuk entri baru
-            $this->resetPartografForm();
+            // PENTING: Simpan pesan ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Berhasil!',
+                'text' => 'Data partograf berhasil disimpan',
+                'icon' => 'success',
+                'timer' => 3000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
             
-            // Tampilkan pesan sukses
-            session()->flash('success', 'Data partograf berhasil disimpan');
-
-            // Pindah ke tab grafik
+            // Tambahkan flash message biasa
+            session()->flash('message', 'Data partograf berhasil disimpan!');
+            session()->flash('alert-type', 'success');
+            
+            // Log untuk debugging
+            Log::info('Partograf berhasil disimpan', [
+                'id_partograf' => $idPartograf,
+                'id_hamil' => $this->dataIbuHamil->id_hamil,
+                'no_rawat' => $this->noRawat
+            ]);
+            
+            // Kirim notifikasi ke browser
+            $this->dispatchBrowserEvent('partografSaved');
             $this->dispatchBrowserEvent('show-grafik-tab');
+            $this->dispatchBrowserEvent('maintain-scroll-position');
+            $this->dispatchBrowserEvent('show-toast', [
+                'title' => 'Berhasil!',
+                'message' => 'Data partograf berhasil disimpan',
+                'type' => 'success'
+            ]);
+            
+            // Notifikasi tambahan
+            $this->dispatchBrowserEvent('swal:success', [
+                'title' => 'Berhasil Disimpan',
+                'text' => 'Data partograf untuk pasien ' . ($this->dataIbuHamil->nama ?? 'Tidak diketahui') . ' telah berhasil disimpan',
+                'timer' => 3000
+            ]);
+            
         } catch (\Exception $e) {
-            // Tampilkan pesan error
-            session()->flash('error', 'Gagal menyimpan data partograf: ' . $e->getMessage());
+            // Simpan error ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Error!',
+                'text' => 'Terjadi kesalahan saat menyimpan: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timer' => 5000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Tambahkan flash message untuk error
+            session()->flash('message', 'Gagal menyimpan data partograf: ' . $e->getMessage());
+            session()->flash('alert-type', 'error');
+            
+            Log::error("Error saving partograf: " . $e->getMessage());
+            $this->dispatchBrowserEvent('errorSavingPartograf', [
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+            
+            // Notifikasi error tambahan
+            $this->dispatchBrowserEvent('swal:error', [
+                'title' => 'Error!',
+                'text' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage(),
+                'timer' => 5000
+            ]);
         }
     }
     
@@ -612,13 +649,20 @@ class Partograf extends Component
             }
             
             // Siapkan data untuk disimpan
+            try {
+                $petugasName = Auth::user() ? (Auth::user()->nama ?? Auth::user()->name ?? 'System') : 'System';
+            } catch (\Exception $e) {
+                Log::error('Error mendapatkan data user: ' . $e->getMessage());
+                $petugasName = 'System';
+            }
+
             $dataToSave = array_merge($this->catatanPersalinan, [
                 'id_catatan' => $this->currentCatatanId,
                 'id_hamil' => $this->dataIbuHamil->id_hamil,
                 'no_rawat' => $this->noRawat,
                 'no_rkm_medis' => $this->dataIbuHamil->no_rkm_medis,
                 'kala2_pendamping' => implode(', ', $pendampingList),
-                'petugas' => Auth::user()->nama,
+                'petugas' => $petugasName,
                 'updated_at' => now()
             ]);
             
@@ -729,10 +773,47 @@ class Partograf extends Component
 
     public function resetFormCatatanPersalinan()
     {
-        $this->resetCatatanPersalinanForm();
-        
-        // Trigger event untuk tetap di tab catatan persalinan
-        $this->dispatchBrowserEvent('catatan-persalinan-reset');
+        try {
+            // Reset form catatan persalinan
+            $this->resetCatatanPersalinanForm();
+            
+            // PENTING: Simpan pesan ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Form Direset',
+                'text' => 'Form catatan persalinan telah direset',
+                'icon' => 'info',
+                'timer' => 3000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Log untuk debugging
+            Log::info('Form catatan persalinan direset');
+            
+            // Tetap kirim event, tapi ini bukan prioritas utama
+            $this->dispatchBrowserEvent('catatan-persalinan-reset');
+            $this->dispatchBrowserEvent('formCatatanPersalinanDireset');
+            $this->dispatchBrowserEvent('maintain-scroll-position');
+            
+        } catch (\Exception $e) {
+            Log::error('Error saat mereset form catatan persalinan: ' . $e->getMessage());
+            
+            // Simpan error ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Error!',
+                'text' => 'Gagal mereset form: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timer' => 5000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            $this->dispatchBrowserEvent('errorResetForm', [
+                'message' => 'Gagal mereset form: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function resetForm()
@@ -807,17 +888,159 @@ class Partograf extends Component
 
     public function saveCatatanPersalinanForm()
     {
-        $this->saveCatatanPersalinan();
+        try {
+            // Validasi data sebelum disimpan
+            if (!$this->dataIbuHamil) {
+                throw new \Exception('Data ibu hamil tidak ditemukan. Catatan persalinan tidak dapat disimpan.');
+            }
+            
+            // Cek apakah ada data pemantauan kala 4 yang valid
+            $hasValidData = false;
+            foreach ($this->pemantauanKala4 as $pemantauan) {
+                if (!empty($pemantauan['jam_ke']) || !empty($pemantauan['waktu'])) {
+                    $hasValidData = true;
+                    break;
+                }
+            }
+            
+            if (!$hasValidData && count($this->pemantauanKala4) <= 1) {
+                // Kalau belum ada data, tambahkan satu baris otomatis
+                $this->tambahPemantauanKala4();
+            }
+            
+            // Simpan data catatan persalinan
+            $this->saveCatatanPersalinan();
+            
+            // PENTING: Simpan pesan ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Berhasil!',
+                'text' => 'Catatan persalinan berhasil disimpan',
+                'icon' => 'success',
+                'timer' => 3000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Log untuk debugging
+            Log::info('Catatan persalinan berhasil disimpan', [
+                'id_catatan' => $this->currentCatatanId,
+                'id_hamil' => $this->dataIbuHamil->id_hamil
+            ]);
+            
+            // Tetap kirim event, tapi ini bukan prioritas utama
+            $this->dispatchBrowserEvent('catatanPersalinanSaved');
+            $this->dispatchBrowserEvent('catatan-persalinan-saved');
+            $this->dispatchBrowserEvent('maintain-scroll-position');
+        } catch (\Exception $e) {
+            // Log error
+            Log::error('Error saat menyimpan catatan persalinan: ' . $e->getMessage());
+            
+            // Simpan error ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Error!',
+                'text' => 'Terjadi kesalahan saat menyimpan: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timer' => 5000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Kirim notifikasi error ke browser
+            $this->dispatchBrowserEvent('errorSavingCatatanPersalinan', [
+                'message' => 'Terjadi kesalahan saat menyimpan: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function tambahBarisKala4()
     {
-        $this->tambahPemantauanKala4();
+        try {
+            $this->tambahPemantauanKala4();
+            
+            // PENTING: Simpan pesan ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Berhasil!',
+                'text' => 'Baris pemantauan Kala 4 berhasil ditambahkan',
+                'icon' => 'success',
+                'timer' => 3000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Tetap kirim event, tapi ini bukan prioritas utama
+            $this->dispatchBrowserEvent('pemantauanKala4Ditambahkan');
+            $this->dispatchBrowserEvent('maintain-scroll-position');
+            
+            // Log untuk debugging
+            Log::info('Baris pemantauan Kala 4 ditambahkan', [
+                'jumlah_baris' => count($this->pemantauanKala4)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saat menambahkan baris Kala 4: ' . $e->getMessage());
+            
+            // Simpan error ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Error!',
+                'text' => 'Gagal menambah baris: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timer' => 5000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            $this->dispatchBrowserEvent('errorTambahBaris', [
+                'message' => 'Gagal menambah baris: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function hapusBarisKala4($index)
     {
-        $this->hapusPemantauanKala4($index);
+        try {
+            $this->hapusPemantauanKala4($index);
+            
+            // PENTING: Simpan pesan ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Berhasil!',
+                'text' => 'Pemantauan Kala 4 berhasil diperbarui',
+                'icon' => 'success',
+                'timer' => 3000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            // Tetap kirim event, tapi ini bukan prioritas utama
+            $this->dispatchBrowserEvent('pemantauanKala4Diperbarui');
+            $this->dispatchBrowserEvent('maintain-scroll-position');
+            
+            // Log untuk debugging
+            Log::info('Baris pemantauan Kala 4 dihapus', [
+                'index' => $index,
+                'jumlah_baris_setelah_dihapus' => count($this->pemantauanKala4)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saat menghapus baris Kala 4: ' . $e->getMessage());
+            
+            // Simpan error ke session sebelum refresh
+            session()->flash('partograf_notification', json_encode([
+                'title' => 'Error!',
+                'text' => 'Gagal menghapus baris: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timer' => 5000,
+                'toast' => true,
+                'position' => 'top-end',
+                'showConfirmButton' => false
+            ]));
+            
+            $this->dispatchBrowserEvent('errorHapusBaris', [
+                'message' => 'Gagal menghapus baris: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function setRadioValue($property, $value)

@@ -1891,28 +1891,48 @@
                                     wire:model.defer="pemantauanKala4.{{ $index }}.perdarahan">
                               </td>
                               <td>
+                                 <!-- Tombol hapus baris -->
                                  <button type="button" class="btn btn-sm btn-danger btn-hapus-baris"
-                                    data-index="{{ $index }}">
-                                    <i class="fas fa-trash"></i>
+                                    wire:click.prevent="hapusBarisKala4({{ $index }})" wire:loading.attr="disabled"
+                                    wire:target="hapusBarisKala4({{ $index }})">
+                                    <i class="fas fa-trash" wire:loading.class="fa-spinner fa-spin"
+                                       wire:target="hapusBarisKala4({{ $index }})"></i>
                                  </button>
                               </td>
                            </tr>
                            @endforeach
                         </tbody>
                      </table>
-                     <button type="button" id="btnTambahBarisKala4" class="btn btn-sm btn-success">
-                        <i class="fas fa-plus"></i> Tambah Baris
+                     <!-- Tombol tambah baris -->
+                     <button type="button" id="btnTambahBarisKala4" class="btn btn-sm btn-success"
+                        wire:click.prevent="tambahBarisKala4" wire:loading.attr="disabled"
+                        wire:target="tambahBarisKala4">
+                        <i class="fas fa-plus" wire:loading.class="fa-spinner fa-spin"
+                           wire:target="tambahBarisKala4"></i>
+                        <span wire:loading.remove wire:target="tambahBarisKala4">Tambah Baris</span>
+                        <span wire:loading wire:target="tambahBarisKala4">Menambahkan...</span>
                      </button>
                   </div>
                </div>
             </div>
 
+            <!-- Tombol Simpan dan Reset -->
             <div class="form-group">
-               <button type="button" id="btnSimpanCatatanPersalinan" class="btn btn-primary">
-                  <i class="fas fa-save mr-1"></i> Simpan Catatan Persalinan
+               <button type="button" id="btnSimpanCatatanPersalinan" class="btn btn-primary"
+                  wire:click.prevent="saveCatatanPersalinanForm" wire:loading.attr="disabled"
+                  wire:target="saveCatatanPersalinanForm">
+                  <i class="fas fa-save mr-1" wire:loading.class="fa-spinner fa-spin"
+                     wire:target="saveCatatanPersalinanForm"></i>
+                  <span wire:loading.remove wire:target="saveCatatanPersalinanForm">Simpan Catatan Persalinan</span>
+                  <span wire:loading wire:target="saveCatatanPersalinanForm">Menyimpan...</span>
                </button>
-               <button type="button" id="btnResetCatatanPersalinan" class="btn btn-secondary">
-                  <i class="fas fa-redo mr-1"></i> Reset
+               <button type="button" id="btnResetCatatanPersalinan" class="btn btn-secondary"
+                  wire:click.prevent="resetFormCatatanPersalinan" wire:loading.attr="disabled"
+                  wire:target="resetFormCatatanPersalinan">
+                  <i class="fas fa-redo mr-1" wire:loading.class="fa-spinner fa-spin"
+                     wire:target="resetFormCatatanPersalinan"></i>
+                  <span wire:loading.remove wire:target="resetFormCatatanPersalinan">Reset</span>
+                  <span wire:loading wire:target="resetFormCatatanPersalinan">Mereset...</span>
                </button>
             </div>
          </form>
@@ -1932,311 +1952,151 @@
 @push('scripts')
 <!-- Load Chart.js secara langsung -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- Load SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-   // Tambahkan CSS untuk modal fullscreen
-      document.head.insertAdjacentHTML('beforeend', `
-         <style>
-            .modal-fullscreen {
-               width: 100vw;
-               max-width: none;
-               height: 100%;
-               margin: 0;
+   // Sistem Notifikasi Persisten - Akan tetap muncul setelah refresh
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cek apakah ada notifikasi dari session PHP (punya prioritas lebih tinggi)
+        @if (session()->has('partograf_notification'))
+            const sessionNotification = {!! session('partograf_notification') !!};
+            if (sessionNotification) {
+                // Tampilkan notifikasi dari session langsung
+                Swal.fire({
+                    title: sessionNotification.title,
+                    text: sessionNotification.text,
+                    icon: sessionNotification.icon,
+                    timer: sessionNotification.timer || 3000,
+                    timerProgressBar: sessionNotification.timerProgressBar !== false,
+                    toast: sessionNotification.toast !== false,
+                    position: sessionNotification.position || 'top-end',
+                    showConfirmButton: sessionNotification.showConfirmButton !== false
+                });
+                
+                // Hapus notifikasi dari session
+                @php
+                    session()->forget('partograf_notification');
+                @endphp
             }
-            .modal-fullscreen .modal-content {
-               height: 100vh;
-               border: 0;
-               border-radius: 0;
+        @else
+            // Cek localStorage jika tidak ada notifikasi session
+            const savedNotification = localStorage.getItem('partograf_notification');
+            if (savedNotification) {
+                // Parse notifikasi tersimpan
+                const notification = JSON.parse(savedNotification);
+                // Tampilkan notifikasi menggunakan SweetAlert
+                Swal.fire({
+                    title: notification.title,
+                    text: notification.text,
+                    icon: notification.icon,
+                    timer: notification.timer || 3000,
+                    timerProgressBar: notification.timerProgressBar !== false,
+                    toast: notification.toast !== false,
+                    position: notification.position || 'top-end',
+                    showConfirmButton: notification.showConfirmButton !== false
+                });
+                // Hapus notifikasi dari localStorage setelah ditampilkan
+                localStorage.removeItem('partograf_notification');
             }
-            .modal-fullscreen .modal-body {
-               overflow-y: auto;
-            }
-            .chart-container {
-               position: relative;
-               height: 75vh;
-               width: 100%;
-               background: white;
-               padding: 20px;
-               border: 1px solid #ddd;
-               margin-bottom: 20px;
-            }
-            #partografChartFullscreen {
-               display: block;
-               height: 100%;
-               width: 100%;
-            }
-            .modal-backdrop-js {
-               position: fixed;
-               top: 0;
-               left: 0;
-               width: 100vw;
-               height: 100vh;
-               background-color: rgba(0, 0, 0, 0.5);
-               z-index: 1040;
-            }
-            .show-js {
-               display: block !important;
-            }
-         </style>
-      `);
-
-      // Tampilkan tombol alternatif jika diperlukan
-      document.addEventListener('DOMContentLoaded', function() {
-         console.log('DOM telah dimuat, memeriksa jQuery dan Bootstrap');
-         setTimeout(function() {
-            if (typeof jQuery === 'undefined' || typeof jQuery.fn.modal === 'undefined') {
-               console.log('jQuery atau Bootstrap tidak tersedia');
-               var tombolAlt = document.getElementById('bukaPartografAlt');
-               if (tombolAlt) {
-                  tombolAlt.style.display = 'inline-block';
-               }
-            }
-         }, 1000);
-         
-         // Mencegah form melakukan submit dengan berbagai cara
-         const formCatatanPersalinan = document.getElementById('formCatatanPersalinan');
-         if (formCatatanPersalinan) {
-            // Cara 1: Event listener submit
-            formCatatanPersalinan.addEventListener('submit', function(e) {
-               console.log('Form submit dicegah');
-               e.preventDefault();
-               e.stopPropagation();
-               return false;
+        @endif
+        
+        // Fungsi untuk menyimpan notifikasi ke localStorage
+        function saveNotification(options) {
+            localStorage.setItem('partograf_notification', JSON.stringify(options));
+        }
+        
+        // Event handler untuk menyimpan notifikasi sebelum refresh
+        window.addEventListener('catatanPersalinanSaved', function (event) {
+            saveNotification({
+                title: 'Berhasil!',
+                text: 'Catatan persalinan berhasil disimpan',
+                icon: 'success',
+                timer: 3000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-            
-            // Cara 2: Mengganti fungsi asli submit
-            const originalSubmit = formCatatanPersalinan.submit;
-            formCatatanPersalinan.submit = function() {
-               console.log('Form submit native dicegah');
-               return false;
-            };
-            
-            // Cara 3: Mencegah keypress Enter menyebabkan submit form
-            formCatatanPersalinan.addEventListener('keypress', function(e) {
-               if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return false;
-               }
+        });
+        
+        window.addEventListener('catatan-persalinan-reset', function (event) {
+            saveNotification({
+                title: 'Form Direset',
+                text: 'Form catatan persalinan telah direset',
+                icon: 'info',
+                timer: 3000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-         }
-         
-         // Tambahkan event listener untuk tab catatan persalinan
-         $('#catatan-persalinan-tab').on('click', function(event) {
-            event.preventDefault();
-            var tabPane = $('#catatan-persalinan-content');
-            
-            $('.nav-link').removeClass('active');
-            $('.tab-pane').removeClass('show active');
-            
-            $(this).addClass('active');
-            tabPane.addClass('show active');
-         });
-         
-         // Tombol Simpan - mencegah default dan menggunakan Livewire emit
-         const btnSimpan = document.getElementById('btnSimpanCatatanPersalinan');
-         if (btnSimpan) {
-            btnSimpan.addEventListener('click', function(e) {
-               e.preventDefault();
-               e.stopPropagation();
-               console.log('Klik tombol Simpan Catatan Persalinan');
-               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
-               setTimeout(function() {
-                  try {
-                     if(typeof Livewire !== 'undefined') {
-                        Livewire.emit('saveCatatanPersalinanForm');
-                        console.log('Event saveCatatanPersalinanForm dikirim');
-                     }
-                  } catch (err) {
-                     console.error('Error pada emit Livewire:', err);
-                  }
-               }, 10);
-               return false;
+        });
+        
+        window.addEventListener('pemantauanKala4Ditambahkan', function (event) {
+            saveNotification({
+                title: 'Berhasil!',
+                text: 'Baris pemantauan Kala 4 berhasil ditambahkan',
+                icon: 'success',
+                timer: 3000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-         }
-         
-         // Tombol Reset - mencegah default dan menggunakan Livewire emit
-         const btnReset = document.getElementById('btnResetCatatanPersalinan');
-         if (btnReset) {
-            btnReset.addEventListener('click', function(e) {
-               e.preventDefault();
-               e.stopPropagation();
-               console.log('Klik tombol Reset Catatan Persalinan');
-               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
-               setTimeout(function() {
-                  try {
-                     if(typeof Livewire !== 'undefined') {
-                        Livewire.emit('resetFormCatatanPersalinan');
-                        console.log('Event resetFormCatatanPersalinan dikirim');
-                     }
-                  } catch (err) {
-                     console.error('Error pada emit Livewire:', err);
-                  }
-               }, 10);
-               return false;
+        });
+        
+        window.addEventListener('pemantauanKala4Diperbarui', function (event) {
+            saveNotification({
+                title: 'Berhasil!',
+                text: 'Pemantauan Kala 4 berhasil diperbarui',
+                icon: 'success',
+                timer: 3000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-         }
-         
-         // Tombol Tambah Baris - mencegah default dan menggunakan Livewire emit
-         const btnTambahBaris = document.getElementById('btnTambahBarisKala4');
-         if (btnTambahBaris) {
-            btnTambahBaris.addEventListener('click', function(e) {
-               e.preventDefault();
-               e.stopPropagation();
-               console.log('Klik tombol Tambah Baris');
-               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
-               setTimeout(function() {
-                  try {
-                     if(typeof Livewire !== 'undefined') {
-                        Livewire.emit('tambahBarisKala4');
-                        console.log('Event tambahBarisKala4 dikirim');
-                     }
-                  } catch (err) {
-                     console.error('Error pada emit Livewire:', err);
-                  }
-               }, 10);
-               return false;
+        });
+        
+        window.addEventListener('errorSave', function (event) {
+            saveNotification({
+                title: 'Error!',
+                text: event.detail?.message || 'Terjadi kesalahan saat menyimpan data',
+                icon: 'error',
+                timer: 5000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-         }
-         
-         // Delegate event untuk tombol hapus baris
-         document.addEventListener('click', function(e) {
-            if (e.target && (e.target.classList.contains('btn-hapus-baris') || e.target.closest('.btn-hapus-baris'))) {
-               e.preventDefault();
-               e.stopPropagation();
-               
-               const btn = e.target.classList.contains('btn-hapus-baris') ? e.target : e.target.closest('.btn-hapus-baris');
-               const index = btn.getAttribute('data-index');
-               
-               console.log('Klik tombol Hapus Baris dengan index:', index);
-               
-               // Gunakan timeout kecil untuk memastikan event tidak diinterupsi
-               setTimeout(function() {
-                  try {
-                     if(typeof Livewire !== 'undefined' && index !== null) {
-                        Livewire.emit('hapusBarisKala4', parseInt(index));
-                        console.log('Event hapusBarisKala4 dikirim dengan index:', index);
-                     }
-                  } catch (err) {
-                     console.error('Error pada emit Livewire:', err);
-                  }
-               }, 10);
-               return false;
-            }
-         }, true);
-         
-         // Patch semua input untuk mencegah submit form
-         document.querySelectorAll('#formCatatanPersalinan input, #formCatatanPersalinan textarea, #formCatatanPersalinan select').forEach(function(input) {
-            input.addEventListener('keydown', function(e) {
-               if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return false;
-               }
+        });
+        
+        window.addEventListener('errorResetForm', function (event) {
+            saveNotification({
+                title: 'Error!',
+                text: event.detail?.message || 'Terjadi kesalahan saat mereset form',
+                icon: 'error',
+                timer: 5000,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
             });
-         });
-      });
-      
-      // Livewire event handling untuk perpindahan tab
-      window.addEventListener('switch-to-tab', function(event) {
-         var tabId = event.detail.tabId;
-         $('#' + tabId).tab('show');
-      });
-      
-      window.addEventListener('show-data-tab', function() {
-         $('#data-tab').tab('show');
-      });
-      
-      window.addEventListener('show-grafik-tab', function() {
-         $('#grafik-tab').tab('show');
-      });
-      
-      // Event listener untuk tetap di tab catatan persalinan setelah simpan/reset
-      window.addEventListener('catatan-persalinan-saved', function() {
-         console.log('Event catatan-persalinan-saved diterima, tetap di tab catatan persalinan');
-         $('#catatan-persalinan-tab').tab('show');
-      });
-      
-      window.addEventListener('catatan-persalinan-reset', function() {
-         console.log('Event catatan-persalinan-reset diterima, tetap di tab catatan persalinan');
-         $('#catatan-persalinan-tab').tab('show');
-      });
-      
-      // Tambahan event untuk menerima update Livewire tanpa refresh
-      document.addEventListener('livewire:load', function() {
-         console.log('Livewire loaded, menyiapkan hooks...');
-         Livewire.hook('message.processed', function(message, component) {
-            console.log('Livewire message processed, cek komponen...');
-            if (component.fingerprint.name === 'ranap.partograf') {
-               console.log('Komponen partograf diupdate, memastikan tetap di tab catatan persalinan...');
-               // Periksa jika sebelumnya tab catatan persalinan aktif
-               if ($('#catatan-persalinan-tab').hasClass('active')) {
-                  // Pastikan tab catatan persalinan tetap aktif
-                  setTimeout(function() {
-                     $('#catatan-persalinan-tab').tab('show');
-                  }, 50);
-               }
-            }
-         });
-      });
-
-      // Tambahkan script khusus untuk radio button pada partograf
-      document.addEventListener('livewire:load', function() {
-         // Inisialisasi semua radio button dalam form partograf
-         function initRadioButtons() {
-            console.log('Menginisialisasi radio buttons...');
-            
-            // Menangani SEMUA radio button di form partograf
-            document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
-               // Hapus event listener yang mungkin sudah ada untuk mencegah duplikasi
-               radio.removeEventListener('click', handleRadioClick);
-               
-               // Tambahkan event listener baru
-               radio.addEventListener('click', handleRadioClick);
-            });
-         }
-         
-         // Handler untuk radio button click
-         function handleRadioClick(e) {
-            // Hentikan perilaku default
-            e.preventDefault();
-            
-            // Dapatkan property dan nilai
-            var property = this.getAttribute('data-field') || this.getAttribute('wire:model');
-            var value = this.value;
-            
-            console.log('Radio button diklik:', property, value);
-            
-            // Set nilai menggunakan Livewire
-            if (property) {
-               console.log('Mengirim nilai ke Livewire:', property, value);
-               Livewire.emit('setRadioValue', property, value);
-               
-               // Update UI - tandai radio button sebagai checked
-               var name = this.getAttribute('name');
-               if (name) {
-                  document.querySelectorAll('input[name="' + name + '"]').forEach(function(r) {
-                     r.checked = (r.value === value);
-                  });
-               }
-            } else {
-               console.warn('Radio button tidak memiliki property yang valid:', this);
-            }
-         }
-         
-         // Inisialisasi pada awal load
-         initRadioButtons();
-         
-         // Inisialisasi ulang setelah setiap update Livewire
-         Livewire.hook('message.processed', function(message, component) {
-            if (component.fingerprint.name === 'ranap.partograf') {
-               console.log('Komponen partograf diupdate, menginisialisasi ulang radio buttons...');
-               setTimeout(initRadioButtons, 100);
-            }
-         });
-      });
-
-      // Script khusus untuk tabs
+        });
+        
+        // Juga simpan posisi scroll
+        window.addEventListener('beforeunload', function() {
+            sessionStorage.setItem('partograf_scroll_position', window.scrollY);
+        });
+        
+        // Kembalikan posisi scroll
+        const savedScrollPosition = sessionStorage.getItem('partograf_scroll_position');
+        if (savedScrollPosition) {
+            setTimeout(() => {
+                window.scrollTo({
+                    top: parseInt(savedScrollPosition),
+                    behavior: 'auto'
+                });
+            }, 100);
+        }
+        
+        // Sisa script lainnya...
+    });
 </script>
 @endpush
 </div>
