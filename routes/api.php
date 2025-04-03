@@ -11,6 +11,7 @@ use App\Http\Controllers\API\RiwayatController;
 use App\Http\Controllers\API\ObatController;
 use App\Http\Controllers\API\ResepRanapController;
 use App\Http\Controllers\WilayahController;
+use App\Http\Controllers\AntrianPoliklinikController;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,3 +139,11 @@ Route::get('/kelurahan', [WilayahController::class, 'getKelurahan']);
 
 // Route untuk mendapatkan data posyandu berdasarkan desa/kelurahan
 Route::middleware('web')->get('/data-posyandu', [\App\Http\Controllers\ILP\FaktorResikoController::class, 'getPosyandu']);
+
+// Antrian Poliklinik API Routes
+Route::get('/antrian-poliklinik', [AntrianPoliklinikController::class, 'getAntrianPoliklinik']);
+Route::get('/antrian-display', [AntrianPoliklinikController::class, 'getAntrianDisplay']);
+Route::get('/poliklinik', [AntrianPoliklinikController::class, 'getPoliklinik']);
+Route::get('/pasien/detail/{noRawat}', [AntrianPoliklinikController::class, 'getDetailPasien']);
+Route::post('/antrian/panggil', [AntrianPoliklinikController::class, 'panggilPasien']);
+Route::get('/media-files', [AntrianPoliklinikController::class, 'getMediaFiles'])->withoutMiddleware(['auth:sanctum']);

@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
+use App\Models\Pasien;
+use App\Events\PasienDipanggil;
+use App\Events\AntrianDipanggil;
 
 class PasienRalanController extends Controller
 {
@@ -18,6 +21,7 @@ class PasienRalanController extends Controller
     public function __construct()
     {
         $this->middleware('loginauth');
+        $this->middleware('web');
     }
 
     /**
@@ -205,6 +209,7 @@ class PasienRalanController extends Controller
         $query = DB::table('reg_periksa')
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
+            ->join('poliklinik', 'poliklinik.kd_poli', '=', 'reg_periksa.kd_poli')
             ->leftJoin('resume_pasien', 'reg_periksa.no_rawat', '=', 'resume_pasien.no_rawat')
             ->where('reg_periksa.kd_poli', $kd_poli)
             ->where('tgl_registrasi', $tanggal)
@@ -250,7 +255,8 @@ class PasienRalanController extends Controller
                 'reg_periksa.stts', 
                 'reg_periksa.keputusan', 
                 'pasien.no_rkm_medis', 
-                'resume_pasien.diagnosa_utama'
+                'resume_pasien.diagnosa_utama',
+                'poliklinik.nm_poli'
             )
             ->get();
             
@@ -599,5 +605,79 @@ class PasienRalanController extends Controller
             session()->has('logged_in') && 
             session()->get('logged_in') === true
         );
+    }
+
+    /**
+     * Menangani panggilan pasien
+     */
+    public function panggilPasien(Request $request)
+    {
+        try {
+            \Log::info('Received panggil-pasien request', [
+                'csrf_token' => $request->header('X-CSRF-TOKEN'),
+                'session_id' => session()->getId(),
+                'data' => $request->all()
+            ]);
+            
+            DB::beginTransaction();
+
+            $no_rawat = $request->no_rawat;
+            $is_ulang = $request->is_ulang === 'true';
+
+            // Ambil data pasien
+            $pasien = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+                ->where('reg_periksa.no_rawat', $no_rawat)
+                ->select(
+                    'reg_periksa.no_reg',
+                    'pasien.nm_pasien as nama',
+                    'poliklinik.nm_poli as poli',
+                    'reg_periksa.kd_dokter',
+                    'reg_periksa.kd_poli'
+                )
+                ->first();
+
+            if (!$pasien) {
+                throw new \Exception('Data pasien tidak ditemukan');
+            }
+
+            // Update atau insert ke antripoli
+            DB::table('antripoli')->updateOrInsert(
+                ['no_rawat' => $no_rawat],
+                [
+                    'kd_dokter' => $pasien->kd_dokter,
+                    'kd_poli' => $pasien->kd_poli,
+                    'status' => '1',
+                    'no_rawat' => $no_rawat
+                ]
+            );
+
+            DB::commit();
+
+            // Broadcast event
+            event(new AntrianDipanggil([
+                'no_reg' => $pasien->no_reg,
+                'nama' => $pasien->nama,
+                'poli' => $pasien->poli,
+                'is_ulang' => $is_ulang
+            ]));
+
+            return response()->json([
+                'success' => true,
+                'message' => $is_ulang ? 'Pasien berhasil dipanggil ulang' : 'Pasien berhasil dipanggil'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error in panggilPasien: ' . $e->getMessage(), [
+                'csrf_token' => $request->header('X-CSRF-TOKEN'),
+                'session_id' => session()->getId()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memanggil pasien: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

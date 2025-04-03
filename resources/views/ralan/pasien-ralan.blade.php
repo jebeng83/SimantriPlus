@@ -104,6 +104,7 @@
                                 @foreach($heads as $head)
                                 <th>{{ $head }}</th>
                                 @endforeach
+                                <th width="10%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -182,7 +183,7 @@
                                         </button>
                                         <div class="dropdown-menu" aria-labelledby="dropdownMenu-{{$row->no_rawat}}">
                                             <a href="/ilp/dewasa/{{$row->no_rawat}}" class="dropdown-item">
-                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Pelayanan ILP
+                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Form ILP Dewasa
                                             </a>
                                         </div>
                                     </div>
@@ -203,6 +204,26 @@
                                     <span class="status-badge {{$row->stts == 'Sudah' ? 'completed' : 'pending'}}">
                                         {{$row->stts}}
                                     </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fas fa-bullhorn"></i> Aksi
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="javascript:void(0)" class="dropdown-item btn-panggil"
+                                                data-no-reg="{{$row->no_reg}}" data-nama="{{$row->nm_pasien}}"
+                                                data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
+                                                <i class="fas fa-volume-up mr-2"></i> Panggil Pasien
+                                            </a>
+                                            <a href="javascript:void(0)" class="dropdown-item btn-ulang-panggil"
+                                                data-no-reg="{{$row->no_reg}}" data-nama="{{$row->nm_pasien}}"
+                                                data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
+                                                <i class="fas fa-redo mr-2"></i> Ulang Panggil
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach
@@ -943,6 +964,62 @@
         background-color: #28a745;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23fff' d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'%3E%3C/path%3E%3C/svg%3E");
     }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-overlay .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    /* Modal Styling */
+    #confirmPanggilModal .modal-content {
+        border-radius: 10px;
+        border: none;
+    }
+
+    #confirmPanggilModal .modal-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+
+    #confirmPanggilModal .modal-title {
+        font-weight: 600;
+    }
+
+    #confirmPanggilModal .close {
+        color: white;
+    }
+
+    #confirmPanggilModal .modal-footer {
+        border-top: 1px solid #eee;
+    }
+
+    #confirmPanggilModal .btn-primary {
+        background: var(--primary-color);
+        border: none;
+        padding: 8px 20px;
+    }
+
+    #confirmPanggilModal .btn-secondary {
+        background: #6c757d;
+        border: none;
+        padding: 8px 20px;
+    }
 </style>
 @stop
 
@@ -968,6 +1045,13 @@
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     };
+
+    // Setup CSRF token untuk semua request AJAX
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
 
     $(document).ready(function() {
         // Set default sort option
@@ -1338,6 +1422,29 @@
                                 <span class="d-flex align-items-center"><i class="fas fa-user-md mr-2 text-primary"></i> ${row.nm_dokter}</span>
                             </td>
                             <td>${statusBadge}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-bullhorn"></i> Aksi
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a href="javascript:void(0)" class="dropdown-item btn-panggil" 
+                                            data-no-reg="${row.no_reg}"
+                                            data-nama="${row.nm_pasien}"
+                                            data-poli="${row.nm_poli}"
+                                            data-no-rawat="${row.no_rawat}">
+                                            <i class="fas fa-volume-up mr-2"></i> Panggil Pasien
+                                        </a>
+                                        <a href="javascript:void(0)" class="dropdown-item btn-ulang-panggil"
+                                            data-no-reg="${row.no_reg}"
+                                            data-nama="${row.nm_pasien}"
+                                            data-poli="${row.nm_poli}"
+                                            data-no-rawat="${row.no_rawat}">
+                                            <i class="fas fa-redo mr-2"></i> Ulang Panggil
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                     `;
                     
@@ -1453,6 +1560,167 @@
         
         // Aktifkan auto refresh
         setupAutoRefresh();
+        
+        // Handler untuk tombol panggil pasien
+        $(document).on('click', '.btn-panggil', function(e) {
+            e.preventDefault(); // Mencegah default action
+            const noReg = $(this).data('no-reg');
+            const nama = $(this).data('nama');
+            const poli = $(this).data('poli');
+            const noRawat = $(this).data('no-rawat');
+            
+            // Konfirmasi dengan custom dialog
+            const confirmDialog = $(`
+                <div class="modal fade" id="confirmPanggilModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Konfirmasi Panggilan</h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Panggil pasien ${nama}?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" id="btnConfirmPanggil">Oke</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Tampilkan dialog
+            confirmDialog.modal('show');
+            
+            // Handler untuk tombol konfirmasi
+            confirmDialog.find('#btnConfirmPanggil').on('click', function() {
+                // Tutup dialog
+                confirmDialog.modal('hide');
+                
+                // Tampilkan loading
+                const loadingOverlay = $(`
+                    <div class="loading-overlay">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                `).appendTo('body');
+                
+                // Panggil pasien via AJAX
+                $.ajax({
+                    url: '{{ route("ralan.panggil-pasien") }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        no_reg: noReg,
+                        nama: nama,
+                        poli: poli,
+                        no_rawat: noRawat,
+                        is_ulang: false
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Tampilkan notifikasi sukses
+                            toastr.success('Berhasil memanggil pasien');
+                            
+                            // Refresh data tabel
+                            refreshData(true);
+                            
+                            // Broadcast event ke display antrian
+                            if (window.Echo) {
+                                window.Echo.channel('antrian')
+                                    .whisper('antrian.dipanggil', {
+                                        no_reg: noReg,
+                                        nama: nama,
+                                        poli: poli,
+                                        is_ulang: false
+                                    });
+                            }
+                        } else {
+                            toastr.error(response.message || 'Gagal memanggil pasien');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        toastr.error('Terjadi kesalahan saat memanggil pasien');
+                    },
+                    complete: function() {
+                        // Hapus loading overlay
+                        loadingOverlay.remove();
+                    }
+                });
+            });
+        });
+        
+        // Handler untuk tombol ulang panggil
+        $(document).on('click', '.btn-ulang-panggil', function(e) {
+            e.preventDefault(); // Mencegah default action
+            const noReg = $(this).data('no-reg');
+            const nama = $(this).data('nama');
+            const poli = $(this).data('poli');
+            const noRawat = $(this).data('no-rawat');
+            
+            // Langsung panggil tanpa konfirmasi
+            panggilPasien(noReg, nama, poli, noRawat, true);
+        });
+        
+        // Fungsi untuk memanggil pasien
+        function panggilPasien(noReg, nama, poli, noRawat, isUlang) {
+            // Tampilkan loading
+            const loadingOverlay = $(`
+                <div class="loading-overlay">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            `).appendTo('body');
+            
+            $.ajax({
+                url: '{{ route("ralan.panggil-pasien") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    no_reg: noReg,
+                    nama: nama,
+                    poli: poli,
+                    no_rawat: noRawat,
+                    is_ulang: isUlang
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Tampilkan notifikasi sukses
+                        toastr.success(isUlang ? 'Berhasil memanggil ulang pasien' : 'Berhasil memanggil pasien');
+                        
+                        // Refresh data tabel
+                        refreshData(true);
+                        
+                        // Broadcast event ke display antrian
+                        if (window.Echo) {
+                            window.Echo.channel('antrian')
+                                .whisper('antrian.dipanggil', {
+                                    no_reg: noReg,
+                                    nama: nama,
+                                    poli: poli,
+                                    is_ulang: isUlang
+                                });
+                        }
+                    } else {
+                        toastr.error(response.message || 'Gagal memanggil pasien');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+                    toastr.error('Terjadi kesalahan saat memanggil pasien');
+                },
+                complete: function() {
+                    // Hapus loading overlay
+                    loadingOverlay.remove();
+                }
+            });
+        }
         
         // Initial refresh setelah halaman dimuat
         setTimeout(function() {
