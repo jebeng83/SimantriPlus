@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\RegPeriksaController;
 use App\Http\Controllers\WilayahController;
+use App\Http\Controllers\AntrianPoliklinikController;
+use App\Http\Controllers\AntrianDisplayController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,7 +72,7 @@ Route::get('/berkas/{noRawat}/{noRM}', [App\Http\Controllers\Ralan\PemeriksaanRa
 Route::get('/berkas-retensi/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRetensi']);
 
 // Rute yang memerlukan autentikasi
-Route::middleware(['loginauth'])->group(function () {
+Route::middleware(['web', 'loginauth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     
     // Route untuk data pasien
@@ -138,6 +140,7 @@ Route::middleware(['loginauth'])->group(function () {
         Route::post('/rujuk-internal/submit', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'postRujukan']);
         Route::delete('/rujuk-internal/delete/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'deleteRujukan']);
         Route::put('/rujuk-internal/update/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'updateRujukanInternal'])->name('ralan.rujuk-internal.update');
+        Route::post('/panggil-pasien', [App\Http\Controllers\Ralan\PasienRalanController::class, 'panggilPasien'])->name('ralan.panggil-pasien');
     });
     
     // Route Menu Ranap
@@ -188,10 +191,8 @@ Route::middleware(['loginauth'])->group(function () {
 
     // Route untuk refresh CSRF token
     Route::get('/refresh-csrf', function() {
-        // Regenerate session ID dan CSRF token
-        Session::regenerate(true);
         return csrf_token();
-    })->name('refresh-csrf');
+    });
     
     // Route untuk Livewire generateNoReg
     Route::post('/livewire/generate-noreg', function(Illuminate\Http\Request $request) {
@@ -251,3 +252,17 @@ Route::get('/test/data-ibu-hamil', [\App\Http\Controllers\API\TestController::cl
 // New route for testing ANC store
 Route::get('/test-anc-store', [App\Http\Controllers\TestAncController::class, 'testStore']);
 Route::get('/check-anc/{id}', [App\Http\Controllers\TestAncController::class, 'check']);
+
+// Antrian Poliklinik Routes
+Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'index'])
+    ->name('antrian-poliklinik.index');
+Route::get('/antrian-display', [App\Http\Controllers\AntrianDisplayController::class, 'display'])
+    ->name('antrian.display');
+Route::get('/antrian/display', [AntrianDisplayController::class, 'display'])->name('antrian.display');
+Route::get('/antrian/display/data', [AntrianDisplayController::class, 'getDataDisplay'])->name('antrian.display.data');
+Route::get('/laporan/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'cetakLaporan'])
+    ->name('antrian-poliklinik.cetak');
+Route::get('/laporan/antrian-poliklinik/export', [App\Http\Controllers\AntrianPoliklinikController::class, 'exportExcel'])
+    ->name('antrian-poliklinik.export');
+
+Route::get('/get-videos', [App\Http\Controllers\VideoController::class, 'getVideos']);
