@@ -316,6 +316,11 @@ return [
                     'icon' => 'fas fa-fw fa-chart-line',
                 ],
                 [
+                    'text' => 'Faktor Resiko',
+                    'url'  => '/ilp/faktor-resiko',
+                    'icon' => 'fas fa-fw fa-flask',
+                ],
+                [
                     'text' => 'Pendaftaran',
                     'url'  => '/ilp/pendaftaran',
                     'icon' => 'fas fa-fw fa-user-plus',
@@ -324,11 +329,6 @@ return [
                     'text' => 'Pelayanan',
                     'url'  => '/ilp/pelayanan',
                     'icon' => 'fas fa-fw fa-clipboard-list',
-                ],
-                [
-                    'text' => 'Faktor Resiko',
-                    'url'  => '/ilp/faktor-resiko',
-                    'icon' => 'fas fa-fw fa-flask',
                 ],
                 [
                     'text' => 'Sasaran CKG',
@@ -367,6 +367,12 @@ return [
             'text'        => 'KYC (Verifikasi SSM)',
             'url'         => '/kyc',
             'icon'        => 'fas fa-fw fa-id-card',
+            'label_color' => 'primary',
+        ],
+        [
+            'text'        => 'Pendaftaran Mobile JKN',
+            'url'         => '/pendaftaran-mobile-jkn',
+            'icon'        => 'fas fa-fw fa-user-plus',
             'label_color' => 'primary',
         ],
         [

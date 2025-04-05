@@ -171,3 +171,9 @@ Route::prefix('fktp')->group(function () {
     Route::get('antrean/status/{kodePoli}/{tanggalPeriksa}', [App\Http\Controllers\API\WsFKTPController::class, 'getStatusAntrean']);
     Route::put('antrean/batal', [App\Http\Controllers\API\WsFKTPController::class, 'batalAntrean']);
 });
+
+// Route API untuk Mobile JKN yang dapat diakses tanpa autentikasi
+Route::prefix('mobile-jkn')->group(function () {
+    Route::get('/referensi-poli/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiPoli']);
+    Route::get('/referensi-dokter/kodepoli/{kodePoli}/tanggal/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiDokter']);
+});
