@@ -35,14 +35,14 @@
       }
 
       .header {
-         background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+         background: linear-gradient(180deg, #000000, #1a1a1a);
          color: var(--text-light);
          padding: 15px 30px;
          display: flex;
          justify-content: space-between;
          align-items: center;
          border-bottom: 5px solid var(--accent-color);
-         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       }
 
       .logo-container {
@@ -211,26 +211,29 @@
       }
 
       .antrian-header {
-         background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+         background: linear-gradient(to right, #000000, #1a1a1a);
          color: var(--text-light);
-         padding: 15px;
-         font-size: 24px;
+         padding: 20px;
+         font-size: 36px;
          font-weight: 600;
          text-align: center;
          text-transform: uppercase;
-         letter-spacing: 1px;
-         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+         letter-spacing: 2px;
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
          display: flex;
          justify-content: space-between;
          align-items: center;
+         border-bottom: 3px solid #f39c12;
       }
 
       .antrian-count {
-         font-size: 16px;
-         background-color: rgba(255, 255, 255, 0.2);
-         padding: 5px 15px;
-         border-radius: 20px;
-         margin-left: 10px;
+         font-size: 24px;
+         background-color: #f39c12;
+         padding: 10px 25px;
+         border-radius: 30px;
+         margin-left: 15px;
+         font-weight: 600;
+         letter-spacing: 1px;
       }
 
       .content {
@@ -259,44 +262,88 @@
          margin: 0;
          width: 100%;
          border-collapse: separate;
-         border-spacing: 0;
+         border-spacing: 0 12px;
+         padding: 0 15px;
       }
 
       .antrian-table th {
-         background: var(--primary-color);
-         color: var(--text-light);
-         font-size: 20px;
-         padding: 15px 10px;
+         background: #000000;
+         color: #ffffff;
+         font-size: 28px;
+         padding: 25px 15px;
          text-align: center;
          text-transform: uppercase;
-         letter-spacing: 1px;
-         border-bottom: 3px solid var(--accent-color);
+         letter-spacing: 2px;
+         border-bottom: 3px solid #f39c12;
+         font-weight: 700;
       }
 
       .antrian-table td {
-         font-size: 20px;
-         padding: 15px 10px;
+         font-size: 40px;
+         padding: 25px 15px;
          text-align: center;
-         border-bottom: 1px solid var(--border-color);
          vertical-align: middle;
-      }
-
-      .antrian-table tr:nth-child(even) {
-         background-color: rgba(236, 240, 241, 0.5);
-      }
-
-      .antrian-table tr:nth-child(odd) {
-         background-color: rgba(236, 240, 241, 0.2);
-      }
-
-      .antrian-table tr:hover {
-         background-color: rgba(40, 116, 166, 0.05);
+         color: #ffffff;
+         background: rgba(39, 8, 8, 0.7);
       }
 
       .antrian-nomor {
-         font-weight: 700;
-         font-size: 24px;
-         color: var(--primary-color);
+         font-family: 'Montserrat', sans-serif;
+         font-weight: 800;
+         font-size: 64px;
+         color: #f39c12;
+         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+         letter-spacing: 3px;
+         line-height: 1.2;
+      }
+
+      .antrian-table tr {
+         margin-bottom: 15px;
+         transition: transform 0.3s ease;
+      }
+
+      .antrian-table tr:hover {
+         transform: scale(1.02);
+      }
+
+      .status-menunggu {
+         font-weight: 600;
+         color: #ffffff;
+         padding: 15px 30px;
+         border-radius: 30px;
+         background-color: #f39c12;
+         display: inline-block;
+         font-size: 28px;
+         letter-spacing: 1px;
+         box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+         text-transform: uppercase;
+      }
+
+      .status-dipanggil {
+         font-weight: 600;
+         color: #ffffff;
+         padding: 15px 30px;
+         border-radius: 30px;
+         background-color: #e74c3c;
+         display: inline-block;
+         font-size: 28px;
+         letter-spacing: 1px;
+         box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+         animation: blink 1s infinite;
+         text-transform: uppercase;
+      }
+
+      .status-dilayani {
+         font-weight: 600;
+         color: #ffffff;
+         padding: 15px 30px;
+         border-radius: 30px;
+         background-color: #27ae60;
+         display: inline-block;
+         font-size: 28px;
+         letter-spacing: 1px;
+         box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+         text-transform: uppercase;
       }
 
       .media-container {
@@ -313,7 +360,7 @@
       }
 
       .media-header {
-         background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+         background: linear-gradient(to right, #000000, #1a1a1a);
          color: var(--text-light);
          padding: 15px;
          font-size: 24px;
@@ -321,7 +368,7 @@
          text-align: center;
          text-transform: uppercase;
          letter-spacing: 1px;
-         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       }
 
       .media-content {
@@ -353,7 +400,7 @@
          bottom: 40px;
          left: 0;
          right: 0;
-         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+         background: linear-gradient(135deg, #000000, #1a1a1a);
          color: var(--text-light);
          font-size: 24px;
          font-weight: 600;
@@ -361,7 +408,7 @@
          padding: 10px 0;
          height: 50px;
          border-top: 3px solid var(--accent-color);
-         box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+         box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
          z-index: 100;
          display: flex;
@@ -374,7 +421,7 @@
          bottom: 0;
          left: 0;
          right: 0;
-         background: #1a5276;
+         background: #000000;
          color: white;
          padding: 8px 0;
          height: 40px;
@@ -423,35 +470,6 @@
          100% {
             opacity: 1;
          }
-      }
-
-      .status-belum {
-         font-weight: 600;
-         color: #ffffff;
-         padding: 6px 12px;
-         border-radius: 20px;
-         background-color: #f39c12;
-         display: inline-block;
-      }
-
-      .status-dipanggil {
-         font-weight: 600;
-         color: #ffffff;
-         padding: 6px 12px;
-         border-radius: 20px;
-         background-color: #e74c3c;
-         display: inline-block;
-         box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3);
-      }
-
-      .status-dilayani {
-         font-weight: 600;
-         color: #ffffff;
-         padding: 6px 12px;
-         border-radius: 20px;
-         background-color: #27ae60;
-         display: inline-block;
-         box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3);
       }
 
       .status-batal {
@@ -524,7 +542,7 @@
       }
 
       .calling-number {
-         font-size: 96px !important;
+         font-size: 105px !important;
          font-weight: 800;
          color: #f40808 !important;
          line-height: 1;
@@ -535,7 +553,7 @@
       }
 
       .calling-name {
-         font-size: 24px;
+         font-size: 28px;
          font-weight: 700;
          margin-bottom: 15px;
          max-width: 100%;
@@ -546,9 +564,9 @@
       .calling-poli {
          background-color: #f40808;
          color: white;
-         font-size: 18px;
+         font-size: 24px;
          font-weight: 600;
-         padding: 8px 20px;
+         padding: 10px 25px;
          border-radius: 30px;
          margin-top: 5px;
          box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
@@ -587,8 +605,7 @@
 
       .called-patient-panel {
          position: absolute;
-         bottom: 120px;
-         /* Sesuaikan dengan tinggi footer + marquee */
+         bottom: 150px;
          left: 50%;
          transform: translateX(-50%);
          z-index: 100;

@@ -102,7 +102,8 @@ trait BpjsTraits
                 throw new \Exception("Invalid JSON response: " . json_last_error_msg());
             }
 
-            return response()->json($jsonResponse);
+            // Proses response dan kembalikan hasil yang sudah didekripsi
+            return $this->responseDataBpjs($jsonResponse, $timestamp, $type);
 
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             Log::error("BPJS {$prefix} Request Error", [
@@ -112,7 +113,7 @@ trait BpjsTraits
             ]);
             
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => "Gagal menghubungi server BPJS {$prefix}: " . $e->getMessage()
                 ],
@@ -125,7 +126,7 @@ trait BpjsTraits
             ]);
             
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ],
@@ -152,27 +153,56 @@ trait BpjsTraits
             date_default_timezone_set('UTC');
             $timestamp = strval(time());
             
+            Log::info("BPJS {$prefix} Request POST Details", [
+                'url' => $url,
+                'timestamp' => $timestamp,
+                'utc_time' => gmdate('Y-m-d H:i:s', time()),
+                'data' => $request
+            ]);
+            
             // Ambil credentials dari env dengan prefix yang sesuai
             $consId = env("BPJS_{$prefix}_CONS_ID");
             $secretKey = env("BPJS_{$prefix}_CONS_PWD");
             $userKey = env("BPJS_{$prefix}_USER_KEY");
-            $username = env("BPJS_{$prefix}_USER");
-            $password = env("BPJS_{$prefix}_PASS");
             
-            if (empty($consId) || empty($secretKey) || empty($userKey) || empty($username) || empty($password)) {
+            if (empty($consId) || empty($secretKey) || empty($userKey)) {
                 throw new \Exception("Kredensial BPJS {$prefix} tidak lengkap");
             }
-
+            
+            // Generate X-Authorization sesuai dokumentasi
+            $username = env("BPJS_{$prefix}_USER");
+            $password = env("BPJS_{$prefix}_PASS");
+            $kdAplikasi = "095";
+            
+            if (empty($username) || empty($password)) {
+                throw new \Exception("Username atau password BPJS {$prefix} tidak dikonfigurasi");
+            }
+            
+            $authString = $username . ':' . $password . ':' . $kdAplikasi;
+            $encodedAuth = base64_encode($authString);
+            
+            // Generate signature
+            $message = $consId . '&' . $timestamp;
+            $signature = hash_hmac('sha256', $message, $secretKey, true);
+            $encodedSignature = base64_encode($signature);
+            
             // Set headers
             $headers = [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'X-cons-id' => $consId,
                 'X-timestamp' => $timestamp,
-                'X-signature' => $this->createSign($timestamp, $consId),
-                'X-authorization' => base64_encode($username . ':' . $password . ':095'),
+                'X-signature' => $encodedSignature,
+                'X-authorization' => $encodedAuth,
                 'user_key' => $userKey
             ];
+
+            Log::info("BPJS {$prefix} Request POST Headers", [
+                'headers' => array_merge(
+                    $headers,
+                    ['X-signature' => '***', 'X-authorization' => '***', 'user_key' => '***']
+                )
+            ]);
 
             // Kirim request
             $client = new Client();
@@ -182,17 +212,47 @@ trait BpjsTraits
                 'verify' => false
             ]);
 
-            return $this->responseDataBpjs($response->getBody()->getContents(), $timestamp);
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody()->getContents();
+            
+            Log::info("BPJS {$prefix} Response POST Details", [
+                'status_code' => $statusCode,
+                'response_length' => strlen($body)
+            ]);
+            
+            $jsonResponse = json_decode($body, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("Invalid JSON response: " . json_last_error_msg());
+            }
 
+            // Proses response dan kembalikan hasil yang sudah didekripsi
+            return $this->responseDataBpjs($jsonResponse, $timestamp, $type);
+
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            Log::error("BPJS {$prefix} Request POST Error", [
+                'message' => $e->getMessage(),
+                'url' => $url ?? null,
+                'request' => $request,
+                'response' => $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ]);
+            
+            return response()->json([
+                'metadata' => [
+                    'code' => 500,
+                    'message' => "Gagal menghubungi server BPJS {$prefix}: " . $e->getMessage()
+                ],
+                'response' => null
+            ], 500);
         } catch (\Exception $e) {
-            Log::error("BPJS {$prefix} Error", [
+            Log::error("BPJS {$prefix} POST Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null,
                 'request' => $request
             ]);
             
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ],
@@ -243,65 +303,87 @@ trait BpjsTraits
         }
     }
 
-    private function responseDataBpjs($res, $xTimestamp)
+    private function responseDataBpjs($res, $xTimestamp, $type = 'pcare')
     {
         try {
             // Validasi format response
-            if (!isset($res['metaData'])) {
-                throw new \Exception('Invalid response format from BPJS: Missing metaData');
+            if (!isset($res['metaData']) && !isset($res['metadata'])) {
+                throw new \Exception('Invalid response format from BPJS: Missing metaData/metadata');
             }
 
-            // Siapkan response dasar
+            // Gunakan metadata jika ada, atau metaData sebagai fallback
+            $metaData = isset($res['metadata']) ? $res['metadata'] : $res['metaData'];
+
+            // Siapkan response dasar dengan format yang konsisten
             $response = [
-                'response' => $res['response'] ?? null,
-                'metaData' => [
-                    'code' => $res['metaData']['code'] ?? null,
-                    'message' => $res['metaData']['message'] ?? null
+                'metadata' => [
+                    'code' => $metaData['code'] ?? null,
+                    'message' => $metaData['message'] ?? null
                 ]
             ];
 
-            // Jika response berisi URL, langsung kembalikan
-            if (isset($res['response']['url'])) {
-                return response()->json($response, 200);
-            }
+            // Tambahkan response field hanya jika ada data atau diperlukan
+            if (isset($res['response'])) {
+                // Jika response berisi URL, langsung masukkan ke respons
+                if (isset($res['response']['url'])) {
+                    $response['response'] = $res['response'];
+                    return response()->json($response, 200);
+                }
 
-            // Handle response data jika perlu decrypt
-            if (isset($res['response']) && is_string($res['response'])) {
-                try {
-                    // Generate decryption key
-                    $key = $this->createKeyForDecode($xTimestamp);
+                // Handle response data jika perlu decrypt
+                if (is_string($res['response'])) {
+                    try {
+                        // Generate decryption key
+                        $key = $this->createKeyForDecode($xTimestamp, $type);
 
-                    // Step 1: Decrypt
-                    $decrypted = $this->stringDecrypt($key, $res['response']);
-                    if ($decrypted === false) {
-                        throw new \Exception('Decryption failed');
+                        // Step 1: Decrypt
+                        $decrypted = $this->stringDecrypt($key, $res['response']);
+                        if ($decrypted === false) {
+                            throw new \Exception('Decryption failed');
+                        }
+
+                        // Step 2: Decompress
+                        $decompressed = $this->decompress($decrypted);
+                        if ($decompressed === false) {
+                            throw new \Exception('Decompression failed');
+                        }
+
+                        // Step 3: Parse JSON
+                        $decoded = json_decode($decompressed, true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            throw new \Exception('JSON decode failed: ' . json_last_error_msg());
+                        }
+
+                        // Hanya tambahkan field response jika tidak null/empty
+                        if (!empty($decoded)) {
+                            $response['response'] = $decoded;
+                        }
+
+                    } catch (\Exception $e) {
+                        Log::error('BPJS Decrypt Error', [
+                            'message' => $e->getMessage()
+                        ]);
                     }
-
-                    // Step 2: Decompress
-                    $decompressed = $this->decompress($decrypted);
-                    if ($decompressed === false) {
-                        throw new \Exception('Decompression failed');
-                    }
-
-                    // Step 3: Parse JSON
-                    $decoded = json_decode($decompressed, true);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        throw new \Exception('JSON decode failed: ' . json_last_error_msg());
-                    }
-
-                    $response['response'] = $decoded;
-
-                } catch (\Exception $e) {
-                    Log::error('BPJS Decrypt Error', [
-                        'message' => $e->getMessage()
-                    ]);
-
-                    $response['response'] = null;
-                    $response['decrypt_error'] = $e->getMessage();
+                } else if (!empty($res['response'])) {
+                    // Jika response bukan string dan tidak kosong, gunakan as-is
+                    $response['response'] = $res['response'];
                 }
             }
 
-            return response()->json($response, 200);
+            // Tetapkan status code berdasarkan code dari metadata
+            $statusCode = 200;
+            if (isset($metaData['code'])) {
+                // Jika code 200-299, gunakan sebagai status code
+                if ($metaData['code'] >= 200 && $metaData['code'] < 300) {
+                    $statusCode = $metaData['code'];
+                }
+                // Jika code 4xx atau 5xx, set status code sesuai
+                else if ($metaData['code'] >= 400) {
+                    $statusCode = $metaData['code'];
+                }
+            }
+
+            return response()->json($response, $statusCode);
 
         } catch (\Exception $e) {
             Log::error('BPJS Response Processing Error', [
@@ -309,11 +391,10 @@ trait BpjsTraits
             ]);
 
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Error processing BPJS response: ' . $e->getMessage()
-                ],
-                'response' => null
+                ]
             ], 500);
         }
     }
@@ -391,14 +472,17 @@ trait BpjsTraits
         return $encodedSignature;
     }
 
-    private function createKeyForDecode($tStamp)
+    private function createKeyForDecode($tStamp, $type = 'icare')
     {
-        $consid = env('BPJS_ICARE_CONS_ID');
-        $conspwd = env('BPJS_ICARE_CONS_PWD');
+        // Tentukan prefix berdasarkan tipe
+        $prefix = strtoupper($type);
+        
+        $consid = env("BPJS_{$prefix}_CONS_ID");
+        $conspwd = env("BPJS_{$prefix}_CONS_PWD");
         
         if (empty($consid) || empty($conspwd)) {
-            Log::error('BPJS Configuration Error: Missing required credentials');
-            throw new \Exception('Missing required BPJS credentials');
+            Log::error("BPJS {$prefix} Configuration Error: Missing required credentials");
+            throw new \Exception("Missing required BPJS {$prefix} credentials");
         }
 
         return $consid . $conspwd . $tStamp;

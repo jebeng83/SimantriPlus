@@ -1,1 +1,0 @@
-<?php $test = ["hb" => ["checked" => false, "nilai" => "12"], "goldar" => ["checked" => false, "nilai" => "AB"]]; $anc = new App\Http\Livewire\Ralan\PemeriksaanANC(); echo $anc->displayLabResults($test); ?>

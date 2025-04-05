@@ -147,3 +147,27 @@ Route::get('/poliklinik', [AntrianPoliklinikController::class, 'getPoliklinik'])
 Route::get('/pasien/detail/{noRawat}', [AntrianPoliklinikController::class, 'getDetailPasien']);
 Route::post('/antrian/panggil', [AntrianPoliklinikController::class, 'panggilPasien']);
 Route::get('/media-files', [AntrianPoliklinikController::class, 'getMediaFiles'])->withoutMiddleware(['auth:sanctum']);
+
+// MobileJKN BPJS Routes
+Route::prefix('wsbpjs')->group(function () {
+    Route::get('referensi/poli/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiPoli']);
+    Route::get('referensi/dokter/kodepoli/{kodePoli}/tanggal/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiDokter']);
+    Route::post('antrean/add', [App\Http\Controllers\API\WsBPJSController::class, 'tambahAntrean']);
+    Route::post('antrean/create', [App\Http\Controllers\API\WsBPJSController::class, 'buatAntreanDariDB']);
+    Route::get('antrean/status/kodepoli/{kodePoli}/tanggalperiksa/{tanggalPeriksa}', [App\Http\Controllers\API\WsBPJSController::class, 'cekStatusAntrean']);
+    Route::post('antrean/panggil', [App\Http\Controllers\API\WsBPJSController::class, 'updateStatusAntrean']);
+    Route::post('antrean/update-status', [App\Http\Controllers\API\WsBPJSController::class, 'updateStatusAntreanDariDB']);
+    Route::post('antrean/batal', [App\Http\Controllers\API\WsBPJSController::class, 'batalAntrean']);
+    Route::post('antrean/batal-dari-db', [App\Http\Controllers\API\WsBPJSController::class, 'batalAntreanDariDB']);
+    Route::get('timestamp', [App\Http\Controllers\API\WsBPJSController::class, 'getTimestamp']);
+});
+
+// BPJS FKTP Routes
+Route::prefix('fktp')->group(function () {
+    Route::get('auth', [App\Http\Controllers\API\WsFKTPController::class, 'getToken']);
+    Route::get('antrean/sisapeserta/{nomorKartu}/{kodePoli}/{tanggalPeriksa}', [App\Http\Controllers\API\WsFKTPController::class, 'getSisaAntrean']);
+    Route::post('peserta', [App\Http\Controllers\API\WsFKTPController::class, 'registrasiPasienBaru']);
+    Route::post('antrean', [App\Http\Controllers\API\WsFKTPController::class, 'ambilAntrean']);
+    Route::get('antrean/status/{kodePoli}/{tanggalPeriksa}', [App\Http\Controllers\API\WsFKTPController::class, 'getStatusAntrean']);
+    Route::put('antrean/batal', [App\Http\Controllers\API\WsFKTPController::class, 'batalAntrean']);
+});

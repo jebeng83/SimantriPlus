@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
+use App\Traits\BpjsTraits;
 
 class RegPeriksaController extends Controller
 {
+    use BpjsTraits;
+
     public function __construct()
     {
         $this->middleware('loginauth');
@@ -182,6 +185,24 @@ class RegPeriksaController extends Controller
                 $savedRecord = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
                 if ($savedRecord) {
                     \Log::info('Verifikasi data tersimpan berhasil: ' . json_encode($savedRecord));
+                    
+                    // Kirim data ke BPJS Antrean jika pasien BPJS
+                    $kd_pj = $savedRecord->kd_pj;
+                    $bpjsCodes = ['A03', 'A14', 'A15', 'BPJ'];
+                    
+                    if (in_array($kd_pj, $bpjsCodes) || strpos(strtolower($kd_pj), 'bpjs') !== false) {
+                        // Coba kirim data antrian ke BPJS
+                        try {
+                            $bpjsResult = $this->kirimAntreanBPJS($savedRecord);
+                            \Log::info('Hasil pengiriman antrian BPJS: ' . ($bpjsResult ? 'Berhasil' : 'Gagal'));
+                        } catch (\Exception $bpjsError) {
+                            \Log::error('Gagal mengirim data antrian ke BPJS: ' . $bpjsError->getMessage());
+                            \Log::error('Stack trace BPJS error: ' . $bpjsError->getTraceAsString());
+                            // Tidak perlu throw exception, karena proses utama tetap berhasil
+                        }
+                    } else {
+                        \Log::info('Pasien bukan BPJS, tidak perlu kirim data antrian');
+                    }
                 } else {
                     \Log::warning('Verifikasi data tersimpan gagal, data tidak ditemukan dengan no_rawat: ' . $no_rawat);
                 }
@@ -741,5 +762,236 @@ class RegPeriksaController extends Controller
     public function testDokterNoRegPublic($kd_dokter = null)
     {
         return $this->testDokterNoReg($kd_dokter);
+    }
+
+    /**
+     * Kirim data antrian ke BPJS
+     * @param object $data Data registrasi periksa
+     * @return bool Status pengiriman
+     */
+    private function kirimAntreanBPJS($data)
+    {
+        try {
+            \Log::info('Memulai pengiriman antrian ke BPJS', [
+                'no_rawat' => $data->no_rawat,
+                'no_rkm_medis' => $data->no_rkm_medis,
+                'tgl_registrasi' => $data->tgl_registrasi,
+                'kd_poli' => $data->kd_poli,
+                'kd_dokter' => $data->kd_dokter
+            ]);
+            
+            // 1. Ambil data pasien
+            $pasien = DB::table('pasien')
+                ->where('no_rkm_medis', $data->no_rkm_medis)
+                ->first();
+            
+            if (!$pasien) {
+                \Log::error('Data pasien tidak ditemukan', ['no_rkm_medis' => $data->no_rkm_medis]);
+                throw new \Exception('Data pasien tidak ditemukan');
+            }
+            
+            // Validasi nomor kartu BPJS
+            if (empty($pasien->no_peserta) || strlen($pasien->no_peserta) != 13) {
+                \Log::warning('Nomor kartu BPJS tidak valid', [
+                    'no_rkm_medis' => $data->no_rkm_medis,
+                    'no_peserta' => $pasien->no_peserta ?? 'kosong'
+                ]);
+                // Tetap lanjut meskipun nomor tidak valid
+            }
+            
+            // 2. Ambil data poli dan mapping ke kode BPJS
+            $poli = DB::table('poliklinik')
+                ->where('kd_poli', $data->kd_poli)
+                ->first();
+            
+            if (!$poli) {
+                \Log::error('Data poliklinik tidak ditemukan', ['kd_poli' => $data->kd_poli]);
+                throw new \Exception('Data poliklinik tidak ditemukan');
+            }
+            
+            // Cari mapping poli ke BPJS
+            $poliMapping = DB::table('maping_poliklinik_pcare')
+                ->where('kd_poli_rs', $data->kd_poli)
+                ->first();
+            
+            if (!$poliMapping) {
+                \Log::warning('Mapping poliklinik ke BPJS tidak ditemukan', ['kd_poli_rs' => $data->kd_poli]);
+                // Tetap lanjut meski mapping tidak ada
+            }
+            
+            // 3. Ambil data dokter dan mapping ke kode BPJS
+            $dokter = DB::table('dokter')
+                ->where('kd_dokter', $data->kd_dokter)
+                ->first();
+            
+            if (!$dokter) {
+                \Log::error('Data dokter tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
+                throw new \Exception('Data dokter tidak ditemukan');
+            }
+            
+            // Cari mapping dokter ke BPJS
+            $dokterMapping = DB::table('maping_dokter_pcare')
+                ->where('kd_dokter', $data->kd_dokter)
+                ->first();
+            
+            if (!$dokterMapping) {
+                \Log::warning('Mapping dokter ke BPJS tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
+                // Tetap lanjut meski mapping tidak ada
+            }
+            
+            // 4. Ambil data jadwal
+            $today = date('l', strtotime($data->tgl_registrasi));
+            $hariIndonesia = $this->translateDay($today);
+            
+            $jadwal = DB::table('jadwal')
+                ->where('kd_dokter', $data->kd_dokter)
+                ->where('kd_poli', $data->kd_poli)
+                ->where('hari_kerja', $hariIndonesia)
+                ->first();
+            
+            $jamPraktek = "-";
+            if ($jadwal) {
+                $jamPraktek = substr($jadwal->jam_mulai, 0, 5) . "-" . substr($jadwal->jam_selesai, 0, 5);
+            } else {
+                \Log::warning('Jadwal dokter tidak ditemukan, menggunakan default', [
+                    'kd_dokter' => $data->kd_dokter,
+                    'kd_poli' => $data->kd_poli,
+                    'hari' => $hariIndonesia
+                ]);
+            }
+            
+            // 5. Siapkan data yang akan dikirim
+            $dataAntrean = [
+                "nomorkartu" => $pasien->no_peserta ?: "", // Kosong jika non-JKN
+                "nik" => $pasien->no_ktp ?: "",
+                "nohp" => $pasien->no_tlp ?: "",
+                "kodepoli" => $poliMapping ? $poliMapping->kd_poli_pcare : "",
+                "namapoli" => $poliMapping ? $poliMapping->nm_poli_pcare : $poli->nm_poli,
+                "norm" => $pasien->no_rkm_medis,
+                "tanggalperiksa" => $data->tgl_registrasi,
+                "kodedokter" => $dokterMapping ? (int)$dokterMapping->kd_dokter_pcare : 0,
+                "namadokter" => $dokter->nm_dokter,
+                "jampraktek" => $jamPraktek,
+                "nomorantrean" => $data->no_reg,
+                "angkaantrean" => (int)ltrim($data->no_reg, '0'),
+                "keterangan" => "Peserta harap 30 menit lebih awal guna pencatatan administrasi."
+            ];
+            
+            \Log::info('Data Antrean BPJS yang akan dikirim', $dataAntrean);
+            
+            try {
+                // 6. Kirim data ke BPJS
+                $response = $this->requestPostBpjs('antrean/add', $dataAntrean, 'antrean');
+                
+                // Periksa respons
+                if ($response && isset($response->original) && isset($response->original['metaData'])) {
+                    $metaData = $response->original['metaData'];
+                    
+                    if ($metaData['code'] == 200) {
+                        \Log::info('Pengiriman antrian BPJS berhasil', [
+                            'response_code' => $metaData['code'],
+                            'message' => $metaData['message']
+                        ]);
+                        
+                        // Simpan log ke tabel antrean_bpjs_log jika ada
+                        try {
+                            DB::table('antrean_bpjs_log')->insert([
+                                'no_rawat' => $data->no_rawat,
+                                'no_rkm_medis' => $data->no_rkm_medis,
+                                'status' => 'Berhasil',
+                                'response' => json_encode($response->original),
+                                'created_at' => now()
+                            ]);
+                        } catch (\Exception $logErr) {
+                            \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                        }
+                        
+                        return true;
+                    } else {
+                        \Log::warning('Respons BPJS tidak berhasil', [
+                            'response_code' => $metaData['code'],
+                            'message' => $metaData['message']
+                        ]);
+                        
+                        // Simpan log error ke tabel
+                        try {
+                            DB::table('antrean_bpjs_log')->insert([
+                                'no_rawat' => $data->no_rawat,
+                                'no_rkm_medis' => $data->no_rkm_medis,
+                                'status' => 'Gagal',
+                                'response' => json_encode($response->original),
+                                'created_at' => now()
+                            ]);
+                        } catch (\Exception $logErr) {
+                            \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                        }
+                    }
+                } else {
+                    \Log::warning('Format respons BPJS tidak sesuai', ['response' => $response]);
+                }
+                
+                \Log::info('Proses pengiriman antrian BPJS selesai', ['no_rawat' => $data->no_rawat]);
+                return false;
+            } catch (\Exception $apiError) {
+                \Log::error('Error saat API call BPJS: ' . $apiError->getMessage(), [
+                    'no_rawat' => $data->no_rawat,
+                    'trace' => $apiError->getTraceAsString()
+                ]);
+                
+                // Simpan log error ke tabel 
+                try {
+                    DB::table('antrean_bpjs_log')->insert([
+                        'no_rawat' => $data->no_rawat,
+                        'no_rkm_medis' => $data->no_rkm_medis,
+                        'status' => 'Error API',
+                        'response' => json_encode(['error' => $apiError->getMessage()]),
+                        'created_at' => now()
+                    ]);
+                } catch (\Exception $logErr) {
+                    \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                }
+                
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error kirim antrian BPJS: ' . $e->getMessage(), [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'no_rawat' => $data->no_rawat ?? null
+            ]);
+            
+            // Simpan log error ke tabel
+            try {
+                DB::table('antrean_bpjs_log')->insert([
+                    'no_rawat' => $data->no_rawat ?? null,
+                    'no_rkm_medis' => $data->no_rkm_medis ?? null,
+                    'status' => 'Error',
+                    'response' => json_encode(['error' => $e->getMessage()]),
+                    'created_at' => now()
+                ]);
+            } catch (\Exception $logErr) {
+                \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+            }
+            
+            return false;
+        }
+    }
+    
+    /**
+     * Terjemahkan hari dalam bahasa Inggris ke Indonesia
+     */
+    private function translateDay($day) 
+    {
+        $days = [
+            'Sunday' => 'MINGGU',
+            'Monday' => 'SENIN',
+            'Tuesday' => 'SELASA',
+            'Wednesday' => 'RABU',
+            'Thursday' => 'KAMIS',
+            'Friday' => 'JUMAT',
+            'Saturday' => 'SABTU'
+        ];
+        
+        return $days[$day] ?? $day;
     }
 } 
