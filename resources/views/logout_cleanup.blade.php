@@ -46,7 +46,7 @@
          position: relative;
          padding: 40px;
          border-radius: 16px;
-         background-color: rgba(35, 50, 146, 0.7);
+         background-color: rgba(11, 238, 18, 0.955);
          max-width: 500px;
          backdrop-filter: blur(15px);
          -webkit-backdrop-filter: blur(15px);

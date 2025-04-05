@@ -48,7 +48,7 @@
 
     <!-- Styles -->
     <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-    <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet">
+    <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
 
@@ -133,6 +133,16 @@
         // Perbarui CSRF token setiap 5 menit
         setInterval(refreshCsrfToken, 300000);
     </script>
+
+    @if(!isset($disableToastr) || !$disableToastr)
+    <!-- Toastr CSS for Notifications -->
+    <link rel="stylesheet" href="{{ asset('vendor/toastr/toastr.min.css') }}">
+    @endif
+
+    @if(!isset($disableSweetAlert) || !$disableSweetAlert)
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="{{ asset('vendor/sweetalert2/sweetalert2.min.css') }}">
+    @endif
 </head>
 
 <body>
@@ -314,6 +324,36 @@
         }
     });
     </script>
+
+    @if(!isset($disableToastr) || !$disableToastr)
+    <!-- Toastr JS for Notifications -->
+    <script src="{{ asset('vendor/toastr/toastr.min.js') }}"></script>
+    <script>
+        // Initialize toastr settings
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+    </script>
+    @endif
+
+    @if(!isset($disableSweetAlert) || !$disableSweetAlert)
+    <!-- SweetAlert2 JS -->
+    <script src="{{ asset('vendor/sweetalert2/sweetalert2.min.js') }}"></script>
+    @endif
 </body>
 
 </html>

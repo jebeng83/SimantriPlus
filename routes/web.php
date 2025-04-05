@@ -8,6 +8,7 @@ use App\Http\Controllers\RegPeriksaController;
 use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
+use App\Http\Controllers\MobileJknController;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,6 +117,18 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/config', [App\Http\Controllers\KYCController::class, 'config'])->name('kyc.config');
         Route::get('/test-token', [App\Http\Controllers\KYCController::class, 'testToken'])->name('kyc.new.test-token');
         Route::get('/search-patient', [App\Http\Controllers\KYCController::class, 'searchPatient'])->name('kyc.search-patient');
+    });
+    
+    // Mobile JKN Routes
+    Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () {
+        Route::get('/', [App\Http\Controllers\MobileJknController::class, 'index'])->name('index');
+        Route::get('/get-peserta', [App\Http\Controllers\MobileJknController::class, 'getPeserta'])->name('get-peserta');
+        Route::get('/get-poli', [App\Http\Controllers\MobileJknController::class, 'getPoli'])->name('get-poli');
+        Route::get('/get-dokter', [App\Http\Controllers\MobileJknController::class, 'getDokter'])->name('get-dokter');
+        Route::get('/get-sisa-antrean', [App\Http\Controllers\MobileJknController::class, 'getSisaAntrean'])->name('get-sisa-antrean');
+        Route::get('/status-antrean', [App\Http\Controllers\MobileJknController::class, 'statusAntrean'])->name('get-status-antrean');
+        Route::post('/daftar-antrean', [App\Http\Controllers\MobileJknController::class, 'daftarAntrean'])->name('daftar-antrean');
+        Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
     });
     
     // Route Menu Ralan
@@ -251,8 +264,7 @@ Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikControl
     ->name('antrian-poliklinik.index');
 Route::get('/antrian-display', [App\Http\Controllers\AntrianDisplayController::class, 'display'])
     ->name('antrian.display');
-Route::get('/antrian/display', [AntrianDisplayController::class, 'display'])->name('antrian.display');
-Route::get('/antrian/display/data', [AntrianDisplayController::class, 'getDataDisplay'])->name('antrian.display.data');
+Route::get('/antrian/display/data', [App\Http\Controllers\AntrianDisplayController::class, 'getDataDisplay'])->name('antrian.display.data');
 Route::get('/laporan/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'cetakLaporan'])
     ->name('antrian-poliklinik.cetak');
 Route::get('/laporan/antrian-poliklinik/export', [App\Http\Controllers\AntrianPoliklinikController::class, 'exportExcel'])

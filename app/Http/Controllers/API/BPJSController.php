@@ -27,7 +27,7 @@ class BPJSController extends Controller
             // Pastikan panjang 13 digit
             if (strlen($noKartu) !== 13) {
                 return response()->json([
-                    'metaData' => [
+                    'metadata' => [
                         'code' => 400,
                         'message' => 'Nomor kartu harus 13 digit'
                     ],
@@ -35,25 +35,19 @@ class BPJSController extends Controller
                 ], 400);
             }
 
-            // Mapping kode dokter internal ke kode dokter PCare
-            $kodeDokterInternal = $input['kodedokter'];
-            $kodeDokterPcare = DB::table('maping_dokter_pcare')
-                ->where('kd_dokter', $kodeDokterInternal)
-                ->value('kd_dokter_pcare');
-            
-            // Jika mapping tidak ditemukan, gunakan kode dokter default atau kembalikan error
-            if (!$kodeDokterPcare) {
-                Log::warning('BPJS Mapping Dokter Tidak Ditemukan', [
-                    'kd_dokter_internal' => $kodeDokterInternal
-                ]);
+            // Jika kode dokter ada dalam request, lakukan mapping
+            if (isset($input['kodedokter']) && !empty($input['kodedokter'])) {
+                $kodeDokterInternal = $input['kodedokter'];
+                $kodeDokterPcare = DB::table('maping_dokter_pcare')
+                    ->where('kd_dokter', $kodeDokterInternal)
+                    ->value('kd_dokter_pcare');
                 
-                return response()->json([
-                    'metaData' => [
-                        'code' => 400,
-                        'message' => 'Kode dokter tidak valid atau tidak terdaftar di PCare'
-                    ],
-                    'response' => null
-                ], 400);
+                // Jika mapping tidak ditemukan, log warning saja tapi tetap lanjutkan
+                if (!$kodeDokterPcare) {
+                    Log::warning('BPJS Mapping Dokter Tidak Ditemukan', [
+                        'kd_dokter_internal' => $kodeDokterInternal
+                    ]);
+                }
             }
             
             // Format request untuk iCare
@@ -73,7 +67,7 @@ class BPJSController extends Controller
             ]);
             
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ],
