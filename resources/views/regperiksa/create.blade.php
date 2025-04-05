@@ -732,6 +732,10 @@
             const formData = $(this).serialize();
             console.log("Form data:", formData);
             
+            // Cek jika pasien menggunakan BPJS
+            const kdPj = $('#kd_pj').val();
+            const isBpjs = kdPj === 'A03' || kdPj === 'A14' || kdPj === 'A15' || kdPj === 'BPJ' || kdPj.toLowerCase().includes('bpjs');
+            
             $.ajax({
                 url: $(this).attr('action'),
                 type: 'POST',
@@ -741,19 +745,32 @@
                 beforeSend: function() {
                     $('#btnSimpan').prop('disabled', true)
                         .html('<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...');
+                        
+                    if (isBpjs) {
+                        showNotification('info', 'Pendaftaran pasien BPJS sedang diproses, mohon tunggu...');
+                    }
                 },
                 success: function(response) {
                     console.log("Response:", response);
                     
                     if (response.success) {
+                        let successTitle = 'Berhasil!';
+                        let successText = 'Registrasi berhasil disimpan dengan nomor: ' + response.no_rawat;
+                        
+                        // Tambahkan informasi khusus untuk pasien BPJS
+                        if (isBpjs) {
+                            successText += '<br><br><strong>Data pasien BPJS telah dikirim ke sistem Antrian BPJS.</strong><br>'+
+                                           'Proses pengiriman data dilakukan di background.';
+                        }
+                        
                         showNotification('success', response.message || 'Data berhasil disimpan');
                         
                         // Tampilkan alert sukses dengan SweetAlert2
                         Swal.fire({
                             icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Registrasi berhasil disimpan dengan nomor: ' + response.no_rawat,
-                            timer: 2000,
+                            title: successTitle,
+                            html: successText,
+                            timer: 3000,
                             showConfirmButton: false
                         }).then(function() {
                             // Redirect ke halaman daftar pasien

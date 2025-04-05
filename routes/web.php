@@ -246,13 +246,6 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 // Rute pengujian dokter spesifik
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
 
-// Testing Routes
-Route::get('/test/data-ibu-hamil', [\App\Http\Controllers\API\TestController::class, 'testDataIbuHamil']);
-
-// New route for testing ANC store
-Route::get('/test-anc-store', [App\Http\Controllers\TestAncController::class, 'testStore']);
-Route::get('/check-anc/{id}', [App\Http\Controllers\TestAncController::class, 'check']);
-
 // Antrian Poliklinik Routes
 Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'index'])
     ->name('antrian-poliklinik.index');
