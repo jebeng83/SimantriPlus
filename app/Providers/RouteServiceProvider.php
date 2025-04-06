@@ -7,6 +7,7 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -24,7 +25,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         // Tambahkan error handling yang lebih baik
         try {
@@ -41,6 +42,24 @@ class RouteServiceProvider extends ServiceProvider
                 // ANC Routes
                 Route::middleware('web')
                     ->group(base_path('routes/anc.php'));
+            });
+
+            // Tambahkan logging untuk route fallback
+            Route::fallback(function () {
+                Log::error('Route not found', [
+                    'url' => request()->url(),
+                    'method' => request()->method(),
+                    'user_agent' => request()->userAgent(),
+                    'ip' => request()->ip()
+                ]);
+                
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Route tidak ditemukan'
+                    ], 404);
+                }
+                
+                return redirect()->route('home')->with('error', 'Halaman yang anda cari tidak ditemukan');
             });
         } catch (\Exception $e) {
             // Log error

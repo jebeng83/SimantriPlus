@@ -426,6 +426,73 @@ class PcareController extends Controller
     }
 
     /**
+     * Mendapatkan mapping poliklinik PCare berdasarkan kode poli rumah sakit
+     * Digunakan untuk form pendaftaran PCare
+     */
+    public function getMappingPoli($kd_poli_rs = null)
+    {
+        try {
+            // Log request
+            Log::info('PCare Get Mapping Poli Request', [
+                'kd_poli_rs' => $kd_poli_rs
+            ]);
+
+            // Query untuk mendapatkan mapping poli
+            $query = DB::table('maping_poliklinik_pcare')
+                ->select(
+                    'maping_poliklinik_pcare.kd_poli_rs',
+                    'maping_poliklinik_pcare.kd_poli_pcare',
+                    'maping_poliklinik_pcare.nm_poli_pcare',
+                    'poliklinik.nm_poli as nm_poli_rs'
+                )
+                ->join('poliklinik', 'maping_poliklinik_pcare.kd_poli_rs', '=', 'poliklinik.kd_poli');
+
+            // Filter berdasarkan kode poli jika ada
+            if ($kd_poli_rs) {
+                $query->where('maping_poliklinik_pcare.kd_poli_rs', $kd_poli_rs);
+            }
+
+            $mappingPoli = $query->get();
+
+            if ($mappingPoli->isEmpty() && $kd_poli_rs) {
+                // Jika mapping untuk poli tertentu tidak ditemukan
+                Log::warning('PCare Mapping Poli Not Found', [
+                    'kd_poli_rs' => $kd_poli_rs
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Mapping poli tidak ditemukan',
+                    'data' => null
+                ], 404);
+            }
+
+            // Log success
+            Log::info('PCare Get Mapping Poli Success', [
+                'count' => $mappingPoli->count()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data mapping poli berhasil didapatkan',
+                'data' => $mappingPoli
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('PCare Get Mapping Poli Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
      * Mendapatkan data kelompok sehat PCare
      */
     public function getKelompokSehat()
@@ -485,6 +552,25 @@ class PcareController extends Controller
     public function addPendaftaran(Request $request)
     {
         try {
+            // Log request
+            Log::info('PCare Pendaftaran Request Raw', [
+                'request' => $request->all()
+            ]);
+            
+            // Konversi kunjSakit dari string ke boolean jika dibutuhkan
+            $kunjSakit = $request->input('kunjSakit');
+            if ($kunjSakit === 'true' || $kunjSakit === '1') {
+                $request->merge(['kunjSakit' => true]);
+            } else if ($kunjSakit === 'false' || $kunjSakit === '0') {
+                $request->merge(['kunjSakit' => false]);
+            }
+            
+            // Log setelah konversi
+            Log::info('PCare Pendaftaran Request After Conversion', [
+                'kunjSakit' => $request->input('kunjSakit'),
+                'type' => gettype($request->input('kunjSakit'))
+            ]);
+            
             $validatedData = $request->validate([
                 'tglDaftar' => 'required|string',
                 'noKartu' => 'required|string',

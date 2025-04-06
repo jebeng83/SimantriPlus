@@ -226,6 +226,24 @@ class Handler extends ExceptionHandler
                     ->with('warning', 'Terjadi kesalahan saat memuat halaman. Silakan coba lagi.');
             }
             
+            // Penanganan khusus untuk error di route pcare/pendaftaran
+            if (strpos($request->url(), '/pcare/pendaftaran') !== false) {
+                Log::error('Error di PCare pendaftaran: ' . $e->getMessage(), [
+                    'url' => $request->fullUrl(),
+                    'exception' => get_class($e)
+                ]);
+                
+                if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'redirect',
+                        'redirect_url' => route('home')
+                    ], 200);
+                }
+                
+                return redirect()->route('home')
+                    ->with('warning', 'Terjadi kesalahan saat mengakses pendaftaran PCare. Silakan coba lagi.');
+            }
+            
             return null;
         });
         
