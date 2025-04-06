@@ -190,34 +190,104 @@ class RegPeriksaController extends Controller
                     $kd_pj = $savedRecord->kd_pj;
                     $bpjsCodes = ['A03', 'A14', 'A15', 'BPJ'];
                     
+                    // Siapkan data BPJS untuk dikirimkan di respons
+                    $bpjsData = [];
+                    $sendToBpjs = false;
+                    
                     if (in_array($kd_pj, $bpjsCodes) || strpos(strtolower($kd_pj), 'bpjs') !== false) {
-                        // Coba kirim data antrian ke BPJS
+                        $sendToBpjs = true;
+                        
+                        // 1. Ambil data mapping poliklinik
+                        $poliMapping = DB::table('maping_poliklinik_pcare')
+                            ->where('kd_poli_rs', $savedRecord->kd_poli)
+                            ->first();
+                            
+                        if (!$poliMapping) {
+                            // Jika mapping tidak ada, gunakan data poliklinik lokal
+                            $poli = DB::table('poliklinik')
+                                ->where('kd_poli', $savedRecord->kd_poli)
+                                ->first();
+                                
+                            $bpjsData['kodepoli_bpjs'] = $savedRecord->kd_poli;
+                            $bpjsData['namapoli_bpjs'] = $poli ? $poli->nm_poli : '';
+                        } else {
+                            $bpjsData['kodepoli_bpjs'] = $poliMapping->kd_poli_pcare;
+                            $bpjsData['namapoli_bpjs'] = $poliMapping->nm_poli_pcare;
+                        }
+                        
+                        // 2. Ambil data mapping dokter
+                        $dokterMapping = DB::table('maping_dokter_pcare')
+                            ->where('kd_dokter', $savedRecord->kd_dokter)
+                            ->first();
+                            
+                        if (!$dokterMapping) {
+                            // Jika mapping tidak ada, gunakan data dokter lokal
+                            $dokter = DB::table('dokter')
+                                ->where('kd_dokter', $savedRecord->kd_dokter)
+                                ->first();
+                                
+                            $bpjsData['kodedokter_bpjs'] = 0; // Default jika tidak ada mapping
+                            $bpjsData['namadokter_bpjs'] = $dokter ? $dokter->nm_dokter : '';
+                        } else {
+                            $bpjsData['kodedokter_bpjs'] = (int)$dokterMapping->kd_dokter_pcare;
+                            $bpjsData['namadokter_bpjs'] = $dokterMapping->nm_dokter_pcare;
+                        }
+                        
+                        // 3. Ambil data jadwal
+                        $today = date('l', strtotime($savedRecord->tgl_registrasi));
+                        $hariIndonesia = $this->translateDay($today);
+                        
+                        $jadwal = DB::table('jadwal')
+                            ->where('kd_dokter', $savedRecord->kd_dokter)
+                            ->where('kd_poli', $savedRecord->kd_poli)
+                            ->where('hari_kerja', $hariIndonesia)
+                            ->first();
+                            
+                        if ($jadwal) {
+                            $bpjsData['jampraktek'] = substr($jadwal->jam_mulai, 0, 5) . "-" . substr($jadwal->jam_selesai, 0, 5);
+                        } else {
+                            $bpjsData['jampraktek'] = "-";
+                        }
+                        
+                        // Coba kirim data antrian ke BPJS di background
                         try {
-                            $bpjsResult = $this->kirimAntreanBPJS($savedRecord);
-                            \Log::info('Hasil pengiriman antrian BPJS: ' . ($bpjsResult ? 'Berhasil' : 'Gagal'));
+                            $this->kirimAntreanBPJS($savedRecord);
+                            \Log::info('Pengiriman antrian BPJS dilakukan di background');
                         } catch (\Exception $bpjsError) {
                             \Log::error('Gagal mengirim data antrian ke BPJS: ' . $bpjsError->getMessage());
-                            \Log::error('Stack trace BPJS error: ' . $bpjsError->getTraceAsString());
-                            // Tidak perlu throw exception, karena proses utama tetap berhasil
                         }
-                    } else {
-                        \Log::info('Pasien bukan BPJS, tidak perlu kirim data antrian');
                     }
+                    
+                    // Respons sukses dengan data tambahan untuk BPJS jika diperlukan
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Registrasi berhasil disimpan',
+                        'no_rawat' => $no_rawat,
+                        'no_reg' => $savedRecord->no_reg,
+                        'bpjs_patient' => $sendToBpjs,
+                        'kodepoli_bpjs' => $bpjsData['kodepoli_bpjs'] ?? '',
+                        'namapoli_bpjs' => $bpjsData['namapoli_bpjs'] ?? '',
+                        'kodedokter_bpjs' => $bpjsData['kodedokter_bpjs'] ?? 0,
+                        'namadokter_bpjs' => $bpjsData['namadokter_bpjs'] ?? '',
+                        'jampraktek' => $bpjsData['jampraktek'] ?? '-'
+                    ]);
                 } else {
-                    \Log::warning('Verifikasi data tersimpan gagal, data tidak ditemukan dengan no_rawat: ' . $no_rawat);
+                    \Log::error('Verifikasi data tersimpan gagal, record tidak ditemukan');
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal memverifikasi data yang disimpan'
+                    ], 500);
                 }
+            } catch (\Exception $e) {
+                // Rollback transaksi jika terjadi error
+                DB::rollBack();
+                
+                \Log::error('Error saat menyimpan registrasi: ' . $e->getMessage());
                 
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Registrasi berhasil disimpan',
-                    'no_rawat' => $no_rawat
-                ]);
-            } catch (\Exception $insertErr) {
-                DB::rollBack();
-                \Log::error('Error saat insert: ' . $insertErr->getMessage());
-                \Log::error('SQL Error: ' . $insertErr->getMessage());
-                \Log::error('Query yang dieksekusi:', DB::getQueryLog());
-                throw $insertErr;
+                    'success' => false,
+                    'message' => 'Gagal menyimpan registrasi: ' . $e->getMessage()
+                ], 500);
             }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -790,15 +860,6 @@ class RegPeriksaController extends Controller
                 throw new \Exception('Data pasien tidak ditemukan');
             }
             
-            // Validasi nomor kartu BPJS
-            if (empty($pasien->no_peserta) || strlen($pasien->no_peserta) != 13) {
-                \Log::warning('Nomor kartu BPJS tidak valid', [
-                    'no_rkm_medis' => $data->no_rkm_medis,
-                    'no_peserta' => $pasien->no_peserta ?? 'kosong'
-                ]);
-                // Tetap lanjut meskipun nomor tidak valid
-            }
-            
             // 2. Ambil data poli dan mapping ke kode BPJS
             $poli = DB::table('poliklinik')
                 ->where('kd_poli', $data->kd_poli)
@@ -816,7 +877,10 @@ class RegPeriksaController extends Controller
             
             if (!$poliMapping) {
                 \Log::warning('Mapping poliklinik ke BPJS tidak ditemukan', ['kd_poli_rs' => $data->kd_poli]);
-                // Tetap lanjut meski mapping tidak ada
+                $poliMapping = (object)[
+                    'kd_poli_pcare' => $data->kd_poli, // Fallback ke kode poli RS
+                    'nm_poli_pcare' => $poli->nm_poli // Fallback ke nama poli RS
+                ];
             }
             
             // 3. Ambil data dokter dan mapping ke kode BPJS
@@ -836,7 +900,10 @@ class RegPeriksaController extends Controller
             
             if (!$dokterMapping) {
                 \Log::warning('Mapping dokter ke BPJS tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
-                // Tetap lanjut meski mapping tidak ada
+                $dokterMapping = (object)[
+                    'kd_dokter_pcare' => 0, // Default jika tidak ada mapping
+                    'nm_dokter_pcare' => $dokter->nm_dokter
+                ];
             }
             
             // 4. Ambil data jadwal
@@ -865,12 +932,12 @@ class RegPeriksaController extends Controller
                 "nomorkartu" => $pasien->no_peserta ?: "", // Kosong jika non-JKN
                 "nik" => $pasien->no_ktp ?: "",
                 "nohp" => $pasien->no_tlp ?: "",
-                "kodepoli" => $poliMapping ? $poliMapping->kd_poli_pcare : "",
-                "namapoli" => $poliMapping ? $poliMapping->nm_poli_pcare : $poli->nm_poli,
+                "kodepoli" => $poliMapping->kd_poli_pcare,
+                "namapoli" => $poliMapping->nm_poli_pcare,
                 "norm" => $pasien->no_rkm_medis,
                 "tanggalperiksa" => $data->tgl_registrasi,
-                "kodedokter" => $dokterMapping ? (int)$dokterMapping->kd_dokter_pcare : 0,
-                "namadokter" => $dokter->nm_dokter,
+                "kodedokter" => (int)$dokterMapping->kd_dokter_pcare,
+                "namadokter" => $dokterMapping->nm_dokter_pcare,
                 "jampraktek" => $jamPraktek,
                 "nomorantrean" => $data->no_reg,
                 "angkaantrean" => (int)ltrim($data->no_reg, '0'),
@@ -880,12 +947,26 @@ class RegPeriksaController extends Controller
             \Log::info('Data Antrean BPJS yang akan dikirim', $dataAntrean);
             
             try {
-                // 6. Kirim data ke BPJS
-                $response = $this->requestPostBpjs('antrean/add', $dataAntrean, 'antrean');
+                // 6. Gunakan AddAntreanController untuk kirim data ke BPJS
+                $antreanController = new \App\Http\Antrol\AddAntreanController();
+                
+                // Buat request baru dengan data yang sudah disiapkan
+                $request = new \Illuminate\Http\Request();
+                $request->replace($dataAntrean);
+                
+                // Panggil method add di AddAntreanController
+                $response = $antreanController->add($request);
+                
+                \Log::info('Respons dari AddAntreanController', [
+                    'status' => $response->getStatusCode(),
+                    'content' => json_decode($response->getContent(), true)
+                ]);
                 
                 // Periksa respons
-                if ($response && isset($response->original) && isset($response->original['metaData'])) {
-                    $metaData = $response->original['metaData'];
+                $responseContent = json_decode($response->getContent(), true);
+                
+                if (isset($responseContent['metadata']) && isset($responseContent['metadata']['code'])) {
+                    $metaData = $responseContent['metadata'];
                     
                     if ($metaData['code'] == 200) {
                         \Log::info('Pengiriman antrian BPJS berhasil', [
@@ -899,7 +980,7 @@ class RegPeriksaController extends Controller
                                 'no_rawat' => $data->no_rawat,
                                 'no_rkm_medis' => $data->no_rkm_medis,
                                 'status' => 'Berhasil',
-                                'response' => json_encode($response->original),
+                                'response' => json_encode($responseContent),
                                 'created_at' => now()
                             ]);
                         } catch (\Exception $logErr) {
@@ -919,7 +1000,7 @@ class RegPeriksaController extends Controller
                                 'no_rawat' => $data->no_rawat,
                                 'no_rkm_medis' => $data->no_rkm_medis,
                                 'status' => 'Gagal',
-                                'response' => json_encode($response->original),
+                                'response' => json_encode($responseContent),
                                 'created_at' => now()
                             ]);
                         } catch (\Exception $logErr) {
@@ -927,7 +1008,7 @@ class RegPeriksaController extends Controller
                         }
                     }
                 } else {
-                    \Log::warning('Format respons BPJS tidak sesuai', ['response' => $response]);
+                    \Log::warning('Format respons BPJS tidak sesuai', ['response' => $responseContent]);
                 }
                 
                 \Log::info('Proses pengiriman antrian BPJS selesai', ['no_rawat' => $data->no_rawat]);
@@ -970,7 +1051,7 @@ class RegPeriksaController extends Controller
                     'created_at' => now()
                 ]);
             } catch (\Exception $logErr) {
-                \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                \Log::warning('Gagal menyimpan log error antrean BPJS', ['error' => $logErr->getMessage()]);
             }
             
             return false;

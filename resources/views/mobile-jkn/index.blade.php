@@ -691,13 +691,21 @@
                } else {
                   // Handle error response format
                   var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data poli';
-                  toastr.error(message);
+                  Swal.fire({
+                     icon: 'error',
+                     title: 'Error',
+                     text: message
+                  });
                   console.error('Error loading poli:', data);
                }
             },
             error: function(xhr, status, error) {
                $('#kodepoli').empty().append('<option value="">-- Pilih Poli --</option>');
-               toastr.error('Error loading poli: ' + error);
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'Error loading poli: ' + error
+               });
                console.error('Error loading poli:', error, xhr.responseText);
             }
          });
@@ -735,13 +743,21 @@
                } else {
                   // Handle error response format
                   var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data dokter';
-                  toastr.error(message);
+                  Swal.fire({
+                     icon: 'error',
+                     title: 'Error',
+                     text: message
+                  });
                   console.error('Error loading dokter:', data);
                }
             },
             error: function(xhr, status, error) {
                $('#kodedokter').empty().append('<option value="">-- Pilih Jadwal Dokter --</option>');
-               toastr.error('Error loading dokter: ' + error);
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'Error loading dokter: ' + error
+               });
                console.error('Error loading dokter:', error, xhr.responseText);
             }
          });
@@ -934,7 +950,11 @@
       function refreshAntrean() {
          const antreanData = $('#btn-batalkan').data('antrean');
          if (!antreanData) {
-            toastr.error('Data antrean tidak ditemukan');
+            Swal.fire({
+               icon: 'error',
+               title: 'Error',
+               text: 'Data antrean tidak ditemukan'
+            });
             return;
          }
          
@@ -965,14 +985,22 @@
                   $('#estimasi-waktu').text(data.waktutunggu ? data.waktutunggu + ' menit' : '-');
                } else {
                   const message = response.metadata ? response.metadata.message : 'Gagal memuat status antrean';
-                  toastr.error(message);
+                  Swal.fire({
+                     icon: 'error',
+                     title: 'Error',
+                     text: message
+                  });
                }
             },
             error: function(xhr) {
                $('#btn-muat-ulang').prop('disabled', false);
                $('#btn-muat-ulang').html('<i class="fas fa-sync-alt"></i> Muat ulang');
                
-               toastr.error('Gagal memuat status antrean');
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'Gagal memuat status antrean'
+               });
             }
          });
       }

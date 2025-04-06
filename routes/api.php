@@ -12,6 +12,7 @@ use App\Http\Controllers\API\ObatController;
 use App\Http\Controllers\API\ResepRanapController;
 use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
+use App\Http\Antrol\AddAntreanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -176,4 +177,9 @@ Route::prefix('fktp')->group(function () {
 Route::prefix('mobile-jkn')->group(function () {
     Route::get('/referensi-poli/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiPoli']);
     Route::get('/referensi-dokter/kodepoli/{kodePoli}/tanggal/{tanggal}', [App\Http\Controllers\API\WsBPJSController::class, 'getReferensiDokter']);
+});
+
+// Route untuk Antrian BPJS
+Route::prefix('antrean')->group(function () {
+    Route::post('/add', [AddAntreanController::class, 'add']);
 });
