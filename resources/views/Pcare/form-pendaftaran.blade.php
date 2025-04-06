@@ -39,7 +39,7 @@
             <div class="tab-content" id="pcareTabContent">
                <!-- Tab Tambah Pendaftaran -->
                <div class="tab-pane fade show active" id="add-content" role="tabpanel" aria-labelledby="add-tab">
-                  <form id="form-pendaftaran-pcare" method="POST" action="{{ route('api.pcare.pendaftaran.store') }}">
+                  <form id="form-pendaftaran-pcare" method="POST" action="/api/pcare/pendaftaran">
                      @csrf
 
                      <div class="row">
@@ -161,7 +161,9 @@
                                  </div>
                               </div>
                            </div>
+                        </div>
 
+                        <div class="col-md-6">
                            <div class="card border-0 mb-3">
                               <div class="card-header bg-success text-white">
                                  <h5 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Informasi Kunjungan</h5>
@@ -177,18 +179,6 @@
                                     <label for="kdPoli">Poli</label>
                                     <select class="form-control" id="kdPoli" name="kdPoli" required>
                                        <option value="">Pilih Poli</option>
-                                       <option value="001">Umum</option>
-                                       <option value="002">Gigi</option>
-                                       <option value="003">KIA</option>
-                                       <option value="004">KB</option>
-                                       <option value="005">IMS</option>
-                                       <option value="006">Psikologi</option>
-                                       <option value="007">Rehabilitasi Medik</option>
-                                       <option value="008">Poli Gizi</option>
-                                       <option value="009">Poli Akupuntur</option>
-                                       <option value="010">Poli Konseling</option>
-                                       <option value="011">Poli DOTS</option>
-                                       <option value="012">UGD</option>
                                     </select>
                                  </div>
 
@@ -199,13 +189,21 @@
 
                                  <div class="form-group">
                                     <label for="keluhan">Keluhan</label>
-                                    <textarea class="form-control" id="keluhan" name="keluhan" rows="3"></textarea>
+                                    <textarea class="form-control" id="keluhan" name="keluhan"
+                                       rows="3">Pasien datang dengan keluhan</textarea>
+                                 </div>
+
+                                 <div class="form-group">
+                                    <label for="kdTkp">Tempat Kunjungan</label>
+                                    <select class="form-control" id="kdTkp" name="kdTkp" required>
+                                       <option value="10" selected>Rawat Jalan (RJTP)</option>
+                                       <option value="20">Rawat Inap (RITP)</option>
+                                       <option value="50">Promotif Preventif</option>
+                                    </select>
                                  </div>
                               </div>
                            </div>
-                        </div>
 
-                        <div class="col-md-6">
                            <div class="card border-0 mb-3">
                               <div class="card-header bg-info text-white">
                                  <h5 class="mb-0"><i class="fas fa-heartbeat mr-2"></i>Pemeriksaan</h5>
@@ -229,14 +227,14 @@
                                        <div class="form-group">
                                           <label for="sistole">Sistole (mmHg)</label>
                                           <input type="number" class="form-control" id="sistole" name="sistole"
-                                             value="0">
+                                             value="120">
                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                        <div class="form-group">
                                           <label for="diastole">Diastole (mmHg)</label>
                                           <input type="number" class="form-control" id="diastole" name="diastole"
-                                             value="0">
+                                             value="80">
                                        </div>
                                     </div>
                                  </div>
@@ -263,14 +261,14 @@
                                        <div class="form-group">
                                           <label for="respRate">Respiratory Rate</label>
                                           <input type="number" class="form-control" id="respRate" name="respRate"
-                                             value="0">
+                                             value="20">
                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                        <div class="form-group">
                                           <label for="heartRate">Heart Rate</label>
                                           <input type="number" class="form-control" id="heartRate" name="heartRate"
-                                             value="0">
+                                             value="88">
                                        </div>
                                     </div>
                                  </div>
@@ -278,23 +276,13 @@
                                  <div class="form-group">
                                     <label for="lingkarPerut">Lingkar Perut (cm)</label>
                                     <input type="number" class="form-control" id="lingkarPerut" name="lingkarPerut"
-                                       value="0">
+                                       value="87">
                                  </div>
 
-                                 <div class="form-group">
+                                 <div class="form-group" style="display:none;">
                                     <label for="rujukBalik">Rujuk Balik</label>
-                                    <input type="number" class="form-control" id="rujukBalik" name="rujukBalik"
+                                    <input type="hidden" class="form-control" id="rujukBalik" name="rujukBalik"
                                        value="0">
-                                 </div>
-
-                                 <div class="form-group">
-                                    <label for="kdTkp">Tempat Kunjungan</label>
-                                    <select class="form-control" id="kdTkp" name="kdTkp" required>
-                                       <option value="">Pilih Tempat Kunjungan</option>
-                                       <option value="10">Rawat Jalan (RJTP)</option>
-                                       <option value="20">Rawat Inap (RITP)</option>
-                                       <option value="50">Promotif Preventif</option>
-                                    </select>
                                  </div>
                               </div>
                            </div>
@@ -526,33 +514,46 @@
         const today = new Date();
         const formattedDate = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
         $('#tglDaftar').val(formattedDate);
+        $('#del_tglDaftar').val(formattedDate);
         
-        // Otomatis cek peserta saat halaman dibuka jika nomor kartu sudah ada
-        function checkPesertaOnLoad() {
-            const noKartu = $('#noKartu').val();
-            if (noKartu && noKartu.length > 0) {
-                // Proses fetch data peserta BPJS secara otomatis
-                fetchPesertaBPJS(noKartu);
+        // Function untuk mengambil data pasien secara otomatis saat halaman dibuka
+        // Mirip dengan formWindowOpened di contoh Java
+        function initFormOnOpen() {
+            // Ambil nomor rekam medis dari URL jika ada
+            const noRkmMedisParam = getURLParameter('no_rkm_medis');
+            if (noRkmMedisParam) {
+                // Reset form terlebih dahulu
+                $('#nm_pasien').val('');
+                $('#noKartu').val('');
+                $('#detail-peserta-card').hide();
+                
+                $('#no_rkm_medis').val(noRkmMedisParam);
+                // Log untuk debugging
+                console.log('Mendapatkan no_rkm_medis dari URL:', noRkmMedisParam);
+                // Tambahkan no_rawat otomatis jika nomor rekam medis ada
+                const tglReg = formattedDate.replace(/-/g, '');
+                const rawatId = tglReg + '/' + noRkmMedisParam;
+                $('#no_rawat').val(rawatId);
+                
+                // Tunggu sebentar untuk memastikan DOM selesai diinisialisasi
+                setTimeout(function() {
+                    fetchPatientData(noRkmMedisParam);
+                }, 300);
+            } else {
+                console.log('Tidak ada parameter no_rkm_medis di URL');
             }
         }
         
-        // Check URL parameter jika ada
+        // Check URL parameter
         function getURLParameter(name) {
             const results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
             return results ? decodeURIComponent(results[1]) : null;
         }
         
-        // Cek apakah ada parameter no_rkm_medis di URL, jika ada ambil datanya
-        const noRkmMedisParam = getURLParameter('no_rkm_medis');
-        if (noRkmMedisParam) {
-            $('#no_rkm_medis').val(noRkmMedisParam);
-            fetchPatientData(noRkmMedisParam);
-        } else {
-            // Cek peserta otomatis jika nomor kartu sudah ada
-            checkPesertaOnLoad();
-        }
+        // Panggil fungsi inisialisasi saat halaman dibuka
+        initFormOnOpen();
         
-        // Event listener untuk otomatis cek peserta saat nomor kartu berubah
+        // Otomatis cek peserta saat nomor kartu berubah
         $('#noKartu').on('change', function() {
             const noKartu = $(this).val();
             if (noKartu && noKartu.length > 0) {
@@ -565,55 +566,103 @@
         
         // Update nama poli ketika poli dipilih
         $('#kdPoli').change(function() {
-            const poliMap = {
-                '001': 'Umum',
-                '002': 'Gigi',
-                '003': 'KIA',
-                '004': 'KB',
-                '005': 'IMS',
-                '006': 'Psikologi',
-                '007': 'Rehabilitasi Medik',
-                '008': 'Poli Gizi',
-                '009': 'Poli Akupuntur',
-                '010': 'Poli Konseling',
-                '011': 'Poli DOTS',
-                '012': 'UGD'
-            };
-            
             const kdPoli = $(this).val();
-            $('#nmPoli').val(poliMap[kdPoli] || '');
+            const nmPoli = $("#kdPoli option:selected").data('nm-poli');
+            $('#nmPoli').val(nmPoli || '');
         });
+        
+        // Fungsi untuk mengambil data mapping poli dari API
+        function fetchMappingPoli() {
+            $.ajax({
+                url: '/api/pcare/mapping-poli',
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Mapping poli response:', response);
+                    if (response.status === 'success' && response.data && response.data.length > 0) {
+                        // Reset dropdown
+                        $('#kdPoli').empty().append('<option value="">Pilih Poli</option>');
+                        
+                        // Isi dropdown dengan data poli
+                        response.data.forEach(function(poli) {
+                            $('#kdPoli').append(
+                                `<option value="${poli.kd_poli_pcare}" data-nm-poli="${poli.nm_poli_pcare}" data-kd-poli-rs="${poli.kd_poli_rs}">
+                                    ${poli.nm_poli_rs} (${poli.nm_poli_pcare})
+                                </option>`
+                            );
+                        });
+                        
+                        // Trigger change event untuk mengisi nama poli jika ada poli yang dipilih
+                        if ($('#kdPoli').val()) {
+                            $('#kdPoli').trigger('change');
+                        }
+                        
+                        console.log('Mapping poli loaded successfully');
+                    } else {
+                        console.error('No mapping poli data available');
+                        toastr.warning('Data mapping poli tidak tersedia. Menggunakan data default.');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching mapping poli:', error);
+                    toastr.error('Gagal mengambil data mapping poli');
+                }
+            });
+        }
+        
+        // Panggil fungsi untuk mengambil data mapping poli saat halaman dibuka
+        fetchMappingPoli();
         
         // Fungsi untuk mengambil data pasien dari nomor rekam medis
         function fetchPatientData(noRkmMedis) {
             if (!noRkmMedis) return;
             
+            // Reset form terlebih dahulu
+            $('#nm_pasien').val('');
+            $('#noKartu').val('');
+            $('#detail-peserta-card').slideUp();
+            
             // Tampilkan loading
             $('#btn-cari-pasien').html('<i class="fas fa-spinner fa-spin"></i>');
+            toastr.info('Mengambil data pasien...');
+            console.log('Fetching patient data for:', noRkmMedis);
             
             // AJAX untuk mengambil data pasien dari API pasien
             $.ajax({
-                url: `/api/pasien/detail/${noRkmMedis}`, // Endpoint untuk detail pasien
+                url: `/api/pasien/detail/${noRkmMedis}`, // Endpoint untuk detail pasien berdasarkan no_rkm_medis
                 method: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    if (response.status === 'success' || response.metaData?.code === 200) {
-                        const pasienData = response.data || response.response;
+                    console.log('API response:', response);
+                    if (response.status === 'success') {
+                        const pasienData = response.data;
+                        console.log('Pasien data found:', pasienData);
+                        
+                        // Verifikasi data pasien yang ditemukan
+                        if (pasienData.no_rkm_medis !== noRkmMedis) {
+                            console.error('Nomor rekam medis tidak sesuai:', pasienData.no_rkm_medis, 'vs', noRkmMedis);
+                            toastr.error(`Nomor rekam medis tidak sesuai: ${pasienData.no_rkm_medis} vs ${noRkmMedis}`);
+                            return;
+                        }
                         
                         // Isi form dengan data pasien
-                        $('#nm_pasien').val(pasienData.nm_pasien || pasienData.nama || '');
+                        $('#nm_pasien').val(pasienData.nm_pasien || '');
                         
                         // Isi nomor BPJS dari no_peserta pasien
                         if (pasienData.no_peserta) {
                             $('#noKartu').val(pasienData.no_peserta);
+                            console.log('No peserta found:', pasienData.no_peserta);
                             // Lakukan pengecekan data peserta BPJS otomatis jika no_peserta ada
                             if (pasienData.no_peserta.length > 0) {
                                 fetchPesertaBPJS(pasienData.no_peserta);
                             }
+                        } else {
+                            console.log('No peserta not found in pasien data');
                         }
                         
                         // Jika no_peserta tidak ada, coba cek dengan NIK
                         if ((!pasienData.no_peserta || pasienData.no_peserta.length === 0) && pasienData.no_ktp) {
+                            console.log('Trying with NIK:', pasienData.no_ktp);
                             fetchPesertaBPJSByNIK(pasienData.no_ktp);
                         }
                         
@@ -624,104 +673,26 @@
                         // Notifikasi sukses
                         toastr.success('Data pasien berhasil dimuat');
                     } else {
-                        // Coba alternative endpoint
-                        $.ajax({
-                            url: `/pasien/${noRkmMedis}`,
-                            method: 'GET',
-                            dataType: 'json',
-                            success: function(altResponse) {
-                                if (altResponse.status === 'success' || altResponse.data) {
-                                    const pasienData = altResponse.data;
-                                    
-                                    // Isi form dengan data pasien
-                                    $('#nm_pasien').val(pasienData.nm_pasien || pasienData.nama || '');
-                                    
-                                    // Isi nomor BPJS dari no_peserta pasien
-                                    if (pasienData.no_peserta) {
-                                        $('#noKartu').val(pasienData.no_peserta);
-                                        // Lakukan pengecekan data peserta BPJS otomatis jika no_peserta ada
-                                        if (pasienData.no_peserta.length > 0) {
-                                            fetchPesertaBPJS(pasienData.no_peserta);
-                                        }
-                                    }
-                                    
-                                    // Jika no_peserta tidak ada, coba cek dengan NIK
-                                    if ((!pasienData.no_peserta || pasienData.no_peserta.length === 0) && pasienData.no_ktp) {
-                                        fetchPesertaBPJSByNIK(pasienData.no_ktp);
-                                    }
-                                    
-                                    if (pasienData.kd_pj) {
-                                        $('#kdProviderPeserta').val(pasienData.kd_pj);
-                                    }
-                                    
-                                    // Notifikasi sukses
-                                    toastr.success('Data pasien berhasil dimuat');
-                                } else {
-                                    // Reset form
-                                    $('#nm_pasien').val('');
-                                    $('#noKartu').val('');
-                                    
-                                    // Notifikasi error
-                                    toastr.error('Data pasien tidak ditemukan');
-                                }
-                            },
-                            error: function() {
-                                // Reset form
-                                $('#nm_pasien').val('');
-                                $('#noKartu').val('');
-                                
-                                // Notifikasi error
-                                toastr.error('Data pasien tidak ditemukan');
-                            }
-                        });
+                        console.log('Patient data not found with endpoint, showing error');
+                        // Reset form karena data tidak ditemukan
+                        $('#nm_pasien').val('');
+                        $('#noKartu').val('');
+                        
+                        // Notifikasi error yang lebih informatif
+                        toastr.error(`Data pasien dengan No. RM ${noRkmMedis} tidak ditemukan di sistem`);
                     }
                 },
-                error: function() {
-                    // Coba alternative endpoint
-                    $.ajax({
-                        url: `/pasien/${noRkmMedis}`,
-                        method: 'GET',
-                        dataType: 'json',
-                        success: function(altResponse) {
-                            if (altResponse.status === 'success' || altResponse.data) {
-                                const pasienData = altResponse.data;
-                                
-                                // Isi form dengan data pasien
-                                $('#nm_pasien').val(pasienData.nm_pasien || pasienData.nama || '');
-                                
-                                // Isi nomor BPJS dari no_peserta pasien
-                                if (pasienData.no_peserta) {
-                                    $('#noKartu').val(pasienData.no_peserta);
-                                    // Lakukan pengecekan data peserta BPJS otomatis jika no_peserta ada
-                                    if (pasienData.no_peserta.length > 0) {
-                                        fetchPesertaBPJS(pasienData.no_peserta);
-                                    }
-                                }
-                                
-                                // Jika no_peserta tidak ada, coba cek dengan NIK
-                                if ((!pasienData.no_peserta || pasienData.no_peserta.length === 0) && pasienData.no_ktp) {
-                                    fetchPesertaBPJSByNIK(pasienData.no_ktp);
-                                }
-                                
-                                if (pasienData.kd_pj) {
-                                    $('#kdProviderPeserta').val(pasienData.kd_pj);
-                                }
-                                
-                                // Notifikasi sukses
-                                toastr.success('Data pasien berhasil dimuat');
-                            } else {
-                                // Reset form
-                                $('#nm_pasien').val('');
-                                $('#noKartu').val('');
-                                
-                                // Notifikasi error
-                                toastr.error('Data pasien tidak ditemukan');
-                            }
-                        },
-                        error: function() {
-                            toastr.error('Terjadi kesalahan saat mengambil data pasien');
-                        }
-                    });
+                error: function(xhr, status, error) {
+                    console.error('Error fetching patient data:', error);
+                    console.log('XHR Status:', xhr.status);
+                    console.log('XHR Response:', xhr.responseText);
+                    
+                    // Reset form
+                    $('#nm_pasien').val('');
+                    $('#noKartu').val('');
+                    
+                    // Notifikasi error yang lebih informatif
+                    toastr.error(`Gagal mengambil data pasien: ${error}. Status: ${xhr.status}`);
                 },
                 complete: function() {
                     $('#btn-cari-pasien').html('<i class="fas fa-search"></i>');
@@ -942,6 +913,14 @@
         $('#form-pendaftaran-pcare').submit(function(e) {
             e.preventDefault();
             
+            // Konversi nilai kunjSakit menjadi boolean sebelum submit
+            const kunjSakit = $('input[name="kunjSakit"]:checked').val();
+            if (kunjSakit === 'true') {
+                $('input[name="kunjSakit"]:checked').val(true);
+            } else if (kunjSakit === 'false') {
+                $('input[name="kunjSakit"]:checked').val(false);
+            }
+            
             const formData = $(this).serialize();
             
             // Disable button dan tampilkan loading
@@ -967,8 +946,8 @@
                             confirmButtonText: 'OK'
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                // Redirect ke halaman detail atau list
-                                window.location.href = '/pcare/pendaftaran';
+                                // Redirect ke halaman utama
+                                window.location.href = "{{ route('home') }}";
                             }
                         });
                     } else {
@@ -988,14 +967,31 @@
                 },
                 error: function(xhr) {
                     let errorMsg = 'Terjadi kesalahan saat menyimpan data';
+                    let validationErrors = '';
                     
-                    if (xhr.responseJSON && xhr.responseJSON.metaData && xhr.responseJSON.metaData.message) {
+                    // Tampilkan error validasi secara detail
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = xhr.responseJSON.errors;
+                        validationErrors = '<ul>';
+                        
+                        for (const field in errors) {
+                            if (errors.hasOwnProperty(field)) {
+                                validationErrors += `<li>${errors[field]}</li>`;
+                                console.error(`Error pada field ${field}:`, errors[field]);
+                            }
+                        }
+                        
+                        validationErrors += '</ul>';
+                        errorMsg = 'Terdapat error validasi:';
+                    } else if (xhr.responseJSON && xhr.responseJSON.metaData && xhr.responseJSON.metaData.message) {
                         errorMsg = xhr.responseJSON.metaData.message;
                     }
                     
+                    console.error('Form submission error:', xhr.responseJSON);
+                    
                     Swal.fire({
                         title: 'Gagal!',
-                        text: errorMsg,
+                        html: `${errorMsg} ${validationErrors}`,
                         icon: 'error',
                         confirmButtonText: 'OK'
                     });

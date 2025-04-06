@@ -376,6 +376,22 @@ return [
             'label_color' => 'primary',
         ],
         [
+            'text'    => 'PCare BPJS',
+            'icon'    => 'fas fa-fw fa-hospital-alt',
+            'submenu' => [
+                [
+                    'text' => 'Pendaftaran',
+                    'url'  => '/pcare/form-pendaftaran',
+                    'icon' => 'fas fa-fw fa-plus-circle',
+                ],
+                [
+                    'text' => 'Data Pendaftaran',
+                    'url'  => '/pcare/data-pendaftaran',
+                    'icon' => 'fas fa-fw fa-list',
+                ],
+            ],
+        ],
+        [
             'text'        => 'Keluar',
             'url'         => '/logout',
             'icon'        => 'fas fa-fw fa-sign-out-alt',

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Session;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
@@ -24,68 +26,59 @@ class HomeController extends Controller
      */
     public function index()
     {
+        // Determine page title
+        $pageTitle = 'Dashboard';
+        
+        // Share page title with all views
+        View::share('title', $pageTitle);
+        
         $kd_poli = session()->get('kd_poli');
         $kd_dokter = session()->get('username');
         
-        // Jika kd_poli atau kd_dokter tidak ada dalam session, gunakan nilai default
-        if (!$kd_poli) {
-            $kd_poli = '-';
-        }
+        // Statistik kunjungan
+        $statistikKunjungan = $this->statistikKunjungan($kd_dokter);
         
-        if (!$kd_dokter) {
-            $kd_dokter = '-';
-        }
+        // Get poliklinik name
+        $poliklinik = $this->getPoliklinik($kd_poli);
         
-        $totalPasien = DB::table('pasien')->count();
-        $pasienBulanIni = DB::table('pasien')->where('tgl_daftar', 'like', date('Y-m').'%')->count();
-        $pasienPoliBulanIni = DB::table('reg_periksa')->where('tgl_registrasi', 'like', date('Y-m').'%')->where('kd_poli', $kd_poli)->where('stts', '<>', 'Belum')->count();
-        $pasienPoliHariIni = DB::table('reg_periksa')->where('tgl_registrasi', 'like', date('Y-m-d').'%')->where('kd_poli', $kd_poli)->count();
+        // Total pasien
+        $totalPasien = $this->getNoRKM();
         
-        // Pastikan kd_dokter valid sebelum melakukan query
-        if ($kd_dokter != '-') {
-            $pasienAktif = DB::table('reg_periksa')
-                                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-                                ->where('kd_dokter', $kd_dokter)
-                                ->groupBy('no_rkm_medis')
-                                ->orderBy('jumlah', 'desc')
-                                ->selectRaw("reg_periksa.no_rkm_medis, pasien.nm_pasien, count(reg_periksa.no_rkm_medis) jumlah")
-                                ->limit(10)->get();
-        } else {
-            $pasienAktif = collect([]);
-        }
+        // Pasien bulan ini
+        $pasienBulanIni = $this->getPatientCountThisMonth();
         
-        // Pastikan kd_poli valid sebelum melakukan query
-        if ($kd_poli != '-') {
-            $pasienTerakhir = DB::table('reg_periksa')
-                                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-                                ->where('reg_periksa.kd_poli', $kd_poli)
-                                ->where('tgl_registrasi', date('Y-m-d'))
-                                ->orderBy('reg_periksa.jam_reg', 'desc')
-                                ->select('reg_periksa.no_rawat', 'pasien.nm_pasien', 'reg_periksa.stts')
-                                ->limit(10)
-                                ->get();
-        } else {
-            $pasienTerakhir = collect([]);
-        }
+        // Pasien poli bulan ini
+        $pasienPoliBulanIni = $this->getPatientCountThisMonthByPoli($kd_poli, $kd_dokter);
         
-        $headPasienAktif = ['No Rekam Medis', 'Nama Pasien', 'Jumlah'];
-        $headPasienTerakhir = ['No Rawat', 'Nama Pasien', 'Status'];
+        // Pasien poli hari ini
+        $pasienPoliHariIni = $this->getCountTodayPatient($kd_poli, $kd_dokter);
         
-        // Dapatkan statistik kunjungan jika kd_dokter valid
-        $statistikKunjungan = ($kd_dokter != '-') ? $this->statistikKunjungan($kd_dokter) : collect([]);
+        // Data for pasien aktif table
+        $headPasienAktif = ['No', 'Nama Pasien', 'RM', 'Jumlah Kunjungan'];
+        $pasienAktif = $this->getMostActivePatients($kd_poli, $kd_dokter);
         
-        return view('home',[
+        // Data for pasien terakhir table
+        $headPasienTerakhir = ['No', 'Nama Pasien', 'RM', 'Tanggal Kunjungan', 'Status'];
+        $pasienTerakhir = $this->getLastPatients($kd_poli, $kd_dokter);
+        
+        return view('home', [
+            'noRKM' => $this->getNoRKM(),
+            'jmlPoli' => sizeof($this->getDaftarPoli()),
+            'jmlPasien' => $this->getCountTodayPatient($kd_poli, $kd_dokter),
+            'jmlPasienSelesai' => $this->getCountDonePatient($kd_poli, $kd_dokter),
+            'poli_id' => $kd_poli,
+            'userType' => $this->getUserType(),
+            'statistikKunjungan' => $statistikKunjungan,
+            'nm_dokter' => $this->getDokter($kd_dokter),
             'totalPasien' => $totalPasien,
             'pasienBulanIni' => $pasienBulanIni,
             'pasienPoliBulanIni' => $pasienPoliBulanIni,
             'pasienPoliHariIni' => $pasienPoliHariIni,
-            'pasienAktif' => array_values($pasienAktif->toArray()),
+            'poliklinik' => $poliklinik,
             'headPasienAktif' => $headPasienAktif,
+            'pasienAktif' => $pasienAktif,
             'headPasienTerakhir' => $headPasienTerakhir,
-            'pasienTerakhir' => array_values($pasienTerakhir->toArray()),
-            'poliklinik' => $this->getPoliklinik($kd_poli),
-            'statistikKunjungan' => $statistikKunjungan,
-            'nm_dokter' => $this->getDokter($kd_dokter),
+            'pasienTerakhir' => $pasienTerakhir
         ]);
     }
 
@@ -122,5 +115,204 @@ class HomeController extends Controller
     {
         Session::flush();
         return response()->view('logout_cleanup');
+    }
+    
+    private function getNoRKM()
+    {
+        try {
+            return DB::table('pasien')->count();
+        } catch (\Exception $e) {
+            Log::error('Error getNoRKM: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    private function getDaftarPoli()
+    {
+        try {
+            return DB::table('poliklinik')->get();
+        } catch (\Exception $e) {
+            Log::error('Error getDaftarPoli: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getCountTodayPatient($kd_poli, $kd_dokter)
+    {
+        try {
+            $query = DB::table('reg_periksa')
+                ->where('tgl_registrasi', date('Y-m-d'));
+                
+            if (!empty($kd_poli)) {
+                $query->where('kd_poli', $kd_poli);
+            }
+            
+            if (!empty($kd_dokter)) {
+                $query->where('kd_dokter', $kd_dokter);
+            }
+            
+            return $query->count();
+        } catch (\Exception $e) {
+            Log::error('Error getCountTodayPatient: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    private function getCountDonePatient($kd_poli, $kd_dokter)
+    {
+        try {
+            $query = DB::table('reg_periksa')
+                ->where('tgl_registrasi', date('Y-m-d'))
+                ->where('stts', 'Sudah');
+                
+            if (!empty($kd_poli)) {
+                $query->where('kd_poli', $kd_poli);
+            }
+            
+            if (!empty($kd_dokter)) {
+                $query->where('kd_dokter', $kd_dokter);
+            }
+            
+            return $query->count();
+        } catch (\Exception $e) {
+            Log::error('Error getCountDonePatient: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    private function getUserType()
+    {
+        $userType = session()->get('user_type');
+        return $userType ? $userType : 'guest';
+    }
+    
+    private function getPatientCountThisMonth()
+    {
+        try {
+            return DB::table('reg_periksa')
+                ->whereRaw('MONTH(tgl_registrasi) = MONTH(CURRENT_DATE())')
+                ->whereRaw('YEAR(tgl_registrasi) = YEAR(CURRENT_DATE())')
+                ->count();
+        } catch (\Exception $e) {
+            Log::error('Error getPatientCountThisMonth: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    private function getPatientCountThisMonthByPoli($kd_poli, $kd_dokter)
+    {
+        try {
+            $query = DB::table('reg_periksa')
+                ->whereRaw('MONTH(tgl_registrasi) = MONTH(CURRENT_DATE())')
+                ->whereRaw('YEAR(tgl_registrasi) = YEAR(CURRENT_DATE())');
+                
+            if (!empty($kd_poli)) {
+                $query->where('kd_poli', $kd_poli);
+            }
+            
+            if (!empty($kd_dokter)) {
+                $query->where('kd_dokter', $kd_dokter);
+            }
+            
+            return $query->count();
+        } catch (\Exception $e) {
+            Log::error('Error getPatientCountThisMonthByPoli: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    private function getMostActivePatients($kd_poli, $kd_dokter, $limit = 5)
+    {
+        try {
+            $query = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->selectRaw('reg_periksa.no_rkm_medis, pasien.nm_pasien, COUNT(*) as total_kunjungan')
+                ->groupBy('reg_periksa.no_rkm_medis', 'pasien.nm_pasien')
+                ->orderBy('total_kunjungan', 'desc')
+                ->limit($limit);
+                
+            if (!empty($kd_poli)) {
+                $query->where('reg_periksa.kd_poli', $kd_poli);
+            }
+            
+            if (!empty($kd_dokter)) {
+                $query->where('reg_periksa.kd_dokter', $kd_dokter);
+            }
+            
+            $patients = $query->get();
+            
+            $result = [];
+            $counter = 1;
+            
+            foreach ($patients as $patient) {
+                $result[] = [
+                    $counter++,
+                    $patient->nm_pasien,
+                    $patient->no_rkm_medis,
+                    $patient->total_kunjungan
+                ];
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('Error getMostActivePatients: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    private function getLastPatients($kd_poli, $kd_dokter, $limit = 10)
+    {
+        try {
+            $query = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->select('reg_periksa.no_rkm_medis', 'pasien.nm_pasien', 'reg_periksa.tgl_registrasi', 'reg_periksa.stts')
+                ->orderBy('reg_periksa.tgl_registrasi', 'desc')
+                ->limit($limit);
+                
+            if (!empty($kd_poli)) {
+                $query->where('reg_periksa.kd_poli', $kd_poli);
+            }
+            
+            if (!empty($kd_dokter)) {
+                $query->where('reg_periksa.kd_dokter', $kd_dokter);
+            }
+            
+            $patients = $query->get();
+            
+            $result = [];
+            $counter = 1;
+            
+            foreach ($patients as $patient) {
+                $status = $patient->stts;
+                $statusLabel = '';
+                
+                switch($status) {
+                    case 'Belum':
+                        $statusLabel = '<span class="badge badge-warning">Belum</span>';
+                        break;
+                    case 'Sudah':
+                        $statusLabel = '<span class="badge badge-success">Sudah</span>';
+                        break;
+                    case 'Batal':
+                        $statusLabel = '<span class="badge badge-danger">Batal</span>';
+                        break;
+                    default:
+                        $statusLabel = '<span class="badge badge-secondary">' . $status . '</span>';
+                }
+                
+                $result[] = [
+                    $counter++,
+                    $patient->nm_pasien,
+                    $patient->no_rkm_medis,
+                    $patient->tgl_registrasi,
+                    $statusLabel
+                ];
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('Error getLastPatients: ' . $e->getMessage());
+            return [];
+        }
     }
 }

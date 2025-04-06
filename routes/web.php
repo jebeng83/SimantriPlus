@@ -229,6 +229,36 @@ Route::middleware(['web', 'loginauth'])->group(function () {
             ], 500);
         }
     })->name('livewire.generate-noreg');
+
+    // Route untuk PCare BPJS
+    Route::prefix('pcare')->group(function () {
+        Route::get('/form-pendaftaran', function (Illuminate\Http\Request $request) {
+            $no_rkm_medis = $request->input('no_rkm_medis');
+            return view('Pcare.form-pendaftaran', compact('no_rkm_medis'));
+        })->name('pcare.form-pendaftaran');
+        
+        Route::get('/pendaftaran', function () {
+            // Redirect ke halaman utama untuk sementara
+            return redirect()->route('home')->with('info', 'Halaman Pendaftaran PCare sedang dalam pengembangan');
+        })->name('pcare.pendaftaran');
+        
+        Route::get('/data-pendaftaran', function () {
+            return view('Pcare.data-pendaftaran-pcare');
+        })->name('pcare.data-pendaftaran');
+    });
+
+    // Antrian Poliklinik Routes
+    Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'index'])
+        ->name('antrian-poliklinik.index');
+    Route::get('/antrian-display', [App\Http\Controllers\AntrianDisplayController::class, 'display'])
+        ->name('antrian.display');
+    Route::get('/antrian/display/data', [App\Http\Controllers\AntrianDisplayController::class, 'getDataDisplay'])->name('antrian.display.data');
+    Route::get('/laporan/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'cetakLaporan'])
+        ->name('antrian-poliklinik.cetak');
+    Route::get('/laporan/antrian-poliklinik/export', [App\Http\Controllers\AntrianPoliklinikController::class, 'exportExcel'])
+        ->name('antrian-poliklinik.export');
+
+    Route::get('/get-videos', [App\Http\Controllers\VideoController::class, 'getVideos']);
 });
 
 // Temporary route for debugging
@@ -258,16 +288,3 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 
 // Rute pengujian dokter spesifik
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
-
-// Antrian Poliklinik Routes
-Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'index'])
-    ->name('antrian-poliklinik.index');
-Route::get('/antrian-display', [App\Http\Controllers\AntrianDisplayController::class, 'display'])
-    ->name('antrian.display');
-Route::get('/antrian/display/data', [App\Http\Controllers\AntrianDisplayController::class, 'getDataDisplay'])->name('antrian.display.data');
-Route::get('/laporan/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'cetakLaporan'])
-    ->name('antrian-poliklinik.cetak');
-Route::get('/laporan/antrian-poliklinik/export', [App\Http\Controllers\AntrianPoliklinikController::class, 'exportExcel'])
-    ->name('antrian-poliklinik.export');
-
-Route::get('/get-videos', [App\Http\Controllers\VideoController::class, 'getVideos']);

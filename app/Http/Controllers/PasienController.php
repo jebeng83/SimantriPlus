@@ -195,6 +195,78 @@ class PasienController extends Controller
         return $tgl_lahir->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
     }
 
+    /**
+     * API untuk mendapatkan detail pasien berdasarkan nomor rekam medis
+     * Digunakan oleh form PCare BPJS
+     */
+    public function getDetailByRekamMedis($no_rkm_medis)
+    {
+        try {
+            \Log::info('PasienController - getDetailByRekamMedis: Mencari pasien dengan no_rkm_medis: ' . $no_rkm_medis);
+            
+            // Query data pasien dari tabel pasien
+            $pasien = DB::table('pasien')
+                ->select(
+                    'no_rkm_medis',
+                    'nm_pasien',
+                    'no_ktp',
+                    'jk',
+                    'tmp_lahir',
+                    'tgl_lahir',
+                    'no_peserta', // Nomor BPJS
+                    'kd_pj',      // Kode Penanggung Jawab
+                    'no_tlp',
+                    'alamat'
+                )
+                ->where('no_rkm_medis', $no_rkm_medis)
+                ->first();
+            
+            if (!$pasien) {
+                \Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan dengan no_rkm_medis: ' . $no_rkm_medis);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pasien tidak ditemukan',
+                    'data' => null
+                ], 404);
+            }
+            
+            // Hitung umur
+            $tglLahir = Carbon::parse($pasien->tgl_lahir);
+            $now = Carbon::now();
+            $umurTahun = $tglLahir->diffInYears($now);
+            $umurBulan = $tglLahir->copy()->addYears($umurTahun)->diffInMonths($now);
+            $umurHari = $tglLahir->copy()->addYears($umurTahun)->addMonths($umurBulan)->diffInDays($now);
+            
+            // Tambahkan umur ke objek pasien
+            $pasien->umur = "$umurTahun tahun, $umurBulan bulan, $umurHari hari";
+            
+            \Log::info('PasienController - getDetailByRekamMedis: Pasien ditemukan', [
+                'no_rkm_medis' => $pasien->no_rkm_medis,
+                'nama' => $pasien->nm_pasien,
+                'no_peserta' => $pasien->no_peserta
+            ]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data pasien ditemukan',
+                'data' => $pasien
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('PasienController - getDetailByRekamMedis: Error', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
     public function export(Request $request)
     {
         $search = [

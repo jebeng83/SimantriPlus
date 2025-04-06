@@ -222,6 +222,10 @@
                                                 data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
                                                 <i class="fas fa-redo mr-2"></i> Ulang Panggil
                                             </a>
+                                            <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => $row->no_rkm_medis]) }}"
+                                                class="dropdown-item">
+                                                <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
+                                            </a>
                                         </div>
                                     </div>
                                 </td>
@@ -1441,6 +1445,9 @@
                                             data-poli="${row.nm_poli}"
                                             data-no-rawat="${row.no_rawat}">
                                             <i class="fas fa-redo mr-2"></i> Ulang Panggil
+                                        </a>
+                                        <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => $row->no_rkm_medis]) }}" class="dropdown-item">
+                                            <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
                                         </a>
                                     </div>
                                 </div>

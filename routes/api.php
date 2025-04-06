@@ -14,6 +14,7 @@ use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Antrol\AddAntreanController;
 use App\Http\Antrol\PanggilAntreanController;
+use App\Http\Controllers\PasienController;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,6 +120,15 @@ Route::prefix('pcare')->group(function () {
     Route::get('poli', [App\Http\Controllers\API\PcareController::class, 'getPoli']);
     Route::get('kelompok', [App\Http\Controllers\API\PcareController::class, 'getKelompokSehat']);
     Route::get('klubprolanis', [App\Http\Controllers\API\PcareController::class, 'getKlubProlanis']);
+    
+    // Tambahkan route untuk mapping poli
+    Route::get('mapping-poli/{kd_poli_rs?}', [App\Http\Controllers\API\PcareController::class, 'getMappingPoli']);
+
+    // API untuk data pendaftaran PCare
+    Route::get('/pendaftaran/data', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getData']);
+    Route::get('/pendaftaran/detail/{no_rawat}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getDetail']);
+    Route::get('/pendaftaran/export/excel', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportExcel']);
+    Route::get('/pendaftaran/export/pdf', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportPdf']);
 });
 
 // ICare Routes
@@ -138,6 +148,9 @@ Route::get('/propinsi', [WilayahController::class, 'getPropinsi']);
 Route::get('/kabupaten', [WilayahController::class, 'getKabupaten']);
 Route::get('/kecamatan', [WilayahController::class, 'getKecamatan']);
 Route::get('/kelurahan', [WilayahController::class, 'getKelurahan']);
+
+// Route for PCare pasien detail
+Route::get('/pasien/detail/{no_rkm_medis}', [PasienController::class, 'getDetailByRekamMedis']);
 
 // Route untuk mendapatkan data posyandu berdasarkan desa/kelurahan
 Route::middleware('web')->get('/data-posyandu', [\App\Http\Controllers\ILP\FaktorResikoController::class, 'getPosyandu']);
