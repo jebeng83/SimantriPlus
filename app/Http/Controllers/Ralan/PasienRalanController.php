@@ -10,9 +10,13 @@ use Illuminate\Http\Request;
 use App\Models\Pasien;
 use App\Events\PasienDipanggil;
 use App\Events\AntrianDipanggil;
+use GuzzleHttp\Client;
+use App\Traits\BpjsTraits;
 
 class PasienRalanController extends Controller
 {
+    use BpjsTraits;
+
     /**
      * Create a new controller instance.
      *
@@ -628,13 +632,18 @@ class PasienRalanController extends Controller
             $pasien = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+                ->leftJoin('maping_poliklinik_pcare', 'poliklinik.kd_poli', '=', 'maping_poliklinik_pcare.kd_poli_rs')
                 ->where('reg_periksa.no_rawat', $no_rawat)
                 ->select(
                     'reg_periksa.no_reg',
                     'pasien.nm_pasien as nama',
                     'poliklinik.nm_poli as poli',
                     'reg_periksa.kd_dokter',
-                    'reg_periksa.kd_poli'
+                    'reg_periksa.kd_poli',
+                    'reg_periksa.tgl_registrasi',
+                    'pasien.no_peserta',
+                    'pasien.no_rkm_medis',
+                    'maping_poliklinik_pcare.kd_poli_pcare'
                 )
                 ->first();
 
@@ -652,6 +661,53 @@ class PasienRalanController extends Controller
                     'no_rawat' => $no_rawat
                 ]
             );
+
+            // Jika pasien memiliki nomor peserta BPJS, kirim data panggilan ke BPJS
+            if (!empty($pasien->no_peserta)) {
+                // Waktu saat ini dalam format timestamp millisecond
+                $waktu = round(microtime(true) * 1000);
+                
+                // Data untuk BPJS
+                $dataBpjs = [
+                    'tanggalperiksa' => $pasien->tgl_registrasi,
+                    'kodepoli' => $pasien->kd_poli_pcare ?? $pasien->kd_poli,
+                    'nomorkartu' => $pasien->no_peserta,
+                    'status' => 1, // 1 = Hadir, 2 = Tidak Hadir
+                    'waktu' => $waktu
+                ];
+                
+                \Log::info('Mengirim data panggilan pasien ke BPJS', $dataBpjs);
+                
+                try {
+                    // Gunakan BpjsTraits untuk mengirim data
+                    $response = $this->requestPostBpjs('/antrean/panggil', $dataBpjs, 'mobilejkn');
+                    
+                    // Response dari requestPostBpjs adalah JsonResponse, ambil datanya
+                    $responseData = $response instanceof \Illuminate\Http\JsonResponse ? 
+                                   $response->getData(true) : json_decode($response, true);
+                    
+                    \Log::info('Respons dari BPJS Mobile JKN', [
+                        'response' => $responseData
+                    ]);
+                    
+                    // Cek keberhasilan pengiriman
+                    $isSuccess = isset($responseData['metadata']['code']) && 
+                               $responseData['metadata']['code'] == 200;
+                    
+                    if (!$isSuccess) {
+                        \Log::warning('Gagal mengirim status antrean ke BPJS', [
+                            'response' => $responseData
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error saat mengirim data ke BPJS: ' . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    // Lanjutkan proses meskipun ada error dengan BPJS
+                }
+            } else {
+                \Log::info('Pasien tidak memiliki nomor BPJS, tidak mengirim data ke BPJS');
+            }
 
             DB::commit();
 
@@ -672,7 +728,8 @@ class PasienRalanController extends Controller
             DB::rollback();
             \Log::error('Error in panggilPasien: ' . $e->getMessage(), [
                 'csrf_token' => $request->header('X-CSRF-TOKEN'),
-                'session_id' => session()->getId()
+                'session_id' => session()->getId(),
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'success' => false,
