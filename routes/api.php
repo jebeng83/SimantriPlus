@@ -13,6 +13,7 @@ use App\Http\Controllers\API\ResepRanapController;
 use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Antrol\AddAntreanController;
+use App\Http\Antrol\PanggilAntreanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -182,4 +183,5 @@ Route::prefix('mobile-jkn')->group(function () {
 // Route untuk Antrian BPJS
 Route::prefix('antrean')->group(function () {
     Route::post('/add', [AddAntreanController::class, 'add']);
+    Route::post('/panggil', [PanggilAntreanController::class, 'panggil']);
 });
