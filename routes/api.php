@@ -15,6 +15,7 @@ use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Antrol\AddAntreanController;
 use App\Http\Antrol\PanggilAntreanController;
 use App\Http\Controllers\PasienController;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -197,4 +198,52 @@ Route::prefix('mobile-jkn')->group(function () {
 Route::prefix('antrean')->group(function () {
     Route::post('/add', [AddAntreanController::class, 'add']);
     Route::post('/panggil', [PanggilAntreanController::class, 'panggil']);
+});
+
+// Route untuk mendapatkan no_rawat yang valid berdasarkan no_rkm_medis
+Route::post('/get-valid-no-rawat', function (Request $request) {
+    try {
+        $no_rkm_medis = $request->input('no_rkm_medis');
+        
+        if (empty($no_rkm_medis)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No. Rekam Medis diperlukan',
+                'no_rawat' => null
+            ]);
+        }
+        
+        // Cari no_rawat terbaru untuk pasien berdasarkan no_rkm_medis
+        $rawatTerbaru = DB::table('reg_periksa')
+            ->where('no_rkm_medis', $no_rkm_medis)
+            ->orderBy('tgl_registrasi', 'desc')
+            ->orderBy('jam_reg', 'desc')
+            ->first();
+            
+        if ($rawatTerbaru) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No. Rawat valid ditemukan',
+                'no_rawat' => $rawatTerbaru->no_rawat
+            ]);
+        }
+        
+        // Jika tidak ditemukan no_rawat untuk pasien ini
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak ada no_rawat terdaftar untuk pasien ini',
+            'no_rawat' => null
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error saat mencari no_rawat valid', [
+            'error' => $e->getMessage(),
+            'no_rkm_medis' => $request->input('no_rkm_medis')
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan saat mencari no_rawat',
+            'no_rawat' => null
+        ], 500);
+    }
 });

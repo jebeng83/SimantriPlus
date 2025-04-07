@@ -172,7 +172,7 @@ class PcarePendaftaran extends Controller
                 'beratBadan' => 'integer',
                 'tinggiBadan' => 'integer',
                 'respRate' => 'integer',
-                'lingkarPerut' => 'integer',
+                'lingkar_perut' => 'integer',
                 'heartRate' => 'integer',
                 'rujukBalik' => 'integer',
                 'kdTkp' => 'required|string',
@@ -194,14 +194,14 @@ class PcarePendaftaran extends Controller
                 'tglDaftar' => $request->tglDaftar,
                 'noKartu' => $request->noKartu,
                 'kdPoli' => $request->kdPoli,
-                'keluhan' => $request->keluhan,
+                'keluhan' => $request->keluhan ?: null,
                 'kunjSakit' => (bool) $request->kunjSakit,
                 'sistole' => (int) $request->sistole,
                 'diastole' => (int) $request->diastole,
                 'beratBadan' => (int) $request->beratBadan,
                 'tinggiBadan' => (int) $request->tinggiBadan,
                 'respRate' => (int) $request->respRate,
-                'lingkarPerut' => $request->lingkarPerut ? (int) $request->lingkarPerut : 0,
+                'lingkarPerut' => $request->lingkar_perut ? (int) $request->lingkar_perut : 0,
                 'heartRate' => (int) $request->heartRate,
                 'rujukBalik' => (int) $request->rujukBalik,
                 'kdTkp' => $request->kdTkp
@@ -235,6 +235,21 @@ class PcarePendaftaran extends Controller
                     $nm_pasien = $request->nm_pasien;
                     $nmPoli = $request->nmPoli;
                     
+                    // Cari no_rawat yang valid dari tabel reg_periksa
+                    $rawatTerbaru = \DB::table('reg_periksa')
+                        ->where('no_rkm_medis', $no_rkm_medis)
+                        ->orderBy('tgl_registrasi', 'desc')
+                        ->orderBy('jam_reg', 'desc')
+                        ->first();
+                    
+                    if ($rawatTerbaru) {
+                        $no_rawat = $rawatTerbaru->no_rawat;
+                        Log::info('Menggunakan no_rawat dari reg_periksa', [
+                            'no_rawat_original' => $request->no_rawat,
+                            'no_rawat_valid' => $no_rawat
+                        ]);
+                    }
+                    
                     // Konversi nilai kunjSakit
                     $kunjSakit = $request->kunjSakit ? 'Kunjungan Sakit' : 'Kunjungan Sehat';
                     
@@ -255,7 +270,8 @@ class PcarePendaftaran extends Controller
                     }
                     
                     // Format tanggal untuk database (YYYY-MM-DD)
-                    $tglDaftarDB = date('Y-m-d', strtotime(str_replace('-', '/', $request->tglDaftar)));
+                    $tglDaftarParts = explode('-', $request->tglDaftar);
+                    $tglDaftarDB = $tglDaftarParts[2] . '-' . $tglDaftarParts[1] . '-' . $tglDaftarParts[0];
                     
                     // Simpan ke database
                     \DB::table('pcare_pendaftaran')->insert([
@@ -274,7 +290,7 @@ class PcarePendaftaran extends Controller
                         'beratBadan' => $request->beratBadan ?? '0',
                         'tinggiBadan' => $request->tinggiBadan ?? '0',
                         'respRate' => $request->respRate ?? '0',
-                        'lingkar_perut' => $request->lingkarPerut ?? '0',
+                        'lingkar_perut' => $request->lingkar_perut ?? '0',
                         'heartRate' => $request->heartRate ?? '0',
                         'rujukBalik' => $request->rujukBalik ?? '0',
                         'kdTkp' => $kdTkpLabel,
@@ -394,7 +410,8 @@ class PcarePendaftaran extends Controller
             if (isset($response['metaData']['code']) && $response['metaData']['code'] == 200) {
                 try {
                     // Format tanggal untuk query database (YYYY-MM-DD)
-                    $tglDaftarDB = date('Y-m-d', strtotime(str_replace('-', '/', $tglDaftar)));
+                    $tglDaftarParts = explode('-', $tglDaftar);
+                    $tglDaftarDB = $tglDaftarParts[2] . '-' . $tglDaftarParts[1] . '-' . $tglDaftarParts[0];
                     
                     // Update status pendaftaran di database
                     $updated = \DB::table('pcare_pendaftaran')

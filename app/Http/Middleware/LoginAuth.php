@@ -8,6 +8,18 @@ use Illuminate\Support\Facades\Log;
 
 class LoginAuth
 {
+    // Flag untuk mengaktifkan/menonaktifkan debug logging
+    private $DEBUG = false;
+    
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        // Gunakan nilai dari .env
+        $this->DEBUG = env('DEBUG_LOGIN_AUTH', false);
+    }
+    
     /**
      * Handle an incoming request.
      *
@@ -27,17 +39,19 @@ class LoginAuth
                 session()->put('kd_poli', 'UMUM');
                 session()->put('logged_in', true);
                 session()->put('name', 'Test User');
-                \Log::info('Created test session for API testing');
+                Log::info('Created test session for API testing');
             }
         }
         
-        // Log session info for debugging
-        \Log::debug('Session info:', [
-            'session_id' => session()->getId(),
-            'has_username' => session()->has('username'),
-            'path' => $request->path(),
-            'is_api_testing' => $isApiTesting
-        ]);
+        // Log session info for debugging - hanya jika debug diaktifkan
+        if ($this->DEBUG) {
+            Log::debug('Session info:', [
+                'session_id' => session()->getId(),
+                'has_username' => session()->has('username'),
+                'path' => $request->path(),
+                'is_api_testing' => $isApiTesting
+            ]);
+        }
         
         // Allow login routes without session
         if (
@@ -52,7 +66,7 @@ class LoginAuth
         
         // Special case for ralan/pasien endpoint with API testing
         if ($request->is('ralan/pasien*') && $isApiTesting) {
-            \Log::info('Allowing access to ralan/pasien for API testing');
+            Log::info('Allowing access to ralan/pasien for API testing');
             return $next($request);
         }
         
@@ -66,13 +80,13 @@ class LoginAuth
                 $request->is('register/store*')
             )
         ) {
-            \Log::info('Allowing API testing access for path: ' . $request->path());
+            Log::info('Allowing API testing access for path: ' . $request->path());
             return $next($request);
         }
         
         // Verify session
         if (!session()->has('username') || !session()->has('logged_in') || session()->get('logged_in') !== true) {
-            \Log::warning('Invalid session detected - redirecting to login', [
+            Log::warning('Invalid session detected - redirecting to login', [
                 'path' => $request->path(),
                 'ajax' => $request->ajax(),
                 'session_id' => session()->getId()
