@@ -235,15 +235,42 @@ Route::post('/get-valid-no-rawat', function (Request $request) {
             'no_rawat' => null
         ]);
     } catch (\Exception $e) {
-        \Log::error('Error saat mencari no_rawat valid', [
+        \Log::error('Error saat mendapatkan no_rawat valid', [
             'error' => $e->getMessage(),
-            'no_rkm_medis' => $request->input('no_rkm_medis')
+            'no_rkm_medis' => $no_rkm_medis ?? 'not provided'
         ]);
         
         return response()->json([
             'success' => false,
-            'message' => 'Terjadi kesalahan saat mencari no_rawat',
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             'no_rawat' => null
+        ], 500);
+    }
+});
+
+// Route untuk mendapatkan data dokter
+Route::get('/dokter', function () {
+    try {
+        $dokter = DB::table('dokter')
+            ->select('kd_dokter', 'nm_dokter')
+            ->where('status', '1')
+            ->orderBy('nm_dokter', 'asc')
+            ->get();
+            
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data dokter berhasil dimuat',
+            'data' => $dokter
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error saat mengambil data dokter', [
+            'error' => $e->getMessage()
+        ]);
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            'data' => null
         ], 500);
     }
 });
