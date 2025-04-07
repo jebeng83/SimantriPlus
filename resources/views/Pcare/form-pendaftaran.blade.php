@@ -293,10 +293,21 @@
                                                 </div>
                                             </div>
 
-                                            <div class="form-group">
-                                                <label for="lingkar_perut">Lingkar Perut (cm)</label>
-                                                <input type="number" class="form-control" id="lingkar_perut"
-                                                    name="lingkar_perut" value="87" required>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="lingkar_perut">Lingkar Perut (cm)</label>
+                                                        <input type="number" class="form-control" id="lingkar_perut"
+                                                            name="lingkar_perut" value="87" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="suhu_tubuh">Suhu Tubuh (°C)</label>
+                                                        <input type="text" class="form-control" id="suhu_tubuh"
+                                                            name="suhu_tubuh" value="36.5">
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="form-group" style="display:none;">
@@ -1180,10 +1191,13 @@
                 const dataSimpan = {
                     ...formData,
                     lingkar_perut: formData.lingkarPerut, // Tambahkan lingkar_perut untuk database lokal
+                    suhu_tubuh: $('#suhu_tubuh').val(),
                     no_rawat: noRawat,
                     no_rkm_medis: $('#no_rkm_medis').val(),
                     nm_pasien: $('#nm_pasien').val(),
-                    nmPoli: $('#nmPoli').val()
+                    nmPoli: $('#nmPoli').val(),
+                    save_to_pemeriksaan_ranap: true, // Tambahkan flag untuk menyimpan ke pemeriksaan_ranap
+                    save_to_pemeriksaan_ralan: true  // Tambahkan flag untuk menyimpan ke pemeriksaan_ralan
                 };
                 
                 console.log('Mengirim data pendaftaran PCare:', formData);

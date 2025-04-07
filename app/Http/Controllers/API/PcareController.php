@@ -1015,93 +1015,268 @@ class PcareController extends Controller
             }
             
             // Simpan ke tabel pemeriksaan berdasarkan jenis rawat
-            if ($jenisRawat == 'Ralan') {
-                // 2. Simpan ke tabel pemeriksaan_ralan jika ada kd_dokter
-                if (isset($data['kd_dokter']) && !empty($data['kd_dokter'])) {
-                    // Cek apakah sudah ada pemeriksaan ralan
-                    $cekPemeriksaan = DB::table('pemeriksaan_ralan')
-                        ->where('no_rawat', $data['no_rawat'])
-                        ->where('tgl_perawatan', $tglDaftarDB)
+            if ($jenisRawat == 'Ralan' || (isset($data['save_to_pemeriksaan_ralan']) && $data['save_to_pemeriksaan_ralan'] == true)) {
+                // 2. Simpan ke tabel pemeriksaan_ralan
+                \Log::info('Menyimpan data ke pemeriksaan_ralan', [
+                    'alasan' => ($jenisRawat == 'Ralan' ? 'Jenis rawat Ralan' : 'Flag save_to_pemeriksaan_ralan = true'),
+                    'no_rawat' => $data['no_rawat']
+                ]);
+                
+                // Cek apakah sudah ada pemeriksaan ralan
+                $cekPemeriksaan = DB::table('pemeriksaan_ralan')
+                    ->where('no_rawat', $data['no_rawat'])
+                    ->where('tgl_perawatan', $tglDaftarDB)
+                    ->first();
+                    
+                // Dapatkan user yang sedang login
+                $usernameLogin = session('username') ?? '';
+                \Log::info('Mencari NIP berdasarkan username login', [
+                    'username' => $usernameLogin
+                ]);
+                
+                // Pertama coba cari di tabel pegawai
+                $nipPegawai = null;
+                if (!empty($usernameLogin)) {
+                    $pegawai = DB::table('pegawai')
+                        ->where('nik', $usernameLogin)
                         ->first();
-                        
-                        $pemeriksaanData = [
-                            'no_rawat' => $data['no_rawat'],
-                            'tgl_perawatan' => $tglDaftarDB,
-                            'jam_rawat' => date('H:i:s'),
-                            'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
-                            'tensi' => $data['sistole'].'/'.$data['diastole'],
-                            'nadi' => $data['heartRate'] ?? '',
-                            'respirasi' => $data['respRate'] ?? '',
-                            'tinggi' => $data['tinggiBadan'] ?? '',
-                            'berat' => $data['beratBadan'] ?? '',
-                            'spo2' => '',
-                            'gcs' => '',
-                            'kesadaran' => 'Compos Mentis',
-                            'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
-                            'pemeriksaan' => '',
-                            'alergi' => isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '',
-                            'lingkar_perut' => $data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '',
-                            'rtl' => isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '',
-                            'penilaian' => $data['prognosa'] ?? '',
-                            'instruksi' => '',
-                            'evaluasi' => '',
-                            'nip' => $data['kd_dokter']
-                        ];
-                        
-                        if ($cekPemeriksaan) {
-                            // Update pemeriksaan yang sudah ada
-                            DB::table('pemeriksaan_ralan')
-                                ->where('no_rawat', $data['no_rawat'])
-                                ->where('tgl_perawatan', $tglDaftarDB)
-                                ->update($pemeriksaanData);
+                    
+                    if ($pegawai) {
+                        $nipPegawai = $pegawai->nik;
+                        \Log::info('NIP pegawai ditemukan', [
+                            'nik' => $pegawai->nik,
+                            'nama' => $pegawai->nama
+                        ]);
+                    } else {
+                        // Coba cari di tabel user
+                        $user = DB::table('user')
+                            ->where('id_user', $usernameLogin)
+                            ->first();
+                            
+                        if ($user && !empty($user->nip)) {
+                            $nipPegawai = $user->nip;
+                            \Log::info('NIP pegawai ditemukan dari tabel user', [
+                                'nip' => $user->nip
+                            ]);
                         } else {
-                            // Insert pemeriksaan baru
-                            DB::table('pemeriksaan_ralan')->insert($pemeriksaanData);
+                            \Log::warning('NIP pegawai tidak ditemukan untuk username', [
+                                'username' => $usernameLogin
+                            ]);
                         }
+                    }
                 }
-            } else if ($jenisRawat == 'Ranap') {
-                // 3. Simpan ke tabel pemeriksaan_ranap jika ada kd_dokter
-                if (isset($data['kd_dokter']) && !empty($data['kd_dokter'])) {
-                    // Cek apakah sudah ada pemeriksaan ranap
-                    $cekPemeriksaan = DB::table('pemeriksaan_ranap')
-                        ->where('no_rawat', $data['no_rawat'])
-                        ->where('tgl_perawatan', $tglDaftarDB)
-                        ->first();
+                
+                // Jika tidak ditemukan NIP pegawai, gunakan kd_dokter dari permintaan atau dari reg_periksa
+                $nip = $nipPegawai;
+                if (empty($nip)) {
+                    // Dapatkan dokter dari reg_periksa jika kd_dokter tidak tersedia
+                    $dokter = $data['kd_dokter'] ?? '';
+                    if (empty($dokter)) {
+                        $dokter = DB::table('reg_periksa')
+                            ->where('no_rawat', $data['no_rawat'])
+                            ->value('kd_dokter');
+                    }
+                    
+                    // Jika masih kosong, gunakan default dokter
+                    if (empty($dokter)) {
+                        $dokter = DB::table('dokter')
+                            ->orderBy('kd_dokter', 'asc')
+                            ->value('kd_dokter') ?? 'D0000001';
+                    }
+                    
+                    $nip = $dokter;
+                }
+                
+                $pemeriksaanData = [
+                    'no_rawat' => $data['no_rawat'],
+                    'tgl_perawatan' => $tglDaftarDB,
+                    'jam_rawat' => date('H:i:s'),
+                    'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
+                    'tensi' => $data['sistole'].'/'.$data['diastole'],
+                    'nadi' => $data['heartRate'] ?? '',
+                    'respirasi' => $data['respRate'] ?? '',
+                    'tinggi' => $data['tinggiBadan'] ?? '',
+                    'berat' => $data['beratBadan'] ?? '',
+                    'spo2' => '',
+                    'gcs' => '',
+                    'kesadaran' => 'Compos Mentis',
+                    'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
+                    'pemeriksaan' => '',
+                    'alergi' => isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '',
+                    'lingkar_perut' => $data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '',
+                    'rtl' => isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '',
+                    'penilaian' => $data['prognosa'] ?? '',
+                    'instruksi' => '',
+                    'evaluasi' => '',
+                    'nip' => $nip
+                ];
+                
+                \Log::info('Data pemeriksaan_ralan yang akan disimpan', [
+                    'no_rawat' => $data['no_rawat'],
+                    'nip' => $nip,
+                    'tgl_perawatan' => $tglDaftarDB
+                ]);
+                
+                try {
+                    if ($cekPemeriksaan) {
+                        // Update pemeriksaan yang sudah ada
+                        DB::table('pemeriksaan_ralan')
+                            ->where('no_rawat', $data['no_rawat'])
+                            ->where('tgl_perawatan', $tglDaftarDB)
+                            ->update($pemeriksaanData);
                         
-                        $pemeriksaanData = [
-                            'no_rawat' => $data['no_rawat'],
-                            'tgl_perawatan' => $tglDaftarDB,
-                            'jam_rawat' => date('H:i:s'),
-                            'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
-                            'tensi' => $data['sistole'].'/'.$data['diastole'],
-                            'nadi' => $data['heartRate'] ?? '',
-                            'respirasi' => $data['respRate'] ?? '',
-                            'tinggi' => $data['tinggiBadan'] ?? '',
-                            'berat' => $data['beratBadan'] ?? '',
-                            'spo2' => '',
-                            'gcs' => '',
-                            'kesadaran' => 'Compos Mentis',
-                            'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
-                            'pemeriksaan' => '',
-                            'alergi' => isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '',
-                            'lingkar_perut' => $data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '',
-                            'rtl' => isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '',
-                            'penilaian' => $data['prognosa'] ?? '',
-                            'instruksi' => '',
-                            'evaluasi' => '',
-                            'nip' => $data['kd_dokter']
-                        ];
+                        \Log::info('Update pemeriksaan_ralan berhasil', [
+                            'no_rawat' => $data['no_rawat']
+                        ]);
+                    } else {
+                        // Insert pemeriksaan baru
+                        DB::table('pemeriksaan_ralan')->insert($pemeriksaanData);
                         
-                        if ($cekPemeriksaan) {
-                            // Update pemeriksaan yang sudah ada
-                            DB::table('pemeriksaan_ranap')
-                                ->where('no_rawat', $data['no_rawat'])
-                                ->where('tgl_perawatan', $tglDaftarDB)
-                                ->update($pemeriksaanData);
+                        \Log::info('Insert pemeriksaan_ralan berhasil', [
+                            'no_rawat' => $data['no_rawat']
+                        ]);
+                    }
+                } catch (\Exception $pemeriksaanError) {
+                    \Log::error('Gagal menyimpan ke pemeriksaan_ralan', [
+                        'error' => $pemeriksaanError->getMessage(),
+                        'no_rawat' => $data['no_rawat']
+                    ]);
+                    // Tidak throw exception agar proses tetap berlanjut
+                }
+            } 
+            
+            // Pemeriksaan ranap - Simpan jika jenisRawat = Ranap atau jika flag save_to_pemeriksaan_ranap = true
+            if ($jenisRawat == 'Ranap' || (isset($data['save_to_pemeriksaan_ranap']) && $data['save_to_pemeriksaan_ranap'] == true)) {
+                // 3. Simpan ke tabel pemeriksaan_ranap
+                \Log::info('Menyimpan data ke pemeriksaan_ranap', [
+                    'alasan' => ($jenisRawat == 'Ranap' ? 'Jenis rawat Ranap' : 'Flag save_to_pemeriksaan_ranap = true'),
+                    'no_rawat' => $data['no_rawat']
+                ]);
+                
+                // Cek apakah sudah ada pemeriksaan ranap
+                $cekPemeriksaan = DB::table('pemeriksaan_ranap')
+                    ->where('no_rawat', $data['no_rawat'])
+                    ->where('tgl_perawatan', $tglDaftarDB)
+                    ->first();
+                    
+                // Dapatkan user yang sedang login jika belum didefinisikan
+                if (!isset($usernameLogin)) {
+                    $usernameLogin = session('username') ?? '';
+                    \Log::info('Mencari NIP berdasarkan username login untuk pemeriksaan_ranap', [
+                        'username' => $usernameLogin
+                    ]);
+                }
+                
+                // Gunakan NIP yang sudah dicari atau cari jika belum ada
+                if (!isset($nipPegawai)) {
+                    // Pertama coba cari di tabel pegawai
+                    $nipPegawai = null;
+                    if (!empty($usernameLogin)) {
+                        $pegawai = DB::table('pegawai')
+                            ->where('nik', $usernameLogin)
+                            ->first();
+                        
+                        if ($pegawai) {
+                            $nipPegawai = $pegawai->nik;
+                            \Log::info('NIP pegawai ditemukan untuk pemeriksaan_ranap', [
+                                'nik' => $pegawai->nik,
+                                'nama' => $pegawai->nama
+                            ]);
                         } else {
-                            // Insert pemeriksaan baru
-                            DB::table('pemeriksaan_ranap')->insert($pemeriksaanData);
+                            // Coba cari di tabel user
+                            $user = DB::table('user')
+                                ->where('id_user', $usernameLogin)
+                                ->first();
+                                
+                            if ($user && !empty($user->nip)) {
+                                $nipPegawai = $user->nip;
+                                \Log::info('NIP pegawai ditemukan dari tabel user untuk pemeriksaan_ranap', [
+                                    'nip' => $user->nip
+                                ]);
+                            } else {
+                                \Log::warning('NIP pegawai tidak ditemukan untuk username (pemeriksaan_ranap)', [
+                                    'username' => $usernameLogin
+                                ]);
+                            }
                         }
+                    }
+                }
+                
+                // Jika tidak ditemukan NIP pegawai, gunakan kd_dokter dari permintaan atau dari reg_periksa
+                $nip = $nipPegawai;
+                if (empty($nip)) {
+                    // Dapatkan dokter dari data request atau reg_periksa
+                    $dokter = $data['kd_dokter'] ?? '';
+                    if (empty($dokter)) {
+                        $dokter = DB::table('reg_periksa')
+                            ->where('no_rawat', $data['no_rawat'])
+                            ->value('kd_dokter');
+                        
+                        // Jika masih kosong, gunakan default dokter
+                        if (empty($dokter)) {
+                            $dokter = DB::table('dokter')
+                                ->orderBy('kd_dokter', 'asc')
+                                ->value('kd_dokter') ?? 'D0000001';
+                        }
+                    }
+                    
+                    $nip = $dokter;
+                }
+                
+                $pemeriksaanData = [
+                    'no_rawat' => $data['no_rawat'],
+                    'tgl_perawatan' => $tglDaftarDB,
+                    'jam_rawat' => date('H:i:s'),
+                    'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
+                    'tensi' => $data['sistole'].'/'.$data['diastole'],
+                    'nadi' => $data['heartRate'] ?? '',
+                    'respirasi' => $data['respRate'] ?? '',
+                    'tinggi' => $data['tinggiBadan'] ?? '',
+                    'berat' => $data['beratBadan'] ?? '',
+                    'spo2' => '0',
+                    'gcs' => '',
+                    'kesadaran' => 'Compos Mentis',
+                    'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
+                    'pemeriksaan' => '',
+                    'alergi' => '',
+                    'penilaian' => 'Pemeriksaan dari PCare',
+                    'rtl' => 'Pemeriksaan dari PCare',
+                    'instruksi' => 'Pemeriksaan dari PCare',
+                    'evaluasi' => 'Pemeriksaan dari PCare',
+                    'nip' => $nip
+                ];
+                
+                \Log::info('Data pemeriksaan_ranap yang akan disimpan', [
+                    'no_rawat' => $data['no_rawat'],
+                    'nip' => $nip,
+                    'tgl_perawatan' => $tglDaftarDB
+                ]);
+                
+                try {
+                    if ($cekPemeriksaan) {
+                        // Update pemeriksaan yang sudah ada
+                        DB::table('pemeriksaan_ranap')
+                            ->where('no_rawat', $data['no_rawat'])
+                            ->where('tgl_perawatan', $tglDaftarDB)
+                            ->update($pemeriksaanData);
+                            
+                        \Log::info('Update pemeriksaan_ranap berhasil', [
+                            'no_rawat' => $data['no_rawat']
+                        ]);
+                    } else {
+                        // Insert pemeriksaan baru
+                        DB::table('pemeriksaan_ranap')->insert($pemeriksaanData);
+                        
+                        \Log::info('Insert pemeriksaan_ranap berhasil', [
+                            'no_rawat' => $data['no_rawat']
+                        ]);
+                    }
+                } catch (\Exception $pemeriksaanError) {
+                    \Log::error('Gagal menyimpan ke pemeriksaan_ranap', [
+                        'error' => $pemeriksaanError->getMessage(),
+                        'no_rawat' => $data['no_rawat']
+                    ]);
+                    // Tidak throw exception agar proses tetap berlanjut
                 }
             }
             
