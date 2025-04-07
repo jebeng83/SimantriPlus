@@ -196,30 +196,127 @@ class PasienController extends Controller
     }
 
     /**
-     * API untuk mendapatkan detail pasien berdasarkan nomor rekam medis
+     * Mendapatkan detail pasien untuk PCare BPJS
      * Digunakan oleh form PCare BPJS
      */
-    public function getDetailByRekamMedis($no_rkm_medis)
+    public function getDetailByRekamMedis($no_rkm_medis, Request $request)
     {
         try {
-            \Log::info('PasienController - getDetailByRekamMedis: Mencari pasien dengan no_rkm_medis: ' . $no_rkm_medis);
+            // Bersihkan input untuk keamanan
+            $no_rkm_medis = trim($no_rkm_medis);
             
-            // Query data pasien dari tabel pasien
-            $pasien = DB::table('pasien')
+            // Catat parameter lain yang mungkin dikirim
+            $timestamp = $request->input('ts', '');
+            $clearCache = $request->input('clear_cache', 'false');
+            $userAgent = $request->header('User-Agent', 'Unknown');
+            
+            // Log lengkap untuk debugging
+            \Log::info('PasienController - getDetailByRekamMedis: Request diterima', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'timestamp' => $timestamp,
+                'clear_cache' => $clearCache,
+                'ip' => $request->ip(),
+                'user_agent' => $userAgent,
+                'referrer' => $request->header('Referer', 'Unknown'),
+                'request_id' => uniqid('pasien_req_')
+            ]);
+            
+            // Cek apakah ada pasien yang registrasi hari ini
+            $today = date('Y-m-d');
+            
+            // Query pasien yang registrasi hari ini dulu untuk data terbaru
+            $registrasiHariIni = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
+                ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
+                ->where('reg_periksa.tgl_registrasi', $today)
                 ->select(
-                    'no_rkm_medis',
-                    'nm_pasien',
-                    'no_ktp',
-                    'jk',
-                    'tmp_lahir',
-                    'tgl_lahir',
-                    'no_peserta', // Nomor BPJS
-                    'kd_pj',      // Kode Penanggung Jawab
-                    'no_tlp',
-                    'alamat'
+                    'reg_periksa.no_rawat',
+                    'reg_periksa.no_rkm_medis',
+                    'pasien.nm_pasien',
+                    'pasien.no_ktp',
+                    'pasien.jk',
+                    'pasien.tmp_lahir',
+                    'pasien.tgl_lahir',
+                    'pasien.no_peserta', // Nomor BPJS dari tabel pasien
+                    'reg_periksa.kd_pj',
+                    'penjab.png_jawab',
+                    'pasien.no_tlp',
+                    'pasien.alamat'
                 )
-                ->where('no_rkm_medis', $no_rkm_medis)
+                ->orderBy('reg_periksa.jam_reg', 'desc')
                 ->first();
+                
+            // Jika ada registrasi hari ini, gunakan data tersebut
+            if ($registrasiHariIni) {
+                \Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi hari ini', [
+                    'no_rkm_medis' => $no_rkm_medis,
+                    'no_rawat' => $registrasiHariIni->no_rawat,
+                    'kd_pj' => $registrasiHariIni->kd_pj,
+                    'png_jawab' => $registrasiHariIni->png_jawab,
+                    'timestamp' => now()->format('Y-m-d H:i:s.u')
+                ]);
+                
+                $pasien = $registrasiHariIni;
+            } else {
+                // Jika tidak ada registrasi hari ini, cek registrasi terakhir
+                $registrasiTerakhir = DB::table('reg_periksa')
+                    ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                    ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
+                    ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
+                    ->select(
+                        'reg_periksa.no_rawat',
+                        'reg_periksa.no_rkm_medis',
+                        'pasien.nm_pasien',
+                        'pasien.no_ktp',
+                        'pasien.jk',
+                        'pasien.tmp_lahir',
+                        'pasien.tgl_lahir',
+                        'pasien.no_peserta', // Nomor BPJS dari tabel pasien
+                        'reg_periksa.kd_pj',
+                        'penjab.png_jawab',
+                        'pasien.no_tlp',
+                        'pasien.alamat',
+                        'reg_periksa.tgl_registrasi'
+                    )
+                    ->orderBy('reg_periksa.tgl_registrasi', 'desc')
+                    ->orderBy('reg_periksa.jam_reg', 'desc')
+                    ->first();
+                
+                // Jika ada registrasi terakhir, gunakan data tersebut
+                if ($registrasiTerakhir) {
+                    \Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi terakhir', [
+                        'no_rkm_medis' => $no_rkm_medis,
+                        'no_rawat' => $registrasiTerakhir->no_rawat,
+                        'tgl_registrasi' => $registrasiTerakhir->tgl_registrasi,
+                        'kd_pj' => $registrasiTerakhir->kd_pj,
+                        'png_jawab' => $registrasiTerakhir->png_jawab
+                    ]);
+                    
+                    $pasien = $registrasiTerakhir;
+                } else {
+                    // Jika tidak ada registrasi sama sekali, ambil dari data pasien saja
+                    \Log::info('PasienController - getDetailByRekamMedis: Tidak ditemukan registrasi, menggunakan data master pasien');
+                    
+                    $pasien = DB::table('pasien')
+                        ->select(
+                            DB::raw("'' as no_rawat"),
+                            'no_rkm_medis',
+                            'nm_pasien',
+                            'no_ktp',
+                            'jk',
+                            'tmp_lahir',
+                            'tgl_lahir',
+                            'no_peserta',
+                            DB::raw("'' as kd_pj"),
+                            DB::raw("'' as png_jawab"),
+                            'no_tlp',
+                            'alamat'
+                        )
+                        ->where('no_rkm_medis', $no_rkm_medis)
+                        ->first();
+                }
+            }
             
             if (!$pasien) {
                 \Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan dengan no_rkm_medis: ' . $no_rkm_medis);
@@ -228,6 +325,21 @@ class PasienController extends Controller
                     'message' => 'Data pasien tidak ditemukan',
                     'data' => null
                 ], 404);
+            }
+            
+            // Verifikasi ulang nomor rekam medis untuk memastikan kecocokan data
+            if ($pasien->no_rkm_medis !== $no_rkm_medis) {
+                \Log::error('PasienController - getDetailByRekamMedis: Ketidakcocokan data', [
+                    'requested_rm' => $no_rkm_medis,
+                    'returned_rm' => $pasien->no_rkm_medis,
+                    'timestamp' => now()->format('Y-m-d H:i:s.u')
+                ]);
+                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Ketidakcocokan data pasien terdeteksi',
+                    'data' => null
+                ], 409);
             }
             
             // Hitung umur
@@ -243,19 +355,33 @@ class PasienController extends Controller
             \Log::info('PasienController - getDetailByRekamMedis: Pasien ditemukan', [
                 'no_rkm_medis' => $pasien->no_rkm_medis,
                 'nama' => $pasien->nm_pasien,
-                'no_peserta' => $pasien->no_peserta
+                'no_peserta' => $pasien->no_peserta,
+                'jenis_peserta' => $pasien->png_jawab ?? 'Tidak ada',
+                'timestamp' => now()->format('Y-m-d H:i:s.u'),
+                'response_id' => uniqid('pasien_res_')
             ]);
             
+            // Set header anti-cache yang lebih kuat untuk memastikan data selalu fresh
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data pasien ditemukan',
-                'data' => $pasien
-            ]);
+                'data' => $pasien,
+                'timestamp' => now()->timestamp, // Tambahkan timestamp di respons
+                'request_rm' => $no_rkm_medis // Echo back requested RM untuk verifikasi client
+            ])
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0')
+            ->header('X-Content-Type-Options', 'nosniff')
+            ->header('X-Response-Time', now()->format('Y-m-d H:i:s.u'))
+            ->header('X-Patient-RM', $no_rkm_medis);
             
         } catch (\Exception $e) {
             \Log::error('PasienController - getDetailByRekamMedis: Error', [
                 'no_rkm_medis' => $no_rkm_medis,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
             

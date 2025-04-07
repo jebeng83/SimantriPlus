@@ -222,8 +222,9 @@
                                                 data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
                                                 <i class="fas fa-redo mr-2"></i> Ulang Panggil
                                             </a>
-                                            <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => $row->no_rkm_medis]) }}"
-                                                class="dropdown-item">
+                                            <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => '${row.no_rkm_medis}', 'ts' => time(), 'clear_cache' => 'true']) }}"
+                                                class="dropdown-item btn-daftar-pcare"
+                                                data-no-rkm-medis="${row.no_rkm_medis}">
                                                 <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
                                             </a>
                                         </div>
@@ -1034,20 +1035,14 @@
     // Konfigurasi toastr
     toastr.options = {
         "closeButton": true,
-        "debug": false,
-        "newestOnTop": false,
         "progressBar": true,
-        "positionClass": "toast-bottom-right",
-        "preventDuplicates": false,
-        "onclick": null,
-        "showDuration": "300",
-        "hideDuration": "1000",
-        "timeOut": "5000",
+        "positionClass": "toast-top-right",
+        "timeOut": "2000", // Lebih cepat (2 detik)
         "extendedTimeOut": "1000",
-        "showEasing": "swing",
-        "hideEasing": "linear",
-        "showMethod": "fadeIn",
-        "hideMethod": "fadeOut"
+        "preventDuplicates": true, // Mencegah duplikasi notifikasi
+        "newestOnTop": true, // Terbaru di atas
+        "showDuration": "300",
+        "hideDuration": "300"
     };
 
     // Setup CSRF token untuk semua request AJAX
@@ -1446,8 +1441,10 @@
                                             data-no-rawat="${row.no_rawat}">
                                             <i class="fas fa-redo mr-2"></i> Ulang Panggil
                                         </a>
-                                        <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => $row->no_rkm_medis]) }}" class="dropdown-item">
-                                            <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
+                                        <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => '${row.no_rkm_medis}', 'ts' => time(), 'clear_cache' => 'true']) }}" 
+                                           class="dropdown-item btn-daftar-pcare" 
+                                           data-no-rkm-medis="${row.no_rkm_medis}">
+                                           <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
                                         </a>
                                     </div>
                                 </div>
@@ -1552,6 +1549,9 @@
         // Variabel untuk menyimpan interval
         let autoRefreshInterval;
         
+        // Counter untuk menghitung berapa kali status diperbarui
+        let statusUpdateCounter = 0;
+        
         // Fungsi untuk mengatur auto-refresh
         function setupAutoRefresh() {
             // Hapus interval yang ada jika sudah diset
@@ -1559,10 +1559,10 @@
                 clearInterval(autoRefreshInterval);
             }
             
-            // Set interval untuk auto-refresh data setiap 3 detik
+            // Set interval untuk auto-refresh data setiap 5 detik
             autoRefreshInterval = setInterval(function() {
                 refreshData(false); // regular refresh
-            }, 3000); // dipercepat menjadi 3 detik
+            }, 5000); // diperlambat menjadi 5 detik
         }
         
         // Aktifkan auto refresh
@@ -1818,7 +1818,12 @@
                             
                             // Jika returnFullData benar tapi jumlah data tidak berubah, mungkin status pasien berubah
                             if (newCount === currentCount && !forceRefresh) {
-                                toastr.info('Status pasien telah diperbarui');
+                                // Hanya tampilkan notifikasi status diperbarui setiap 5 kali update
+                                statusUpdateCounter++;
+                                if (statusUpdateCounter % 5 === 0 || forceRefresh) {
+                                    toastr.info('Status pasien telah diperbarui');
+                                    statusUpdateCounter = 0; // Reset counter setelah notifikasi muncul
+                                }
                             }
                         } else {
                             // Jika server tidak mengembalikan data lengkap, data tidak berubah
@@ -1847,6 +1852,31 @@
                 }
             });
         }
+    });
+</script>
+
+<script>
+    // Script untuk memastikan link Daftar PCare menggunakan parameter yang benar
+    $(document).ready(function() {
+        // Delegate event untuk link Daftar PCare
+        $(document).on('click', '.btn-daftar-pcare', function(e) {
+            e.preventDefault(); // Mencegah aksi default link
+            
+            // Ambil nomor rekam medis dari data attribute
+            const noRkmMedis = $(this).data('no-rkm-medis');
+            
+            // Tambahkan timestamp untuk menghindari cache
+            const timestamp = new Date().getTime();
+            
+            // Log untuk debugging
+            console.log('Membuka pendaftaran PCare untuk pasien dengan RM:', noRkmMedis);
+            
+            // Buka URL dengan parameter yang benar
+            const url = `/pcare/form-pendaftaran?no_rkm_medis=${noRkmMedis}&ts=${timestamp}&clear_cache=true`;
+            
+            // Buka di tab yang sama
+            window.location.href = url;
+        });
     });
 </script>
 @stop

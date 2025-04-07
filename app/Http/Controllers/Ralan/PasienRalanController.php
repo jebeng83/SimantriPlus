@@ -12,10 +12,17 @@ use App\Events\PasienDipanggil;
 use App\Events\AntrianDipanggil;
 use GuzzleHttp\Client;
 use App\Traits\BpjsTraits;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PasienRalanController extends Controller
 {
     use BpjsTraits;
+
+    // Flag untuk mengaktifkan/menonaktifkan log debug yang tidak kritis
+    // Atur ke false untuk mengurangi jumlah log debug
+    private $DEBUG = false;
 
     /**
      * Create a new controller instance.
@@ -26,6 +33,8 @@ class PasienRalanController extends Controller
     {
         $this->middleware('loginauth');
         $this->middleware('web');
+        // Gunakan nilai dari .env jika ada
+        $this->DEBUG = env('DEBUG_PATIENT_CONTROLLER', false);
     }
 
     /**
@@ -128,6 +137,20 @@ class PasienRalanController extends Controller
     }
     
     /**
+     * Metode logging yang hanya menjalankan log jika debug diaktifkan
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    private function debugLog($message, array $context = [])
+    {
+        if ($this->DEBUG) {
+            \Log::debug($message, $context);
+        }
+    }
+    
+    /**
      * Fungsi untuk mendapatkan data pasien rawat jalan
      * Digunakan oleh index() dan getDataForRefresh()
      * 
@@ -149,14 +172,14 @@ class PasienRalanController extends Controller
         
         // Jika perlu selalu data terbaru, langsung query DB tanpa cache
         if (!$useCache) {
-            \Log::debug('Force query tanpa cache');
+            $this->debugLog('Force query tanpa cache');
             return $this->queryPasienRalanData($kd_poli, $kd_dokter, $tanggal, $sortOption);
         }
         
         // Cache hanya selama 15 detik untuk memastikan data selalu fresh
-        \Log::debug('Menggunakan cache dengan key: ' . $cacheKey);
+        $this->debugLog('Menggunakan cache dengan key: ' . $cacheKey);
         return Cache::remember($cacheKey, 15, function() use ($kd_poli, $kd_dokter, $tanggal, $sortOption) {
-            \Log::debug('Cache miss, melakukan query database');
+            $this->debugLog('Cache miss, melakukan query database');
             return $this->queryPasienRalanData($kd_poli, $kd_dokter, $tanggal, $sortOption);
         });
     }
@@ -177,7 +200,7 @@ class PasienRalanController extends Controller
         // Hapus cache registrasi terakhir
         Cache::forget("last_registration_{$kd_poli}_{$kd_dokter}_{$tanggal}");
         
-        \Log::debug('Menghapus cache dengan pattern: ' . $cachePattern);
+        $this->debugLog('Menghapus cache dengan pattern: ' . $cachePattern);
     }
     
     /**
@@ -192,7 +215,7 @@ class PasienRalanController extends Controller
     private function queryPasienRalanData($kd_poli, $kd_dokter, $tanggal, $sortOption = 'no_reg_asc')
     {
         // Cek parameter untuk debugging
-        \Log::debug('Parameter Query PasienRalan', [
+        $this->debugLog('Parameter Query PasienRalan', [
             'kd_poli' => $kd_poli,
             'kd_dokter' => $kd_dokter,
             'tanggal' => $tanggal,
@@ -207,7 +230,7 @@ class PasienRalanController extends Controller
             ->where('reg_periksa.kd_dokter', $kd_dokter)
             ->count();
             
-        \Log::debug('Total record di reg_periksa: ' . $count);
+        $this->debugLog('Total record di reg_periksa: ' . $count);
         
         // Query detail data pasien - HINDARI JOIN YANG TIDAK PERLU untuk performa
         $query = DB::table('reg_periksa')
@@ -219,10 +242,12 @@ class PasienRalanController extends Controller
             ->where('tgl_registrasi', $tanggal)
             ->where('reg_periksa.kd_dokter', $kd_dokter);
             
-        // Log query SQL untuk debugging
-        $sql = $query->toSql();
-        $bindings = $query->getBindings();
-        \Log::debug('SQL Query: ' . $sql . ' with bindings: ' . json_encode($bindings));
+        // Log query SQL untuk debugging - hanya jika debug sangat detail diperlukan
+        if ($this->DEBUG) {
+            $sql = $query->toSql();
+            $bindings = $query->getBindings();
+            $this->debugLog('SQL Query: ' . $sql . ' with bindings: ' . json_encode($bindings));
+        }
         
         // Terapkan pengurutan berdasarkan sortOption
         switch ($sortOption) {
@@ -264,11 +289,11 @@ class PasienRalanController extends Controller
             )
             ->get();
             
-        \Log::debug('Total data pasien setelah query: ' . $data->count());
+        $this->debugLog('Total data pasien setelah query: ' . $data->count());
         
         // Verifikasi bahwa jumlah data sesuai dengan count awal
         if ($count !== $data->count()) {
-            \Log::warning('Inkonsistensi terdeteksi: count before query: ' . $count . ', data returned: ' . $data->count());
+            $this->debugLog('Inkonsistensi terdeteksi: count before query: ' . $count . ', data returned: ' . $data->count());
             
             // Jika ada inkonsistensi, coba dengan query sederhana langsung tanpa join
             $simplifiedData = DB::table('reg_periksa')
@@ -278,11 +303,11 @@ class PasienRalanController extends Controller
                 ->select('no_reg', 'no_rawat', 'no_rkm_medis', 'stts')
                 ->get();
                 
-            \Log::debug('Verifikasi dengan query sederhana: ' . $simplifiedData->count() . ' records');
+            $this->debugLog('Verifikasi dengan query sederhana: ' . $simplifiedData->count() . ' records');
             
             // Coba hubungkan kembali dengan data pasien dan dokter jika ada perbedaan
             if ($simplifiedData->count() > $data->count()) {
-                \Log::warning('Melakukan recovery data, ditemukan ' . $simplifiedData->count() . ' records di query sederhana');
+                $this->debugLog('Melakukan recovery data, ditemukan ' . $simplifiedData->count() . ' records di query sederhana');
                 
                 // Rekonstruksi data dengan cara lain (per satu record)
                 $reconstructedData = collect();
@@ -317,7 +342,7 @@ class PasienRalanController extends Controller
                 }
                 
                 if ($reconstructedData->count() > $data->count()) {
-                    \Log::info('Menggunakan data hasil rekontruksi: ' . $reconstructedData->count() . ' records');
+                    $this->debugLog('Menggunakan data hasil rekontruksi: ' . $reconstructedData->count() . ' records');
                     $data = $reconstructedData;
                 }
             }
@@ -328,7 +353,7 @@ class PasienRalanController extends Controller
         $selesai = $data->where('stts', 'Sudah')->count();
         $menunggu = $data->where('stts', 'Belum')->count();
         
-        \Log::debug('Statistik pasien setelah query:', [
+        $this->debugLog('Statistik pasien setelah query:', [
             'total' => $totalPasien,
             'selesai' => $selesai,
             'menunggu' => $menunggu
@@ -347,25 +372,19 @@ class PasienRalanController extends Controller
     {
         $kd_poli = session()->get('kd_poli');
         $kd_dokter = session()->get('username');
-        $tanggal = $request->get('tanggal') ?? date('Y-m-d');
+        $tanggal = $request->input('tanggal', date('Y-m-d'));
+        $forceRefresh = $request->input('forceRefresh', false);
+        $lastCount = $request->input('lastCount', 0);
+        $sortOption = $request->input('sortOption', 'no_reg_asc');
         
-        // Mendapatkan parameter tambahan
-        $forceRefresh = (bool)$request->get('force', false);
-        $lastCount = (int)$request->get('last_count', 0);
-        $requestTime = $request->get('request_time');
-        
-        // Opsi pengurutan data
-        $sortOption = $request->get('sort', 'no_reg_asc');
-        
-        // Debug session dan parameter
-        \Log::debug('Session getDataForRefresh', [
+        $this->debugLog('Session getDataForRefresh', [
             'kd_poli' => $kd_poli,
             'kd_dokter' => $kd_dokter,
             'tanggal' => $tanggal,
             'forceRefresh' => $forceRefresh,
             'lastCount' => $lastCount,
             'sortOption' => $sortOption,
-            'requestTime' => $requestTime,
+            'requestTime' => $request->input('requestTime', ''),
             'timestamp' => now()->format('Y-m-d H:i:s')
         ]);
         
@@ -402,7 +421,7 @@ class PasienRalanController extends Controller
         $returnFullData = $forceRefresh || $totalPasien != $lastCount;
         
         // Debug total data untuk memastikan konsistensi
-        \Log::debug('Total data setelah getDataForRefresh', [
+        $this->debugLog('Total data setelah getDataForRefresh', [
             'total' => $totalPasien,
             'selesai' => $selesai,
             'menunggu' => $menunggu,
@@ -426,7 +445,7 @@ class PasienRalanController extends Controller
             'success' => true,
             'dataCount' => $data->count(),
             'dataSource' => 'direct_query',
-            'requestTime' => $requestTime,
+            'requestTime' => $request->input('requestTime', ''),
             'responseTime' => now()->timestamp,
             'returnFullData' => $returnFullData
         ];
@@ -453,8 +472,7 @@ class PasienRalanController extends Controller
         $tanggal = $request->get('tanggal') ?? date('Y-m-d');
         $sortOption = $request->get('sort', 'no_reg_asc');
         
-        // Debug session dan parameter
-        \Log::debug('Session listenForNewPatients', [
+        $this->debugLog('Session listenForNewPatients', [
             'kd_poli' => $kd_poli,
             'kd_dokter' => $kd_dokter,
             'tanggal' => $tanggal,
@@ -485,7 +503,7 @@ class PasienRalanController extends Controller
         // Dapatkan count dari hasil query langsung
         $currentCount = $data->count();
             
-        \Log::debug("Perbandingan data count: previous={$previousCount}, current={$currentCount}");
+        $this->debugLog("Perbandingan data count: previous={$previousCount}, current={$currentCount}");
         
         // Membandingkan untuk melihat apakah ada data baru
         $hasNewData = $currentCount > $previousCount;
@@ -496,7 +514,7 @@ class PasienRalanController extends Controller
             Cache::put("last_registration_{$kd_poli}_{$kd_dokter}_{$tanggal}", now()->timestamp, 3600);
             
             // Log informasi penambahan data
-            \Log::info('Data pasien baru terdeteksi', [
+            $this->debugLog('Data pasien baru terdeteksi', [
                 'poli' => $kd_poli,
                 'dokter' => $kd_dokter,
                 'tanggal' => $tanggal,
@@ -591,24 +609,22 @@ class PasienRalanController extends Controller
         return $data;
     }
 
+    /**
+     * Periksa status sesi
+     */
     private function checkSessionStatus()
     {
-        // Cek status session dan pastikan semua data yang diperlukan tersedia
         $sessionData = [
             'id' => session()->getId(),
-            'username' => session()->get('username'),
-            'logged_in' => session()->get('logged_in'),
-            'kd_poli' => session()->get('kd_poli')
+            'username' => session()->get('username', 'tidak ada'),
+            'logged_in' => session()->get('logged_in', false),
+            'kd_poli' => session()->get('kd_poli', 'tidak ada')
         ];
         
+        // Logging session status masih diperlukan untuk debugging login issues
         \Log::debug('Session status check: ', $sessionData);
         
-        // Periksa apakah session memiliki username dan status login
-        return (
-            session()->has('username') && 
-            session()->has('logged_in') && 
-            session()->get('logged_in') === true
-        );
+        return $sessionData;
     }
 
     /**

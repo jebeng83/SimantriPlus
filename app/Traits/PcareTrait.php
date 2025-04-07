@@ -101,7 +101,12 @@ trait PcareTrait
                     $data = json_encode($data);
                 }
             } else {
-                $headers['Content-Type'] = 'application/json';
+                // Untuk peserta, gunakan content type yang spesifik sesuai dokumentasi BPJS
+                if (strpos($endpoint, 'peserta') !== false) {
+                    $headers['Content-Type'] = 'application/json; charset=utf-8';
+                } else {
+                    $headers['Content-Type'] = 'application/json';
+                }
                 $headers['Accept'] = 'application/json';
             }
             
@@ -153,15 +158,30 @@ trait PcareTrait
             Log::info('PCare API Request', [
                 'url' => $fullUrl,
                 'method' => $method,
-                'contentType' => $contentType,
+                'contentType' => $headers['Content-Type'], // Log content type dari header, bukan parameter
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
             
-            // Kirim request dengan timeout dan retry
-            $httpClient = Http::timeout(30)->withHeaders($headers);
+            // Untuk method GET pada endpoint peserta, gunakan content type yang spesifik
+            if ($method === 'GET' && strpos($endpoint, 'peserta') !== false) {
+                $httpClient = Http::timeout(30)
+                    ->withHeaders($headers)
+                    ->withOptions([
+                        'headers' => [
+                            'Content-Type' => 'application/json; charset=utf-8'
+                        ]
+                    ]);
+            } else {
+                $httpClient = Http::timeout(30)->withHeaders($headers);
+            }
             
             // Function untuk melakukan retry
-            $sendRequest = function() use ($method, $httpClient, $fullUrl, $data, $contentType) {
+            $sendRequest = function() use ($method, $httpClient, $fullUrl, $data, $contentType, $endpoint) {
+                // Khusus untuk peserta dengan method GET
+                if ($method === 'GET' && strpos($endpoint, 'peserta') !== false) {
+                    return $httpClient->get($fullUrl);
+                }
+                
                 return match($method) {
                     'GET' => $httpClient->get($fullUrl),
                     'POST' => $httpClient->withBody($data, $contentType ?? 'application/json')->post($fullUrl),
