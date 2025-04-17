@@ -94,7 +94,7 @@
                                     </div>
                                     <div class="col-md-6">
                                        <div class="mobile-form-group">
-                                          <label for="faskes">Faskes Tingkat Pertama</label>
+                                          <label for="faskes">Faskes</label>
                                           <input type="text" class="form-control mobile-input" id="faskes" name="faskes"
                                              readonly>
                                        </div>
@@ -267,6 +267,14 @@
       transition: all 0.3s ease;
    }
 
+   /* Reset ukuran maksimum untuk phones */
+   @media (min-width: 768px) {
+      .phone-frame {
+         max-width: 420px;
+         /* Sedikit lebih lebar */
+      }
+   }
+
    .phone-frame:hover {
       transform: rotateY(0deg) rotateX(0deg);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -405,14 +413,100 @@
       cursor: not-allowed;
    }
 
-   .mobile-select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 15px center;
-      background-size: 16px;
-      position: relative;
-      z-index: 20;
+   /* Perbaikan untuk dropdown yang teks-nya terpotong */
+   select#kodepoli,
+   select#kodedokter {
+      font-size: 15px;
+      min-width: 100%;
+      padding: 12px 35px 12px 15px;
+      /* Kanan diperbesar untuk ikon dropdown */
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+   }
+
+   /* Ketika dropdown dalam keadaan fokus/klik, nonaktifkan text-overflow ellipsis */
+   select#kodepoli:focus,
+   select#kodedokter:focus {
+      text-overflow: clip;
+      white-space: normal;
+   }
+
+   /* Gaya untuk pilihan di dalam dropdown */
+   select#kodepoli option,
+   select#kodedokter option {
+      white-space: normal;
+      font-size: 15px;
+      padding: 10px;
+      line-height: 1.5;
+      max-width: none;
+      /* Pastikan opsi tidak dipotong */
+      width: auto;
+   }
+
+   /* Tambahkan styling untuk menampilkan teks dropdown secara penuh */
+   select.mobile-select {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      padding-right: 30px !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 10px center !important;
+      background-size: 16px !important;
+      font-size: 15px !important;
+      height: auto !important;
+      min-height: 46px !important;
+   }
+
+   /* Styling untuk option elements */
+   select.mobile-select option {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      padding: 10px !important;
+      font-size: 15px !important;
+   }
+
+   /* Placeholder styling */
+   select.mobile-select option[value=""] {
+      color: #999 !important;
+   }
+
+   /* Styling untuk container group */
+   .mobile-form-group {
+      margin-bottom: 20px !important;
+      position: relative !important;
+      width: 100% !important;
+   }
+
+   /* Pastikan ukuran font tetap konsisten */
+   label,
+   select,
+   input,
+   button,
+   .btn {
+      font-size: 15px !important;
+   }
+
+   /* Memperbesar ukuran container untuk dropdown */
+   .mobile-form-group label {
+      display: block !important;
+      margin-bottom: 10px !important;
+      font-weight: 600 !important;
+   }
+
+   /* Container batas maksimum */
+   .row,
+   .col-md-6 {
+      width: 100% !important;
+      max-width: 100% !important;
    }
 
    .mobile-btn {
@@ -577,33 +671,6 @@
          border-radius: 0;
       }
    }
-
-   /* Memperbaiki tampilan dropdown */
-   .mobile-select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 15px center;
-      background-size: 16px;
-      position: relative;
-      z-index: 20;
-   }
-
-   /* Fix untuk dropdown yang terpotong */
-   .phone-screen {
-      background: #f8f9fa;
-      height: calc(100% - 60px);
-      border-radius: 30px;
-      overflow-y: auto;
-      position: relative;
-      padding: 15px;
-      z-index: 5;
-   }
-
-   /* Pastikan dropdown menu muncul di atas */
-   .dropdown-menu {
-      z-index: 9999;
-   }
 </style>
 @stop
 
@@ -618,6 +685,39 @@
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
          }
       });
+      
+      // Fungsi untuk membatasi teks agar tidak terpotong di dropdown
+      function setupDropdowns() {
+         // Perbaiki styling dropdown untuk menangani teks panjang
+         $('.mobile-select').each(function() {
+            $(this).css({
+               'width': '100%',
+               'max-width': '100%',
+               'white-space': 'nowrap',
+               'overflow': 'hidden',
+               'text-overflow': 'ellipsis',
+               'padding-right': '30px'
+            });
+         });
+         
+         // Fix untuk dropdown text truncation di iOS/Safari
+         if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+            $('.mobile-select').css({
+               'font-size': '16px', // Prevents zoom on focus in iOS
+               'text-indent': '1px', // Fix untuk teks terpotong di Safari
+               'text-overflow': 'ellipsis'
+            });
+         }
+      }
+      
+      // Fungsi untuk memotong teks yang terlalu panjang
+      function trimText(text, maxLength) {
+         if (!text) return '';
+         return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+      }
+      
+      // Panggil fungsi setup saat halaman dimuat
+      setupDropdowns();
       
       // Setup DateTimePicker
       $('#tanggal-picker').datetimepicker({
@@ -686,8 +786,23 @@
 
                if (data.metadata && data.metadata.code === 200 && data.response) {
                   $.each(data.response, function(i, item) {
-                     $('#kodepoli').append('<option value="' + item.kodepoli + '">' + item.namapoli + '</option>');
+                     // Format nama poli untuk tampilan yang lebih baik
+                     let namaPoliFormatted = item.namapoli;
+                     
+                     // Batasi panjang teks poli untuk tampilan dropdown
+                     const displayText = trimText(namaPoliFormatted, 50);
+                     
+                     // Membuat pilihan dengan tampilan lebih informatif
+                     $('#kodepoli').append(
+                        $('<option></option>')
+                           .attr('value', item.kodepoli)
+                           .text(displayText)
+                           .attr('title', item.namapoli) // Tambahkan tooltip
+                     );
                   });
+                  
+                  // Update dropdown styling
+                  setupDropdowns();
                } else {
                   // Handle error response format
                   var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data poli';
@@ -737,9 +852,33 @@
 
                if (data.metadata && data.metadata.code === 200 && data.response) {
                   $.each(data.response, function(i, item) {
-                     $('#kodedokter').append('<option value="' + item.kodedokter + '" data-jampraktek="' + item.jampraktek + '">' + 
-                        item.namadokter + ' (' + item.jampraktek + ') - Sisa Kuota: ' + item.kapasitas + '</option>');
+                     // Format tampilan dokter yang lebih informatif dengan waktu praktek dan kuota
+                     const namaDokter = item.namadokter || "Dokter";
+                     const jamPraktek = item.jampraktek || "-";
+                     const kapasitas = item.kapasitas || 0;
+                     
+                     // Format tampilan yang lebih singkat untuk dropdown
+                     let displayText = namaDokter;
+                     
+                     // Batasi tampilan teks
+                     displayText = trimText(displayText, 30) + " (" + jamPraktek + ")";
+                     
+                     // Tambahkan atribut untuk menampilkan tooltip informasi lengkap
+                     const fullInfo = namaDokter + ' (' + jamPraktek + ') - Sisa Kuota: ' + kapasitas;
+                     
+                     // Tambahkan opsi dengan teks yang sudah diringkas
+                     $('#kodedokter').append(
+                        $('<option></option>')
+                           .attr('value', item.kodedokter)
+                           .attr('data-jampraktek', jamPraktek)
+                           .attr('data-kuota', kapasitas)
+                           .attr('title', fullInfo) // Tooltip menampilkan informasi lengkap
+                           .text(displayText)
+                     );
                   });
+                  
+                  // Update dropdown styling
+                  setupDropdowns();
                } else {
                   // Handle error response format
                   var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data dokter';
@@ -762,7 +901,7 @@
             }
          });
       }
-
+      
       // Fungsi untuk memeriksa peserta BPJS
       function checkPeserta() {
          var nomorKartu = $('#nomorkartu').val();
@@ -898,6 +1037,58 @@
             },
             success: function(response) {
                Swal.close();
+               
+               // Log untuk debugging
+               console.log('Response dari daftar antrean:', response);
+               
+               // Cek status respons spesifik dari BPJS FKTP dengan struktur status dan body
+               if (response.status && response.body) {
+                  console.log('Terdeteksi format respons BPJS FKTP:', response);
+                  
+                  try {
+                     let bodyContent;
+                     
+                     // Cek apakah body adalah string JSON atau sudah di-parse
+                     if (typeof response.body === 'string') {
+                        bodyContent = JSON.parse(response.body);
+                     } else if (typeof response.body === 'object') {
+                        bodyContent = response.body;
+                     }
+                     
+                     if (bodyContent && bodyContent.metadata) {
+                        const message = bodyContent.metadata.message || "Terjadi kesalahan";
+                        const code = bodyContent.metadata.code || response.status;
+                        
+                        console.log('Metadata dari BPJS FKTP:', bodyContent.metadata);
+                        
+                        // Cek kode status 201 (kuota penuh) dari BPJS FKTP
+                        if (response.status === 201 || code === 201) {
+                           console.log('Menangani respons kuota penuh dari BPJS FKTP:', message);
+                           
+                           Swal.fire({
+                              title: 'Kuota Penuh',
+                              html: '<div class="text-left">' +
+                                    '<p><strong>Mohon maaf,</strong> ' + message + '</p>' +
+                                    '<p>Pendaftaran tidak dapat dilakukan karena kuota antrean sudah penuh.</p>' +
+                                    '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                    '<ul>' +
+                                    '<li>Coba pilih tanggal kunjungan lain</li>' +
+                                    '<li>Coba pilih dokter lain pada poli yang sama</li>' +
+                                    '<li>Datang langsung ke pendaftaran untuk bantuan lebih lanjut</li>' +
+                                    '</ul>' +
+                                    '</div>',
+                              icon: 'warning',
+                              confirmButtonText: 'Mengerti'
+                           });
+                           return;
+                        }
+                     }
+                  } catch (e) {
+                     console.error('Error parsing BPJS FKTP response body:', e, response.body);
+                  }
+               }
+               
+               // Proses respons normal jika bukan format khusus BPJS FKTP
                if (response.metadata && response.metadata.code === 200) {
                   const data = response.response;
                   
@@ -920,27 +1111,208 @@
                   
                   // Tampilkan modal detail antrean
                   $('#modal-detail-antrean').modal('show');
-               } else {
-                  const message = response.metadata ? response.metadata.message : 'Terjadi kesalahan saat mendaftarkan antrean';
+               } else if (response.metadata && response.metadata.code === 201) {
+                  // Kode 201 - Kuota penuh
+                  const message = response.metadata.message || "Kuota antrean sudah penuh";
+                  
                   Swal.fire({
-                     title: 'Gagal',
-                     text: message,
-                     icon: 'error'
+                     title: 'Kuota Penuh',
+                     html: '<div class="text-left">' +
+                           '<p><strong>Mohon maaf,</strong> ' + message + '</p>' +
+                           '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                           '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                           '<ul>' +
+                           '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                           '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                           '</ul>' +
+                           '</div>',
+                     icon: 'warning',
+                     confirmButtonText: 'Mengerti'
+                  });
+               } else if (response.metadata && response.metadata.code === 202) {
+                  // Kode 202 - Pasien sudah terdaftar
+                  const message = response.metadata.message || "Anda sudah terdaftar di antrean pada tanggal tersebut";
+                  
+                  Swal.fire({
+                     title: 'Sudah Terdaftar',
+                     html: '<div class="text-left">' +
+                           '<p><strong>Perhatian!</strong> ' + message + '</p>' +
+                           '<p>Anda hanya dapat mendaftar sekali dalam sehari untuk poli yang sama.</p>' +
+                           '<p class="mt-3 mb-1"><strong>Informasi:</strong></p>' +
+                           '<ul>' +
+                           '<li>Cek status antrean Anda melalui menu Cek Antrean</li>' +
+                           '<li>Jika perlu membatalkan, silakan gunakan menu Batal Antrean</li>' +
+                           '</ul>' +
+                           '</div>',
+                     icon: 'info',
+                     confirmButtonText: 'Mengerti'
+                  });
+               } else {
+                  // Kode lainnya (error umum)
+                  const message = response.metadata ? response.metadata.message : 'Terjadi kesalahan saat mendaftarkan antrean';
+                  const code = response.metadata ? response.metadata.code : '';
+                  
+                  Swal.fire({
+                     title: 'Pendaftaran Gagal',
+                     html: '<div class="text-left">' +
+                           '<p><strong>Maaf,</strong> pendaftaran antrean tidak berhasil.</p>' +
+                           '<p>Pesan: ' + message + '</p>' +
+                           (code ? '<p>Kode: ' + code + '</p>' : '') +
+                           '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                           '<ul>' +
+                           '<li>Coba lagi beberapa saat lagi</li>' +
+                           '<li>Periksa koneksi internet Anda</li>' +
+                           '<li>Hubungi call center BPJS di 1500400 jika masalah berlanjut</li>' +
+                           '</ul>' +
+                           '</div>',
+                     icon: 'error',
+                     confirmButtonText: 'Tutup'
                   });
                }
             },
             error: function(xhr) {
                Swal.close();
                let errorMsg = 'Terjadi kesalahan saat mendaftarkan antrean';
+               let errorCode = '';
                
-               if (xhr.responseJSON && xhr.responseJSON.metadata) {
-                  errorMsg = xhr.responseJSON.metadata.message;
+               // Coba parse response JSON
+               try {
+                  if (xhr.responseText) {
+                     const responseBody = JSON.parse(xhr.responseText);
+                     
+                     // Periksa format respons spesifik dari BPJS FKTP dengan struktur status dan body 
+                     // Format: {"status":201,"body":"{\"metadata\":{\"message\":\"Kuota penuuuh...!\",\"code\":201}}"}
+                     if (responseBody.status && responseBody.body) {
+                        try {
+                           const bodyContent = JSON.parse(responseBody.body);
+                           
+                           if (bodyContent.metadata) {
+                              errorMsg = bodyContent.metadata.message || errorMsg;
+                              errorCode = bodyContent.metadata.code || responseBody.status;
+                              
+                              // Cek kode status 201 (kuota penuh) dari BPJS FKTP
+                              if (responseBody.status === 201 || bodyContent.metadata.code === 201) {
+                                 console.log('Menangani respons kuota penuh dari BPJS FKTP:', responseBody);
+                                 
+                                 Swal.fire({
+                                    title: 'Kuota Penuh',
+                                    html: '<div class="text-left">' +
+                                          '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
+                                          '<p>Pendaftaran tidak dapat dilakukan karena kuota antrean sudah penuh.</p>' +
+                                          '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                          '<ul>' +
+                                          '<li>Coba pilih tanggal kunjungan lain</li>' +
+                                          '<li>Coba pilih dokter lain pada poli yang sama</li>' +
+                                          '<li>Datang langsung ke pendaftaran untuk bantuan lebih lanjut</li>' +
+                                          '</ul>' +
+                                          '</div>',
+                                    icon: 'warning',
+                                    confirmButtonText: 'Mengerti'
+                                 });
+                                 return;
+                              }
+                           }
+                        } catch (e) {
+                           console.error('Error parsing BPJS FKTP response body:', e);
+                        }
+                     }
+                     
+                     // Periksa apakah ada struktur metadata dalam response
+                     if (responseBody.metadata) {
+                        errorMsg = responseBody.metadata.message || errorMsg;
+                        errorCode = responseBody.metadata.code || '';
+                        
+                        // Cek apakah respons adalah error kuota penuh (201)
+                        if (responseBody.metadata.code === 201) {
+                           Swal.fire({
+                              title: 'Kuota Penuh',
+                              html: '<div class="text-left">' +
+                                    '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
+                                    '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                                    '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                    '<ul>' +
+                                    '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                                    '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                                    '</ul>' +
+                                    '</div>',
+                              icon: 'warning',
+                              confirmButtonText: 'Mengerti'
+                           });
+                           return;
+                        }
+                        
+                        // Cek apakah respons adalah pasien sudah terdaftar (202)
+                        if (responseBody.metadata.code === 202) {
+                           Swal.fire({
+                              title: 'Sudah Terdaftar',
+                              html: '<div class="text-left">' +
+                                    '<p><strong>Perhatian!</strong> ' + errorMsg + '</p>' +
+                                    '<p>Anda hanya dapat mendaftar sekali dalam sehari untuk poli yang sama.</p>' +
+                                    '<p class="mt-3 mb-1"><strong>Informasi:</strong></p>' +
+                                    '<ul>' +
+                                    '<li>Cek status antrean Anda melalui menu Cek Antrean</li>' +
+                                    '<li>Jika perlu membatalkan, silakan gunakan menu Batal Antrean</li>' +
+                                    '</ul>' +
+                                    '</div>',
+                              icon: 'info',
+                              confirmButtonText: 'Mengerti'
+                           });
+                           return;
+                        }
+                     }
+                     
+                     // Cek apakah ada body yang mengandung metadata (format dari BPJS FKTP)
+                     if (responseBody.body && typeof responseBody.body === 'string') {
+                        try {
+                           const bodyContent = JSON.parse(responseBody.body);
+                           if (bodyContent.metadata) {
+                              errorMsg = bodyContent.metadata.message || errorMsg;
+                              errorCode = bodyContent.metadata.code || '';
+                              
+                              // Cek apakah respons adalah error kuota penuh (201)
+                              if (bodyContent.metadata.code === 201) {
+                                 Swal.fire({
+                                    title: 'Kuota Penuh',
+                                    html: '<div class="text-left">' +
+                                          '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
+                                          '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                                          '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                          '<ul>' +
+                                          '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                                          '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                                          '</ul>' +
+                                          '</div>',
+                                    icon: 'warning',
+                                    confirmButtonText: 'Mengerti'
+                                 });
+                                 return;
+                              }
+                           }
+                        } catch (e) {
+                           console.error('Error parsing BPJS response body:', e, responseBody.body);
+                        }
+                     }
+                  }
+               } catch (e) {
+                  console.error('Error parsing JSON response:', e);
                }
                
+               // Tampilkan pesan error umum jika tidak ada kasus khusus
                Swal.fire({
-                  title: 'Gagal',
-                  text: errorMsg,
-                  icon: 'error'
+                  title: 'Pendaftaran Gagal',
+                  html: '<div class="text-left">' +
+                        '<p><strong>Maaf,</strong> pendaftaran antrean tidak berhasil.</p>' +
+                        '<p>Pesan: ' + errorMsg + '</p>' +
+                        (errorCode ? '<p>Kode: ' + errorCode + '</p>' : '') +
+                        '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                        '<ul>' +
+                        '<li>Coba lagi beberapa saat lagi</li>' +
+                        '<li>Periksa koneksi internet Anda</li>' +
+                        '<li>Hubungi call center BPJS di 1500400 jika masalah berlanjut</li>' +
+                        '</ul>' +
+                        '</div>',
+                  icon: 'error',
+                  confirmButtonText: 'Tutup'
                });
             }
          });

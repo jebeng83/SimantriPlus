@@ -33,7 +33,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Rute untuk obat ranap
-Route::get('/ranap/{bangsal}/obat', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);
+Route::get('/ranap/{bangsal}/obat', [App\Http\Controllers\API\ResepRanapController::class, 'getObatRanap']);
 // Tambahkan rute untuk obat ralan
 Route::get('/ralan/{poli}/obat', [ResepController::class, 'getObatRalan']);
 Route::get('/obat-luar', [ResepController::class, 'getObatLuar']);
@@ -142,7 +142,7 @@ Route::prefix('icare')->group(function () {
 });
 
 // Endpoint untuk tes getObatRanap
-Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);
+Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\API\ResepRanapController::class, 'getObatRanap']);
 
 // Routes untuk data wilayah dari file iyem
 Route::get('/propinsi', [WilayahController::class, 'getPropinsi']);
@@ -248,6 +248,58 @@ Route::post('/get-valid-no-rawat', function (Request $request) {
     }
 });
 
+// Route untuk mendapatkan data poli berdasarkan no_rawat
+Route::post('/get-poli-from-rawat', function (Request $request) {
+    try {
+        $no_rawat = $request->input('no_rawat');
+        
+        if (empty($no_rawat)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No. Rawat diperlukan',
+                'data' => null
+            ]);
+        }
+        
+        // Cari data poli dari reg_periksa dan mapping ke pcare
+        $poliData = DB::table('reg_periksa')
+            ->join('maping_poliklinik_pcare', 'reg_periksa.kd_poli', '=', 'maping_poliklinik_pcare.kd_poli_rs')
+            ->select(
+                'reg_periksa.kd_poli',
+                'maping_poliklinik_pcare.kd_poli_pcare',
+                'maping_poliklinik_pcare.nm_poli_pcare'
+            )
+            ->where('reg_periksa.no_rawat', $no_rawat)
+            ->first();
+            
+        if ($poliData) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data poli ditemukan',
+                'data' => $poliData
+            ]);
+        }
+        
+        // Jika tidak ditemukan poli yang sesuai
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak ada mapping poli untuk registrasi ini',
+            'data' => null
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error saat mendapatkan data poli dari no_rawat', [
+            'error' => $e->getMessage(),
+            'no_rawat' => $no_rawat ?? 'not provided'
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            'data' => null
+        ], 500);
+    }
+});
+
 // Route untuk mendapatkan data dokter
 Route::get('/dokter', function () {
     try {
@@ -274,3 +326,6 @@ Route::get('/dokter', function () {
         ], 500);
     }
 });
+
+// Route untuk pemeriksaan
+Route::post('/pemeriksaan/save', [PemeriksaanController::class, 'save']);

@@ -6,7 +6,11 @@
 <div class="ralan-header">
     <div class="header-content">
         <h1 class="ralan-title" style="color: white;">Pasien Ralan</h1>
-        <p class="ralan-subtitle" style="color: white;">{{$nm_poli}}</p>
+        <p class="ralan-subtitle" style="color: white;">{{$nm_poli}}
+            @if(session('username') === 'admin' && session('kd_poli') === 'U0011')
+            <span class="badge badge-info">Menampilkan semua poli</span>
+            @endif
+        </p>
         <p class="ralan-sort-info" id="sort-label"><small><i class="fas fa-sort-numeric-down" style="color: white;"></i>
                 Diurutkan berdasarkan
                 No. Registrasi
@@ -94,6 +98,16 @@
                                 </a>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label class="filter-label">Pencarian Pasien</label>
+                            <div class="d-flex">
+                                <input type="text" id="searchBox" class="form-control"
+                                    placeholder="Cari nama pasien, no.reg, atau no.rawat...">
+                                <button class="btn btn-sm btn-secondary ml-2" id="clearSearchBtn">
+                                    <i class="fas fa-times"></i> Reset
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -113,10 +127,12 @@
                                 <td>{{$row->no_reg}}</td>
                                 <td>
                                     @php
-                                    $noRawat =
-                                    App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
-                                    $noRM =
-                                    App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
+                                    $noRawat = isset($row->no_rawat)
+                                    ? App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat)
+                                    : '';
+                                    $noRM = isset($row->no_rkm_medis)
+                                    ? App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis)
+                                    : '';
 
                                     // Menentukan ikon berdasarkan pola nama
                                     $nameWords = explode(' ', strtolower($row->nm_pasien));
@@ -177,12 +193,13 @@
                                 <td>
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                                            id="dropdownMenu-{{$row->no_rawat}}" data-toggle="dropdown"
-                                            aria-haspopup="true" aria-expanded="false">
-                                            {{$row->no_rawat}}
+                                            id="dropdownMenu-{{$row->no_rawat ? str_replace('/', '-', $row->no_rawat) : 'unknown'}}"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            {{$row->no_rawat ?? 'N/A'}}
                                         </button>
-                                        <div class="dropdown-menu" aria-labelledby="dropdownMenu-{{$row->no_rawat}}">
-                                            <a href="/ilp/dewasa/{{$row->no_rawat}}" class="dropdown-item">
+                                        <div class="dropdown-menu"
+                                            aria-labelledby="dropdownMenu-{{$row->no_rawat ? str_replace('/', '-', $row->no_rawat) : 'unknown'}}">
+                                            <a href="/ilp/dewasa/{{$row->no_rawat ?? ''}}" class="dropdown-item">
                                                 <i class="fas fa-file-medical mr-2 text-primary"></i> Form ILP Dewasa
                                             </a>
                                         </div>
@@ -198,11 +215,12 @@
                                 </td>
                                 <td>
                                     <span class="d-flex align-items-center"><i
-                                            class="fas fa-user-md mr-2 text-primary"></i> {{$row->nm_dokter}}</span>
+                                            class="fas fa-user-md mr-2 text-primary"></i> {{$row->nm_dokter ??
+                                        ''}}</span>
                                 </td>
                                 <td>
                                     <span class="status-badge {{$row->stts == 'Sudah' ? 'completed' : 'pending'}}">
-                                        {{$row->stts}}
+                                        {{$row->stts ?? 'Belum'}}
                                     </span>
                                 </td>
                                 <td>
@@ -213,18 +231,22 @@
                                         </button>
                                         <div class="dropdown-menu">
                                             <a href="javascript:void(0)" class="dropdown-item btn-panggil"
-                                                data-no-reg="{{$row->no_reg}}" data-nama="{{$row->nm_pasien}}"
-                                                data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
+                                                data-no-reg="{{$row->no_reg ?? ''}}"
+                                                data-nama="{{$row->nm_pasien ?? ''}}"
+                                                data-poli="{{$row->nm_poli ?? ''}}"
+                                                data-no-rawat="{{$row->no_rawat ?? ''}}">
                                                 <i class="fas fa-volume-up mr-2"></i> Panggil Pasien
                                             </a>
                                             <a href="javascript:void(0)" class="dropdown-item btn-ulang-panggil"
-                                                data-no-reg="{{$row->no_reg}}" data-nama="{{$row->nm_pasien}}"
-                                                data-poli="{{$row->nm_poli}}" data-no-rawat="{{$row->no_rawat}}">
+                                                data-no-reg="{{$row->no_reg ?? ''}}"
+                                                data-nama="{{$row->nm_pasien ?? ''}}"
+                                                data-poli="{{$row->nm_poli ?? ''}}"
+                                                data-no-rawat="{{$row->no_rawat ?? ''}}">
                                                 <i class="fas fa-redo mr-2"></i> Ulang Panggil
                                             </a>
-                                            <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => '${row.no_rkm_medis}', 'ts' => time(), 'clear_cache' => 'true']) }}"
+                                            <a href="/pcare/form-pendaftaran?no_rkm_medis={{$row->no_rkm_medis ?? ''}}&ts={{time()}}&clear_cache=true"
                                                 class="dropdown-item btn-daftar-pcare"
-                                                data-no-rkm-medis="${row.no_rkm_medis}">
+                                                data-no-rkm-medis="{{$row->no_rkm_medis ?? ''}}">
                                                 <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
                                             </a>
                                         </div>
@@ -260,29 +282,33 @@
                         <tbody>
                             @foreach($dataInternal as $row)
                             <tr>
-                                <td>{{$row->no_reg}}</td>
-                                <td>{{$row->no_rkm_medis}}</td>
+                                <td>{{$row->no_reg ?? ''}}</td>
+                                <td>{{$row->no_rkm_medis ?? ''}}</td>
                                 <td>
                                     @php
-                                    $noRawat =
-                                    App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
-                                    $noRM =
-                                    App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
+                                    $noRawat = isset($row->no_rawat)
+                                    ? App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat)
+                                    : '';
+                                    $noRM = isset($row->no_rkm_medis)
+                                    ? App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis)
+                                    : '';
                                     @endphp
 
                                     <a href="{{route('ralan.rujuk-internal', ['no_rawat' => $noRawat, 'no_rm' => $noRM])}}"
                                         class="patient-name">
                                         <i class="fas fa-user-circle mr-2"></i>
-                                        <span class="patient-fullname">{{$row->nm_pasien}}</span>
+                                        <span class="patient-fullname">{{$row->nm_pasien ?? ''}}</span>
                                     </a>
                                 </td>
                                 <td>
                                     <span class="d-flex align-items-center"><i
-                                            class="fas fa-user-md mr-2 text-primary"></i> {{$row->nm_dokter}}</span>
+                                            class="fas fa-user-md mr-2 text-primary"></i> {{$row->nm_dokter ??
+                                        ''}}</span>
                                 </td>
                                 <td>
-                                    <span class="status-badge {{$row->stts == 'Sudah' ? 'completed' : 'pending'}}">
-                                        {{$row->stts}}
+                                    <span
+                                        class="status-badge {{isset($row->stts) && $row->stts == 'Sudah' ? 'completed' : 'pending'}}">
+                                        {{$row->stts ?? 'Belum'}}
                                     </span>
                                 </td>
                             </tr>
@@ -341,6 +367,75 @@
         overflow: hidden;
     }
 
+    /* Refresh indicator yang tidak mengganggu */
+    .refresh-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(0, 123, 255, 0.8);
+        color: white;
+        text-align: center;
+        padding: 4px 0;
+        font-size: 12px;
+        font-weight: 500;
+        transform: translateY(100%);
+        animation: slideUp 0.3s forwards;
+        z-index: 10;
+    }
+
+    .refresh-indicator a {
+        color: #fff;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+
+    .refresh-indicator a:hover {
+        color: #fff;
+        text-decoration: none;
+    }
+
+    @keyframes slideUp {
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    /* Animasi untuk icon refresh */
+    .refresh-spin {
+        animation: spin 1s infinite linear;
+        display: inline-block;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Animasi pulsa untuk indikator update data */
+    .stat-updated {
+        animation: pulse-highlight 2s ease-in-out;
+    }
+
+    @keyframes pulse-highlight {
+        0% {
+            background-color: transparent;
+        }
+
+        50% {
+            background-color: rgba(40, 167, 69, 0.2);
+        }
+
+        100% {
+            background-color: transparent;
+        }
+    }
+
     .ralan-header::before {
         content: '';
         position: absolute;
@@ -351,40 +446,6 @@
         background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
         transform: rotate(30deg);
         z-index: 1;
-    }
-
-    .header-content {
-        z-index: 2;
-        position: relative;
-    }
-
-    .ralan-title {
-        margin: 0;
-        font-size: 28px;
-        font-weight: 700;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        letter-spacing: 1px;
-        color: white;
-    }
-
-    .ralan-subtitle {
-        margin: 5px 0 0;
-        font-size: 16px;
-        font-weight: 500;
-        opacity: 0.95;
-        color: white;
-    }
-
-    .ralan-sort-info {
-        margin: 5px 0 0;
-        font-size: 12px;
-        opacity: 0.8;
-        color: white;
-    }
-
-    .header-actions {
-        z-index: 2;
-        position: relative;
     }
 
     /* Memperbaiki area data pasien */
@@ -989,6 +1050,67 @@
         height: 3rem;
     }
 
+    /* Animasi loading baru */
+    .loading-overlay {
+        backdrop-filter: blur(5px);
+        transition: opacity 0.5s ease;
+    }
+
+    .loading-overlay .loading-content {
+        text-align: center;
+    }
+
+    .loading-overlay .loading-text {
+        margin-top: 15px;
+        color: #007bff;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .loading-overlay .progress {
+        width: 250px;
+        height: 10px;
+        margin: 10px auto;
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+
+    .loading-overlay .progress-bar {
+        background-color: #007bff;
+        border-radius: 10px;
+        transition: width 0.8s ease;
+    }
+
+    .loading-overlay .spinner-grow {
+        color: #007bff;
+    }
+
+    .loading-overlay .loading-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .pulse-animation {
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+
+        50% {
+            transform: scale(1.05);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+    }
+
     /* Modal Styling */
     #confirmPanggilModal .modal-content {
         border-radius: 10px;
@@ -996,7 +1118,7 @@
     }
 
     #confirmPanggilModal .modal-header {
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        background: linear-gradient(135deg, #007bff, #0056b3);
         color: white;
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
@@ -1015,7 +1137,7 @@
     }
 
     #confirmPanggilModal .btn-primary {
-        background: var(--primary-color);
+        background: #007bff;
         border: none;
         padding: 8px 20px;
     }
@@ -1056,6 +1178,10 @@
         // Set default sort option
         let currentSortOption = 'no_reg_asc';
         $('#sortDropdown').data('sort', currentSortOption);
+        
+        // Tambahkan variabel baru untuk status pencarian aktif
+        let isSearchActive = false;
+        let searchTimeout = null;
         
         // Handle sort option selection
         $('.sort-option').on('click', function(e) {
@@ -1102,10 +1228,10 @@
         let pasienData = [];
         let filteredData = [];
         
-        // Setup DataTable untuk table pasien ralan - di-disable defaultnya
+        // Modifikasi setup DataTable untuk tabel pasien ralan
         let tablePasienRalan = $('#tablePasienRalan').DataTable({
             "paging": false,
-            "searching": true,
+            "searching": false, // Nonaktifkan pencarian bawaan DataTables
             "info": false,
             "autoWidth": false,
             "responsive": true,
@@ -1117,22 +1243,89 @@
             }
         });
         
-        // Setup DataTable untuk table rujuk internal - di-disable defaultnya
-        let tableRujuk = $('#tableRujuk').DataTable({
-            "paging": false, 
-            "searching": true,
-            "info": false,
-            "autoWidth": false,
-            "responsive": true,
-            "language": {
-                "search": "Cari:",
-                "zeroRecords": "Tidak ada data yang ditemukan",
-                "infoEmpty": "Tidak ada data yang tersedia"
-            }
-        });
-        
         // Menginisialisasi data dari tabel
         initializePaginationData();
+        
+        // Tambahkan fungsi pencarian manual dengan delay
+        $('#searchBox').on('keyup', function() {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // Tandai pencarian sedang aktif
+            isSearchActive = true;
+            
+            // Set flag untuk mencegah refresh otomatis
+            window.isViewingDetails = true;
+            
+            // Dapatkan nilai pencarian
+            const searchTerm = $(this).val().toLowerCase();
+            
+            // Terapkan delay 500ms untuk menghindari pencarian terlalu sering
+            searchTimeout = setTimeout(function() {
+                // Filter data berdasarkan kata kunci pencarian
+                if (searchTerm.length > 0) {
+                    // Filter data dari sumber asli
+                    filteredData = pasienData.filter(item => {
+                        return item.nama.toLowerCase().includes(searchTerm) || 
+                               item.no_reg.toLowerCase().includes(searchTerm) ||
+                               item.no_rawat.toLowerCase().includes(searchTerm) ||
+                               item.telp.toLowerCase().includes(searchTerm);
+                    });
+                } else {
+                    // Reset filter ke filter status saat ini
+                    const currentStatus = $('#filterStatus').val();
+                    if (currentStatus) {
+                        filteredData = pasienData.filter(item => item.status.includes(currentStatus));
+                    } else {
+                        filteredData = [...pasienData];
+                    }
+                    
+                    // Set flag bahwa pencarian tidak aktif lagi
+                    isSearchActive = false;
+                    window.isViewingDetails = false;
+                }
+                
+                // Update paginasi
+                createPagination(filteredData.length, pageSize, 'pasien-pagination');
+                
+                // Update info yang ditampilkan
+                updatePaginationInfo(1, filteredData.length, 'showing-from', 'showing-to', 'total-entries');
+                
+                // Tampilkan halaman pertama
+                displayPasienPage(1);
+            }, 500);
+        });
+        
+        // Tambahkan handler untuk tombol reset pencarian
+        $('#clearSearchBtn').on('click', function() {
+            // Reset nilai kotak pencarian
+            $('#searchBox').val('');
+            
+            // Reset flag pencarian
+            isSearchActive = false;
+            window.isViewingDetails = false;
+            
+            // Reset filter ke filter status saat ini
+            const currentStatus = $('#filterStatus').val();
+            if (currentStatus) {
+                filteredData = pasienData.filter(item => item.status.includes(currentStatus));
+            } else {
+                filteredData = [...pasienData];
+            }
+            
+            // Update paginasi
+            createPagination(filteredData.length, pageSize, 'pasien-pagination');
+            
+            // Update info yang ditampilkan
+            updatePaginationInfo(1, filteredData.length, 'showing-from', 'showing-to', 'total-entries');
+            
+            // Tampilkan halaman pertama
+            displayPasienPage(1);
+            
+            // Tampilkan notifikasi
+            toastr.info('Pencarian telah direset');
+        });
         
         // Set filter status default dan terapkan filter saat halaman dimuat
         $(document).ready(function() {
@@ -1346,7 +1539,11 @@
             $(`#${totalId}`).text(totalItems);
         }
         
-        // Fungsi untuk memperbarui tabel dengan data baru
+        // Tambahkan variabel untuk debounce dan timestamp refresh terakhir
+        let lastRefreshTime = 0;
+        let isRefreshPending = false;
+        
+        // Fungsi untuk memperbarui tabel dengan data baru - tambahkan proteksi format
         function updateTableWithNewData(response, activeTab) {
             console.log('Memperbarui tabel dengan data baru:', response);
             console.log('Data statistik yang diterima:', {
@@ -1362,177 +1559,107 @@
                              ') tidak sama dengan jumlah data (' + (response.dataCount || response.pasienRalan.length) + ')');
             }
             
+            // Update statistik untuk semua tab
+            $('#totalPasien .stat-value').text(response.statistik.total);
+            $('#selesaiPasien .stat-value').text(response.statistik.selesai);
+            $('#menungguPasien .stat-value').text(response.statistik.menunggu);
+            
+            // Tambahkan efek highlight pada statistik yang diperbarui
+            $('#totalPasien, #selesaiPasien, #menungguPasien').addClass('stat-updated');
+            setTimeout(function() {
+                $('#totalPasien, #selesaiPasien, #menungguPasien').removeClass('stat-updated');
+            }, 2000);
+            
             if (activeTab === 'pasien') {
-                // Perbarui data pasien ralan
-                const newPasienData = response.pasienRalan;
-                
-                // Debug jumlah data
-                console.log('Menerima ' + newPasienData.length + ' data pasien');
-                
-                // Kosongkan tabel
-                $('#tablePasienRalan tbody').empty();
-                
-                // Simpan data baru
-                pasienData = [];
-                
-                // Tambahkan data baru ke tabel
-                newPasienData.forEach(function(row) {
-                    // Gunakan fungsi helper untuk membuat URL
-                    const pemeriksaanUrl = generatePemeriksaanUrl(row.no_rawat, row.no_rkm_medis);
-                    
-                    // Tentukan ikon untuk nama pasien
-                    let nameIcon = 'fa-user-circle';
-                    let nameClass = 'name-default';
-                    
-                    // Tentukan status badge
-                    const statusBadge = `
-                        <span class="status-badge ${row.stts === 'Sudah' ? 'completed' : 'pending'}">
-                            ${row.stts}
-                        </span>
-                    `;
-                    
-                    // Buat HTML untuk baris
-                    const rowHtml = `
-                        <tr ${row.diagnosa_utama ? 'class="completed"' : ''}>
-                            <td>${row.no_reg}</td>
-                            <td>
-                                <a href="${pemeriksaanUrl}" class="patient-name">
-                                    <i class="fas ${nameIcon} mr-1" id="icon-${row.no_reg}"></i>
-                                    <span class="patient-fullname ${nameClass}">${row.nm_pasien}</span>
-                                </a>
-                            </td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" 
-                                            id="dropdownMenu-${row.no_rawat}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        ${row.no_rawat}
-                                    </button>
-                                    <div class="dropdown-menu" aria-labelledby="dropdownMenu-${row.no_rawat}">
-                                        <a href="/ilp/dewasa/${row.no_rawat}" class="dropdown-item">
-                                            <i class="fas fa-file-medical mr-2 text-primary"></i> Form ILP Dewasa
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                ${row.no_tlp ? `<span class="text-muted"><i class="fas fa-phone-alt mr-1"></i> ${row.no_tlp}</span>` : '<span class="text-muted">-</span>'}
-                            </td>
-                            <td>
-                                <span class="d-flex align-items-center"><i class="fas fa-user-md mr-2 text-primary"></i> ${row.nm_dokter}</span>
-                            </td>
-                            <td>${statusBadge}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fas fa-bullhorn"></i> Aksi
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="javascript:void(0)" class="dropdown-item btn-panggil" 
-                                            data-no-reg="${row.no_reg}"
-                                            data-nama="${row.nm_pasien}"
-                                            data-poli="${row.nm_poli}"
-                                            data-no-rawat="${row.no_rawat}">
-                                            <i class="fas fa-volume-up mr-2"></i> Panggil Pasien
-                                        </a>
-                                        <a href="javascript:void(0)" class="dropdown-item btn-ulang-panggil"
-                                            data-no-reg="${row.no_reg}"
-                                            data-nama="${row.nm_pasien}"
-                                            data-poli="${row.nm_poli}"
-                                            data-no-rawat="${row.no_rawat}">
-                                            <i class="fas fa-redo mr-2"></i> Ulang Panggil
-                                        </a>
-                                        <a href="{{ route('pcare.form-pendaftaran', ['no_rkm_medis' => '${row.no_rkm_medis}', 'ts' => time(), 'clear_cache' => 'true']) }}" 
-                                           class="dropdown-item btn-daftar-pcare" 
-                                           data-no-rkm-medis="${row.no_rkm_medis}">
-                                           <i class="fas fa-clipboard-list mr-2"></i> Daftar Pcare
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    
-                    // Tambahkan ke DOM
-                    $('#tablePasienRalan tbody').append(rowHtml);
-                    
-                    // Tambahkan ke array data untuk pagination
-                    pasienData.push({
-                        no_reg: row.no_reg,
-                        nama: row.nm_pasien,
-                        no_rawat: row.no_rawat,
-                        telp: row.no_tlp || '-',
-                        dokter: row.nm_dokter,
-                        status: row.stts,
-                        html: rowHtml
-                    });
-                });
-                
-                // Inisialisasi ulang filter dan pagination
-                filteredData = [...pasienData];
-                currentPage = 1;
-                
-                // Update pagination
-                createPagination(filteredData.length, pageSize, 'pasien-pagination');
-                
-                // Tampilkan halaman pertama
-                displayPasienPage(1);
-                
-                // Terapkan kembali filter jika ada
-                const currentFilter = $('#filterStatus').val();
-                if (currentFilter) {
-                    filterAndDisplayPasien(currentFilter);
+                // Jika pencarian sedang aktif, jangan perbarui data tabel
+                if (isSearchActive) {
+                    console.log('Pencarian aktif, mempertahankan hasil pencarian.');
+                    // Hanya update statistik
+                    return;
                 }
                 
-                // Update total data pada UI
-                $('#total-entries').text(pasienData.length);
+                // Tampilkan notifikasi kecil di pojok kanan bawah
+                toastr.info('<i class="fas fa-sync-alt refresh-spin mr-2"></i> Data pasien diperbarui', '', {
+                    positionClass: 'toast-bottom-right',
+                    timeOut: 3000,
+                    closeButton: false,
+                    progressBar: false
+                });
+                
+                // Jika ada perubahan data yang signifikan, tampilkan indikator kecil di header
+                if (response.returnFullData) {
+                    // Tambahkan indikator refresh tanpa mengganggu
+                    const refreshIndicator = $('<div class="refresh-indicator"><i class="fas fa-sync-alt refresh-spin mr-1"></i> Data berubah - <a href="#" id="refreshNowLink">Muat ulang sekarang</a> atau tunggu auto-refresh</div>');
+                    if ($('.refresh-indicator').length === 0) {
+                        $('.ralan-header').append(refreshIndicator);
+                        refreshIndicator.fadeIn(300);
+                        
+                        // Tambahkan event handler untuk link refresh sekarang
+                        $('#refreshNowLink').on('click', function(e) {
+                            e.preventDefault();
+                            refreshIndicator.fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                            // Muat ulang halaman dengan cara yang halus
+                            $('#manualRefreshBtn').html('<i class="fas fa-sync-alt fa-spin"></i> Memperbarui...').prop('disabled', true);
+                            setTimeout(function() {
+                                window.location.reload(true);
+                            }, 500);
+                        });
+                        
+                        // Hilangkan indikator setelah 15 detik
+                        setTimeout(function() {
+                            refreshIndicator.fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                        }, 15000);
+                    }
+                }
+                
+                return;
             } else if (activeTab === 'rujuk') {
-                // Perbarui data rujukan internal
-                const newRujukData = response.rujukInternal;
-                
-                // Kosongkan tabel
-                $('#tableRujuk tbody').empty();
-                
-                // Array untuk menyimpan HTML baris
-                const rujukRows = [];
-                
-                // Tambahkan data baru ke tabel
-                newRujukData.forEach(function(row) {
-                    const encNoRawat = encodeURIComponent(btoa(row.no_rawat));
-                    const encNoRM = encodeURIComponent(btoa(row.no_rkm_medis));
-                    
-                    // Buat HTML untuk baris
-                    const rowHtml = `
-                        <tr>
-                            <td>${row.no_reg}</td>
-                            <td>${row.no_rkm_medis}</td>
-                            <td>
-                                <a href="{{url('ralan/rujuk-internal')}}?no_rawat=${encNoRawat}&no_rm=${encNoRM}" class="patient-name">
-                                    <i class="fas fa-user-circle mr-2"></i>
-                                    <span class="patient-fullname">${row.nm_pasien}</span>
-                                </a>
-                            </td>
-                            <td>
-                                <span class="d-flex align-items-center"><i class="fas fa-user-md mr-2 text-primary"></i> ${row.nm_dokter}</span>
-                            </td>
-                            <td>
-                                <span class="status-badge ${row.stts === 'Sudah' ? 'completed' : 'pending'}">
-                                    ${row.stts}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                    
-                    rujukRows.push(rowHtml);
+                // Tampilkan notifikasi kecil di pojok kanan bawah
+                toastr.info('<i class="fas fa-sync-alt refresh-spin mr-2"></i> Data rujukan diperbarui', '', {
+                    positionClass: 'toast-bottom-right',
+                    timeOut: 3000,
+                    closeButton: false,
+                    progressBar: false
                 });
                 
-                // Buat paginasi dan tampilkan halaman pertama
-                if (rujukRows.length > 0) {
-                    createPagination(rujukRows.length, pageSize, 'rujuk-pagination');
-                    displayRujukPage(1, rujukRows);
+                // Jika ada perubahan data yang signifikan, tampilkan indikator kecil di header
+                if (response.returnFullData) {
+                    // Tambahkan indikator refresh tanpa mengganggu
+                    const refreshIndicator = $('<div class="refresh-indicator"><i class="fas fa-sync-alt refresh-spin mr-1"></i> Data rujukan berubah - <a href="#" id="refreshNowLink">Muat ulang sekarang</a> atau tunggu auto-refresh</div>');
+                    if ($('.refresh-indicator').length === 0) {
+                        $('.ralan-header').append(refreshIndicator);
+                        refreshIndicator.fadeIn(300);
+                        
+                        // Tambahkan event handler untuk link refresh sekarang
+                        $('#refreshNowLink').on('click', function(e) {
+                            e.preventDefault();
+                            refreshIndicator.fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                            // Muat ulang halaman dengan cara yang halus
+                            $('#manualRefreshBtn').html('<i class="fas fa-sync-alt fa-spin"></i> Memperbarui...').prop('disabled', true);
+                            setTimeout(function() {
+                                window.location.reload(true);
+                            }, 500);
+                        });
+                        
+                        // Hilangkan indikator setelah 15 detik
+                        setTimeout(function() {
+                            refreshIndicator.fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                        }, 15000);
+                    }
                 }
+                
+                return;
             }
             
-            console.log('Tabel berhasil diperbarui. Tab aktif:', activeTab, 'Total data:', pasienData.length);
+            console.log('Tabel berhasil diperbarui. Tab aktif:', activeTab);
         }
         
         // Handler untuk tab changes
@@ -1552,6 +1679,35 @@
         // Counter untuk menghitung berapa kali status diperbarui
         let statusUpdateCounter = 0;
         
+        // Tambahkan variabel global untuk menandai sedang melihat detail
+        window.isViewingDetails = false;
+        
+        // Tambahkan event listener untuk mendeteksi navigasi ke halaman detail
+        $(document).on('click', '.patient-name', function(e) {
+            // Tandai sedang melihat detail
+            window.isViewingDetails = true;
+            
+            // Simpan URL yang akan dibuka
+            const targetUrl = $(this).attr('href');
+            
+            // Nonaktifkan auto refresh
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                console.log('Auto refresh dinonaktifkan karena navigasi ke halaman detail');
+            }
+            
+            // Cegah penutupan halaman saat navigasi dengan timeout
+            e.preventDefault();
+            
+            // Tambahkan toast notifikasi
+            toastr.info('Membuka halaman pemeriksaan...', '', {timeOut: 1500});
+            
+            // Navigasi ke URL target setelah delay kecil
+            setTimeout(function() {
+                window.location.href = targetUrl;
+            }, 100);
+        });
+        
         // Fungsi untuk mengatur auto-refresh
         function setupAutoRefresh() {
             // Hapus interval yang ada jika sudah diset
@@ -1559,10 +1715,13 @@
                 clearInterval(autoRefreshInterval);
             }
             
-            // Set interval untuk auto-refresh data setiap 5 detik
+            // Set interval untuk auto-refresh data setiap 60 detik (1 menit)
+            // Interval diperlambat secara signifikan untuk mengurangi beban server
             autoRefreshInterval = setInterval(function() {
-                refreshData(false); // regular refresh
-            }, 5000); // diperlambat menjadi 5 detik
+                if (!window.isViewingDetails && !isRefreshPending) {
+                    refreshData(false); // regular refresh
+                }
+            }, 60000); // diperlambat menjadi 60 detik (1 menit)
         }
         
         // Aktifkan auto refresh
@@ -1759,8 +1918,38 @@
             return `{{url('ralan/pemeriksaan')}}?${urlParams.toString()}`;
         }
         
-        // Fungsi untuk refresh data
+        // Fungsi untuk refresh data - dengan pengecekan lebih ketat
         function refreshData(forceRefresh = false) {
+            // Cek jika sedang dalam proses pencarian, jangan refresh
+            if (isSearchActive) {
+                console.log('Pencarian sedang aktif, refresh dibatalkan');
+                return;
+            }
+            
+            // Cek jika sedang dalam proses melihat detail, jangan refresh
+            if (window.isViewingDetails) {
+                console.log('Sedang melihat detail, refresh dibatalkan');
+                return;
+            }
+            
+            // Tambahkan debounce untuk mencegah multiple refresh bersamaan
+            if (isRefreshPending) {
+                console.log('Refresh sudah dalam proses, menunggu selesai');
+                return;
+            }
+            
+            // Periksa waktu terakhir refresh, jangan refresh jika belum 15 detik
+            // kecuali jika forceRefresh = true (refresh manual)
+            const currentTime = new Date().getTime();
+            if (!forceRefresh && (currentTime - lastRefreshTime < 15000)) {
+                console.log('Refresh terlalu cepat, dibatalkan. Silakan tunggu minimal 15 detik.');
+                return;
+            }
+            
+            // Set flag bahwa refresh sedang berjalan
+            isRefreshPending = true;
+            lastRefreshTime = currentTime;
+            
             // Tambahkan indikator loading
             $('.quick-stats').addClass('loading-stats');
             $('#manualRefreshBtn').addClass('rotating');
@@ -1771,7 +1960,7 @@
             // Tandai waktu request untuk monitoring
             const requestTime = new Date().getTime();
             
-            // Lakukan AJAX request untuk mendapatkan data terbaru
+            // Lakukan AJAX request untuk mendapatkan data terbaru dengan timeout yang lebih lama
             $.ajax({
                 url: '{{ route("ralan.refresh-data") }}',
                 method: 'GET',
@@ -1779,12 +1968,29 @@
                     tanggal: '{{ $tanggal }}',
                     _token: '{{ csrf_token() }}',
                     sort: currentSortOption,
-                    force: forceRefresh ? 1 : 0, // parameter untuk memaksa refresh
-                    last_count: pasienData.length, // kirim jumlah data saat ini untuk perbandingan di server
-                    request_time: requestTime
+                    force: forceRefresh ? 1 : 0,
+                    last_count: pasienData.length, 
+                    request_time: requestTime,
+                    last_refresh_time: lastRefreshTime
                 },
                 dataType: 'json',
+                timeout: 30000, // Tambahkan timeout 30 detik untuk memberikan waktu server merespon
                 success: function(response) {
+                    // Reset flag refresh pending
+                    isRefreshPending = false;
+                    
+                    // Periksa apakah pencarian diaktifkan selama menunggu response
+                    if (isSearchActive) {
+                        console.log('Pencarian aktif selama proses refresh, hanya update statistik');
+                        // Update statistik saja, jangan ubah data tabel
+                        if (response.success) {
+                            $('#totalPasien .stat-value').text(response.statistik.total);
+                            $('#selesaiPasien .stat-value').text(response.statistik.selesai);
+                            $('#menungguPasien .stat-value').text(response.statistik.menunggu);
+                        }
+                        return;
+                    }
+                    
                     const responseTime = new Date().getTime();
                     const elapsed = responseTime - requestTime;
                     
@@ -1837,6 +2043,9 @@
                     }
                 },
                 error: function(error) {
+                    // Reset flag refresh pending
+                    isRefreshPending = false;
+                    
                     console.error('Gagal memperbarui data:', error);
                     if (forceRefresh) {
                         toastr.error('Gagal memperbarui data: ' + error.statusText);

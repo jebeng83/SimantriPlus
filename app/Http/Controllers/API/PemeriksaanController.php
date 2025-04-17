@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\EnkripsiData;
+use Illuminate\Support\Facades\Log;
 
 class PemeriksaanController extends Controller
 {
@@ -156,6 +157,96 @@ EXT : Oedem -/-',
                 'data' => [],
                 'error_details' => env('APP_DEBUG') ? $e->getMessage() : null
             ], 500)->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+        }
+    }
+
+    public function save(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $data = $request->all();
+            
+            // Log data yang akan disimpan
+            Log::info('Menyimpan data pemeriksaan', [
+                'no_rawat' => $data['no_rawat'],
+                'tgl_perawatan' => $data['tgl_perawatan']
+            ]);
+
+            // Data untuk pemeriksaan_ralan
+            $pemeriksaanData = [
+                'no_rawat' => substr($data['no_rawat'], 0, 17),
+                'tgl_perawatan' => $data['tgl_perawatan'],
+                'jam_rawat' => $data['jam_rawat'],
+                'suhu_tubuh' => substr($data['suhu_tubuh'] ?? '', 0, 5),
+                'tensi' => substr($data['tensi'] ?? '', 0, 8),
+                'nadi' => substr($data['nadi'] ?? '', 0, 3),
+                'respirasi' => substr($data['respirasi'] ?? '', 0, 3),
+                'tinggi' => substr($data['tinggi'] ?? '', 0, 5),
+                'berat' => substr($data['berat'] ?? '', 0, 5),
+                'spo2' => substr($data['spo2'] ?? '', 0, 3),
+                'gcs' => substr($data['gcs'] ?? '', 0, 10),
+                'kesadaran' => $data['kesadaran'] ?? 'Compos Mentis',
+                'keluhan' => substr($data['keluhan'] ?? '', 0, 2000),
+                'pemeriksaan' => substr($data['pemeriksaan'] ?? '', 0, 2000),
+                'alergi' => substr($data['alergi'] ?? '', 0, 80),
+                'lingkar_perut' => substr($data['lingkar_perut'] ?? '', 0, 5),
+                'rtl' => substr($data['rtl'] ?? '', 0, 2000),
+                'penilaian' => substr($data['penilaian'] ?? '', 0, 2000),
+                'instruksi' => substr($data['instruksi'] ?? '', 0, 2000),
+                'evaluasi' => substr($data['evaluasi'] ?? '', 0, 2000),
+                'nip' => substr($data['nip'] ?? '', 0, 20)
+            ];
+
+            // Cek apakah data sudah ada
+            $existingData = DB::table('pemeriksaan_ralan')
+                ->where('no_rawat', $data['no_rawat'])
+                ->where('tgl_perawatan', $data['tgl_perawatan'])
+                ->first();
+
+            if ($existingData) {
+                // Update data yang sudah ada
+                DB::table('pemeriksaan_ralan')
+                    ->where('no_rawat', $data['no_rawat'])
+                    ->where('tgl_perawatan', $data['tgl_perawatan'])
+                    ->update($pemeriksaanData);
+                
+                Log::info('Data pemeriksaan_ralan berhasil diupdate', [
+                    'no_rawat' => $data['no_rawat']
+                ]);
+            } else {
+                // Insert data baru
+                DB::table('pemeriksaan_ralan')->insert($pemeriksaanData);
+                
+                Log::info('Data pemeriksaan_ralan berhasil disimpan', [
+                    'no_rawat' => $data['no_rawat']
+                ]);
+            }
+
+            // Update status pasien menjadi 'Sudah'
+            // DB::table('reg_periksa')
+            //     ->where('no_rawat', $data['no_rawat'])
+            //     ->update(['stts' => 'Sudah']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data pemeriksaan berhasil disimpan'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Gagal menyimpan data pemeriksaan', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data pemeriksaan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

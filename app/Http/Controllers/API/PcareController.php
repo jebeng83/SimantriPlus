@@ -561,7 +561,48 @@ class PcareController extends Controller
                 'raw_input' => $request->all()
             ]);
             
-            // Validasi input
+            // Penanganan khusus untuk Kunjungan Sehat dari fungsi daftarKunjunganSehat()
+            if (isset($request->kunjSakit) && $request->kunjSakit === false && 
+                isset($request->noKartu) && !isset($request->no_rawat) && !isset($request->no_rkm_medis) && 
+                isset($request->keluhan) && $request->keluhan === 'Konsultasi Kesehatan') {
+                
+                \Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
+                
+                // Persiapkan data untuk dikirim ke PCare (minimal yang diperlukan)
+                $dataRequest = [
+                    'kdProviderPeserta' => $request->kdProviderPeserta ?? '11251616',
+                    'tglDaftar' => $request->tglDaftar,
+                    'noKartu' => $request->noKartu,
+                    'kdPoli' => $request->kdPoli ?? '021',
+                    'keluhan' => $request->keluhan ?? 'Konsultasi Kesehatan',
+                    'kunjSakit' => false,
+                    'sistole' => $request->sistole ?? '0',
+                    'diastole' => $request->diastole ?? '0',
+                    'beratBadan' => $request->beratBadan ?? '0',
+                    'tinggiBadan' => $request->tinggiBadan ?? '0',
+                    'respRate' => $request->respRate ?? '0',
+                    'lingkarPerut' => $request->lingkarPerut ?? '0',
+                    'heartRate' => $request->heartRate ?? '0',
+                    'rujukBalik' => $request->rujukBalik ?? '0',
+                    'kdTkp' => $request->kdTkp ?? '10'
+                ];
+                
+                \Log::info('PCare Kunjungan Sehat - Request Data', [
+                    'data' => $dataRequest
+                ]);
+                
+                // Kirim request ke PCare dengan Content-Type text/plain
+                $response = $this->requestPcare('pendaftaran', 'POST', $dataRequest, 'text/plain');
+                
+                \Log::info('PCare Kunjungan Sehat - Response', [
+                    'metaData' => $response['metaData'] ?? null,
+                    'response' => $response['response'] ?? null
+                ]);
+                
+                return response()->json($response);
+            }
+            
+            // Validasi input (untuk pendaftaran normal)
             $validator = \Validator::make($request->all(), [
                 'no_rawat' => 'required|string',
                 'no_rkm_medis' => 'required|string',
@@ -616,21 +657,21 @@ class PcareController extends Controller
 
             // Persiapkan data untuk dikirim ke PCare
             $dataRequest = [
-                'kdProviderPeserta' => $request->kdProviderPeserta,
+                'kdProviderPeserta' => substr($request->kdProviderPeserta ?? '', 0, 15),
                 'tglDaftar' => $request->tglDaftar,
-                'noKartu' => $request->noKartu,
-                'kdPoli' => $request->kdPoli,
-                'keluhan' => $request->keluhan ?: null,
+                'noKartu' => substr($request->noKartu ?? '', 0, 25),
+                'kdPoli' => substr($request->kdPoli ?? '', 0, 5),
+                'keluhan' => substr($request->keluhan ?: '', 0, 400),
                 'kunjSakit' => $kunjSakit,
-                'sistole' => (int) $request->sistole,
-                'diastole' => (int) $request->diastole,
-                'beratBadan' => (int) $request->beratBadan,
-                'tinggiBadan' => (int) $request->tinggiBadan,
-                'respRate' => (int) $request->respRate,
-                'lingkarPerut' => (int) $request->lingkar_perut,
-                'heartRate' => (int) $request->heartRate,
-                'rujukBalik' => (int) $request->rujukBalik,
-                'kdTkp' => $request->kdTkp
+                'sistole' => substr($request->sistole ?? '120', 0, 3),
+                'diastole' => substr($request->diastole ?? '80', 0, 3),
+                'beratBadan' => substr($request->beratBadan ?? '60', 0, 5),
+                'tinggiBadan' => substr($request->tinggiBadan ?? '165', 0, 5),
+                'respRate' => substr($request->respRate ?? '20', 0, 3),
+                'lingkarPerut' => substr($request->lingkar_perut ?? '80', 0, 5),
+                'heartRate' => substr($request->heartRate ?? '80', 0, 3),
+                'rujukBalik' => substr($request->rujukBalik ?? '0', 0, 3),
+                'kdTkp' => substr($request->kdTkp ?? '10', 0, 5)
             ];
 
             // Log data yang akan dikirim ke PCare
@@ -738,79 +779,154 @@ class PcareController extends Controller
                 'no_rkm_medis' => $data['no_rkm_medis']
             ]);
 
-            // Prioritaskan mencari no_rawat dari tabel reg_periksa berdasarkan no_rkm_medis
-            $rawatTerbaru = DB::table('reg_periksa')
+            // Cek apakah pasien sudah terdaftar hari ini
+            $today = date('Y-m-d');
+            $pendaftaranPasienHariIni = DB::table('reg_periksa')
+                ->where('tgl_registrasi', $today)
                 ->where('no_rkm_medis', $data['no_rkm_medis'])
-                ->orderBy('tgl_registrasi', 'desc')
-                ->orderBy('jam_reg', 'desc')
+                ->orderBy('no_rawat', 'desc')
                 ->first();
-            
-            if ($rawatTerbaru) {
-                $data['no_rawat'] = $rawatTerbaru->no_rawat;
-                \Log::info('Menggunakan no_rawat terbaru yang ditemukan untuk pasien', [
-                    'no_rawat_baru' => $data['no_rawat']
+                
+            if ($pendaftaranPasienHariIni) {
+                // Jika pasien sudah terdaftar hari ini, prioritaskan menggunakan pendaftaran yang sudah ada
+                $data['no_rawat'] = $pendaftaranPasienHariIni->no_rawat;
+                \Log::info('Pasien sudah terdaftar hari ini, menggunakan pendaftaran yang sudah ada', [
+                    'no_rawat' => $data['no_rawat'],
+                    'no_rkm_medis' => $data['no_rkm_medis'],
+                    'kd_poli' => $pendaftaranPasienHariIni->kd_poli,
+                    'tgl_registrasi' => $pendaftaranPasienHariIni->tgl_registrasi
                 ]);
+                
+                // Lanjut ke proses simpan data PCare tanpa membuat entry baru di reg_periksa
             } else {
-                // Jika tidak ditemukan pendaftaran untuk pasien ini, periksa format no_rawat yang dikirim
-                if (!preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d+$/', $data['no_rawat'])) {
-                    \Log::warning('Format no_rawat tidak valid dan tidak ada pendaftaran untuk pasien ini', [
-                        'no_rawat_invalid' => $data['no_rawat']
-                    ]);
-                    
-                    // Buat no_rawat baru dengan format tanggal hari ini
-                    $today = date('Y/m/d');
-                    $data['no_rawat'] = $today . '/000001'; // Default nomor urut
-                    \Log::warning('Membuat format default no_rawat', [
-                        'no_rawat_default' => $data['no_rawat']
-                    ]);
-                }
-            }
-            
-            // Periksa kembali apakah no_rawat yang akan digunakan ada di tabel reg_periksa
-            $cekNoRawat = DB::table('reg_periksa')
-                ->where('no_rawat', $data['no_rawat'])
-                ->first();
-                
-            if (!$cekNoRawat) {
-                \Log::warning('No_rawat tidak ditemukan di reg_periksa, mencari no_rawat terbaru untuk pasien', [
-                    'no_rawat_invalid' => $data['no_rawat'],
-                    'no_rkm_medis' => $data['no_rkm_medis']
-                ]);
-                
-                // Jika no_rawat tidak valid, cari no_rawat terbaru dari pasien yang sama
+                // Jika pasien belum terdaftar hari ini, cari pendaftaran terbaru untuk pasien ini
                 $rawatTerbaru = DB::table('reg_periksa')
                     ->where('no_rkm_medis', $data['no_rkm_medis'])
                     ->orderBy('tgl_registrasi', 'desc')
                     ->orderBy('jam_reg', 'desc')
                     ->first();
                 
-                if (!$rawatTerbaru) {
-                    \Log::error('Tidak ditemukan data reg_periksa untuk pasien dengan no_rkm_medis', [
-                        'no_rkm_medis' => $data['no_rkm_medis']
-                    ]);
-                    
-                    // Coba cari apakah ada pendaftaran di hari ini
-                    $today = date('Y-m-d');
-                    $pendaftaranHariIni = DB::table('reg_periksa')
-                        ->where('tgl_registrasi', $today)
-                        ->orderBy('no_rawat', 'desc')
-                        ->first();
-                    
-                    if ($pendaftaranHariIni) {
-                        // Buat no_rawat baru berdasarkan pola pendaftaran hari ini
-                        $formattedDate = date('Y/m/d');
-                        $lastNumber = substr($pendaftaranHariIni->no_rawat, -6);
-                        $newNumber = str_pad(intval($lastNumber) + 1, 6, '0', STR_PAD_LEFT);
-                        $data['no_rawat'] = $formattedDate . '/' . $newNumber;
+                if ($rawatTerbaru) {
+                    // Periksa apakah pendaftaran terbaru adalah hari ini
+                    if ($rawatTerbaru->tgl_registrasi == $today) {
+                        // Jika pendaftaran terbaru adalah hari ini, gunakan no_rawat tersebut
+                        $data['no_rawat'] = $rawatTerbaru->no_rawat;
+                        \Log::info('Menggunakan pendaftaran terbaru pasien hari ini', [
+                            'no_rawat' => $data['no_rawat'],
+                            'tgl_registrasi' => $rawatTerbaru->tgl_registrasi
+                        ]);
+                    } else {
+                        // Jika pendaftaran terbaru bukan hari ini, cari pendaftaran lain hari ini
+                        $pendaftaranHariIni = DB::table('reg_periksa')
+                            ->where('tgl_registrasi', $today)
+                            ->orderBy('no_rawat', 'desc')
+                            ->first();
                         
-                        \Log::info('Membuat no_rawat baru berdasarkan pendaftaran hari ini', [
+                        if ($pendaftaranHariIni) {
+                            // Buat no_rawat baru berdasarkan pendaftaran lain hari ini
+                            $formattedDate = date('Y/m/d');
+                            $lastNumber = substr($pendaftaranHariIni->no_rawat, -6);
+                            $newNumber = str_pad(intval($lastNumber) + 1, 6, '0', STR_PAD_LEFT);
+                            $data['no_rawat'] = $formattedDate . '/' . $newNumber;
+                            
+                            \Log::info('Membuat no_rawat baru untuk pasien hari ini', [
+                                'no_rawat_baru' => $data['no_rawat']
+                            ]);
+                            
+                            // Buat pendaftaran baru di reg_periksa
+                            DB::table('reg_periksa')->insert([
+                                'no_rawat' => $data['no_rawat'],
+                                'no_reg' => $newNumber,
+                                'tgl_registrasi' => $today,
+                                'jam_reg' => date('H:i:s'),
+                                'kd_dokter' => $data['kd_dokter'] ?? '1',
+                                'no_rkm_medis' => $data['no_rkm_medis'],
+                                'kd_poli' => 'U0002', // Default ke poli umum
+                                'p_jawab' => 'BPJS',
+                                'almt_pj' => '-',
+                                'hubunganpj' => '-',
+                                'biaya_reg' => 0,
+                                'stts' => 'Belum',
+                                'stts_daftar' => 'Lama',
+                                'status_lanjut' => ($data['kdTkp'] == '20') ? 'Ranap' : 'Ralan',
+                                'kd_pj' => 'BPJ',
+                                'umurdaftar' => 0,
+                                'sttsumur' => 'Th',
+                                'status_bayar' => 'Belum Bayar',
+                                'status_poli' => 'Lama'
+                            ]);
+                            
+                            \Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
+                                'no_rawat' => $data['no_rawat']
+                            ]);
+                        } else {
+                            // Jika tidak ada pendaftaran lain hari ini, gunakan format default
+                            $formattedDate = date('Y/m/d');
+                            $data['no_rawat'] = $formattedDate . '/000001';
+                            
+                            \Log::info('Membuat no_rawat default untuk pendaftaran baru', [
+                                'no_rawat_default' => $data['no_rawat']
+                            ]);
+                            
+                            // Buat pendaftaran baru dengan format default
+                            DB::table('reg_periksa')->insert([
+                                'no_rawat' => $data['no_rawat'],
+                                'no_reg' => '000001',
+                                'tgl_registrasi' => $today,
+                                'jam_reg' => date('H:i:s'),
+                                'kd_dokter' => $data['kd_dokter'] ?? '1',
+                                'no_rkm_medis' => $data['no_rkm_medis'],
+                                'kd_poli' => 'U0002', // Default ke poli umum
+                                'p_jawab' => 'BPJS',
+                                'almt_pj' => '-',
+                                'hubunganpj' => '-',
+                                'biaya_reg' => 0,
+                                'stts' => 'Belum',
+                                'stts_daftar' => 'Lama',
+                                'status_lanjut' => ($data['kdTkp'] == '20') ? 'Ranap' : 'Ralan',
+                                'kd_pj' => 'BPJ',
+                                'umurdaftar' => 0,
+                                'sttsumur' => 'Th',
+                                'status_bayar' => 'Belum Bayar',
+                                'status_poli' => 'Lama'
+                            ]);
+                            
+                            \Log::info('Entry default dibuat di reg_periksa', [
+                                'no_rawat' => $data['no_rawat']
+                            ]);
+                        }
+                    }
+                } else {
+                    // Jika pasien belum pernah terdaftar, gunakan format no_rawat yang dikirim
+                    // atau buat nomor baru jika format tidak valid
+                    if (!preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d+$/', $data['no_rawat'])) {
+                        // Format no_rawat tidak valid, buat yang baru
+                        $pendaftaranHariIni = DB::table('reg_periksa')
+                            ->where('tgl_registrasi', $today)
+                            ->orderBy('no_rawat', 'desc')
+                            ->first();
+                        
+                        if ($pendaftaranHariIni) {
+                            // Buat no_rawat baru berdasarkan pendaftaran hari ini
+                            $formattedDate = date('Y/m/d');
+                            $lastNumber = substr($pendaftaranHariIni->no_rawat, -6);
+                            $newNumber = str_pad(intval($lastNumber) + 1, 6, '0', STR_PAD_LEFT);
+                            $data['no_rawat'] = $formattedDate . '/' . $newNumber;
+                        } else {
+                            // Jika tidak ada pendaftaran hari ini, buat nomor default
+                            $formattedDate = date('Y/m/d');
+                            $data['no_rawat'] = $formattedDate . '/000001';
+                            $newNumber = '000001';
+                        }
+                        
+                        \Log::info('Format no_rawat tidak valid, membuat yang baru', [
                             'no_rawat_baru' => $data['no_rawat']
                         ]);
                         
-                        // Tambahkan entry di reg_periksa untuk mendukung foreign key
+                        // Buat entry baru di reg_periksa
                         DB::table('reg_periksa')->insert([
                             'no_rawat' => $data['no_rawat'],
-                            'no_reg' => $newNumber,
+                            'no_reg' => $newNumber ?? '000001',
                             'tgl_registrasi' => $today,
                             'jam_reg' => date('H:i:s'),
                             'kd_dokter' => $data['kd_dokter'] ?? '1',
@@ -830,22 +946,20 @@ class PcareController extends Controller
                             'status_poli' => 'Lama'
                         ]);
                         
-                        \Log::info('Entry baru dibuat di reg_periksa untuk mendukung foreign key', [
+                        \Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
                             'no_rawat' => $data['no_rawat']
                         ]);
-                    } else {
-                        throw new \Exception('Tidak dapat membuat no_rawat baru: tidak ditemukan pendaftaran hari ini');
                     }
-                } else {
-                    // Gunakan no_rawat terbaru
-                    $data['no_rawat'] = $rawatTerbaru->no_rawat;
-                    
-                    \Log::info('Menggunakan no_rawat terbaru untuk pasien', [
-                        'no_rawat_baru' => $data['no_rawat'],
-                        'tgl_registrasi' => $rawatTerbaru->tgl_registrasi,
-                        'status_lanjut' => $rawatTerbaru->status_lanjut
-                    ]);
                 }
+            }
+            
+            // Periksa kembali apakah no_rawat valid di reg_periksa
+            $cekNoRawat = DB::table('reg_periksa')
+                ->where('no_rawat', $data['no_rawat'])
+                ->first();
+                
+            if (!$cekNoRawat) {
+                throw new \Exception('No_rawat tidak valid dan tidak dapat dibuat: ' . $data['no_rawat']);
             }
 
             DB::beginTransaction();
@@ -899,24 +1013,24 @@ class PcareController extends Controller
             // Prepare data untuk insert/update
             $pendaftaranData = [
                 'tglDaftar' => $tglDaftarDB,
-                'no_rkm_medis' => $data['no_rkm_medis'],
-                'nm_pasien' => $data['nm_pasien'] ?? '',
-                'kdProviderPeserta' => $data['kdProviderPeserta'] ?? '',
-                'noKartu' => $data['noKartu'] ?? '',
-                'kdPoli' => $data['kdPoli'] ?? '',
-                'nmPoli' => $data['nmPoli'] ?? '',
-                'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
+                'no_rkm_medis' => substr($data['no_rkm_medis'] ?? '', 0, 15),
+                'nm_pasien' => substr($data['nm_pasien'] ?? '', 0, 40),
+                'kdProviderPeserta' => substr($data['kdProviderPeserta'] ?? '', 0, 15),
+                'noKartu' => substr($data['noKartu'] ?? '', 0, 25),
+                'kdPoli' => substr($data['kdPoli'] ?? '', 0, 5),
+                'nmPoli' => substr($data['nmPoli'] ?? '', 0, 50),
+                'keluhan' => substr($data['keluhan'] ?? 'Tidak Ada', 0, 400),
                 'kunjSakit' => $kunjSakit,
-                'sistole' => $data['sistole'] ?? '0',
-                'diastole' => $data['diastole'] ?? '0',
-                'beratBadan' => $data['beratBadan'] ?? '0',
-                'tinggiBadan' => $data['tinggiBadan'] ?? '0',
-                'respRate' => $data['respRate'] ?? '0',
-                'lingkar_perut' => $data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '0',
-                'heartRate' => $data['heartRate'] ?? '0',
-                'rujukBalik' => $data['rujukBalik'] ?? '0',
+                'sistole' => substr($data['sistole'] ?? '0', 0, 3),
+                'diastole' => substr($data['diastole'] ?? '0', 0, 3),
+                'beratBadan' => substr($data['beratBadan'] ?? '0', 0, 5),
+                'tinggiBadan' => substr($data['tinggiBadan'] ?? '0', 0, 5),
+                'respRate' => substr($data['respRate'] ?? '0', 0, 3),
+                'lingkar_perut' => substr($data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '', 0, 5),
+                'heartRate' => substr($data['heartRate'] ?? '0', 0, 3),
+                'rujukBalik' => substr($data['rujukBalik'] ?? '0', 0, 3),
                 'kdTkp' => $kdTkpLabel,
-                'noUrut' => $noUrut ?? '',
+                'noUrut' => substr($noUrut ?? '', 0, 5),
                 'status' => 'Terkirim'
             ];
             
@@ -968,13 +1082,13 @@ class PcareController extends Controller
                         $minimalData = [
                             'no_rawat' => $data['no_rawat'],
                             'tglDaftar' => $tglDaftarDB,
-                            'no_rkm_medis' => $data['no_rkm_medis'],
-                            'nm_pasien' => $data['nm_pasien'] ?? '-',
-                            'kdProviderPeserta' => $data['kdProviderPeserta'] ?? '-',
-                            'noKartu' => $data['noKartu'] ?? '-',
-                            'kdPoli' => $data['kdPoli'] ?? '-',
-                            'nmPoli' => $data['nmPoli'] ?? '-',
-                            'keluhan' => 'Tidak Ada',
+                            'no_rkm_medis' => substr($data['no_rkm_medis'] ?? '', 0, 15),
+                            'nm_pasien' => substr($data['nm_pasien'] ?? '-', 0, 40),
+                            'kdProviderPeserta' => substr($data['kdProviderPeserta'] ?? '-', 0, 15),
+                            'noKartu' => substr($data['noKartu'] ?? '-', 0, 25),
+                            'kdPoli' => substr($data['kdPoli'] ?? '-', 0, 5),
+                            'nmPoli' => substr($data['nmPoli'] ?? '-', 0, 50),
+                            'keluhan' => substr('Tidak Ada', 0, 400),
                             'kunjSakit' => 'Kunjungan Sakit',
                             'sistole' => '0',
                             'diastole' => '0',
@@ -985,7 +1099,7 @@ class PcareController extends Controller
                             'heartRate' => '0',
                             'rujukBalik' => '0',
                             'kdTkp' => '10 Rawat Jalan',
-                            'noUrut' => $noUrut ?? '-',
+                            'noUrut' => substr($noUrut ?? '-', 0, 5),
                             'status' => 'Terkirim'
                         ];
                         
@@ -1088,27 +1202,27 @@ class PcareController extends Controller
                 }
                 
                 $pemeriksaanData = [
-                    'no_rawat' => $data['no_rawat'],
+                    'no_rawat' => substr($data['no_rawat'], 0, 17),
                     'tgl_perawatan' => $tglDaftarDB,
                     'jam_rawat' => date('H:i:s'),
-                    'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
-                    'tensi' => $data['sistole'].'/'.$data['diastole'],
-                    'nadi' => $data['heartRate'] ?? '',
-                    'respirasi' => $data['respRate'] ?? '',
-                    'tinggi' => $data['tinggiBadan'] ?? '',
-                    'berat' => $data['beratBadan'] ?? '',
-                    'spo2' => '',
-                    'gcs' => '',
-                    'kesadaran' => 'Compos Mentis',
-                    'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
-                    'pemeriksaan' => '',
-                    'alergi' => isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '',
-                    'lingkar_perut' => $data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '',
-                    'rtl' => isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '',
-                    'penilaian' => $data['prognosa'] ?? '',
-                    'instruksi' => '',
-                    'evaluasi' => '',
-                    'nip' => $nip
+                    'suhu_tubuh' => substr($data['suhu_tubuh'] ?? '', 0, 5),
+                    'tensi' => substr(($data['sistole'].'/'.$data['diastole']), 0, 8),
+                    'nadi' => substr($data['heartRate'] ?? '', 0, 3),
+                    'respirasi' => substr($data['respRate'] ?? '', 0, 3),
+                    'tinggi' => substr($data['tinggiBadan'] ?? '', 0, 5),
+                    'berat' => substr($data['beratBadan'] ?? '', 0, 5),
+                    'spo2' => substr($data['spo2'] ?? '', 0, 3),
+                    'gcs' => substr($data['gcs'] ?? '', 0, 10),
+                    'kesadaran' => $data['kesadaran'] ?? 'Compos Mentis',
+                    'keluhan' => substr($data['keluhan'] ?? 'Tidak Ada', 0, 2000),
+                    'pemeriksaan' => substr($data['pemeriksaan'] ?? '', 0, 2000),
+                    'alergi' => substr(isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '', 0, 80),
+                    'lingkar_perut' => substr($data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '', 0, 5),
+                    'rtl' => substr(isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '', 0, 2000),
+                    'penilaian' => substr($data['prognosa'] ?? '', 0, 2000),
+                    'instruksi' => substr($data['instruksi'] ?? '', 0, 2000),
+                    'evaluasi' => substr($data['evaluasi'] ?? '', 0, 2000),
+                    'nip' => substr($nip, 0, 20)
                 ];
                 
                 \Log::info('Data pemeriksaan_ralan yang akan disimpan', [
@@ -1224,26 +1338,27 @@ class PcareController extends Controller
                 }
                 
                 $pemeriksaanData = [
-                    'no_rawat' => $data['no_rawat'],
+                    'no_rawat' => substr($data['no_rawat'], 0, 17),
                     'tgl_perawatan' => $tglDaftarDB,
                     'jam_rawat' => date('H:i:s'),
-                    'suhu_tubuh' => $data['suhu_tubuh'] ?? '',
-                    'tensi' => $data['sistole'].'/'.$data['diastole'],
-                    'nadi' => $data['heartRate'] ?? '',
-                    'respirasi' => $data['respRate'] ?? '',
-                    'tinggi' => $data['tinggiBadan'] ?? '',
-                    'berat' => $data['beratBadan'] ?? '',
-                    'spo2' => '0',
-                    'gcs' => '',
-                    'kesadaran' => 'Compos Mentis',
-                    'keluhan' => $data['keluhan'] ?? 'Tidak Ada',
-                    'pemeriksaan' => '',
-                    'alergi' => '',
-                    'penilaian' => 'Pemeriksaan dari PCare',
-                    'rtl' => 'Pemeriksaan dari PCare',
-                    'instruksi' => 'Pemeriksaan dari PCare',
-                    'evaluasi' => 'Pemeriksaan dari PCare',
-                    'nip' => $nip
+                    'suhu_tubuh' => substr($data['suhu_tubuh'] ?? '', 0, 5),
+                    'tensi' => substr(($data['sistole'].'/'.$data['diastole']), 0, 8),
+                    'nadi' => substr($data['heartRate'] ?? '', 0, 3),
+                    'respirasi' => substr($data['respRate'] ?? '', 0, 3),
+                    'tinggi' => substr($data['tinggiBadan'] ?? '', 0, 5),
+                    'berat' => substr($data['beratBadan'] ?? '', 0, 5),
+                    'spo2' => substr($data['spo2'] ?? '', 0, 3),
+                    'gcs' => substr($data['gcs'] ?? '', 0, 10),
+                    'kesadaran' => $data['kesadaran'] ?? 'Compos Mentis',
+                    'keluhan' => substr($data['keluhan'] ?? 'Tidak Ada', 0, 2000),
+                    'pemeriksaan' => substr($data['pemeriksaan'] ?? '', 0, 2000),
+                    'alergi' => substr(isset($data['alergi']) ? 'Makanan : ' . ($data['alergiMakanan'] ?? '-') . ', Udara : ' . ($data['alergiUdara'] ?? '-') . ', Obat : ' . ($data['alergiObat'] ?? '-') : '', 0, 80),
+                    'lingkar_perut' => substr($data['lingkar_perut'] ?? $data['lingkarPerut'] ?? '', 0, 5),
+                    'rtl' => substr(isset($data['terapiObat']) || isset($data['terapiNonObat']) ? 'Terapi Obat : ' . ($data['terapiObat'] ?? '-') . ', Terapi Non Obat : ' . ($data['terapiNonObat'] ?? '-') . ', BMHP : ' . ($data['BMHP'] ?? '-') : '', 0, 2000),
+                    'penilaian' => substr($data['prognosa'] ?? '', 0, 2000),
+                    'instruksi' => substr($data['instruksi'] ?? '', 0, 2000),
+                    'evaluasi' => substr($data['evaluasi'] ?? '', 0, 2000),
+                    'nip' => substr($nip, 0, 20)
                 ];
                 
                 \Log::info('Data pemeriksaan_ranap yang akan disimpan', [

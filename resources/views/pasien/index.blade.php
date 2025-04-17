@@ -366,6 +366,7 @@
 @section('plugins.Chartjs', true)
 
 @section('css')
+@livewireStyles
 <style>
     /* Animasi dan efek visual */
     .animated-icon {
@@ -644,6 +645,7 @@
 @stop
 
 @section('js')
+@livewireScripts
 <script>
     $(document).ready(function() {
         // Animasi untuk elemen saat halaman dimuat

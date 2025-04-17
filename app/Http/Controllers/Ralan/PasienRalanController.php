@@ -224,11 +224,18 @@ class PasienRalanController extends Controller
         ]);
         
         // Hitung jumlah di database untuk log
-        $count = DB::table('reg_periksa')
-            ->where('reg_periksa.kd_poli', $kd_poli)
-            ->where('tgl_registrasi', $tanggal)
-            ->where('reg_periksa.kd_dokter', $kd_dokter)
-            ->count();
+        $count = DB::table('reg_periksa');
+        
+        // Pengecualian untuk admin dan poli khusus
+        $isAdminWithAllPoli = ($kd_dokter === 'admin' && $kd_poli === 'U0011');
+        
+        if (!$isAdminWithAllPoli) {
+            $count = $count->where('reg_periksa.kd_poli', $kd_poli)
+                            ->where('reg_periksa.kd_dokter', $kd_dokter);
+        }
+        
+        $count = $count->where('tgl_registrasi', $tanggal)
+                      ->count();
             
         $this->debugLog('Total record di reg_periksa: ' . $count);
         
@@ -238,10 +245,14 @@ class PasienRalanController extends Controller
             ->join('dokter', 'dokter.kd_dokter', '=', 'reg_periksa.kd_dokter')
             ->join('poliklinik', 'poliklinik.kd_poli', '=', 'reg_periksa.kd_poli')
             ->leftJoin('resume_pasien', 'reg_periksa.no_rawat', '=', 'resume_pasien.no_rawat')
-            ->where('reg_periksa.kd_poli', $kd_poli)
-            ->where('tgl_registrasi', $tanggal)
-            ->where('reg_periksa.kd_dokter', $kd_dokter);
-            
+            ->where('tgl_registrasi', $tanggal);
+        
+        // Jika bukan admin dengan semua poli, terapkan filter poli dan dokter
+        if (!$isAdminWithAllPoli) {
+            $query = $query->where('reg_periksa.kd_poli', $kd_poli)
+                          ->where('reg_periksa.kd_dokter', $kd_dokter);
+        }
+        
         // Log query SQL untuk debugging - hanya jika debug sangat detail diperlukan
         if ($this->DEBUG) {
             $sql = $query->toSql();
