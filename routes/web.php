@@ -9,6 +9,7 @@ use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
 use App\Http\Controllers\MobileJknController;
+use App\Http\Controllers\SkriningController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +42,33 @@ Route::get('/infokesehatan', function () {
 Route::get('/skriningbpjs', function () {
     return redirect()->away('https://webskrining.bpjs-kesehatan.go.id/skrining');
 });
+
+// Route untuk form skrining minimal tanpa autentikasi
+Route::get('/skrining', [App\Http\Controllers\SkriningController::class, 'index'])->name('skrining.minimal');
+
+// Route untuk menyimpan data skrining tanpa autentikasi
+Route::post('/skrining/store', function(Illuminate\Http\Request $request) {
+    // Untuk sementara hanya redirect kembali dengan pesan sukses
+    return redirect()->back()->with('success', 'Data skrining berhasil disimpan');
+})->name('skrining.store');
+
+// Route untuk mendapatkan data pasien berdasarkan NIK
+Route::get('/pasien/get-by-nik', function(Illuminate\Http\Request $request) {
+    $nik = $request->input('nik');
+    $pasien = DB::table('pasien')->where('no_ktp', $nik)->first();
+    
+    if ($pasien) {
+        return response()->json([
+            'status' => 'success',
+            'data' => $pasien
+        ]);
+    } else {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Pasien tidak ditemukan'
+        ]);
+    }
+})->name('pasien.get-by-nik');
 
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
@@ -75,6 +103,16 @@ Route::get('/berkas-retensi/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanR
 // Rute yang memerlukan autentikasi
 Route::middleware(['web', 'loginauth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    
+    // Route untuk skrining CKG
+    Route::get('/skrining-ckg', function() {
+        return view('skrining-ckg');
+    })->name('skrining.ckg');
+    
+    // Route untuk form skrining sederhana
+    Route::get('/skrining-sederhana', function() {
+        return view('form-skrining-sederhana');
+    })->name('skrining.sederhana');
     
     // Route untuk data pasien
     Route::prefix('data-pasien')->group(function () {
@@ -288,3 +326,29 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 
 // Rute pengujian dokter spesifik
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
+
+// Route untuk API skrining (tanpa autentikasi)
+Route::post('/api/skrining/demografi', [App\Http\Controllers\SkriningController::class, 'simpanDemografi'])
+    ->name('api.skrining.demografi')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/tekanan-darah', [App\Http\Controllers\SkriningController::class, 'simpanTekananDarah'])
+    ->name('api.skrining.tekanan-darah')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/perilaku-merokok', [App\Http\Controllers\SkriningController::class, 'simpanPerilakuMerokok'])
+    ->name('api.skrining.perilaku-merokok')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/kesehatan-jiwa', [App\Http\Controllers\SkriningController::class, 'simpanKesehatanJiwa'])
+    ->name('api.skrining.kesehatan-jiwa')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/simpan', [App\Http\Controllers\SkriningController::class, 'simpanSkrining'])
+    ->name('api.skrining.simpan')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Route untuk debugging API
+Route::any('/api/skrining/debug', [App\Http\Controllers\SkriningController::class, 'debug'])
+    ->name('api.skrining.debug')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);

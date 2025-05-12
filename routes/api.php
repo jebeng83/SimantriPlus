@@ -16,6 +16,7 @@ use App\Http\Antrol\AddAntreanController;
 use App\Http\Antrol\PanggilAntreanController;
 use App\Http\Controllers\PasienController;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\SkriningController;
 
 /*
 |--------------------------------------------------------------------------
@@ -329,3 +330,18 @@ Route::get('/dokter', function () {
 
 // Route untuk pemeriksaan
 Route::post('/pemeriksaan/save', [PemeriksaanController::class, 'save']);
+
+// Route untuk menyimpan data skrining Hati, Kesehatan Jiwa, dan Kanker Leher Rahim
+Route::post('/skrining/simpan', [SkriningController::class, 'simpanSkrining'])->name('api.skrining.simpan');
+Route::post('/skrining/demografi', [SkriningController::class, 'simpanDemografi'])->name('api.skrining.demografi');
+Route::post('/skrining/tekanan-darah', [SkriningController::class, 'simpanTekananDarah'])->name('api.skrining.tekanan-darah');
+Route::post('/skrining/perilaku-merokok', [SkriningController::class, 'simpanPerilakuMerokok'])->name('api.skrining.perilaku-merokok');
+Route::post('/skrining/hati', [SkriningController::class, 'simpanHati'])->name('api.skrining.hati');
+Route::post('/skrining/kesehatan-jiwa', [SkriningController::class, 'simpanKesehatanJiwa'])->name('api.skrining.kesehatan-jiwa');
+Route::post('/skrining/kanker-leher-rahim', [SkriningController::class, 'simpanKankerLeherRahim'])->name('api.skrining.kanker-leher-rahim');
+Route::post('/skrining/aktivitas-fisik', [SkriningController::class, 'simpanAktivitasFisik'])->name('api.skrining.aktivitas-fisik');
+Route::post('/skrining/tuberkulosis', [SkriningController::class, 'simpanTuberkulosis'])->name('api.skrining.tuberkulosis');
+Route::post('/skrining/antropometri-lab', [SkriningController::class, 'simpanAntropometriLab'])->name('api.skrining.antropometri-lab');
+Route::post('/skrining/skrining-indra', [SkriningController::class, 'simpanSkriningIndra'])->name('api.skrining.skrining-indra');
+Route::post('/skrining/skrining-gigi', [SkriningController::class, 'simpanSkriningGigi'])->name('api.skrining.skrining-gigi');
+Route::post('/skrining/cek-nik', [SkriningController::class, 'cekNikSkrining'])->name('api.skrining.cek-nik');

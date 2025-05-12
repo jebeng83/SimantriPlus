@@ -46,13 +46,13 @@ class PasienRalanController extends Controller
     {
         // Cek dan log status session
         $sessionOk = $this->checkSessionStatus();
-        \Log::info('PasienRalanController index called - session status: ' . ($sessionOk ? 'OK' : 'Invalid'));
+        Log::info('PasienRalanController index called - session status: ' . ($sessionOk ? 'OK' : 'Invalid'));
         
         // Jika session belum terisi poliklinik, gunakan default
         if (!session()->has('kd_poli')) {
             // Default ke poli umum jika belum ada yang dipilih
             session()->put('kd_poli', 'UMUM');
-            \Log::info('Setting default kd_poli to UMUM');
+            Log::info('Setting default kd_poli to UMUM');
         }
 
         $kdPoli = session('kd_poli');
@@ -71,7 +71,7 @@ class PasienRalanController extends Controller
         $poliklinik = DB::table('poliklinik')->where('kd_poli', $kdPoli)->first();
         $nmPoli = $poliklinik ? $poliklinik->nm_poli : 'Poliklinik';
         
-        \Log::info('PasienRalanController preparing view with params: ', [
+        Log::info('PasienRalanController preparing view with params: ', [
             'kd_poli' => $kdPoli,
             'kd_dokter' => $kdDokter,
             'tanggal' => $tanggal
@@ -113,14 +113,14 @@ class PasienRalanController extends Controller
         }
 
         // Log informasi data
-        \Log::debug('Total data pasien pada index: ' . $data->count());
+        Log::debug('Total data pasien pada index: ' . $data->count());
 
         // Hitung statistik dari $data yang sama untuk tampilan
         $totalPasien = $data->count();
         $selesai = $data->where('stts', 'Sudah')->count();
         $menunggu = $data->where('stts', 'Belum')->count();
 
-        \Log::debug('Statistik dari view: Total=' . $totalPasien . ', Selesai=' . $selesai . ', Menunggu=' . $menunggu);
+        Log::debug('Statistik dari view: Total=' . $totalPasien . ', Selesai=' . $selesai . ', Menunggu=' . $menunggu);
 
         return view('ralan.pasien-ralan', [
             'nm_poli' => $this->getPoliklinik($kdPoli),
@@ -146,7 +146,7 @@ class PasienRalanController extends Controller
     private function debugLog($message, array $context = [])
     {
         if ($this->DEBUG) {
-            \Log::debug($message, $context);
+            Log::debug($message, $context);
         }
     }
     
@@ -229,9 +229,19 @@ class PasienRalanController extends Controller
         // Pengecualian untuk admin dan poli khusus
         $isAdminWithAllPoli = ($kd_dokter === 'admin' && $kd_poli === 'U0011');
         
-        if (!$isAdminWithAllPoli) {
+        // Jika di lingkungan production, jangan filter berdasarkan dokter untuk memastikan semua data tampil
+        $isProduction = app()->environment('production');
+        
+        if ($isAdminWithAllPoli) {
+            // Admin dengan poli khusus tidak perlu filter tambahan
+            Log::info('Admin dengan poli khusus: menampilkan semua data');
+        } elseif (!$isAdminWithAllPoli && !$isProduction) {
             $count = $count->where('reg_periksa.kd_poli', $kd_poli)
                             ->where('reg_periksa.kd_dokter', $kd_dokter);
+        } elseif (!$isAdminWithAllPoli && $isProduction) {
+            // Di production hanya filter berdasarkan poli
+            $count = $count->where('reg_periksa.kd_poli', $kd_poli);
+            Log::info('Mode production: hanya filter berdasarkan poli: ' . $kd_poli);
         }
         
         $count = $count->where('tgl_registrasi', $tanggal)
@@ -248,9 +258,19 @@ class PasienRalanController extends Controller
             ->where('tgl_registrasi', $tanggal);
         
         // Jika bukan admin dengan semua poli, terapkan filter poli dan dokter
-        if (!$isAdminWithAllPoli) {
+        // Jika di lingkungan production, jangan filter berdasarkan dokter untuk memastikan semua data tampil
+        $isProduction = app()->environment('production');
+        
+        if ($isAdminWithAllPoli) {
+            // Admin dengan poli khusus tidak perlu filter tambahan
+            Log::info('Admin dengan poli khusus: menampilkan semua data pada query utama');
+        } elseif (!$isAdminWithAllPoli && !$isProduction) {
             $query = $query->where('reg_periksa.kd_poli', $kd_poli)
                           ->where('reg_periksa.kd_dokter', $kd_dokter);
+        } elseif (!$isAdminWithAllPoli && $isProduction) {
+            // Di production hanya filter berdasarkan poli
+            $query = $query->where('reg_periksa.kd_poli', $kd_poli);
+            Log::info('Mode production query: hanya filter berdasarkan poli: ' . $kd_poli);
         }
         
         // Log query SQL untuk debugging - hanya jika debug sangat detail diperlukan
@@ -307,11 +327,22 @@ class PasienRalanController extends Controller
             $this->debugLog('Inkonsistensi terdeteksi: count before query: ' . $count . ', data returned: ' . $data->count());
             
             // Jika ada inkonsistensi, coba dengan query sederhana langsung tanpa join
-            $simplifiedData = DB::table('reg_periksa')
-                ->where('reg_periksa.kd_poli', $kd_poli)
-                ->where('tgl_registrasi', $tanggal)
-                ->where('reg_periksa.kd_dokter', $kd_dokter)
-                ->select('no_reg', 'no_rawat', 'no_rkm_medis', 'stts')
+            $simplifiedQuery = DB::table('reg_periksa')
+                ->where('tgl_registrasi', $tanggal);
+                
+            // Terapkan filter yang sama dengan query utama
+            if ($isAdminWithAllPoli) {
+                // Admin dengan poli khusus tidak perlu filter tambahan
+                Log::info('Admin dengan poli khusus: menampilkan semua data pada query recovery');
+            } elseif (!$isAdminWithAllPoli && !$isProduction) {
+                $simplifiedQuery = $simplifiedQuery->where('reg_periksa.kd_poli', $kd_poli)
+                                  ->where('reg_periksa.kd_dokter', $kd_dokter);
+            } elseif (!$isAdminWithAllPoli && $isProduction) {
+                // Di production hanya filter berdasarkan poli
+                $simplifiedQuery = $simplifiedQuery->where('reg_periksa.kd_poli', $kd_poli);
+            }
+            
+            $simplifiedData = $simplifiedQuery->select('no_reg', 'no_rawat', 'no_rkm_medis', 'stts')
                 ->get();
                 
             $this->debugLog('Verifikasi dengan query sederhana: ' . $simplifiedData->count() . ' records');
@@ -584,7 +615,7 @@ class PasienRalanController extends Controller
             
             return $data;
         } catch (\Exception $e) {
-            \Log::error('Error getting rujuk internal data: ' . $e->getMessage());
+            Log::error('Error getting rujuk internal data: ' . $e->getMessage());
             return collect(); // Return empty collection on error
         }
     }
@@ -604,7 +635,7 @@ class PasienRalanController extends Controller
 
             if ($dokter) {
                 // Log informasi dokter yang belum memiliki mapping
-                \Log::warning('Dokter belum memiliki mapping PCare', [
+                Log::warning('Dokter belum memiliki mapping PCare', [
                     'kd_dokter' => $kd_dokter,
                     'nama_dokter' => $dokter->nm_dokter
                 ]);
@@ -633,7 +664,7 @@ class PasienRalanController extends Controller
         ];
         
         // Logging session status masih diperlukan untuk debugging login issues
-        \Log::debug('Session status check: ', $sessionData);
+        Log::debug('Session status check: ', $sessionData);
         
         return $sessionData;
     }
@@ -644,7 +675,7 @@ class PasienRalanController extends Controller
     public function panggilPasien(Request $request)
     {
         try {
-            \Log::info('Received panggil-pasien request', [
+            Log::info('Received panggil-pasien request', [
                 'csrf_token' => $request->header('X-CSRF-TOKEN'),
                 'session_id' => session()->getId(),
                 'data' => $request->all()
@@ -703,7 +734,7 @@ class PasienRalanController extends Controller
                     'waktu' => $waktu
                 ];
                 
-                \Log::info('Mengirim data panggilan pasien ke BPJS', $dataBpjs);
+                Log::info('Mengirim data panggilan pasien ke BPJS', $dataBpjs);
                 
                 try {
                     // Gunakan BpjsTraits untuk mengirim data
@@ -713,7 +744,7 @@ class PasienRalanController extends Controller
                     $responseData = $response instanceof \Illuminate\Http\JsonResponse ? 
                                    $response->getData(true) : json_decode($response, true);
                     
-                    \Log::info('Respons dari BPJS Mobile JKN', [
+                    Log::info('Respons dari BPJS Mobile JKN', [
                         'response' => $responseData
                     ]);
                     
@@ -722,18 +753,18 @@ class PasienRalanController extends Controller
                                $responseData['metadata']['code'] == 200;
                     
                     if (!$isSuccess) {
-                        \Log::warning('Gagal mengirim status antrean ke BPJS', [
+                        Log::warning('Gagal mengirim status antrean ke BPJS', [
                             'response' => $responseData
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Error saat mengirim data ke BPJS: ' . $e->getMessage(), [
+                    Log::error('Error saat mengirim data ke BPJS: ' . $e->getMessage(), [
                         'trace' => $e->getTraceAsString()
                     ]);
                     // Lanjutkan proses meskipun ada error dengan BPJS
                 }
             } else {
-                \Log::info('Pasien tidak memiliki nomor BPJS, tidak mengirim data ke BPJS');
+                Log::info('Pasien tidak memiliki nomor BPJS, tidak mengirim data ke BPJS');
             }
 
             DB::commit();
@@ -753,7 +784,7 @@ class PasienRalanController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Error in panggilPasien: ' . $e->getMessage(), [
+            Log::error('Error in panggilPasien: ' . $e->getMessage(), [
                 'csrf_token' => $request->header('X-CSRF-TOKEN'),
                 'session_id' => session()->getId(),
                 'trace' => $e->getTraceAsString()

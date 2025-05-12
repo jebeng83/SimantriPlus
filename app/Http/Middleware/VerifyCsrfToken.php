@@ -17,6 +17,7 @@ class VerifyCsrfToken extends Middleware
         '/livewire/*',
         '/refresh-csrf',
         '/customlogin',
+        '/api/skrining/*',
     ];
     
     /**

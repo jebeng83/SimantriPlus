@@ -242,9 +242,21 @@ return [
     'menu' => [
         //Navbar items:
         [
-            'text'        => 'Skrining',
+            'text'        => 'Skrining BPJS',
             'url'         => '/skriningbpjs',
             'icon'        => 'fas fa-fw fa-tags',
+            'topnav_right' => true,
+        ],
+        [
+            'text'        => 'Skrining CKG',
+            'url'         => '/skrining-ckg',
+            'icon'        => 'fas fa-fw fa-clipboard-list',
+            'topnav_right' => true,
+        ],
+        [
+            'text'        => 'Skrining Sederhana',
+            'url'         => '/skrining-sederhana',
+            'icon'        => 'fas fa-fw fa-heartbeat',
             'topnav_right' => true,
         ],
         // [
