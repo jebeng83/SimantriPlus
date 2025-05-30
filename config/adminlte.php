@@ -338,6 +338,11 @@ return [
                     'icon' => 'fas fa-fw fa-user-plus',
                 ],
                 [
+                    'text' => 'Pendaftaran CKG',
+                    'url'  => '/ilp/pendaftaran-ckg',
+                    'icon' => 'fas fa-fw fa-clipboard-check',
+                ],
+                [
                     'text' => 'Pelayanan',
                     'url'  => '/ilp/pelayanan',
                     'icon' => 'fas fa-fw fa-clipboard-list',
@@ -400,6 +405,21 @@ return [
                     'text' => 'Data Pendaftaran',
                     'url'  => '/pcare/data-pendaftaran',
                     'icon' => 'fas fa-fw fa-list',
+                ],
+                [
+                    'text' => 'Data Kunjungan',
+                    'url'  => '/pcare/data-kunjungan',
+                    'icon' => 'fas fa-fw fa-stethoscope',
+                ],
+                [
+                    'text' => 'Referensi Poli',
+                    'url'  => '/pcare/ref/poli',
+                    'icon' => 'fas fa-fw fa-hospital',
+                ],
+                [
+                    'text' => 'Referensi Dokter',
+                    'url'  => '/pcare/ref/dokter',
+                    'icon' => 'fas fa-fw fa-user-md',
                 ],
             ],
         ],

@@ -10,6 +10,7 @@ use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
 use App\Http\Controllers\MobileJknController;
 use App\Http\Controllers\SkriningController;
+use App\Http\Controllers\PcareKunjunganController;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,6 +104,16 @@ Route::get('/berkas-retensi/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanR
 // Rute yang memerlukan autentikasi
 Route::middleware(['web', 'loginauth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    
+    // PCare Routes
+    Route::middleware(['auth'])->prefix('pcare')->group(function () {
+        Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
+        Route::get('/api/ref/dokter/kodepoli/{kodepoli}/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])
+            ->name('pcare.api.ref.dokter')
+            ->middleware(['auth:sanctum']);
+        Route::get('/api/ref/dokter/export/excel', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportExcel'])->name('pcare.api.ref.dokter.export.excel');
+        Route::get('/api/ref/dokter/export/pdf', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportPdf'])->name('pcare.api.ref.dokter.export.pdf');
+    });
     
     // Route untuk skrining CKG
     Route::get('/skrining-ckg', function() {
@@ -229,6 +240,11 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/sasaran-ckg/detail/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'detail'])->name('sasaran-ckg.detail');
         Route::get('/sasaran-ckg/kirim-wa/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'kirimWA'])->name('sasaran-ckg.kirim-wa');
         
+        // Route untuk Pendaftaran CKG
+        Route::get('/pendaftaran-ckg', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'index'])->name('pendaftaran-ckg');
+        Route::get('/pendaftaran-ckg/detail', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detail'])->name('ckg.detail');
+        Route::post('/pendaftaran-ckg/update-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateStatus'])->name('ckg.update-status');
+        
         // Route untuk ILP Dewasa - dengan penanganan URL yang di-encode
         Route::get('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
             ->name('dewasa.form')
@@ -275,14 +291,21 @@ Route::middleware(['web', 'loginauth'])->group(function () {
             return view('Pcare.form-pendaftaran', compact('no_rkm_medis'));
         })->name('pcare.form-pendaftaran');
         
-        Route::get('/pendaftaran', function () {
-            // Redirect ke halaman utama untuk sementara
-            return redirect()->route('home')->with('info', 'Halaman Pendaftaran PCare sedang dalam pengembangan');
-        })->name('pcare.pendaftaran');
-        
         Route::get('/data-pendaftaran', function () {
             return view('Pcare.data-pendaftaran-pcare');
         })->name('pcare.data-pendaftaran');
+
+        Route::get('/data-kunjungan', [App\Http\Controllers\PcareKunjunganController::class, 'index'])->name('pcare.data-kunjungan');
+        Route::get('/kunjungan/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'show'])->name('pcare.kunjungan.show');
+        Route::post('/kunjungan/kirim-ulang/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlang'])->name('pcare.kunjungan.kirim-ulang');
+        Route::post('/kunjungan/kirim-ulang-batch', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlangBatch'])->name('pcare.kunjungan.kirim-ulang-batch');
+        Route::post('/api/pcare/pendaftaran/jadikan-kunjungan', [PcarePendaftaranController::class, 'jadikanKunjungan']);
+
+        // Route untuk Referensi Dokter PCare
+        Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
+        Route::get('/ref/dokter/get', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.ref.dokter.get');
+        Route::get('/api/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])->name('pcare.ref.poli');
+        Route::get('/api/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.ref.dokter.api');
     });
 
     // Antrian Poliklinik Routes
@@ -352,3 +375,29 @@ Route::post('/api/skrining/simpan', [App\Http\Controllers\SkriningController::cl
 Route::any('/api/skrining/debug', [App\Http\Controllers\SkriningController::class, 'debug'])
     ->name('api.skrining.debug')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+use App\Http\Controllers\API\PcarePendaftaranController;
+
+// Tambahkan route ini di web.php (bukan api.php)
+Route::get('/api/pcare/pendaftaran/data', [PcarePendaftaranController::class, 'getData']);
+Route::post('/api/pcare/pendaftaran/jadikan-kunjungan', [PcarePendaftaranController::class, 'jadikanKunjungan']);
+// Ruta para obtener detalles de pendaftaran PCare para asegurar que coincida con el formato utilizado en la vista.
+Route::get('/api/pcare/pendaftaran/detail/{year}/{month}/{day}/{number}', [PcarePendaftaranController::class, 'getDetailByParts']);
+Route::get('/api/pcare/pendaftaran/detail/{no_rawat}', [PcarePendaftaranController::class, 'getDetail']);
+Route::delete('/api/pcare/pendaftaran/peserta/{noKartu}/tglDaftar/{tglDaftar}/noUrut/{noUrut}/kdPoli/{kdPoli}', [PcarePendaftaranController::class, 'deletePendaftaran']);
+Route::get('/api/test', function() {
+    return response()->json(['message' => 'API working', 'time' => now()]);
+});
+
+// Route untuk PCare
+Route::prefix('pcare')->middleware(['web', 'loginauth'])->group(function () {
+    // Referensi Poli
+    Route::get('/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])->name('pcare.ref.poli');
+    Route::get('/api/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])->name('pcare.api.ref.poli');
+
+    // Referensi Dokter
+    Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
+    Route::get('/api/ref/dokter/kodepoli/{kodepoli}/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])
+        ->name('pcare.api.ref.dokter');
+
+    // ... existing routes ...
+});

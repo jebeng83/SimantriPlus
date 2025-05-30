@@ -38,7 +38,6 @@
                         <select class="form-control" id="status" name="status">
                            <option value="">Semua</option>
                            <option value="Terkirim">Terkirim</option>
-                           <option value="Batal">Batal</option>
                         </select>
                      </div>
                      <button type="submit" class="btn btn-primary">
@@ -75,7 +74,7 @@
                         <th>Poli</th>
                         <th>No. Urut</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        <th style="width: 250px;">Aksi</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -250,6 +249,31 @@
       background-color: #dc3545;
       color: white;
    }
+
+   <style>
+
+   /* Estilos para asegurar que la columna de acción sea visible */
+   #tabel-pcare-pendaftaran td:last-child,
+   #tabel-pcare-pendaftaran th:last-child {
+      display: table-cell !important;
+      visibility: visible !important;
+   }
+
+   .action-buttons {
+      display: flex !important;
+      justify-content: center;
+      visibility: visible !important;
+      white-space: nowrap;
+   }
+
+   .action-buttons .btn {
+      margin-right: 3px;
+   }
+</style>
+
+.action-buttons .btn {
+margin-right: 3px;
+}
 </style>
 @stop
 
@@ -259,6 +283,7 @@
 <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
 <script>
    $(function() {
@@ -272,20 +297,48 @@
             data: function(d) {
                d.tanggal = $('#tanggal').val();
                d.status = $('#status').val();
+            },
+            error: function(xhr, error, code) {
+               console.error('DataTable AJAX Error:', xhr, error, code);
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'Gagal memuat data. Silakan refresh halaman.'
+               });
+            },
+            dataSrc: function(json) {
+               console.log('DataTable response:', json);
+               return json.data;
             }
          },
          columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { 
+               data: 'DT_RowIndex', 
+               name: 'DT_RowIndex', 
+               orderable: false, 
+               searchable: false,
+               width: '5%'
+            },
             { 
                data: 'tglDaftar', 
                name: 'tglDaftar',
+               width: '10%',
                render: function(data) {
+                  if (!data) return '-';
                   // Format tanggal dari YYYY-MM-DD menjadi DD-MM-YYYY
                   const parts = data.split('-');
-                  return parts[2] + '-' + parts[1] + '-' + parts[0];
+                  if (parts.length === 3) {
+                     return parts[2] + '-' + parts[1] + '-' + parts[0];
+                  }
+                  return data;
                }
             },
-            { data: 'no_rawat', name: 'no_rawat' },
+
+            { 
+               data: 'no_rawat', 
+               name: 'no_rawat',
+               width: '12%'
+            },
             { data: 'no_rkm_medis', name: 'no_rkm_medis' },
             { data: 'nm_pasien', name: 'nm_pasien' },
             { data: 'noKartu', name: 'noKartu' },
@@ -301,15 +354,10 @@
                data: 'status', 
                name: 'status',
                render: function(data) {
-                  let badge = '';
                   if (data === 'Terkirim') {
-                     badge = '<span class="badge badge-terkirim">Terkirim</span>';
-                  } else if (data === 'Batal') {
-                     badge = '<span class="badge badge-batal">Batal</span>';
-                  } else {
-                     badge = '<span class="badge badge-secondary">' + data + '</span>';
+                     return '<span class="badge badge-success">Terkirim</span>';
                   }
-                  return badge;
+                  return '';
                }
             },
             {
@@ -317,23 +365,63 @@
                name: 'action',
                orderable: false,
                searchable: false,
+               width: '15%',
+               className: 'text-center action-column',
                render: function(data, type, row) {
-                  return `
-                     <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-info btn-detail" data-id="${row.no_rawat}">
-                           <i class="fas fa-eye"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="${row.no_rawat}" 
-                           data-nokartu="${row.noKartu}" data-tgldaftar="${row.tglDaftar_formatted}" 
-                           data-nourut="${row.noUrut}" data-kdpoli="${row.kdPoli}">
-                           <i class="fas fa-trash"></i>
-                        </button>
-                     </div>
-                  `;
+                  let buttons = '<div class="action-buttons">';
+                  
+                  // Tombol Detail
+                  buttons += '<button class="btn btn-sm btn-info btn-detail mr-1" data-id="' + row.no_rawat + '">' +
+                     '<i class="fas fa-eye"></i></button>';
+                  
+                  // Tombol Jadikan Kunjungan (tampil jika status bukan "Sudah Dilayani")
+                  if (row.status !== 'Sudah Dilayani') {
+                     buttons += '<button class="btn btn-sm btn-success btn-jadikan-kunjungan mr-1" ' +
+                        'data-id="' + row.no_rawat + '" ' +
+                        'data-nokartu="' + row.noKartu + '" ' +
+                        'data-kdpoli="' + row.kdPoli + '" ' +
+                        'data-tgldaftar="' + row.tglDaftar + '">' +
+                        '<i class="fas fa-user-md"></i> Kunjungan</button>';
+                  }
+                  
+                  // Tombol Hapus (hanya tampil jika status bukan "Sudah Dilayani")
+                  if (row.status !== 'Sudah Dilayani') {
+                     buttons += '<button class="btn btn-sm btn-danger btn-delete" ' +
+                        'data-nokartu="' + row.noKartu + '" ' +
+                        'data-tgldaftar="' + row.tglDaftar + '" ' +
+                        'data-nourut="' + row.noUrut + '" ' +
+                        'data-kdpoli="' + row.kdPoli + '">' +
+                        '<i class="fas fa-trash"></i></button>';
+                  }
+                  
+                  buttons += '</div>';
+                  return buttons;
                }
             }
          ],
-         order: [[1, 'desc']]
+         order: [[1, 'desc']],
+         drawCallback: function(settings) {
+            console.log('DataTable drawCallback executed');
+            // Asegurarse de que la columna de acción sea visible después de cada redibujado
+            $('.action-column').css({
+               'display': 'table-cell',
+               'visibility': 'visible'
+            });
+            $('.action-buttons').css({
+               'display': 'flex',
+               'visibility': 'visible'
+            });
+            
+            // Verificar si hay botones de acción y mostrar información en la consola
+            const actionButtons = $('.action-buttons');
+            console.log('Action buttons found:', actionButtons.length);
+            actionButtons.each(function(index) {
+               console.log('Action button', index, 'HTML:', $(this).html());
+            });
+         },
+         initComplete: function() {
+            console.log('DataTable initialization complete');
+         }
       });
 
       // Filter form submission
@@ -544,6 +632,180 @@
          const status = $('#status').val();
          
          window.location.href = `/api/pcare/pendaftaran/export/pdf?tanggal=${tanggal}&status=${status}`;
+      });
+
+      // Tambahkan handler untuk tombol Jadikan Kunjungan
+      $(document).on('click', '.btn-jadikan-kunjungan', function() {
+         const noRawat = $(this).data('id');
+
+         Swal.fire({
+            title: 'Konfirmasi',
+            text: 'Apakah Anda yakin ingin menjadikan pendaftaran ini sebagai kunjungan PCare?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Jadikan Kunjungan',
+            cancelButtonText: 'Batal'
+         }).then((result) => {
+            if (result.isConfirmed) {
+               // Show loading
+               Swal.fire({
+                  title: 'Memproses',
+                  html: 'Mohon tunggu...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                     Swal.showLoading();
+                  }
+               });
+
+               // Ambil data pendaftaran terlebih dahulu
+               $.ajax({
+                  url: `/api/pcare/pendaftaran/detail/${noRawat}`,
+                  method: 'GET',
+                  success: function(detailResponse) {
+                     if (detailResponse.success) {
+                        const pendaftaran = detailResponse.data;
+
+                        // Ambil data tambahan (poli, diagnosa, resep)
+                        $.ajax({
+                           url: `/api/pcare/kunjungan/get-additional-data/${noRawat}`,
+                           method: 'GET',
+                           success: function(additionalResponse) {
+                              if (additionalResponse.success) {
+                                 const additionalData = additionalResponse;
+
+                                 // Siapkan data kunjungan
+                                 const kunjungan = {
+                                    noKartu: pendaftaran.noKartu,
+                                    tglDaftar: moment(pendaftaran.tglDaftar).format('DD-MM-YYYY'),
+                                    kdPoli: additionalData.poli.kd_poli_pcare || pendaftaran.kdPoli,
+                                    keluhan: pendaftaran.keluhan || '-',
+                                    kdSadar: '01',
+                                    sistole: pendaftaran.sistole || 120,
+                                    diastole: pendaftaran.diastole || 80,
+                                    beratBadan: pendaftaran.beratBadan || 0,
+                                    tinggiBadan: pendaftaran.tinggiBadan || 0,
+                                    respRate: pendaftaran.respRate || 20,
+                                    heartRate: pendaftaran.heartRate || 80,
+                                    lingkarPerut: pendaftaran.lingkarPerut || 0,
+                                    kdStatusPulang: '3',
+                                    tglPulang: moment(pendaftaran.tglDaftar).format('DD-MM-YYYY'),
+                                    kdDokter: pendaftaran.kdDokter,
+                                    kdDiag1: additionalData.diagnosa.kd_penyakit1 || 'A00.0',
+                                    kdDiag2: additionalData.diagnosa.kd_penyakit2 || null,
+                                    kdDiag3: additionalData.diagnosa.kd_penyakit3 || null,
+                                    kdPoliRujukInternal: null,
+                                    rujukLanjut: null,
+                                    kdTacc: 0,
+                                    alasanTacc: null,
+                                    KdAlergiMakanan: '0',
+                                    KdAlergiUdara: '0',
+                                    KdAlergiObat: '0',
+                                    KdPrognosa: '1',
+                                    terapi: additionalData.resep ? additionalData.resep.terapi : 'Sesuai resep',
+                                    terapi_non_obat: 'Istirahat cukup',
+                                    bmhp: '-'
+                                 };
+
+                                 // Kirim data kunjungan ke PCare
+                                 $.ajax({
+                                    url: '/api/pcare/kunjungan/create',
+                  method: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify({
+                     no_rawat: noRawat,
+                                       data_kunjungan: kunjungan
+                                    }),
+                  success: function(response) {
+                     Swal.close();
+                     
+                                       if (response.success && response.data && response.data.noKunjungan) {
+                        Swal.fire({
+                           icon: 'success',
+                           title: 'Berhasil',
+                                             text: `Data kunjungan berhasil dikirim ke PCare dengan No. Kunjungan: ${response.data.noKunjungan}`,
+                                             confirmButtonText: 'OK'
+                                          }).then((result) => {
+                                             if (result.isConfirmed) {
+                                                window.location.href = '{{ route("pcare.data-pendaftaran") }}';
+                                             }
+                                          });
+                                       } else {
+                                          let errorMsg = 'Gagal mendapatkan nomor kunjungan dari BPJS';
+                                          if (response.message) {
+                                             errorMsg = response.message;
+                                          } else if (response.metaData && response.metaData.message) {
+                                             errorMsg = response.metaData.message;
+                                          }
+                                          
+                                          Swal.fire({
+                                             icon: 'error',
+                                             title: 'Gagal',
+                                             text: errorMsg,
+                                             confirmButtonText: 'OK'
+                                          }).then((result) => {
+                                             if (result.isConfirmed) {
+                                                window.location.href = '{{ route("pcare.data-pendaftaran") }}';
+                                             }
+                                          });
+                                       }
+                                    },
+                                    error: function(xhr) {
+                                       Swal.close();
+                                       let errorMsg = 'Terjadi kesalahan saat mengirim data ke PCare';
+                                       if (xhr.responseJSON && xhr.responseJSON.message) {
+                                          errorMsg = xhr.responseJSON.message;
+                                       }
+                                       
+                                       Swal.fire({
+                                          icon: 'error',
+                                          title: 'Gagal',
+                                          text: errorMsg,
+                                          confirmButtonText: 'OK'
+                                       }).then((result) => {
+                                          if (result.isConfirmed) {
+                                             window.location.href = '{{ route("pcare.data-pendaftaran") }}';
+                                          }
+                                       });
+                                    }
+                                 });
+                              } else {
+                                 Swal.close();
+                                 Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal',
+                                    text: 'Gagal mengambil data tambahan'
+                                 });
+                              }
+                           },
+                           error: function() {
+                              Swal.close();
+                              Swal.fire({
+                                 icon: 'error',
+                                 title: 'Gagal',
+                                 text: 'Gagal mengambil data tambahan'
+                              });
+                           }
+                        });
+                     } else {
+                        Swal.close();
+                        Swal.fire({
+                           icon: 'error',
+                           title: 'Gagal',
+                           text: 'Gagal mengambil data pendaftaran'
+                        });
+                     }
+                  },
+                  error: function() {
+                     Swal.close();
+                     Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Gagal mengambil data pendaftaran'
+                     });
+                  }
+               });
+            }
+         });
       });
    });
 </script>

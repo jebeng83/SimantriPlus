@@ -722,8 +722,8 @@ class PasienRalanController extends Controller
 
             // Jika pasien memiliki nomor peserta BPJS, kirim data panggilan ke BPJS
             if (!empty($pasien->no_peserta)) {
-                // Waktu saat ini dalam format timestamp millisecond
-                $waktu = round(microtime(true) * 1000);
+                // Waktu saat ini dalam format timestamp detik (bukan milidetik)
+                $waktu = time() * 1000; // Konversi Unix timestamp detik ke milidetik
                 
                 // Data untuk BPJS
                 $dataBpjs = [

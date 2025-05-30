@@ -17,6 +17,8 @@ use App\Http\Antrol\PanggilAntreanController;
 use App\Http\Controllers\PasienController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\SkriningController;
+use App\Http\Controllers\KunjunganDataController;
+use App\Http\Controllers\PCare\ReferensiDokterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +108,12 @@ Route::prefix('pcare')->group(function () {
     Route::get('provider', [App\Http\Controllers\API\PcareController::class, 'getProvider']);
     Route::get('dokter', [App\Http\Controllers\API\PcareController::class, 'getDokter']);
     
+    // Referensi
+    Route::get('ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli']);
+    Route::get('ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter']);
+    Route::get('ref/dokter/export/excel', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportExcel']);
+    Route::get('ref/dokter/export/pdf', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportPdf']);
+    
     // Diagnosa, Tindakan, dan Obat
     Route::get('diagnosa/{keyword}', [App\Http\Controllers\API\PcareController::class, 'getDiagnosa']);
     Route::get('tindakan/{keyword}', [App\Http\Controllers\API\PcareController::class, 'getTindakan']);
@@ -131,6 +139,29 @@ Route::prefix('pcare')->group(function () {
     Route::get('/pendaftaran/detail/{no_rawat}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getDetail']);
     Route::get('/pendaftaran/export/excel', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportExcel']);
     Route::get('/pendaftaran/export/pdf', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportPdf']);
+
+    // Kunjungan Routes
+    Route::post('/kunjungan/create', [App\Http\Controllers\PCare\KunjunganController::class, 'create']);
+    Route::get('/kunjungan/get-additional-data/{tahun}/{bulan}/{tanggal}/{nomor}', [App\Http\Controllers\PCare\KunjunganDataController::class, 'getAdditionalData'])
+        ->where([
+            'tahun' => '[0-9]{4}',
+            'bulan' => '[0-9]{2}',
+            'tanggal' => '[0-9]{2}',
+            'nomor' => '[0-9]+'
+        ]);
+    Route::post('/kunjungan/kirim-ulang/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlang'])
+        ->where('noRawat', '.*');  // Mengizinkan karakter / dalam parameter
+    Route::post('/kunjungan/kirim-ulang-batch', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlangBatch']);
+});
+
+// PCare Pendaftaran Routes
+Route::prefix('pcare/pendaftaran')->group(function () {
+    Route::get('data', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getData']);
+    Route::get('detail/{noRawat}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getDetail']);
+    Route::post('jadikan-kunjungan', [App\Http\Controllers\API\PcarePendaftaranController::class, 'jadikanKunjungan']);
+    Route::post('/pcare/pendaftaran/jadikan-kunjungan', [PcarePendaftaranController::class, 'jadikanKunjungan']);
+    Route::delete('peserta/{noKartu}/tglDaftar/{tglDaftar}/noUrut/{noUrut}/kdPoli/{kdPoli}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'hapusPendaftaran']);
+    Route::get('export/{type}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'export'])->where('type', 'excel|pdf');
 });
 
 // ICare Routes

@@ -5,214 +5,329 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Services\BpjsService;
 use Yajra\DataTables\Facades\DataTables;
-use App\Exports\PcarePendaftaranExport;
-use Maatwebsite\Excel\Facades\Excel;
-use PDF;
+use AamDsam\Bpjs\PCare;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class PcarePendaftaranController extends Controller
 {
-    /**
-     * Mendapatkan data pendaftaran PCare untuk DataTables
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
+    protected $bpjsService;
+    protected $config;
+
+    public function __construct(BpjsService $bpjsService)
+    {
+        $this->bpjsService = $bpjsService;
+        $this->config = app('pcare_conf');
+        
+        // Log konfigurasi PCare
+        Log::info('PCare Configuration Loaded', [
+            'base_url' => $this->config['base_url'],
+            'service_name' => $this->config['service_name']
+        ]);
+    }
+
     public function getData(Request $request)
     {
+        Log::info('PcarePendaftaran getData called', $request->all());
+        
         try {
-            $query = DB::table('pcare_pendaftaran');
+            $query = DB::table('pcare_pendaftaran as pp')
+                ->join('reg_periksa as rp', 'pp.no_rawat', '=', 'rp.no_rawat')
+                ->join('pasien as p', 'rp.no_rkm_medis', '=', 'p.no_rkm_medis')
+                ->select([
+                    'pp.no_rawat',
+                    'pp.tglDaftar',
+                    'pp.no_rkm_medis',
+                    'p.nm_pasien',
+                    'pp.noKartu',
+                    'pp.kdPoli',
+                    'pp.nmPoli',
+                    'pp.noUrut',
+                    'pp.status'
+                ]);
 
-            // Filter berdasarkan tanggal
-            if ($request->has('tanggal') && !empty($request->tanggal)) {
-                $query->whereDate('tglDaftar', $request->tanggal);
+            if ($request->tanggal) {
+                $query->whereDate('pp.tglDaftar', $request->tanggal);
             }
 
-            // Filter berdasarkan status
-            if ($request->has('status') && !empty($request->status)) {
-                $query->where('status', $request->status);
+            if ($request->status) {
+                $query->where('pp.status', $request->status);
             }
-
-            $data = $query->get();
-
-            // Format tanggal untuk kebutuhan delete action
-            foreach ($data as $row) {
-                // Format tanggal dari YYYY-MM-DD menjadi DD-MM-YYYY
-                $parts = explode('-', $row->tglDaftar);
-                if (count($parts) === 3) {
-                    $row->tglDaftar_formatted = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
-                } else {
-                    $row->tglDaftar_formatted = $row->tglDaftar;
-                }
-            }
-
-            return DataTables::of($data)
+            
+            $result = DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                    return '<div class="btn-group">
-                        <a href="javascript:void(0)" class="btn btn-sm btn-info btn-detail" data-id="'.$row->no_rawat.'">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        <a href="javascript:void(0)" class="btn btn-sm btn-danger btn-delete" 
-                            data-nokartu="'.$row->noKartu.'" 
-                            data-tgldaftar="'.$row->tglDaftar_formatted.'" 
-                            data-nourut="'.$row->noUrut.'">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </div>';
+                ->addColumn('tglDaftar_formatted', function($row) {
+                    return date('Y-m-d', strtotime($row->tglDaftar));
+                })
+                ->addColumn('action', function($row) {
+                    return view('Pcare.partials.action-buttons', compact('row'))->render();
                 })
                 ->rawColumns(['action'])
-                ->toJson();
+                ->make(true);
+                
+            Log::info('PcarePendaftaran getData success', [
+                'total_records' => $result->original['recordsTotal']
+            ]);
+
+            return $result;
         } catch (\Exception $e) {
-            Log::error('Error saat mengambil data pendaftaran PCare', [
+            Log::error('PcarePendaftaran getData error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data pendaftaran PCare'
-            ], 500);
+            throw $e;
         }
     }
 
-    /**
-     * Mendapatkan detail pendaftaran PCare berdasarkan no_rawat
-     *
-     * @param string $no_rawat
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getDetail($no_rawat)
+    public function getDetail($noRawat)
     {
         try {
-            $pendaftaran = DB::table('pcare_pendaftaran')
-                ->where('no_rawat', $no_rawat)
+            $data = DB::table('pcare_pendaftaran as pp')
+                ->join('reg_periksa as rp', 'pp.no_rawat', '=', 'rp.no_rawat')
+                ->join('pasien as p', 'rp.no_rkm_medis', '=', 'p.no_rkm_medis')
+                ->leftJoin('pemeriksaan_ralan as pr', 'pp.no_rawat', '=', 'pr.no_rawat')
+                ->where('pp.no_rawat', $noRawat)
+                ->select([
+                    'pp.*',
+                    'p.nm_pasien',
+                    'pr.keluhan',
+                    'pr.pemeriksaan',
+                    'pr.tensi',
+                    'pr.nadi',
+                    'pr.respirasi',
+                    'pr.tinggi',
+                    'pr.berat',
+                    'pr.lingkar_perut',
+                    'pr.rtl'
+                ])
                 ->first();
 
-            if (!$pendaftaran) {
+            if (!$data) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data pendaftaran tidak ditemukan'
+                    'message' => 'Data tidak ditemukan'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $pendaftaran
+                'data' => $data
             ]);
         } catch (\Exception $e) {
-            Log::error('Error saat mengambil detail pendaftaran PCare', [
-                'no_rawat' => $no_rawat,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil detail pendaftaran PCare'
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Export data pendaftaran PCare ke Excel
-     *
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function exportExcel(Request $request)
+    public function jadikanKunjungan(Request $request)
     {
-        try {
-            $tanggal = $request->input('tanggal');
-            $status = $request->input('status');
-            
-            $export = new PcarePendaftaranExport($tanggal, $status);
-            $filename = 'data_pendaftaran_pcare_' . date('YmdHis') . '.xlsx';
-            
-            return Excel::download($export, $filename);
-        } catch (\Exception $e) {
-            Log::error('Error saat export Excel pendaftaran PCare', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return back()->with('error', 'Terjadi kesalahan saat export data ke Excel: ' . $e->getMessage());
-        }
-    }
+        Log::info('Memulai proses jadikan kunjungan', [
+            'no_rawat' => $request->no_rawat,
+            'timestamp' => now()->toDateTimeString()
+        ]);
 
-    /**
-     * Export data pendaftaran PCare ke PDF
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function exportPdf(Request $request)
-    {
         try {
-            $tanggal = $request->input('tanggal');
-            $status = $request->input('status');
+            DB::beginTransaction();
             
-            // Query data
-            $query = DB::table('pcare_pendaftaran');
-            
-            if (!empty($tanggal)) {
-                $query->whereDate('tglDaftar', $tanggal);
+            // 1. Validasi input yang diperlukan
+            $validator = Validator::make($request->all(), [
+                'no_rawat' => 'required',
+                'noKartu' => 'required|digits:13',
+                'kdPoli' => 'required'
+            ]);
+
+            if ($validator->fails()) {
+                throw new \Exception('Validasi gagal: ' . $validator->errors()->first());
             }
-            
-            if (!empty($status)) {
-                $query->where('status', $status);
-            }
-            
-            $data = $query->get();
-            
-            // Memformat data tanggal untuk tampilan
-            foreach ($data as $row) {
-                $parts = explode('-', $row->tglDaftar);
-                if (count($parts) === 3) {
-                    $row->tglDaftar_formatted = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
-                } else {
-                    $row->tglDaftar_formatted = $row->tglDaftar;
-                }
-                
-                // Format kunjSakit
-                $row->kunjSakit_formatted = ($row->kunjSakit === 'true') ? 'Ya' : 'Tidak';
-                
-                // Format tempat kunjungan
-                switch ($row->kdTkp) {
-                    case '10':
-                        $row->tkp_formatted = 'Rawat Jalan (RJTP)';
-                        break;
-                    case '20':
-                        $row->tkp_formatted = 'Rawat Inap (RITP)';
-                        break;
-                    case '50':
-                        $row->tkp_formatted = 'Promotif Preventif';
-                        break;
-                    default:
-                        $row->tkp_formatted = $row->kdTkp;
-                        break;
-                }
-            }
-            
-            $filename = 'data_pendaftaran_pcare_' . date('YmdHis') . '.pdf';
-            
-            // Generate PDF
-            $pdf = PDF::loadView('exports.pcare-pendaftaran-pdf', [
-                'data' => $data,
-                'tanggal' => $tanggal ? date('d-m-Y', strtotime($tanggal)) : 'Semua',
-                'status' => $status ?: 'Semua',
-                'tanggal_cetak' => date('d-m-Y H:i:s')
+
+            // 2. Cek status peserta BPJS
+            Log::info('Validasi peserta BPJS', [
+                'noKartu' => $request->noKartu
             ]);
             
-            return $pdf->download($filename);
+            $peserta = new PCare\Peserta($this->config);
+            $cekPeserta = $peserta->keyword($request->noKartu)->show();
+
+            Log::info('Hasil validasi peserta', [
+                'response' => $cekPeserta
+            ]);
+
+            if (!isset($cekPeserta['response'])) {
+                throw new \Exception('Status peserta tidak aktif atau tidak ditemukan');
+            }
+
+            // 3. Ambil data pendaftaran
+            $pendaftaran = DB::table('pcare_pendaftaran')
+                ->where('no_rawat', $request->no_rawat)
+                ->first();
+
+            if (!$pendaftaran) {
+                throw new \Exception('Data pendaftaran tidak ditemukan');
+            }
+
+            // 4. Ambil data pemeriksaan vital signs
+            $pemeriksaan = DB::table('pemeriksaan_ralan')
+                ->where('no_rawat', $request->no_rawat)
+                ->first();
+
+            if (!$pemeriksaan) {
+                throw new \Exception('Data pemeriksaan tidak ditemukan');
+            }
+
+            // Validasi vital signs
+            if (!$pemeriksaan->tensi || !$pemeriksaan->tinggi || !$pemeriksaan->berat || 
+                !$pemeriksaan->respirasi || !$pemeriksaan->nadi || !$pemeriksaan->suhu) {
+                throw new \Exception('Data vital signs tidak lengkap');
+            }
+
+            // 5. Ambil data diagnosa
+            $diagnosa = DB::table('diagnosa_pasien')
+                ->where('no_rawat', $request->no_rawat)
+                ->orderBy('prioritas', 'asc')
+                ->limit(3)
+                ->get();
+
+            if ($diagnosa->isEmpty()) {
+                throw new \Exception('Data diagnosa tidak ditemukan');
+            }
+
+            // Validasi format tanggal
+            $tglDaftar = \Carbon\Carbon::createFromFormat('Y-m-d', $pendaftaran->tglDaftar)
+                ->format('d-m-Y');
+            $tglPulang = \Carbon\Carbon::now()->format('d-m-Y');
+
+            // 6. Siapkan data kunjungan sesuai format BPJS
+            $dataKunjungan = [
+                'noKunjungan' => null,
+                'noKartu' => $pendaftaran->noKartu,
+                'tglDaftar' => $tglDaftar,
+                'kdPoli' => $pendaftaran->kdPoli,
+                'keluhan' => $pemeriksaan->keluhan ?: 'Tidak Ada',
+                'kdSadar' => '01', // Compos Mentis
+                'sistole' => (int)($pemeriksaan->tensi ? explode('/', $pemeriksaan->tensi)[0] : 0),
+                'diastole' => (int)($pemeriksaan->tensi ? explode('/', $pemeriksaan->tensi)[1] : 0),
+                'beratBadan' => (int)$pemeriksaan->berat,
+                'tinggiBadan' => (int)$pemeriksaan->tinggi,
+                'respRate' => (int)$pemeriksaan->respirasi,
+                'heartRate' => (int)$pemeriksaan->nadi,
+                'lingkarPerut' => (int)($pemeriksaan->lingkar_perut ?? 0),
+                'kdStatusPulang' => '3', // Berobat Jalan
+                'tglPulang' => $tglPulang,
+                'kdDokter' => $pendaftaran->kdDokter,
+                'kdDiag1' => $diagnosa[0]->kd_penyakit,
+                'kdDiag2' => isset($diagnosa[1]) ? $diagnosa[1]->kd_penyakit : null,
+                'kdDiag3' => isset($diagnosa[2]) ? $diagnosa[2]->kd_penyakit : null,
+                'kdPoliRujukInternal' => null,
+                'rujukLanjut' => null,
+                'kdTacc' => 0,
+                'alasanTacc' => null,
+                'suhu' => str_replace('.', ',', $pemeriksaan->suhu),
+                'alergiMakan' => '00',
+                'alergiUdara' => '00',
+                'alergiObat' => '00',
+                'kdPrognosa' => '01',
+                'anamnesa' => $pemeriksaan->pemeriksaan ?: 'Tidak Ada',
+                'terapiObat' => $pemeriksaan->rtl ?: 'Tidak Ada',
+                'terapiNonObat' => '-',
+                'bmhp' => '-'
+            ];
+
+            Log::info('Data kunjungan yang akan dikirim ke BPJS', [
+                'endpoint' => $this->config['base_url'] . '/' . $this->config['service_name'] . '/kunjungan',
+                'data' => $dataKunjungan
+            ]);
+
+            // 7. Kirim data kunjungan ke BPJS
+            $kunjungan = new PCare\Kunjungan($this->config);
+            
+            // Tambahkan retry mechanism
+            $maxRetries = 3;
+            $attempt = 1;
+            $success = false;
+            
+            while ($attempt <= $maxRetries && !$success) {
+                try {
+                    Log::info("Mencoba mengirim kunjungan (Percobaan ke-{$attempt})", [
+                        'no_rawat' => $request->no_rawat
+                    ]);
+                    
+                    $response = $kunjungan->store($dataKunjungan);
+                    
+                    Log::info('Response dari BPJS PCare', [
+                        'attempt' => $attempt,
+                        'response' => $response,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
+                    
+                    if (isset($response['metaData']['code']) && $response['metaData']['code'] == '201') {
+                        $success = true;
+                        break;
+                    }
+                    
+                    throw new \Exception($response['metaData']['message'] ?? 'Gagal mengirim kunjungan');
         } catch (\Exception $e) {
-            Log::error('Error saat export PDF pendaftaran PCare', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+                    Log::warning("Kegagalan pengiriman kunjungan (Percobaan ke-{$attempt})", [
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    if ($attempt == $maxRetries) {
+                        throw $e;
+                    }
+                    
+                    $attempt++;
+                    sleep(2); // Tunggu 2 detik sebelum retry
+                }
+            }
+
+            if ($success) {
+                // Update status pendaftaran
+                DB::table('pcare_pendaftaran')
+                    ->where('no_rawat', $request->no_rawat)
+                    ->update(['status' => 'Sudah Dikunjungi']);
+
+                // Simpan data kunjungan
+                DB::table('pcare_kunjungan_umum')->insert([
+                    'no_rawat' => $request->no_rawat,
+                    'noKunjungan' => $response['response']['message'],
+                    'status' => 'Terkirim',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                DB::commit();
+
+                Log::info('Transaksi berhasil disimpan', [
+                    'no_rawat' => $request->no_rawat,
+                    'noKunjungan' => $response['response']['message']
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Berhasil mengirim kunjungan',
+                    'data' => $response['response']
+                ]);
+            }
+
+            throw new \Exception('Gagal mengirim kunjungan setelah ' . $maxRetries . ' percobaan');
+
+        } catch (\Exception $e) {
+            DB::rollback();
             
-            return back()->with('error', 'Terjadi kesalahan saat export data ke PDF: ' . $e->getMessage());
+            Log::error('Error jadikan kunjungan', [
+                'no_rawat' => $request->no_rawat,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
-} 
+}

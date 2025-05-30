@@ -1,0 +1,45 @@
+{
+	"info": {
+		"_postman_id": "123456",
+		"name": "PCare API Testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Jadikan Kunjungan",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"no_rawat\": \"2025/05/28/000001\",\n    \"noKartu\": \"0000043678034\",\n    \"kdPoli\": \"UMU\",\n    \"tglDaftar\": \"2025-05-28\",\n    \"keluhan\": \"Demam dan batuk\",\n    \"sistole\": 120,\n    \"diastole\": 80,\n    \"beratBadan\": 65,\n    \"tinggiBadan\": 170,\n    \"respRate\": 20,\n    \"heartRate\": 80,\n    \"lingkarPerut\": 80,\n    \"suhu\": \"36.5\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/pcare/pendaftaran/jadikan-kunjungan",
+					"host": ["{{base_url}}"],
+					"path": [
+						"api",
+						"pcare",
+						"pendaftaran",
+						"jadikan-kunjungan"
+					]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000"
+		}
+	]
+} 

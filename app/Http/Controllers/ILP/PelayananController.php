@@ -149,6 +149,10 @@ class PelayananController extends Controller
     
     private function getDokter($kd_dokter)
     {
+        if (!$kd_dokter) {
+            return 'Dokter';
+        }
+        
         $dokter = DB::table('pegawai')->where('nik', $kd_dokter)->first();
         return $dokter ? $dokter->nama : 'Dokter';
     }
@@ -178,9 +182,12 @@ class PelayananController extends Controller
             }
             
             // Ambil data pasien
-            $pasien = DB::table('pasien')
-                ->where('no_rkm_medis', $pemeriksaan->no_rkm_medis)
-                ->first();
+            $pasien = null;
+            if ($pemeriksaan && $pemeriksaan->no_rkm_medis) {
+                $pasien = DB::table('pasien')
+                    ->where('no_rkm_medis', $pemeriksaan->no_rkm_medis)
+                    ->first();
+            }
             
             // Format data untuk tampilan PDF
             $data = [
@@ -194,7 +201,7 @@ class PelayananController extends Controller
                 'no_ktp' => $pemeriksaan->no_ktp ?? '-',
                 'data_posyandu' => $pemeriksaan->data_posyandu ?? '-',
                 'no_kk' => $pemeriksaan->no_kk ?? '-',
-                'no_tlp' => $pasien->no_tlp ?? '-',
+                'no_tlp' => $pasien && $pasien->no_tlp ? $pasien->no_tlp : '-',
                 'stts_nikah' => $pemeriksaan->stts_nikah ?? '-',
                 'pekerjaan' => $pemeriksaan->pekerjaan ?? '-',
                 'riwayat_diri_sendiri' => $pemeriksaan->riwayat_diri_sendiri ?? '-',
@@ -240,10 +247,14 @@ class PelayananController extends Controller
             $pdf->setPaper('A4', 'portrait');
             
             // Return PDF untuk ditampilkan di browser
-            return $pdf->stream('Hasil_Pemeriksaan_ILP_' . $data['no_rm'] . '.pdf');
+            if ($pdf) {
+                return $pdf->stream('Hasil_Pemeriksaan_ILP_' . $data['no_rm'] . '.pdf');
+            } else {
+                return redirect()->route('ilp.pelayanan')->with('error', 'Gagal membuat PDF');
+            }
             
         } catch (\Exception $e) {
             return redirect()->route('ilp.pelayanan')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
-} 
+}

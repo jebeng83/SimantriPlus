@@ -197,6 +197,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         Yajra\DataTables\DataTablesServiceProvider::class,
         Ladumor\LaravelPwa\PWAServiceProvider::class,
+        App\Providers\BpjsServiceProvider::class,
 
     ],
 

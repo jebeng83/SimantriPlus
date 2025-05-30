@@ -4,8 +4,48 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f3ec5aac739598c39adbc3a3c47cbcc4",
+    "content-hash": "099af138c796ee8696372dd62574e7ad",
     "packages": [
+        {
+            "name": "aamdsam/bridging-bpjs",
+            "version": "1.12",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aamdsam/bridging-bpjs.git",
+                "reference": "f049fc13762f6d89689094fedeb2e8737f28937c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aamdsam/bridging-bpjs/zipball/f049fc13762f6d89689094fedeb2e8737f28937c",
+                "reference": "f049fc13762f6d89689094fedeb2e8737f28937c",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": ">=6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AamDsam\\Bpjs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Muhammad Muammar",
+                    "email": "muh.muammar@gmail.com"
+                }
+            ],
+            "description": "Package untuk bridging bpjs vclaim, apcare dan pcare",
+            "support": {
+                "issues": "https://github.com/aamdsam/bridging-bpjs/issues",
+                "source": "https://github.com/aamdsam/bridging-bpjs/tree/1.12"
+            },
+            "time": "2025-03-07T06:39:53+00:00"
+        },
         {
             "name": "almasaeed2010/adminlte",
             "version": "v3.2.0",
@@ -1944,16 +1984,16 @@
         },
         {
             "name": "guzzlehttp/guzzle",
-            "version": "7.9.2",
+            "version": "7.9.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
-                "reference": "d281ed313b989f213357e3be1a179f02196ac99b"
+                "reference": "7b2f29fe81dc4da0ca0ea7d42107a0845946ea77"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/d281ed313b989f213357e3be1a179f02196ac99b",
-                "reference": "d281ed313b989f213357e3be1a179f02196ac99b",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/7b2f29fe81dc4da0ca0ea7d42107a0845946ea77",
+                "reference": "7b2f29fe81dc4da0ca0ea7d42107a0845946ea77",
                 "shasum": ""
             },
             "require": {
@@ -2050,7 +2090,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/guzzle/issues",
-                "source": "https://github.com/guzzle/guzzle/tree/7.9.2"
+                "source": "https://github.com/guzzle/guzzle/tree/7.9.3"
             },
             "funding": [
                 {
@@ -2066,7 +2106,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-07-24T11:22:20+00:00"
+            "time": "2025-03-27T13:37:11+00:00"
         },
         {
             "name": "guzzlehttp/promises",

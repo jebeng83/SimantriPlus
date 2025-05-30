@@ -18,7 +18,8 @@
         <!-- Tambahkan debugging info -->
         @if(config('app.debug'))
         <div class="debug-info mt-2 p-2 bg-dark text-white">
-            <small>Debug: Username: {{ session('username') }} | Kd Poli: {{ session('kd_poli') }} | Total Data: {{ count($data) }}</small>
+            <small>Debug: Username: {{ session('username') }} | Kd Poli: {{ session('kd_poli') }} | Total Data: {{
+                count($data) }}</small>
         </div>
         @endif
     </div>
@@ -206,7 +207,7 @@
                                         <div class="dropdown-menu"
                                             aria-labelledby="dropdownMenu-{{$row->no_rawat ? str_replace('/', '-', $row->no_rawat) : 'unknown'}}">
                                             <a href="/ilp/dewasa/{{$row->no_rawat ?? ''}}" class="dropdown-item">
-                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Formulir ILP 
+                                                <i class="fas fa-file-medical mr-2 text-primary"></i> Formulir ILP
                                             </a>
                                         </div>
                                     </div>

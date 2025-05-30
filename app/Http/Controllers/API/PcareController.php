@@ -6,12 +6,24 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use App\Traits\PcareTrait;
 use Illuminate\Validation\ValidationException;
+use App\Models\PcareKunjunganUmum;
+use App\Services\PCare;
+use Carbon\Carbon;
 
 class PcareController extends Controller
 {
     use PcareTrait;
+
+    protected $pcare;
+
+    public function __construct(PCare $pcare)
+    {
+        $this->pcare = $pcare;
+    }
 
     /**
      * Mendapatkan data peserta berdasarkan nomor kartu
@@ -238,6 +250,84 @@ class PcareController extends Controller
 
         } catch (\Exception $e) {
             Log::error('PCare Get Dokter Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'metaData' => [
+                    'code' => 500,
+                    'message' => $this->getErrorMessage($e)
+                ],
+                'response' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Mendapatkan data referensi poli PCare
+     */
+    public function getRefPoli()
+    {
+        try {
+            // Cek cache dulu
+            $cacheKey = 'pcare_ref_poli';
+            if (Cache::has($cacheKey)) {
+                Log::info('PCare Get Ref Poli From Cache');
+                return response()->json(Cache::get($cacheKey));
+            }
+
+            // Kirim request ke PCare dengan endpoint yang benar
+            $response = $this->requestPcare('referensi.svc/poli');
+
+            // Jika sukses, simpan ke cache
+            if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
+                Cache::put($cacheKey, $response, now()->addHours(24));
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            Log::error('PCare Get Ref Poli Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'metaData' => [
+                    'code' => 500,
+                    'message' => $this->getErrorMessage($e)
+                ],
+                'response' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Mendapatkan data referensi dokter PCare
+     */
+    public function getRefDokter()
+    {
+        try {
+            // Cek cache dulu
+            $cacheKey = 'pcare_ref_dokter';
+            if (Cache::has($cacheKey)) {
+                Log::info('PCare Get Ref Dokter From Cache');
+                return response()->json(Cache::get($cacheKey));
+            }
+
+            // Kirim request ke PCare
+            $response = $this->requestPcare('dokter');
+
+            // Jika sukses, simpan ke cache
+            if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
+                Cache::put($cacheKey, $response, now()->addHours(24));
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            Log::error('PCare Get Ref Dokter Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -566,7 +656,7 @@ class PcareController extends Controller
                 isset($request->noKartu) && !isset($request->no_rawat) && !isset($request->no_rkm_medis) && 
                 isset($request->keluhan) && $request->keluhan === 'Konsultasi Kesehatan') {
                 
-                \Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
+                Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
                 
                 // Persiapkan data untuk dikirim ke PCare (minimal yang diperlukan)
                 $dataRequest = [
@@ -603,7 +693,7 @@ class PcareController extends Controller
             }
             
             // Validasi input (untuk pendaftaran normal)
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'no_rawat' => 'required|string',
                 'no_rkm_medis' => 'required|string',
                 'nm_pasien' => 'required|string',
@@ -839,7 +929,7 @@ class PcareController extends Controller
                                 'no_reg' => $newNumber,
                                 'tgl_registrasi' => $today,
                                 'jam_reg' => date('H:i:s'),
-                                'kd_dokter' => $data['kd_dokter'] ?? '1',
+                                'kd_dokter' => $data['kd_dokter'] ?? DB::table('dokter')->orderBy('kd_dokter', 'asc')->value('kd_dokter'), // Mengambil kd_dokter secara dinamis dari database
                                 'no_rkm_medis' => $data['no_rkm_medis'],
                                 'kd_poli' => 'U0002', // Default ke poli umum
                                 'p_jawab' => 'BPJS',
@@ -874,7 +964,7 @@ class PcareController extends Controller
                                 'no_reg' => '000001',
                                 'tgl_registrasi' => $today,
                                 'jam_reg' => date('H:i:s'),
-                                'kd_dokter' => $data['kd_dokter'] ?? '1',
+                                'kd_dokter' => $data['kd_dokter'] ?? DB::table('dokter')->orderBy('kd_dokter', 'asc')->value('kd_dokter'), // Mengambil kd_dokter secara dinamis dari database
                                 'no_rkm_medis' => $data['no_rkm_medis'],
                                 'kd_poli' => 'U0002', // Default ke poli umum
                                 'p_jawab' => 'BPJS',
@@ -929,7 +1019,7 @@ class PcareController extends Controller
                             'no_reg' => $newNumber ?? '000001',
                             'tgl_registrasi' => $today,
                             'jam_reg' => date('H:i:s'),
-                            'kd_dokter' => $data['kd_dokter'] ?? '1',
+                            'kd_dokter' => $data['kd_dokter'] ?? DB::table('dokter')->orderBy('kd_dokter', 'asc')->value('kd_dokter'), // Mengambil kd_dokter secara dinamis dari database
                             'no_rkm_medis' => $data['no_rkm_medis'],
                             'kd_poli' => 'U0002', // Default ke poli umum
                             'p_jawab' => 'BPJS',
@@ -1415,5 +1505,107 @@ class PcareController extends Controller
             return false;
         }
     }
-} 
+
+    public function index()
+    {
+        $kunjungan = PcareKunjunganUmum::with(['pasien', 'poli', 'dokter'])
+            ->orderBy('tglDaftar', 'desc')
+            ->get();
+        
+        return view('Pcare.data-kunjungan-pcare', compact('kunjungan'));
+    }
+
+    public function show($noRawat)
+    {
+        $kunjungan = PcareKunjunganUmum::with(['pasien', 'poli', 'dokter'])
+            ->where('no_rawat', $noRawat)
+            ->firstOrFail();
+        
+        return response()->json($kunjungan);
+    }
+
+    public function kirimUlang($noRawat)
+    {
+        try {
+            $kunjungan = PcareKunjunganUmum::where('no_rawat', $noRawat)->firstOrFail();
+            
+            // Siapkan data untuk PCare
+            $data = [
+                'noKunjungan' => null,
+                'noKartu' => $kunjungan->noKartu,
+                'tglDaftar' => date('d-m-Y', strtotime($kunjungan->tglDaftar)),
+                'kdPoli' => $kunjungan->kdPoli,
+                'keluhan' => $kunjungan->keluhan,
+                'kdSadar' => $kunjungan->kdSadar,
+                'sistole' => $kunjungan->sistole,
+                'diastole' => $kunjungan->diastole,
+                'beratBadan' => $kunjungan->beratBadan,
+                'tinggiBadan' => $kunjungan->tinggiBadan,
+                'respRate' => $kunjungan->respRate,
+                'heartRate' => $kunjungan->heartRate,
+                'lingkarPerut' => $kunjungan->lingkarPerut,
+                'kdStatusPulang' => $kunjungan->kdStatusPulang,
+                'tglPulang' => date('d-m-Y', strtotime($kunjungan->tglPulang)),
+                'kdDokter' => $kunjungan->kdDokter,
+                'kdDiag1' => $kunjungan->kdDiag1,
+                'kdDiag2' => $kunjungan->kdDiag2,
+                'kdDiag3' => $kunjungan->kdDiag3,
+                'kdTacc' => $kunjungan->kdTacc ?? -1,
+                'alasanTacc' => $kunjungan->alasanTacc
+            ];
+            
+            // Kirim ke PCare
+            $response = PCare::addKunjungan($data);
+            
+            if ($response['metaData']['code'] == 201) {
+                // Update status menjadi terkirim
+                $kunjungan->update([
+                    'status' => 'Terkirim',
+                    'noKunjungan' => $response['response']['message']
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data berhasil dikirim'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => $response['metaData']['message']
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function kirimUlangBatch()
+    {
+        try {
+            $kunjunganGagal = PcareKunjunganUmum::where('status', 'Gagal')->get();
+            $berhasil = 0;
+            $gagal = 0;
+            
+            foreach ($kunjunganGagal as $kunjungan) {
+                // Proses kirim ulang seperti method kirimUlang
+                // Hitung jumlah berhasil dan gagal
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil mengirim $berhasil data, gagal $gagal data"
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
