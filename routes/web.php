@@ -106,13 +106,18 @@ Route::middleware(['web', 'loginauth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     
     // PCare Routes
-    Route::middleware(['auth'])->prefix('pcare')->group(function () {
+    Route::prefix('pcare')->group(function () {
+        // Referensi Dokter
         Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
-        Route::get('/api/ref/dokter/kodepoli/{kodepoli}/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])
-            ->name('pcare.api.ref.dokter')
-            ->middleware(['auth:sanctum']);
+        Route::get('/api/ref/dokter/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.api.ref.dokter');
         Route::get('/api/ref/dokter/export/excel', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportExcel'])->name('pcare.api.ref.dokter.export.excel');
         Route::get('/api/ref/dokter/export/pdf', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportPdf'])->name('pcare.api.ref.dokter.export.pdf');
+        
+        // Referensi Poli
+        Route::get('/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])->name('pcare.ref.poli');
+        Route::get('/api/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])->name('pcare.api.ref.poli');
+        Route::get('/api/ref/poli/export/excel', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportExcel'])->name('pcare.api.ref.poli.export.excel');
+        Route::get('/api/ref/poli/export/pdf', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportPdf'])->name('pcare.api.ref.poli.export.pdf');
     });
     
     // Route untuk skrining CKG

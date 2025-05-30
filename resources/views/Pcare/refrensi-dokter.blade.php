@@ -25,10 +25,11 @@
                <div class="col-md-8">
                   <form id="filter-form" class="form-inline">
                      <div class="form-group mr-2">
-                        <label for="kodePoli" class="mr-2">Poli:</label>
-                        <select class="form-control" id="kodePoli" name="kodePoli" required>
-                           <option value="">Pilih Poli</option>
-                           <!-- Opsi poli akan diisi melalui AJAX -->
+                        <label for="kodepoli" class="mr-2">Poli:</label>
+                        <select class="form-control" id="kodepoli" name="kodepoli" required>
+                           @foreach($poliList as $kode => $nama)
+                           <option value="{{ $kode }}">{{ $nama }}</option>
+                           @endforeach
                         </select>
                      </div>
                      <div class="form-group mr-2">
@@ -56,16 +57,34 @@
                </div>
             </div>
 
+            <!-- Loading & Error Alerts -->
+            <div id="loading-alert" class="alert alert-info alert-dismissible d-none">
+               <h5><i class="icon fas fa-info"></i> Memuat Data</h5>
+               <div class="d-flex align-items-center">
+                  <div class="spinner-border text-info mr-2" role="status">
+                     <span class="sr-only">Loading...</span>
+                  </div>
+                  <span>Sedang mengambil data dari server BPJS...</span>
+               </div>
+            </div>
+
+            <div id="error-alert" class="alert alert-danger alert-dismissible d-none">
+               <h5><i class="icon fas fa-ban"></i> Error</h5>
+               <span id="error-message"></span>
+            </div>
+
             <!-- Table Section -->
             <div class="table-responsive">
-               <table id="tabel-dokter" class="table table-bordered table-striped">
-                  <thead>
+               <table id="tabel-dokter" class="table table-bordered table-striped table-hover">
+                  <thead class="bg-primary">
                      <tr>
-                        <th>No</th>
+                        <th class="text-center" style="width: 50px">No</th>
                         <th>Nama Dokter</th>
-                        <th>Kode Dokter</th>
-                        <th>Jam Praktek</th>
-                        <th>Kapasitas</th>
+                        <th class="text-center" style="width: 120px">Kode Dokter</th>
+                        <th class="text-center" style="width: 120px">Kode Poli</th>
+                        <th>Nama Poli</th>
+                        <th class="text-center" style="width: 150px">Jam Praktek</th>
+                        <th class="text-center" style="width: 100px">Kapasitas</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -80,132 +99,277 @@
 @stop
 
 @section('css')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css">
+<style>
+   .table th {
+      white-space: nowrap;
+      background-color: #f4f6f9;
+   }
+
+   .table td {
+      vertical-align: middle;
+   }
+
+   .form-inline .form-group {
+      margin-bottom: 10px;
+   }
+
+   @media (max-width: 768px) {
+      .form-inline {
+         flex-direction: column;
+         align-items: stretch;
+      }
+
+      .form-inline .form-group {
+         margin-right: 0 !important;
+         margin-bottom: 10px;
+      }
+
+      .form-inline .btn {
+         width: 100%;
+         margin-bottom: 5px;
+      }
+
+      .btn-group {
+         display: flex;
+         margin-top: 10px;
+      }
+
+      .btn-group .btn {
+         flex: 1;
+      }
+   }
+
+   #loading-alert,
+   #error-alert {
+      margin-bottom: 1rem;
+   }
+
+   .spinner-border {
+      width: 1.5rem;
+      height: 1.5rem;
+   }
+
+   .table-hover tbody tr:hover {
+      background-color: rgba(0, 123, 255, 0.075);
+   }
+
+   .card-primary.card-outline {
+      border-top: 3px solid #007bff;
+   }
+</style>
 @stop
 
 @section('js')
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-
 <script>
-   $(function() {
-   // Load data poli saat halaman dimuat
-   $.ajax({
-      url: '/api/pcare/ref/poli',
-      method: 'GET',
-      success: function(response) {
-         if (response.success) {
-            const poliSelect = $('#kodePoli');
-            response.data.forEach(function(poli) {
-               poliSelect.append(new Option(poli.nmPoli + ' (' + poli.kdPoli + ')', poli.kdPoli));
-            });
-         }
-      },
-      error: function(xhr) {
-         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Gagal memuat data poli'
-         });
-      }
-   });
-
-   // Initialize DataTable
-   const table = $('#tabel-dokter').DataTable({
-      processing: true,
-      serverSide: false,
-      responsive: true,
-      ajax: {
-         url: '/api/pcare/ref/dokter',
-         data: function(d) {
-            return {
-               kodePoli: $('#kodePoli').val() || '',
-               tanggal: moment($('#tanggal').val()).format('DD-MM-YYYY')
-            };
-         },
-         error: function(xhr, error, code) {
-            console.error('DataTable AJAX Error:', xhr, error, code);
-            let errorMessage = 'Gagal memuat data.';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-               errorMessage = xhr.responseJSON.message;
+   $(document).ready(function() {
+      // Initialize DataTable
+      const table = $('#tabel-dokter').DataTable({
+         processing: true,
+         serverSide: false,
+         responsive: true,
+         autoWidth: false,
+         pageLength: 10,
+         language: {
+            processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>',
+            emptyTable: 'Tidak ada data yang tersedia',
+            zeroRecords: 'Tidak ditemukan data yang sesuai',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            infoFiltered: '(difilter dari _MAX_ total data)',
+            search: 'Cari:',
+            paginate: {
+               first: 'Pertama',
+               last: 'Terakhir',
+               next: 'Selanjutnya',
+               previous: 'Sebelumnya'
             }
+         },
+         columns: [
+            { 
+               data: null,
+               render: function (data, type, row, meta) {
+                  return meta.row + meta.settings._iDisplayStart + 1;
+               }
+            },
+            { 
+               data: 'nmDokter',
+               render: function(data, type, row) {
+                  return data || '-';
+               }
+            },
+            { 
+               data: 'kdDokter',
+               render: function(data, type, row) {
+                  return data || '-';
+               }
+            },
+            { 
+               data: 'kdPoli',
+               render: function(data, type, row) {
+                  return data || '-';
+               }
+            },
+            { 
+               data: 'nmPoli',
+               render: function(data, type, row) {
+                  return data || '-';
+               }
+            },
+            { 
+               data: 'jamPraktek',
+               render: function(data, type, row) {
+                  return data || '<span class="text-muted">Jadwal tidak tersedia</span>';
+               }
+            },
+            { 
+               data: 'kapasitas',
+               render: function(data, type, row) {
+                  return data || '0';
+               }
+            }
+         ]
+      });
+
+      // Filter form submission
+      $('#filter-form').on('submit', function(e) {
+         e.preventDefault();
+         
+         const tanggal = $('#tanggal').val();
+         const kodepoli = $('#kodepoli').val();
+
+         // Debug log
+         console.log('Form Data:', {
+            tanggal: tanggal,
+            kodepoli: kodepoli
+         });
+
+         // Validasi input
+         if (!tanggal || !kodepoli) {
             Swal.fire({
-               icon: 'error',
-               title: 'Error',
-               text: errorMessage
+               icon: 'warning',
+               title: 'Peringatan',
+               text: 'Silakan pilih Poli dan Tanggal terlebih dahulu'
             });
+            return;
          }
-      },
-      columns: [
-         { 
-            data: null,
-            render: function (data, type, row, meta) {
-               return meta.row + meta.settings._iDisplayStart + 1;
+
+         // Show loading alert
+         $('#loading-alert').removeClass('d-none');
+         $('#error-alert').addClass('d-none');
+         table.clear().draw();
+
+         // Make AJAX request
+         $.ajax({
+            url: `/pcare/api/ref/dokter/tanggal/${tanggal}`,
+            method: 'GET',
+            data: {
+               kodepoli: kodepoli
+            },
+            dataType: 'json',
+            headers: {
+               'Accept': 'application/json',
+               'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+               $('#loading-alert').addClass('d-none');
+               
+               if (response.metadata && response.metadata.code === 200) {
+                  if (response.response && Array.isArray(response.response.list)) {
+                     const data = response.response.list;
+                     
+                     if (data.length > 0) {
+                        table.clear().rows.add(data).draw();
+                        $('#error-alert').addClass('d-none');
+                     } else {
+                        $('#error-message').text('Tidak ada data dokter yang tersedia untuk poli dan tanggal yang dipilih');
+                        $('#error-alert').removeClass('d-none');
+                     }
+                  } else {
+                     $('#error-message').text('Format data tidak valid');
+                     $('#error-alert').removeClass('d-none');
+                  }
+               } else {
+                  const message = response.metadata ? response.metadata.message : 'Terjadi kesalahan saat memuat data';
+                  $('#error-message').text(message);
+                  $('#error-alert').removeClass('d-none');
+               }
+            },
+            error: function(xhr, status, error) {
+               $('#loading-alert').addClass('d-none');
+               
+               console.error('AJAX Error:', {
+                  status: status,
+                  error: error,
+                  response: xhr.responseText
+               });
+
+               let errorMessage = 'Terjadi kesalahan saat memuat data';
+               
+               try {
+                  const response = JSON.parse(xhr.responseText);
+                  if (response.metadata && response.metadata.message) {
+                     errorMessage = response.metadata.message;
+                  }
+               } catch (e) {
+                  console.error('Error parsing error response:', e);
+               }
+
+               $('#error-message').text(errorMessage);
+               $('#error-alert').removeClass('d-none');
+
+               // Tampilkan SweetAlert
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: errorMessage,
+                  footer: 'Silakan coba lagi atau hubungi administrator jika masalah berlanjut'
+               });
             }
-         },
-         { data: 'namadokter' },
-         { data: 'kodedokter' },
-         { data: 'jampraktek' },
-         { data: 'kapasitas' }
-      ],
-      order: [[1, 'asc']]
-   });
-
-   // Filter form submission
-   $('#filter-form').on('submit', function(e) {
-      e.preventDefault();
-      if (!$('#kodePoli').val()) {
-         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Silakan pilih Poli terlebih dahulu'
          });
-         return;
-      }
-      table.ajax.reload();
-   });
+      });
 
-   // Reset filter
-   $('#reset-filter').on('click', function() {
-      $('#kodePoli').val('');
-      $('#tanggal').val(moment().format('YYYY-MM-DD'));
-      table.ajax.reload();
-   });
+      // Reset filter
+      $('#reset-filter').on('click', function() {
+         $('#kodepoli').val('001');
+         $('#tanggal').val('{{ date("Y-m-d") }}');
+         table.clear().draw();
+         $('#error-alert').addClass('d-none');
+         $('#loading-alert').addClass('d-none');
+      });
 
-   // Export Excel
-   $('#export-excel').on('click', function() {
-      const kodePoli = $('#kodePoli').val();
-      const tanggal = moment($('#tanggal').val()).format('DD-MM-YYYY');
-      if (!kodePoli) {
-         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Silakan pilih Poli terlebih dahulu'
-         });
-         return;
-      }
-      window.location.href = `/api/pcare/ref/dokter/export/excel?kodePoli=${kodePoli}&tanggal=${tanggal}`;
-   });
+      // Export Excel
+      $('#export-excel').on('click', function() {
+         const tanggal = $('#tanggal').val();
+         const kodepoli = $('#kodepoli').val();
+         
+         if (!tanggal || !kodepoli) {
+            Swal.fire({
+               icon: 'warning',
+               title: 'Peringatan',
+               text: 'Parameter poli dan tanggal harus diisi'
+            });
+            return;
+         }
+         
+         window.location.href = `/pcare/api/ref/dokter/export/excel?tanggal=${tanggal}&kodepoli=${kodepoli}`;
+      });
 
-   // Export PDF
-   $('#export-pdf').on('click', function() {
-      const kodePoli = $('#kodePoli').val();
-      const tanggal = moment($('#tanggal').val()).format('DD-MM-YYYY');
-      if (!kodePoli) {
-         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Silakan pilih Poli terlebih dahulu'
-         });
-         return;
-      }
-      window.location.href = `/api/pcare/ref/dokter/export/pdf?kodePoli=${kodePoli}&tanggal=${tanggal}`;
+      // Export PDF
+      $('#export-pdf').on('click', function() {
+         const tanggal = $('#tanggal').val();
+         const kodepoli = $('#kodepoli').val();
+         
+         if (!tanggal || !kodepoli) {
+            Swal.fire({
+               icon: 'warning',
+               title: 'Peringatan',
+               text: 'Parameter poli dan tanggal harus diisi'
+            });
+            return;
+         }
+         
+         window.location.href = `/pcare/api/ref/dokter/export/pdf?tanggal=${tanggal}&kodepoli=${kodepoli}`;
+      });
    });
-});
 </script>
 @stop

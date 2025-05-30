@@ -234,4 +234,16 @@ class ReferensiPoliController extends Controller
             ], 200); // Return 200 dengan list kosong
         }
     }
+
+    public function exportExcel(Request $request)
+    {
+        // TODO: Implement Excel export
+        return response()->json(['message' => 'Fitur export Excel akan segera tersedia']);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        // TODO: Implement PDF export
+        return response()->json(['message' => 'Fitur export PDF akan segera tersedia']);
+    }
 } 

@@ -57,7 +57,17 @@ class ReferensiDokterController extends Controller
 
     public function index()
     {
-        return view('Pcare.refrensi-dokter');
+        $poliMap = [
+            '001' => 'POLI UMUM',
+            '002' => 'POLI GIGI & MULUT',
+            '003' => 'POLI KIA',
+            '004' => 'LABORATORIUM',
+            '008' => 'POLI KB'
+        ];
+
+        return view('Pcare.refrensi-dokter', [
+            'poliList' => $poliMap
+        ]);
     }
 
     protected function generateTimestamp()
@@ -369,67 +379,24 @@ class ReferensiDokterController extends Controller
         }
     }
 
-    public function getDokter(Request $request)
+    protected function getPoliData()
     {
         try {
-            // Ambil parameter dari request
-            $kodePoli = $request->input('kodePoli');
-            $tanggal = $request->input('tanggal');
-
-            Log::info('Request Ref Dokter:', [
-                'kodePoli' => $kodePoli,
-                'tanggal' => $tanggal,
-                'raw_request' => $request->all()
-            ]);
-
-            // Validasi parameter
-            if (empty($kodePoli) || empty($tanggal)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Parameter kodePoli dan tanggal harus diisi',
-                    'data' => null
-                ], 400);
-            }
-
-            try {
-                $tanggal = $this->formatTanggal($tanggal);
-                Log::info('Tanggal diformat:', [
-                    'input' => $request->input('tanggal'),
-                    'output' => $tanggal
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                    'data' => null
-                ], 400);
-            }
-
-            // Generate timestamp
+            // Generate timestamp dan signature
             $timestamp = $this->generateTimestamp();
-            
-            // Generate signature
             $signature = $this->generateSignature($this->config['cons_id'], $this->config['secret_key'], $timestamp);
 
-            // Format endpoint sesuai dokumentasi (hapus /antreanfktp dari base_url)
+            // Format endpoint
             $baseUrl = str_replace('/antreanfktp', '', $this->config['base_url']);
-            $endpoint = "/antreanfktp/ref/dokter/kodepoli/{$kodePoli}/tanggal/{$tanggal}";
+            $endpoint = "/antreanfktp/ref/poli";
 
-            Log::info('BPJS API Request Details:', [
+            Log::info('BPJS API Request Poli:', [
                 'base_url' => $baseUrl,
                 'endpoint' => $endpoint,
-                'full_url' => $baseUrl . $endpoint,
-                'timestamp' => $timestamp,
-                'signature' => $signature,
-                'tanggal_format' => $tanggal,
-                'headers' => [
-                    'x-cons-id' => $this->config['cons_id'],
-                    'x-timestamp' => $timestamp,
-                    'user_key' => $this->config['user_key']
-                ]
+                'timestamp' => $timestamp
             ]);
 
-            // Set headers sesuai dokumentasi
+            // Set headers
             $headers = [
                 'x-cons-id' => $this->config['cons_id'],
                 'x-timestamp' => $timestamp,
@@ -437,115 +404,247 @@ class ReferensiDokterController extends Controller
                 'user_key' => $this->config['user_key']
             ];
 
-            // Buat client baru dengan base_url yang sudah dikoreksi
+            // Buat client
             $client = new Client([
                 'base_uri' => $baseUrl,
                 'timeout' => 30,
-                'verify' => false,
-                'debug' => true
+                'verify' => false
             ]);
 
-            // Kirim request ke PCare
+            // Kirim request
             $response = $client->request('GET', $endpoint, [
                 'headers' => $headers
             ]);
 
-            $responseBody = json_decode($response->getBody()->getContents(), true);
+            $responseContent = $response->getBody()->getContents();
+            
+            // Ekstrak JSON yang valid
+            if (preg_match('/({.*})$/s', $responseContent, $matches)) {
+                $jsonContent = $matches[1];
+                $responseBody = json_decode($jsonContent, true);
 
-            Log::info('BPJS Raw Response:', [
-                'status_code' => $response->getStatusCode(),
-                'headers' => $response->getHeaders(),
-                'body' => $responseBody
-            ]);
-
-            // Jika response berhasil dan terenkripsi
-            if (isset($responseBody['response'])) {
-                try {
+                if (isset($responseBody['response'])) {
                     // Decrypt response
                     $decryptedResponse = $this->decryptResponse($responseBody, $timestamp);
                     
-                    Log::info('Decrypted Response:', [
-                        'decrypted' => $decryptedResponse,
-                        'metadata' => $responseBody['metadata'] ?? null
-                    ]);
-
-                    // Format response sesuai contoh
-                    $formattedResponse = [];
-                    
-                    // Jika response adalah array langsung (tanpa 'list')
-                    if (is_array($decryptedResponse) && !isset($decryptedResponse['list'])) {
-                        foreach ($decryptedResponse as $dokter) {
-                            if (is_array($dokter)) {
-                                $formattedResponse[] = [
-                                    'namadokter' => $dokter['namadokter'] ?? '',
-                                    'kodedokter' => intval($dokter['kodedokter'] ?? 0),
-                                    'jampraktek' => $dokter['jampraktek'] ?? '',
-                                    'kapasitas' => intval($dokter['kapasitas'] ?? 0)
-                                ];
-                            }
-                        }
-                    }
-                    // Jika response memiliki struktur dengan 'list'
-                    else if (isset($decryptedResponse['list']) && is_array($decryptedResponse['list'])) {
-                        foreach ($decryptedResponse['list'] as $dokter) {
-                            $formattedResponse[] = [
-                                'namadokter' => $dokter['namadokter'] ?? '',
-                                'kodedokter' => intval($dokter['kodedokter'] ?? 0),
-                                'jampraktek' => $dokter['jampraktek'] ?? '',
-                                'kapasitas' => intval($dokter['kapasitas'] ?? 0)
+                    // Format response menjadi array dengan key kodepoli
+                    $poliData = [];
+                    foreach ($decryptedResponse as $poli) {
+                        if (isset($poli['kdpoli']) && isset($poli['nmpoli'])) {
+                            $poliData[$poli['kdpoli']] = [
+                                'kodepoli' => $poli['kdpoli'],
+                                'namapoli' => $poli['nmpoli']
                             ];
                         }
                     }
-
-                    Log::info('Final Formatted Response:', [
-                        'formatted' => $formattedResponse
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Data dokter berhasil diambil',
-                        'data' => $formattedResponse
-                    ]);
-
-                } catch (\Exception $e) {
-                    Log::error('Decrypt Response Error:', [
-                        'message' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                        'raw_response' => $responseBody
-                    ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Gagal mendekripsi response: ' . $e->getMessage(),
-                        'data' => null
-                    ], 500);
+                    return $poliData;
                 }
             }
 
-            // Jika response tidak sesuai format
-            Log::warning('Invalid Response Format:', [
-                'response' => $responseBody,
-                'metadata' => $responseBody['metadata'] ?? null
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => $responseBody['metadata']['message'] ?? 'Format response tidak valid atau data tidak ditemukan',
-                'metadata' => $responseBody['metadata'] ?? null,
-                'data' => null
-            ], 404);
+            return [];
 
         } catch (\Exception $e) {
-            Log::error('PCare Get Ref Dokter Error:', [
+            Log::error('Error getting poli data:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            return [];
+        }
+    }
+
+    public function getDokter(Request $request, $tanggal = null)
+    {
+        try {
+            $tanggal = $tanggal ?? $request->input('tanggal', date('Y-m-d'));
+            $kodePoli = $request->input('kodepoli', '001'); // Default ke poli umum jika tidak ada
+            $timestamp = $this->generateTimestamp();
+            
+            Log::info('Getting dokter data:', [
+                'tanggal' => $tanggal,
+                'kodepoli' => $kodePoli,
+                'timestamp' => $timestamp
+            ]);
+            
+            $headers = [
+                'X-cons-id' => $this->config['cons_id'],
+                'X-timestamp' => $timestamp,
+                'X-signature' => $this->generateSignature($this->config['cons_id'], $this->config['secret_key'], $timestamp),
+                'user_key' => $this->config['user_key']
+            ];
+
+            // Endpoint yang benar untuk referensi dokter
+            $endpoint = "/antreanfktp/ref/dokter/kodepoli/{$kodePoli}/tanggal/{$tanggal}";
+            
+            Log::info('Request detail:', [
+                'url' => $this->config['base_url'] . $endpoint,
+                'headers' => array_merge($headers, ['X-signature' => '******'])
+            ]);
+
+            $response = $this->client->request('GET', $endpoint, [
+                'headers' => $headers,
+                'debug' => false // Matikan debug mode
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            $responseBody = $response->getBody()->getContents();
+            
+            // Ekstrak JSON yang valid dari response
+            if (preg_match('/{.*}$/s', $responseBody, $matches)) {
+                $responseBody = $matches[0];
+            }
+            
+            Log::info('Response from BPJS:', [
+                'status_code' => $statusCode,
+                'response_length' => strlen($responseBody)
+            ]);
+
+            $result = json_decode($responseBody, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON response: ' . json_last_error_msg());
+            }
+            
+            if (!isset($result['response'])) {
+                throw new Exception('Invalid response format: response field not found');
+            }
+
+            // Dekripsi response
+            if (isset($result['response']) && is_string($result['response'])) {
+                $key = $this->config['cons_id'] . $this->config['secret_key'] . $timestamp;
+                $decryptedResponse = $this->stringDecrypt($key, $result['response']);
+                $decompressedResponse = $this->decompress($decryptedResponse);
+                $decodedResponse = json_decode($decompressedResponse, true);
+                
+                Log::info('Decoded response:', [
+                    'response' => $decodedResponse
+                ]);
+
+                // Format data sesuai kebutuhan frontend
+                $finalData = [];
+                if (is_array($decodedResponse)) {
+                    foreach ($decodedResponse as $dokter) {
+                        $finalData[] = [
+                            'kdDokter' => $dokter['kodedokter'] ?? null,
+                            'nmDokter' => $dokter['namadokter'] ?? null,
+                            'kdPoli' => $kodePoli,
+                            'nmPoli' => $this->getPoliName($kodePoli),
+                            'jamPraktek' => isset($dokter['jadwal']) ? $dokter['jadwal'] : 
+                                          (isset($dokter['jampraktek']) ? $dokter['jampraktek'] : null),
+                            'kapasitas' => $dokter['kapasitas'] ?? 0
+                        ];
+                    }
+                }
+
+                Log::info('Decoded dokter data:', [
+                    'raw_response' => $decodedResponse,
+                    'formatted_data' => $finalData
+                ]);
+
+                return response()->json([
+                    'metadata' => [
+                        'code' => 200,
+                        'message' => 'OK'
+                    ],
+                    'response' => [
+                        'list' => $finalData
+                    ]
+                ]);
+            }
+
+            throw new Exception('Invalid response format: encrypted response not found');
+
+        } catch (Exception $e) {
+            Log::error('Error in getDokter:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'metadata' => [
+                    'code' => 500,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ],
+                'response' => [
+                    'list' => []
+                ]
+            ], 200); // Return 200 dengan list kosong
+        }
+    }
+
+    protected function getPoliName($kodePoli)
+    {
+        // Data mapping kode poli ke nama poli sesuai referensi BPJS PCare
+        $poliMap = [
+            '001' => 'POLI UMUM',
+            '002' => 'POLI GIGI & MULUT',
+            '003' => 'POLI KIA',
+            '004' => 'LABORATORIUM',
+            '008' => 'POLI KB'
+        ];
+
+        return $poliMap[$kodePoli] ?? 'POLI TIDAK DIKETAHUI';
+    }
+
+    /**
+     * Mendapatkan daftar poli yang tersedia
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getListPoli()
+    {
+        try {
+            $poliList = [];
+            // Data lengkap poli
+            $poliMap = [
+                '001' => 'POLI UMUM',
+                '002' => 'POLI GIGI & MULUT',
+                '003' => 'POLI KIA',
+                '004' => 'LABORATORIUM',
+                '008' => 'POLI KB'
+            ];
+
+            // Data untuk filter dropdown (menggunakan nama yang sama dengan data lengkap)
+            $poliFilter = [
+                '001' => 'POLI UMUM',
+                '002' => 'POLI GIGI & MULUT',
+                '003' => 'POLI KIA',
+                '004' => 'LABORATORIUM',
+                '008' => 'POLI KB'
+            ];
+
+            // Menambahkan semua poli ke dalam list
+            foreach ($poliMap as $kode => $nama) {
+                $poliList[] = [
+                    'kodePoli' => $kode,
+                    'namaPoli' => $nama
+                ];
+            }
 
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-                'data' => null
-            ], 500);
+                'metadata' => [
+                    'code' => 200,
+                    'message' => 'OK'
+                ],
+                'response' => [
+                    'list' => $poliList,
+                    'filter' => $poliFilter
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getListPoli:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'metadata' => [
+                    'code' => 500,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ],
+                'response' => [
+                    'list' => [],
+                    'filter' => []
+                ]
+            ], 200);
         }
     }
 
