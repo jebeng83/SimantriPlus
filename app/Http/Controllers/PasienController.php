@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 use App\Http\Livewire\ILP\Pendaftaran;
 use App\Exports\PasienExport;
@@ -138,6 +139,7 @@ class PasienController extends Controller
             'status' => 'required',
             'data_posyandu' => 'required',
             'no_kk' => 'required',
+            'pekerjaan' => 'nullable',
         ], [
             'nm_pasien.required' => 'Nama Pasien tidak boleh kosong',
             'no_ktp.required' => 'No. KTP/SIM tidak boleh kosong',
@@ -170,6 +172,7 @@ class PasienController extends Controller
                 'status' => $request->status,
                 'data_posyandu' => $request->data_posyandu,
                 'no_kk' => $request->no_kk,
+                'pekerjaan' => $request->pekerjaan,
             ]);
 
             // Log sukses update

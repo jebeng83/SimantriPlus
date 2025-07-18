@@ -106,27 +106,79 @@ trait BpjsTraits
             return $this->responseDataBpjs($jsonResponse, $timestamp, $type);
 
         } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
+            $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : 500;
+            
             Log::error("BPJS {$prefix} Request Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null,
-                'response' => $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
+                'status_code' => $statusCode,
+                'response' => $responseBody
             ]);
             
+            // Cek jika error authentication/credential
+            if ($statusCode === 401 || $statusCode === 403) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => $statusCode,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ], $statusCode);
+            }
+            
+            // Cek response body untuk authentication error
+            if ($responseBody) {
+                $responseData = json_decode($responseBody, true);
+                if ($responseData && isset($responseData['metaData'])) {
+                    $message = $responseData['metaData']['message'] ?? '';
+                    if (stripos($message, 'username') !== false || 
+                        stripos($message, 'password') !== false ||
+                        stripos($message, 'authentication') !== false ||
+                        stripos($message, 'credential') !== false ||
+                        stripos($message, 'unauthorized') !== false) {
+                        return response()->json([
+                            'metaData' => [
+                                'code' => 401,
+                                'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                            ],
+                            'response' => null
+                        ], 401);
+                    }
+                }
+            }
+            
             return response()->json([
-                'metadata' => [
-                    'code' => 500,
+                'metaData' => [
+                    'code' => $statusCode,
                     'message' => "Gagal menghubungi server BPJS {$prefix}: " . $e->getMessage()
                 ],
                 'response' => null
-            ], 500);
+            ], $statusCode);
         } catch (\Exception $e) {
             Log::error("BPJS {$prefix} Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null
             ]);
             
+            // Cek jika error message mengandung kata kunci authentication
+            $message = $e->getMessage();
+            if (stripos($message, 'username') !== false || 
+                stripos($message, 'password') !== false ||
+                stripos($message, 'authentication') !== false ||
+                stripos($message, 'credential') !== false ||
+                stripos($message, 'unauthorized') !== false) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 401,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ], 401);
+            }
+            
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ],
@@ -230,20 +282,56 @@ trait BpjsTraits
             return $this->responseDataBpjs($jsonResponse, $timestamp, $type);
 
         } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
+            $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : 500;
+            
             Log::error("BPJS {$prefix} Request POST Error", [
                 'message' => $e->getMessage(),
                 'url' => $url ?? null,
                 'request' => $request,
-                'response' => $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
+                'status_code' => $statusCode,
+                'response' => $responseBody
             ]);
             
+            // Cek jika error authentication/credential
+            if ($statusCode === 401 || $statusCode === 403) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => $statusCode,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ], $statusCode);
+            }
+            
+            // Cek response body untuk authentication error
+            if ($responseBody) {
+                $responseData = json_decode($responseBody, true);
+                if ($responseData && isset($responseData['metaData'])) {
+                    $message = $responseData['metaData']['message'] ?? '';
+                    if (stripos($message, 'username') !== false || 
+                        stripos($message, 'password') !== false ||
+                        stripos($message, 'authentication') !== false ||
+                        stripos($message, 'credential') !== false ||
+                        stripos($message, 'unauthorized') !== false) {
+                        return response()->json([
+                            'metaData' => [
+                                'code' => 401,
+                                'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                            ],
+                            'response' => null
+                        ], 401);
+                    }
+                }
+            }
+            
             return response()->json([
-                'metadata' => [
-                    'code' => 500,
+                'metaData' => [
+                    'code' => $statusCode,
                     'message' => "Gagal menghubungi server BPJS {$prefix}: " . $e->getMessage()
                 ],
                 'response' => null
-            ], 500);
+            ], $statusCode);
         } catch (\Exception $e) {
             Log::error("BPJS {$prefix} POST Error", [
                 'message' => $e->getMessage(),
@@ -251,8 +339,24 @@ trait BpjsTraits
                 'request' => $request
             ]);
             
+            // Cek jika error message mengandung kata kunci authentication
+            $message = $e->getMessage();
+            if (stripos($message, 'username') !== false || 
+                stripos($message, 'password') !== false ||
+                stripos($message, 'authentication') !== false ||
+                stripos($message, 'credential') !== false ||
+                stripos($message, 'unauthorized') !== false) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 401,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ], 401);
+            }
+            
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ],
@@ -314,9 +418,26 @@ trait BpjsTraits
             // Gunakan metadata jika ada, atau metaData sebagai fallback
             $metaData = isset($res['metadata']) ? $res['metadata'] : $res['metaData'];
 
+            // Cek jika ada authentication error dalam metadata
+            $message = $metaData['message'] ?? '';
+            if (($metaData['code'] ?? 0) === 401 || ($metaData['code'] ?? 0) === 403 ||
+                stripos($message, 'username') !== false || 
+                stripos($message, 'password') !== false ||
+                stripos($message, 'authentication') !== false ||
+                stripos($message, 'credential') !== false ||
+                stripos($message, 'unauthorized') !== false) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 401,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ], 401);
+            }
+
             // Siapkan response dasar dengan format yang konsisten
             $response = [
-                'metadata' => [
+                'metaData' => [
                     'code' => $metaData['code'] ?? null,
                     'message' => $metaData['message'] ?? null
                 ]

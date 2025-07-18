@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\BPJSTestController;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +11,9 @@ use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
 use App\Http\Controllers\MobileJknController;
+use App\Http\Controllers\SkriningController;
+use App\Http\Controllers\PcareKunjunganController;
+use App\Http\Controllers\API\PcarePendaftaranController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,25 +39,60 @@ Route::get('/error', [App\Http\Controllers\ErrorController::class, 'index'])->na
 Route::get('/not-found', [App\Http\Controllers\ErrorController::class, 'notFound'])->name('error.404');
 Route::get('/forbidden', [App\Http\Controllers\ErrorController::class, 'forbidden'])->name('error.403');
 
-Route::get('/infokesehatan', function () {
+Route::get('/infokesehatan', function (): \Illuminate\Http\RedirectResponse {
     return redirect()->away('https://ayosehat.kemkes.go.id/promosi-kesehatan');
 });
 
-Route::get('/skriningbpjs', function () {
+Route::get('/skriningbpjs', function (): \Illuminate\Http\RedirectResponse {
     return redirect()->away('https://webskrining.bpjs-kesehatan.go.id/skrining');
 });
 
-Route::get('/offline', function () {
+// Route untuk form skrining minimal tanpa autentikasi
+Route::get('/skrining', [App\Http\Controllers\SkriningController::class, 'index'])->name('skrining.minimal');
+
+// Route untuk menyimpan data skrining tanpa autentikasi
+Route::post('/skrining/store', function(Illuminate\Http\Request $request): \Illuminate\Http\RedirectResponse {
+    // Untuk sementara hanya redirect kembali dengan pesan sukses
+    return redirect()->back()->with('success', 'Data skrining berhasil disimpan');
+})->name('skrining.store');
+
+// Route untuk mendapatkan data pasien berdasarkan NIK
+Route::get('/pasien/get-by-nik', function(Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse {
+    $nik = $request->input('nik');
+    
+    if (!$nik) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'NIK tidak boleh kosong'
+        ]);
+    }
+    
+    $pasien = DB::table('pasien')->where('no_ktp', $nik)->first();
+    
+    if ($pasien) {
+        return response()->json([
+            'status' => 'success',
+            'data' => $pasien
+        ]);
+    }
+    
+    return response()->json([
+        'status' => 'error',
+        'message' => 'Pasien tidak ditemukan'
+    ]);
+})->name('pasien.get-by-nik');
+
+Route::get('/offline', function (): \Illuminate\View\View {
     return view('modules/laravelpwa/offline');
 });
 
-Route::get('/kerjo-award', function () {
+Route::get('/kerjo-award', function (): \Illuminate\View\View {
     return view('kerjo_award');
 });
 
-Route::get('/clear-cache', function() {
+Route::get('/clear-cache', function(): int {
     $exitCode = Artisan::call('optimize:clear');
-    // return what you want
+    return $exitCode;
 });
 
 // Rute API yang tidak memerlukan autentikasi
@@ -75,6 +115,31 @@ Route::get('/berkas-retensi/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanR
 // Rute yang memerlukan autentikasi
 Route::middleware(['web', 'loginauth'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    
+    // PCare Routes
+    Route::prefix('pcare')->group(function () {
+        // Referensi Dokter
+        Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
+        Route::get('/api/ref/dokter/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.api.ref.dokter');
+        Route::get('/api/ref/dokter/export/excel', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportExcel'])->name('pcare.api.ref.dokter.export.excel');
+        Route::get('/api/ref/dokter/export/pdf', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'exportPdf'])->name('pcare.api.ref.dokter.export.pdf');
+        
+        // Referensi Poli
+        Route::get('/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])->name('pcare.ref.poli');
+        Route::get('/api/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])->name('pcare.api.ref.poli');
+        Route::get('/api/ref/poli/export/excel', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportExcel'])->name('pcare.api.ref.poli.export.excel');
+        Route::get('/api/ref/poli/export/pdf', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportPdf'])->name('pcare.api.ref.poli.export.pdf');
+    });
+    
+    // Route untuk skrining CKG
+    Route::get('/skrining-ckg', function() {
+        return view('skrining-ckg');
+    })->name('skrining.ckg');
+    
+    // Route untuk form skrining sederhana
+    Route::get('/skrining-sederhana', function() {
+        return view('form-skrining-sederhana');
+    })->name('skrining.sederhana');
     
     // Route untuk data pasien
     Route::prefix('data-pasien')->group(function () {
@@ -176,6 +241,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
     Route::prefix('ilp')->name('ilp.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard.data');
+        Route::get('/dashboard-ckg', [App\Http\Controllers\ILP\DashboardCKGController::class, 'index'])->name('dashboard-ckg');
         Route::get('/pendaftaran', [App\Http\Controllers\ILP\PendaftaranController::class, 'index'])->name('pendaftaran');
         Route::get('/pelayanan', [App\Http\Controllers\ILP\PelayananController::class, 'index'])->name('pelayanan');
         Route::put('/update/{id}', [App\Http\Controllers\ILP\PelayananController::class, 'update'])->name('update');
@@ -190,6 +256,14 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/sasaran-ckg', [App\Http\Controllers\ILP\SasaranCKGController::class, 'index'])->name('sasaran-ckg');
         Route::get('/sasaran-ckg/detail/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'detail'])->name('sasaran-ckg.detail');
         Route::get('/sasaran-ckg/kirim-wa/{noRekamMedis}', [App\Http\Controllers\ILP\SasaranCKGController::class, 'kirimWA'])->name('sasaran-ckg.kirim-wa');
+        
+        // Route untuk Pendaftaran CKG
+        Route::get('/pendaftaran-ckg', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'index'])->name('pendaftaran-ckg');
+        Route::get('/pendaftaran-ckg/detail', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detail'])->name('ckg.detail');
+        Route::post('/pendaftaran-ckg/update-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateStatus'])->name('ckg.update-status');
+        Route::get('/pendaftaran-ckg/check-processing-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'checkProcessingStatus'])->name('ckg.check-processing-status');
+        Route::post('/pendaftaran-ckg/set-processing', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'setProcessing'])->name('ckg.set-processing');
+        Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'releaseProcessing'])->name('ckg.release-processing');
         
         // Route untuk ILP Dewasa - dengan penanganan URL yang di-encode
         Route::get('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])
@@ -222,7 +296,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
                 'message' => 'Nomor registrasi berhasil dibuat'
             ]);
         } catch (\Exception $e) {
-            \Log::error("Error generateNoReg via Livewire: " . $e->getMessage());
+            Log::error("Error generateNoReg via Livewire: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -237,14 +311,30 @@ Route::middleware(['web', 'loginauth'])->group(function () {
             return view('Pcare.form-pendaftaran', compact('no_rkm_medis'));
         })->name('pcare.form-pendaftaran');
         
-        Route::get('/pendaftaran', function () {
-            // Redirect ke halaman utama untuk sementara
-            return redirect()->route('home')->with('info', 'Halaman Pendaftaran PCare sedang dalam pengembangan');
-        })->name('pcare.pendaftaran');
-        
         Route::get('/data-pendaftaran', function () {
             return view('Pcare.data-pendaftaran-pcare');
         })->name('pcare.data-pendaftaran');
+
+        Route::get('/data-kunjungan', [App\Http\Controllers\PcareKunjunganController::class, 'index'])->name('pcare.data-kunjungan');
+        Route::get('/kunjungan/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'show'])->name('pcare.kunjungan.show');
+        Route::post('/kunjungan/kirim-ulang/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlang'])->name('pcare.kunjungan.kirim-ulang');
+        Route::post('/kunjungan/kirim-ulang-batch', [App\Http\Controllers\PcareKunjunganController::class, 'kirimUlangBatch'])->name('pcare.kunjungan.kirim-ulang-batch');
+        Route::post('/api/pcare/pendaftaran/jadikan-kunjungan', [PcarePendaftaranController::class, 'jadikanKunjungan']);
+
+        // Route untuk Referensi Dokter PCare
+        Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
+        Route::get('/ref/dokter/get', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.ref.dokter.get');
+        
+        // Route untuk Referensi Poli PCare
+        Route::get('/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])->name('pcare.ref.poli');
+        Route::get('/api/ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])->name('pcare.api.ref.poli');
+        Route::get('/api/ref/poli/export/excel', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportExcel'])->name('pcare.api.ref.poli.export.excel');
+        Route::get('/api/ref/poli/export/pdf', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'exportPdf'])->name('pcare.api.ref.poli.export.pdf');
+        
+        // Route untuk menu referensi (sesuai dengan menu yang ditambahkan)
+        Route::get('/referensi/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])->name('pcare.referensi.poli');
+        Route::get('/referensi/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.referensi.dokter');
+        Route::get('/api/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.ref.dokter.api');
     });
 
     // Antrian Poliklinik Routes
@@ -288,3 +378,44 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 
 // Rute pengujian dokter spesifik
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
+
+// Route untuk API skrining (tanpa autentikasi)
+Route::post('/api/skrining/demografi', [App\Http\Controllers\SkriningController::class, 'simpanDemografi'])
+    ->name('api.skrining.demografi')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/tekanan-darah', [App\Http\Controllers\SkriningController::class, 'simpanTekananDarah'])
+    ->name('api.skrining.tekanan-darah')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/perilaku-merokok', [App\Http\Controllers\SkriningController::class, 'simpanPerilakuMerokok'])
+    ->name('api.skrining.perilaku-merokok')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/kesehatan-jiwa', [App\Http\Controllers\SkriningController::class, 'simpanKesehatanJiwa'])
+    ->name('api.skrining.kesehatan-jiwa')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    
+Route::post('/api/skrining/simpan', [App\Http\Controllers\SkriningController::class, 'simpanSkrining'])
+    ->name('api.skrining.simpan')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Route untuk debugging API
+Route::any('/api/skrining/debug', [App\Http\Controllers\SkriningController::class, 'debug'])
+    ->name('api.skrining.debug')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Ruta para obtener detalles de pendaftaran PCare para asegurar que coincida con el formato utilizado en la vista.
+Route::get('/api/pcare/pendaftaran/detail/{year}/{month}/{day}/{number}', [PcarePendaftaranController::class, 'getDetailByParts']);
+Route::get('/api/pcare/pendaftaran/detail/{no_rawat}', [PcarePendaftaranController::class, 'getDetail']);
+Route::delete('/api/pcare/pendaftaran/peserta/{noKartu}/tglDaftar/{tglDaftar}/noUrut/{noUrut}/kdPoli/{kdPoli}', [PcarePendaftaranController::class, 'deletePendaftaran']);
+Route::get('/api/test', function() {
+    return response()->json(['message' => 'API working', 'time' => now()]);
+});
+
+// Duplikasi route PCare dihapus - sudah ada di atas
+
+// Include test routes untuk development
+if (app()->environment('local')) {
+    require __DIR__.'/test-auth-error.php';
+}

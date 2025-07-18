@@ -335,6 +335,16 @@ return [
                     'url'  => '/ilp/sasaran-ckg',
                     'icon' => 'fas fa-fw fa-birthday-cake',
                 ],
+                [
+                    'text' => 'Pendaftaran CKG',
+                    'url'  => '/ilp/pendaftaran-ckg',
+                    'icon' => 'fas fa-fw fa-clipboard-check',
+                ],
+                [
+                    'text' => 'Dashboard CKG',
+                    'url'  => '/ilp/dashboard-ckg',
+                    'icon' => 'fas fa-fw fa-chart-bar',
+                ],
             ],
         ],
         [
@@ -379,15 +389,25 @@ return [
             'text'    => 'PCare BPJS',
             'icon'    => 'fas fa-fw fa-hospital-alt',
             'submenu' => [
-                [
-                    'text' => 'Pendaftaran',
-                    'url'  => '/pcare/form-pendaftaran',
-                    'icon' => 'fas fa-fw fa-plus-circle',
-                ],
+                // [
+                //     'text' => 'Pendaftaran',
+                //     'url'  => '/pcare/form-pendaftaran',
+                //     'icon' => 'fas fa-fw fa-plus-circle',
+                // ],
                 [
                     'text' => 'Data Pendaftaran',
                     'url'  => '/pcare/data-pendaftaran',
                     'icon' => 'fas fa-fw fa-list',
+                ],
+                [
+                    'text' => 'Referensi Poli PCare',
+                    'url'  => '/pcare/referensi/poli',
+                    'icon' => 'fas fa-fw fa-clinic-medical',
+                ],
+                [
+                    'text' => 'Referensi Dokter PCare',
+                    'url'  => '/pcare/referensi/dokter',
+                    'icon' => 'fas fa-fw fa-user-md',
                 ],
             ],
         ],

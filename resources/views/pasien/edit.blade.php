@@ -84,6 +84,65 @@
             @enderror
         </div>
         <div class="form-group">
+            <label for="pekerjaan">Pekerjaan</label>
+            <select class="form-control" id="pekerjaan" name="pekerjaan">
+                <option value="">-- Pilih Pekerjaan --</option>
+                <option value="Belum/Tidak Bekerja" @if($pasien->pekerjaan == 'Belum/Tidak Bekerja') selected @endif>Belum/Tidak Bekerja</option>
+                <option value="Pelajar" @if($pasien->pekerjaan == 'Pelajar') selected @endif>Pelajar</option>
+                <option value="Mahasiswa" @if($pasien->pekerjaan == 'Mahasiswa') selected @endif>Mahasiswa</option>
+                <option value="Ibu Rumah Tangga" @if($pasien->pekerjaan == 'Ibu Rumah Tangga') selected @endif>Ibu Rumah Tangga</option>
+                <option value="TNI" @if($pasien->pekerjaan == 'TNI') selected @endif>TNI</option>
+                <option value="POLRI" @if($pasien->pekerjaan == 'POLRI') selected @endif>POLRI</option>
+                <option value="ASN (Kantor Pemerintah)" @if($pasien->pekerjaan == 'ASN (Kantor Pemerintah)') selected @endif>ASN (Kantor Pemerintah)</option>
+                <option value="Pegawai Swasta" @if($pasien->pekerjaan == 'Pegawai Swasta') selected @endif>Pegawai Swasta</option>
+                <option value="Wiraswasta/Pekerja Mandiri" @if($pasien->pekerjaan == 'Wiraswasta/Pekerja Mandiri') selected @endif>Wiraswasta/Pekerja Mandiri</option>
+                <option value="Pensiunan" @if($pasien->pekerjaan == 'Pensiunan') selected @endif>Pensiunan</option>
+                <option value="Pejabat Negara / Pejabat Daerah" @if($pasien->pekerjaan == 'Pejabat Negara / Pejabat Daerah') selected @endif>Pejabat Negara / Pejabat Daerah</option>
+                <option value="Pengusaha" @if($pasien->pekerjaan == 'Pengusaha') selected @endif>Pengusaha</option>
+                <option value="Dokter" @if($pasien->pekerjaan == 'Dokter') selected @endif>Dokter</option>
+                <option value="Bidan" @if($pasien->pekerjaan == 'Bidan') selected @endif>Bidan</option>
+                <option value="Perawat" @if($pasien->pekerjaan == 'Perawat') selected @endif>Perawat</option>
+                <option value="Apoteker" @if($pasien->pekerjaan == 'Apoteker') selected @endif>Apoteker</option>
+                <option value="Psikolog" @if($pasien->pekerjaan == 'Psikolog') selected @endif>Psikolog</option>
+                <option value="Tenaga Kesehatan Lainnya" @if($pasien->pekerjaan == 'Tenaga Kesehatan Lainnya') selected @endif>Tenaga Kesehatan Lainnya</option>
+                <option value="Dosen" @if($pasien->pekerjaan == 'Dosen') selected @endif>Dosen</option>
+                <option value="Guru" @if($pasien->pekerjaan == 'Guru') selected @endif>Guru</option>
+                <option value="Peneliti" @if($pasien->pekerjaan == 'Peneliti') selected @endif>Peneliti</option>
+                <option value="Pengacara" @if($pasien->pekerjaan == 'Pengacara') selected @endif>Pengacara</option>
+                <option value="Notaris" @if($pasien->pekerjaan == 'Notaris') selected @endif>Notaris</option>
+                <option value="Hakim/Jaksa/Tenaga Peradilan Lainnya" @if($pasien->pekerjaan == 'Hakim/Jaksa/Tenaga Peradilan Lainnya') selected @endif>Hakim/Jaksa/Tenaga Peradilan Lainnya</option>
+                <option value="Akuntan" @if($pasien->pekerjaan == 'Akuntan') selected @endif>Akuntan</option>
+                <option value="Insinyur" @if($pasien->pekerjaan == 'Insinyur') selected @endif>Insinyur</option>
+                <option value="Arsitek" @if($pasien->pekerjaan == 'Arsitek') selected @endif>Arsitek</option>
+                <option value="Konsultan" @if($pasien->pekerjaan == 'Konsultan') selected @endif>Konsultan</option>
+                <option value="Wartawan" @if($pasien->pekerjaan == 'Wartawan') selected @endif>Wartawan</option>
+                <option value="Pedagang" @if($pasien->pekerjaan == 'Pedagang') selected @endif>Pedagang</option>
+                <option value="Petani / Pekebun" @if($pasien->pekerjaan == 'Petani / Pekebun') selected @endif>Petani / Pekebun</option>
+                <option value="PETANI/PEKEBUN" @if($pasien->pekerjaan == 'PETANI/PEKEBUN') selected @endif>PETANI/PEKEBUN</option>
+                <option value="Nelayan / Perikanan" @if($pasien->pekerjaan == 'Nelayan / Perikanan') selected @endif>Nelayan / Perikanan</option>
+                <option value="Peternak" @if($pasien->pekerjaan == 'Peternak') selected @endif>Peternak</option>
+                <option value="Tokoh Agama" @if($pasien->pekerjaan == 'Tokoh Agama') selected @endif>Tokoh Agama</option>
+                <option value="Juru Masak" @if($pasien->pekerjaan == 'Juru Masak') selected @endif>Juru Masak</option>
+                <option value="Pelaut" @if($pasien->pekerjaan == 'Pelaut') selected @endif>Pelaut</option>
+                <option value="Sopir" @if($pasien->pekerjaan == 'Sopir') selected @endif>Sopir</option>
+                <option value="Pilot" @if($pasien->pekerjaan == 'Pilot') selected @endif>Pilot</option>
+                <option value="Masinis" @if($pasien->pekerjaan == 'Masinis') selected @endif>Masinis</option>
+                <option value="Atlet" @if($pasien->pekerjaan == 'Atlet') selected @endif>Atlet</option>
+                <option value="Pekerja Seni" @if($pasien->pekerjaan == 'Pekerja Seni') selected @endif>Pekerja Seni</option>
+                <option value="Penjahit / Perancang Busana" @if($pasien->pekerjaan == 'Penjahit / Perancang Busana') selected @endif>Penjahit / Perancang Busana</option>
+                <option value="Karyawan kantor / Pegawai Administratif" @if($pasien->pekerjaan == 'Karyawan kantor / Pegawai Administratif') selected @endif>Karyawan kantor / Pegawai Administratif</option>
+                <option value="Teknisi / Mekanik" @if($pasien->pekerjaan == 'Teknisi / Mekanik') selected @endif>Teknisi / Mekanik</option>
+                <option value="Pekerja Pabrik / Buruh" @if($pasien->pekerjaan == 'Pekerja Pabrik / Buruh') selected @endif>Pekerja Pabrik / Buruh</option>
+                <option value="Pekerja Konstruksi" @if($pasien->pekerjaan == 'Pekerja Konstruksi') selected @endif>Pekerja Konstruksi</option>
+                <option value="Pekerja Pertukangan" @if($pasien->pekerjaan == 'Pekerja Pertukangan') selected @endif>Pekerja Pertukangan</option>
+                <option value="Pekerja Migran" @if($pasien->pekerjaan == 'Pekerja Migran') selected @endif>Pekerja Migran</option>
+                <option value="Lainnya" @if($pasien->pekerjaan == 'Lainnya') selected @endif>Lainnya</option>
+            </select>
+            @error('pekerjaan')
+            <div class="text-danger">{{ $message }}</div>
+            @enderror
+        </div>
+        <div class="form-group">
             <label for="no_peserta">No. Peserta</label>
             <input type="text" class="form-control" id="no_peserta" name="no_peserta" value="{{ $pasien->no_peserta }}">
             @error('no_peserta')
@@ -184,6 +243,7 @@
                 $('#tgl_lahir').val(data.tgl_lahir);
                 $('#status').val(data.status);
                 $('#stts_nikah').val(data.stts_nikah);
+                $('#pekerjaan').val(data.pekerjaan);
                 $('#no_peserta').val(data.no_peserta);
                 $('#no_tlp').val(data.no_tlp);
                 $('#alamat').val(data.alamat);

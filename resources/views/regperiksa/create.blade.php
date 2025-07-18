@@ -761,61 +761,9 @@
                         if (isBpjs) {
                             successText += '<br><br><strong>Data pasien BPJS telah dikirim ke sistem Antrian BPJS.</strong><br>'+
                                            'Proses pengiriman data dilakukan di background.';
-                                           
-                            // Kirim notifikasi ke antrian BPJS secara asinkron (tidak perlu menunggu respons)
-                            $.ajax({
-                                url: '{{ url("/api/antrean/add") }}',
-                                type: 'POST',
-                                data: JSON.stringify({
-                                    nomorkartu: '{{ $pasien->no_peserta }}',
-                                    nik: '{{ $pasien->no_ktp }}',
-                                    nohp: '{{ $pasien->no_tlp }}',
-                                    kodepoli: response.kodepoli_bpjs, // Diambil dari respons server
-                                    namapoli: response.namapoli_bpjs, // Diambil dari respons server
-                                    norm: '{{ $pasien->no_rkm_medis }}',
-                                    tanggalperiksa: '{{ date('Y-m-d') }}',
-                                    kodedokter: response.kodedokter_bpjs, // Diambil dari respons server
-                                    namadokter: response.namadokter_bpjs, // Diambil dari respons server
-                                    jampraktek: response.jampraktek || '-', // Diambil dari respons server atau default '-'
-                                    nomorantrean: response.no_reg,
-                                    angkaantrean: parseInt(response.no_reg.replace(/^0+/, '')),
-                                    keterangan: "Peserta harap 30 menit lebih awal guna pencatatan administrasi."
-                                }),
-                                contentType: 'application/json',
-                                dataType: 'json',
-                                success: function(bpjsResponse) {
-                                    console.log("Respons BPJS:", bpjsResponse);
-                                    
-                                    // Format respons sesuai dengan standar BPJS
-                                    if (bpjsResponse && bpjsResponse.metadata && bpjsResponse.metadata.code === 200) {
-                                        console.log("Pengiriman data ke BPJS berhasil");
-                                        
-                                        // Tampilkan notifikasi sukses untuk BPJS
-                                        showNotification('success', 'Data pasien berhasil didaftarkan ke antrian BPJS');
-                                    } else {
-                                        console.warn("Pengiriman data ke BPJS tidak berhasil:", bpjsResponse);
-                                        // Tampilkan pesan error BPJS jika ada
-                                        if (bpjsResponse && bpjsResponse.metadata && bpjsResponse.metadata.message) {
-                                            showNotification('warning', 'BPJS: ' + bpjsResponse.metadata.message);
-                                        }
-                                    }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error("Error saat mengirim data ke BPJS:", error);
-                                    console.error("Response:", xhr.responseText);
-                                    
-                                    try {
-                                        let errorResponse = JSON.parse(xhr.responseText);
-                                        if (errorResponse && errorResponse.metadata && errorResponse.metadata.message) {
-                                            showNotification('error', 'BPJS: ' + errorResponse.metadata.message);
-                                        } else {
-                                            showNotification('error', 'Gagal mengirim data ke BPJS: ' + error);
-                                        }
-                                    } catch (e) {
-                                        showNotification('error', 'Gagal mengirim data ke BPJS: ' + error);
-                                    }
-                                }
-                            });
+                            
+                            // Pengiriman data ke BPJS sudah dilakukan di backend melalui metode kirimAntreanBPJS()
+                            // Jadi tidak perlu melakukan pengiriman kedua di sini
                         }
                         
                         showNotification('success', response.message || 'Data berhasil disimpan');

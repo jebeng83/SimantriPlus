@@ -16,8 +16,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('logs:delete-old')->everyTwoDays()->at('01:00')
+        $schedule->command('logs:delete-old')->twiceDaily(1, 13)
             ->appendOutputTo(storage_path('logs/scheduler.log'));
+            
+        // Reset kunjungan_sehat setiap tanggal 1 jam 00:00:00
+        $schedule->command('ckg:reset-kunjungan-sehat')
+            ->monthlyOn(1, '00:00')
+            ->appendOutputTo(storage_path('logs/reset-kunjungan-sehat.log'));
     }
 
     /**

@@ -198,6 +198,64 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
+                                <label><i class="fas fa-briefcase"></i> Pekerjaan</label>
+                                <select class="form-control" wire:model="pekerjaan">
+                                    <option value="">-- Pilih Pekerjaan --</option>
+                                    <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
+                                    <option value="Pelajar">Pelajar</option>
+                                    <option value="Mahasiswa">Mahasiswa</option>
+                                    <option value="Ibu Rumah Tangga">Ibu Rumah Tangga</option>
+                                    <option value="TNI">TNI</option>
+                                    <option value="POLRI">POLRI</option>
+                                    <option value="ASN (Kantor Pemerintah)">ASN (Kantor Pemerintah)</option>
+                                    <option value="Pegawai Swasta">Pegawai Swasta</option>
+                                    <option value="Wiraswasta/Pekerja Mandiri">Wiraswasta/Pekerja Mandiri</option>
+                                    <option value="Pensiunan">Pensiunan</option>
+                                    <option value="Pejabat Negara / Pejabat Daerah">Pejabat Negara / Pejabat Daerah</option>
+                                    <option value="Pengusaha">Pengusaha</option>
+                                    <option value="Dokter">Dokter</option>
+                                    <option value="Bidan">Bidan</option>
+                                    <option value="Perawat">Perawat</option>
+                                    <option value="Apoteker">Apoteker</option>
+                                    <option value="Psikolog">Psikolog</option>
+                                    <option value="Tenaga Kesehatan Lainnya">Tenaga Kesehatan Lainnya</option>
+                                    <option value="Dosen">Dosen</option>
+                                    <option value="Guru">Guru</option>
+                                    <option value="Peneliti">Peneliti</option>
+                                    <option value="Pengacara">Pengacara</option>
+                                    <option value="Notaris">Notaris</option>
+                                    <option value="Hakim/Jaksa/Tenaga Peradilan Lainnya">Hakim/Jaksa/Tenaga Peradilan Lainnya</option>
+                                    <option value="Akuntan">Akuntan</option>
+                                    <option value="Insinyur">Insinyur</option>
+                                    <option value="Arsitek">Arsitek</option>
+                                    <option value="Konsultan">Konsultan</option>
+                                    <option value="Wartawan">Wartawan</option>
+                                    <option value="Pedagang">Pedagang</option>
+                                    <option value="Petani / Pekebun">Petani / Pekebun</option>
+                                    <option value="PETANI/PEKEBUN">PETANI/PEKEBUN</option>
+                                    <option value="Nelayan / Perikanan">Nelayan / Perikanan</option>
+                                    <option value="Peternak">Peternak</option>
+                                    <option value="Tokoh Agama">Tokoh Agama</option>
+                                    <option value="Juru Masak">Juru Masak</option>
+                                    <option value="Pelaut">Pelaut</option>
+                                    <option value="Sopir">Sopir</option>
+                                    <option value="Pilot">Pilot</option>
+                                    <option value="Masinis">Masinis</option>
+                                    <option value="Atlet">Atlet</option>
+                                    <option value="Pekerja Seni">Pekerja Seni</option>
+                                    <option value="Penjahit / Perancang Busana">Penjahit / Perancang Busana</option>
+                                    <option value="Karyawan kantor / Pegawai Administratif">Karyawan kantor / Pegawai Administratif</option>
+                                    <option value="Teknisi / Mekanik">Teknisi / Mekanik</option>
+                                    <option value="Pekerja Pabrik / Buruh">Pekerja Pabrik / Buruh</option>
+                                    <option value="Pekerja Konstruksi">Pekerja Konstruksi</option>
+                                    <option value="Pekerja Pertukangan">Pekerja Pertukangan</option>
+                                    <option value="Pekerja Migran">Pekerja Migran</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
                                 <label><i class="fas fa-id-card-alt"></i> No.Peserta</label>
                                 <input type="text" class="form-control" wire:model="no_peserta"
                                     placeholder="Nomor peserta asuransi">
@@ -696,6 +754,46 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1 !important;
+            position: relative !important;
+        }
+
+        /* Perbaikan khusus untuk select pekerjaan */
+        select[wire\:model="pekerjaan"] {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+            min-height: 38px !important;
+            width: 100% !important;
+            background-color: #fff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 10px 40px 10px 15px !important;
+            font-size: 0.95rem !important;
+            line-height: 1.5 !important;
+            color: #495057 !important;
+        }
+
+        select[wire\:model="pekerjaan"]:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2) !important;
+            outline: none !important;
+        }
+
+        /* Fallback untuk browser yang tidak mendukung :has() */
+        .col-md-3:nth-child(2) .form-group select {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Debug CSS - hapus setelah masalah teratasi */
+        select[wire\:model="pekerjaan"] {
+            border: 2px solid red !important; /* Untuk debugging - hapus nanti */
         }
 
         .input-group-text {
@@ -894,6 +992,16 @@
         /* Perbaikan untuk form-group yang memiliki dropdown */
         .form-group {
             position: relative !important;
+            overflow: visible !important;
+        }
+
+        /* Perbaikan khusus untuk form-group yang berisi select pekerjaan */
+        .form-group:has(select[wire\:model="pekerjaan"]) {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+            z-index: auto !important;
         }
 
         /* Style khusus untuk dropdown posyandu */

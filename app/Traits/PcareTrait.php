@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use LZCompressor\LZString;
@@ -235,28 +236,54 @@ trait PcareTrait
                     'original_endpoint' => $endpoint
                 ]);
                 
-                // Coba dengan parameter startIndex=1 jika error StartIndex
-                if (strpos($endpoint, '?') === false) {
-                    $altEndpoint = $endpoint . '?startIndex=1&count=10';
-                } else {
-                    $altEndpoint = $endpoint . '&startIndex=1&count=10';
+                // Hanya tambahkan parameter startIndex untuk endpoint yang memerlukan pagination
+                // Endpoint yang memerlukan pagination: pendaftaran/tglDaftar, kelompok/kegiatan, dll
+                // Jangan tambahkan untuk endpoint individual seperti peserta/{noKartu} atau peserta/nik/{nik}
+                $needsPagination = (
+                    strpos($endpoint, 'pendaftaran/tglDaftar') !== false ||
+                    strpos($endpoint, 'kelompok/kegiatan') !== false ||
+                    strpos($endpoint, 'kunjungan/tglDaftar') !== false
+                );
+                
+                // Jangan tambahkan pagination untuk endpoint peserta individual
+                $isIndividualPeserta = (
+                    preg_match('/peserta\/[0-9]+/', $endpoint) || // peserta/{noKartu}
+                    strpos($endpoint, 'peserta/nik/') !== false    // peserta/nik/{nik}
+                );
+                
+                if ($isIndividualPeserta) {
+                    $needsPagination = false;
                 }
                 
-                // Buat URL alternatif dengan benar
-                if (strpos($baseUrl, 'pcare-rest') !== false) {
-                    $altUrl = $baseUrl . '/' . $altEndpoint;
+                if ($needsPagination) {
+                    // Coba dengan parameter startIndex=1 jika error StartIndex
+                    if (strpos($endpoint, '?') === false) {
+                        $altEndpoint = $endpoint . '?startIndex=1&count=10';
+                    } else {
+                        $altEndpoint = $endpoint . '&startIndex=1&count=10';
+                    }
+                    
+                    // Buat URL alternatif dengan benar
+                    if (strpos($baseUrl, 'pcare-rest') !== false) {
+                        $altUrl = $baseUrl . '/' . $altEndpoint;
+                    } else {
+                        $altUrl = $baseUrl . '/pcare-rest/' . $altEndpoint;
+                    }
+                    
+                    Log::info('PCare API Retry Request with pagination', ['url' => $altUrl]);
+                    
+                    // Retry dengan endpoint alternatif
+                    $response = $httpClient->get($altUrl);
+                    
+                    Log::info('PCare API Retry Response', [
+                        'status' => $response->status()
+                    ]);
                 } else {
-                    $altUrl = $baseUrl . '/pcare-rest/' . $altEndpoint;
+                    Log::warning('PCare API StartIndex error pada endpoint yang tidak memerlukan pagination', [
+                        'endpoint' => $endpoint,
+                        'response_body' => $response->body()
+                    ]);
                 }
-                
-                Log::info('PCare API Retry Request', ['url' => $altUrl]);
-                
-                // Retry dengan endpoint alternatif
-                $response = $httpClient->get($altUrl);
-                
-                Log::info('PCare API Retry Response', [
-                    'status' => $response->status()
-                ]);
             }
             
             // Decode response
@@ -282,7 +309,70 @@ trait PcareTrait
                 'endpoint' => $endpoint
             ]);
             
-            throw $e;
+            // Log error untuk debugging
+            Log::error('PcareTrait Exception', [
+                'message' => $e->getMessage(),
+                'class' => get_class($e),
+                'has_response' => method_exists($e, 'getResponse') && $e->getResponse()
+            ]);
+            
+            // Cek apakah error authentication/credential
+            $errorMessage = $e->getMessage();
+            $statusCode = 500;
+            
+            if (method_exists($e, 'getResponse') && $e->getResponse()) {
+                $statusCode = $e->getResponse()->getStatusCode();
+                $responseBody = $e->getResponse()->getBody()->getContents();
+                
+                Log::info('PcareTrait Response Body', [
+                    'status_code' => $statusCode,
+                    'response_body' => $responseBody
+                ]);
+                
+                // Cek response body untuk error authentication
+                if (stripos($responseBody, 'username') !== false ||
+                    stripos($responseBody, 'password') !== false ||
+                    stripos($responseBody, 'authentication') !== false ||
+                    stripos($responseBody, 'credential') !== false ||
+                    stripos($responseBody, 'unauthorized') !== false) {
+                    
+                    Log::info('Authentication error detected in response body');
+                    return [
+                        'metaData' => [
+                            'code' => 401,
+                            'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                        ],
+                        'response' => null
+                    ];
+                }
+            }
+            
+            // Cek error message untuk authentication keywords
+            if ($statusCode === 401 || $statusCode === 403 ||
+                stripos($errorMessage, 'username') !== false || 
+                stripos($errorMessage, 'password') !== false ||
+                stripos($errorMessage, 'authentication') !== false ||
+                stripos($errorMessage, 'credential') !== false ||
+                stripos($errorMessage, 'unauthorized') !== false ||
+                stripos($errorMessage, 'xxxxx') !== false) {
+                
+                Log::info('Authentication error detected in error message');
+                return [
+                    'metaData' => [
+                        'code' => 401,
+                        'message' => 'Maaf Cek Kembali Password Pcare Anda'
+                    ],
+                    'response' => null
+                ];
+            }
+            
+            return [
+                'metaData' => [
+                    'code' => $statusCode,
+                    'message' => $this->getErrorMessage($e)
+                ],
+                'response' => null
+            ];
         }
     }
 
@@ -359,6 +449,17 @@ trait PcareTrait
     {
         $message = $e->getMessage();
         
+        // Cek apakah error authentication/credential
+        if (stripos($message, 'username') !== false || 
+            stripos($message, 'password') !== false ||
+            stripos($message, 'authentication') !== false ||
+            stripos($message, 'credential') !== false ||
+            stripos($message, 'unauthorized') !== false ||
+            stripos($message, '401') !== false ||
+            stripos($message, '403') !== false) {
+            return 'Maaf Cek Kembali Password Pcare Anda';
+        }
+        
         // Cek apakah error timeout atau network
         if (strpos($message, 'cURL error 28') !== false) {
             return 'Timeout saat menghubungi server BPJS. Silahkan coba lagi.';
@@ -371,4 +472,4 @@ trait PcareTrait
         // Return message default
         return 'Terjadi kesalahan saat memproses permintaan: ' . $message;
     }
-} 
+}

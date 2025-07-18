@@ -251,8 +251,24 @@ class RegPeriksaController extends Controller
                         
                         // Coba kirim data antrian ke BPJS di background
                         try {
-                            $this->kirimAntreanBPJS($savedRecord);
-                            \Log::info('Pengiriman antrian BPJS dilakukan di background');
+                            // Cek apakah data sudah pernah dikirim ke BPJS
+                            $cekLogAntrianBPJS = null;
+                            if (Schema::hasTable('antrean_bpjs_log')) {
+                                $cekLogAntrianBPJS = DB::table('antrean_bpjs_log')
+                                    ->where('no_rawat', $no_rawat)
+                                    ->where('status', 'Berhasil')
+                                    ->first();
+                            }
+                            
+                            if ($cekLogAntrianBPJS) {
+                                \Log::info('Data antrian BPJS sudah pernah dikirim dan berhasil. Tidak perlu dikirim ulang dari fungsi kirimAntreanBPJS.', [
+                                    'no_rawat' => $no_rawat,
+                                    'waktu_kirim' => $cekLogAntrianBPJS->created_at
+                                ]);
+                            } else {
+                                $this->kirimAntreanBPJS($savedRecord);
+                                \Log::info('Pengiriman antrian BPJS dilakukan di background');
+                            }
                         } catch (\Exception $bpjsError) {
                             \Log::error('Gagal mengirim data antrian ke BPJS: ' . $bpjsError->getMessage());
                         }
@@ -842,13 +858,28 @@ class RegPeriksaController extends Controller
     private function kirimAntreanBPJS($data)
     {
         try {
-            \Log::info('Memulai pengiriman antrian ke BPJS', [
-                'no_rawat' => $data->no_rawat,
+            \Log::info('Mulai proses kirim antrian BPJS untuk no_rawat: ' . $data->no_rawat, [
                 'no_rkm_medis' => $data->no_rkm_medis,
-                'tgl_registrasi' => $data->tgl_registrasi,
                 'kd_poli' => $data->kd_poli,
                 'kd_dokter' => $data->kd_dokter
             ]);
+            
+            // Cek apakah data sudah pernah dikirim
+            $cekLogAntrianBPJS = null;
+            if (Schema::hasTable('antrean_bpjs_log')) {
+                $cekLogAntrianBPJS = DB::table('antrean_bpjs_log')
+                    ->where('no_rawat', $data->no_rawat)
+                    ->where('status', 'Berhasil')
+                    ->first();
+            }
+            
+            if ($cekLogAntrianBPJS) {
+                \Log::info('Data antrian BPJS sudah pernah dikirim dan berhasil. Tidak perlu dikirim ulang dari fungsi kirimAntreanBPJS.', [
+                    'no_rawat' => $data->no_rawat,
+                    'waktu_kirim' => $cekLogAntrianBPJS->created_at
+                ]);
+                return true;
+            }
             
             // 1. Ambil data pasien
             $pasien = DB::table('pasien')

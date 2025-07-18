@@ -226,53 +226,90 @@ class AddAntreanController extends Controller
             // Jika belum terdaftar di reg_periksa dan respons berhasil, tambahkan
             if (!$cekRegPeriksa && $isSuccess && env('MOBILEJKN_ADD_ANTRIAN') === 'yes') {
                 try {
-                    // Generate no_rawat otomatis dengan format YYYY/MM/DD/nnnnnn
-                    $tanggal = date('Y/m/d', strtotime($request->tanggalperiksa));
-                    $lastNoRawat = DB::table('reg_periksa')
-                        ->where('no_rawat', 'like', $tanggal . '/%')
-                        ->orderBy('no_rawat', 'desc')
-                        ->value('no_rawat');
-                    
-                    $urutan = 1;
-                    if ($lastNoRawat) {
-                        $nomorUrut = (int) substr($lastNoRawat, -6);
-                        $urutan = $nomorUrut + 1;
+                    // Cek dulu apakah ada pendaftaran untuk pasien ini hari ini di semua poli
+                    $cekPendaftaranHariIni = DB::table('reg_periksa')
+                        ->where('no_rkm_medis', $request->norm)
+                        ->where('tgl_registrasi', $request->tanggalperiksa)
+                        ->orderBy('jam_reg', 'desc')
+                        ->first();
+                        
+                    if ($cekPendaftaranHariIni) {
+                        // Jika sudah ada pendaftaran hari ini, gunakan data yang sudah ada
+                        Log::info('Pasien sudah terdaftar hari ini di poli lain. Menggunakan data yang ada.', [
+                            'no_rawat_existing' => $cekPendaftaranHariIni->no_rawat,
+                            'poli_existing' => $cekPendaftaranHariIni->kd_poli,
+                            'no_rkm_medis' => $request->norm
+                        ]);
+                        
+                        $noRawat = $cekPendaftaranHariIni->no_rawat;
+                        $standardResponse['reg_periksa'] = [
+                            'no_rawat' => $noRawat,
+                            'no_reg' => $cekPendaftaranHariIni->no_reg,
+                            'keterangan' => 'Menggunakan pendaftaran yang sudah ada'
+                        ];
+                        
+                        // Log informasi ke antrean_bpjs_log
+                        if (Schema::hasTable('antrean_bpjs_log')) {
+                            DB::table('antrean_bpjs_log')->insert([
+                                'no_rawat' => $noRawat,
+                                'no_rkm_medis' => $request->norm,
+                                'status' => 'Info',
+                                'response' => json_encode([
+                                    'message' => 'Menggunakan pendaftaran yang sudah ada',
+                                    'no_rawat' => $noRawat
+                                ]),
+                                'created_at' => now()
+                            ]);
+                        }
+                    } else {
+                        // Generate no_rawat otomatis dengan format YYYY/MM/DD/nnnnnn
+                        $tanggal = date('Y/m/d', strtotime($request->tanggalperiksa));
+                        $lastNoRawat = DB::table('reg_periksa')
+                            ->where('no_rawat', 'like', $tanggal . '/%')
+                            ->orderBy('no_rawat', 'desc')
+                            ->value('no_rawat');
+                        
+                        $urutan = 1;
+                        if ($lastNoRawat) {
+                            $nomorUrut = (int) substr($lastNoRawat, -6);
+                            $urutan = $nomorUrut + 1;
+                        }
+                        $noRawat = $tanggal . '/' . str_pad($urutan, 6, '0', STR_PAD_LEFT);
+                        
+                        // Insert ke reg_periksa
+                        DB::table('reg_periksa')->insert([
+                            'no_reg' => $request->nomorantrean,
+                            'no_rawat' => $noRawat,
+                            'tgl_registrasi' => $request->tanggalperiksa,
+                            'jam_reg' => date('H:i:s'),
+                            'kd_dokter' => $dokter->kd_dokter,
+                            'no_rkm_medis' => $request->norm,
+                            'kd_poli' => $poliklinik->kd_poli_rs,
+                            'p_jawab' => $pasien->namakeluarga ?? 'PASIEN',
+                            'almt_pj' => $pasien->alamat ?? '-',
+                            'hubunganpj' => $pasien->keluarga ?? 'DIRI SENDIRI',
+                            'biaya_reg' => 0,
+                            'stts' => 'Belum',
+                            'stts_daftar' => 'Mobile JKN',
+                            'status_lanjut' => 'Ralan',
+                            'kd_pj' => $pasien->kd_pj,
+                            'umurdaftar' => $this->hitungUmur($pasien->tgl_lahir),
+                            'sttsumur' => $this->kategoriUmur($pasien->tgl_lahir),
+                            'status_bayar' => 'Belum Bayar',
+                            'status_poli' => 'Lama'
+                        ]);
+                        
+                        Log::info('Berhasil mendaftarkan pasien ke reg_periksa', [
+                            'no_rawat' => $noRawat,
+                            'no_rkm_medis' => $request->norm
+                        ]);
+                        
+                        // Tambahkan info reg_periksa ke respons
+                        $standardResponse['reg_periksa'] = [
+                            'no_rawat' => $noRawat,
+                            'no_reg' => $request->nomorantrean
+                        ];
                     }
-                    $noRawat = $tanggal . '/' . str_pad($urutan, 6, '0', STR_PAD_LEFT);
-                    
-                    // Insert ke reg_periksa
-                    DB::table('reg_periksa')->insert([
-                        'no_reg' => $request->nomorantrean,
-                        'no_rawat' => $noRawat,
-                        'tgl_registrasi' => $request->tanggalperiksa,
-                        'jam_reg' => date('H:i:s'),
-                        'kd_dokter' => $dokter->kd_dokter,
-                        'no_rkm_medis' => $request->norm,
-                        'kd_poli' => $poliklinik->kd_poli_rs,
-                        'p_jawab' => $pasien->namakeluarga ?? 'PASIEN',
-                        'almt_pj' => $pasien->alamat ?? '-',
-                        'hubunganpj' => $pasien->keluarga ?? 'DIRI SENDIRI',
-                        'biaya_reg' => 0,
-                        'stts' => 'Belum',
-                        'stts_daftar' => 'Mobile JKN',
-                        'status_lanjut' => 'Ralan',
-                        'kd_pj' => $pasien->kd_pj,
-                        'umurdaftar' => $this->hitungUmur($pasien->tgl_lahir),
-                        'sttsumur' => $this->kategoriUmur($pasien->tgl_lahir),
-                        'status_bayar' => 'Belum Bayar',
-                        'status_poli' => 'Lama'
-                    ]);
-                    
-                    Log::info('Berhasil mendaftarkan pasien ke reg_periksa', [
-                        'no_rawat' => $noRawat,
-                        'no_rkm_medis' => $request->norm
-                    ]);
-                    
-                    // Tambahkan info reg_periksa ke respons
-                    $standardResponse['reg_periksa'] = [
-                        'no_rawat' => $noRawat,
-                        'no_reg' => $request->nomorantrean
-                    ];
                 } catch (\Exception $e) {
                     Log::error('Gagal mendaftarkan pasien ke reg_periksa', [
                         'error' => $e->getMessage(),

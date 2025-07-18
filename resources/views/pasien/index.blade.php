@@ -902,7 +902,14 @@
                         $('#bpjsContent').hide();
                         
                         // Klasifikasi pesan error berdasarkan kode dan pesan
-                        if (response.metaData.code === 201) {
+                        if (response.metaData.code === 401 || response.metaData.code === 403 || 
+                            (response.metaData.message && response.metaData.message.includes('Password Pcare'))) {
+                            // Error authentication/credential
+                            $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + response.metaData.message + '</b>');
+                            $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
+                        } else if (response.metaData.code === 201) {
                             // Data tidak ditemukan (biasanya kode 201 di BPJS)
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
@@ -939,8 +946,20 @@
                     $('#bpjsContent').hide();
                     $('#bpjsError').show();
                     
+                    // Cek jika error authentication/credential
+                    if (xhr.status === 401 || xhr.status === 403 || 
+                        (xhr.responseJSON && xhr.responseJSON.metaData && 
+                         xhr.responseJSON.metaData.message && 
+                         xhr.responseJSON.metaData.message.includes('Password Pcare'))) {
+                        
+                        $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                        $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + 
+                            (xhr.responseJSON?.metaData?.message || 'Maaf Cek Kembali Password Pcare Anda') + '</b>');
+                        $('#bpjsRetryButtonContainer').hide();
+                        $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
+                    }
                     // Cek jika error karena nomor kartu tidak ditemukan
-                    if (xhr.responseJSON && xhr.responseJSON.metaData && 
+                    else if (xhr.responseJSON && xhr.responseJSON.metaData && 
                         (xhr.responseJSON.metaData.message.includes('tidak ditemukan') || 
                          xhr.responseJSON.metaData.message.includes('Peserta tidak ditemukan'))) {
                         
@@ -1030,7 +1049,14 @@
                         $('#bpjsContent').hide();
                         
                         // Klasifikasi pesan error berdasarkan kode dan pesan
-                        if (response.metaData.code === 201) {
+                        if (response.metaData.code === 401 || response.metaData.code === 403 || 
+                            (response.metaData.message && response.metaData.message.includes('Password Pcare'))) {
+                            // Error authentication/credential
+                            $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
+                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + response.metaData.message + '</b>');
+                            $('#bpjsRetryButtonContainer').hide();
+                            $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
+                        } else if (response.metaData.code === 201) {
                             // Data tidak ditemukan (biasanya kode 201 di BPJS)
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');

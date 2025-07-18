@@ -672,7 +672,7 @@
    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
    <script>
       // Enable pusher logging - don't include this in production
-      Pusher.logToConsole = true;
+      Pusher.logToConsole = false;
 
       window.Laravel = {!! json_encode([
           'csrfToken' => csrf_token(),
@@ -680,25 +680,14 @@
           'pusherCluster' => config('broadcasting.connections.pusher.options.cluster'),
       ]) !!};
 
-      console.log('Laravel Config:', window.Laravel);
-
       // Inisialisasi Pusher dengan konfigurasi yang benar
       const pusher = new Pusher(window.Laravel.pusherKey, {
           cluster: window.Laravel.pusherCluster,
           forceTLS: true
       });
 
-      // Debug info
-      console.log('Pusher Config:', {
-          key: window.Laravel.pusherKey,
-          cluster: window.Laravel.pusherCluster
-      });
-
       // Subscribe ke channel antrian
       const channel = pusher.subscribe('antrian');
-      
-      // Debug info untuk channel
-      console.log('Subscribed to channel:', channel.name);
 
       // Variabel untuk audio system
       let audioContext = null;
@@ -785,7 +774,6 @@
               
               return true;
           } catch (error) {
-              console.error('Gagal inisialisasi audio:', error);
               showError('Gagal mengaktifkan sistem suara');
               return false;
           }
@@ -802,7 +790,7 @@
               const fullPath = filename.startsWith('/') ? filename : '/' + filename;
               audioElement.src = fullPath;
               
-              audioElement.onloadeddata = () => console.log('Audio loaded:', filename);
+              audioElement.onloadeddata = () => {};
               audioElement.onended = () => setTimeout(resolve, 300);
               audioElement.onerror = () => reject(new Error(`Gagal memainkan ${filename}`));
               
@@ -855,7 +843,6 @@
               await playAudioFile(`assets/audio/poli/${getPoliFileName(data.poli)}.mp3`);
               
           } catch (error) {
-              console.error('Error dalam playAntrianSound:', error);
               showError(error.message);
           }
       }
@@ -868,7 +855,6 @@
           // Setup event listener untuk antrian
           channel.bind('antrian.dipanggil', async (data) => {
               if (!data?.no_reg) {
-                  console.error('Data tidak valid:', data);
                   return;
               }
               
@@ -876,7 +862,6 @@
                   await playAntrianSound(data);
                   updatePanggilanStatus(data);
               } catch (error) {
-                  console.error('Gagal memainkan suara:', error);
                   showError(error.message);
               }
           });
@@ -977,7 +962,6 @@
                }
             })
             .catch(error => {
-               console.error('Error loading videos:', error);
                videoContainer.style.display = 'none';
                staticContent.style.display = 'flex';
             });
@@ -985,26 +969,21 @@
 
       // Fungsi untuk menangani konten
       function setupContent() {
-         console.log('Setting up content...');
          setupVideo(); // Panggil setupVideo saat konten diinisialisasi
       }
 
       // Fungsi untuk memuat data antrian
       function loadAntrianData() {
-          console.log('Loading antrian data...');
           $.ajax({
               url: '/antrian/display/data',
               method: 'GET',
               success: function(response) {
-                  console.log('Response received:', response);
                   if (response.success) {
-                      console.log('Updating table with data:', response.antrian);
                       updateAntrianTable(response.antrian);
                       $('#data-count').text(response.count);
                       
                       // Update panel pasien dipanggil jika ada
                       if (response.dipanggil) {
-                          console.log('Updating dipanggil panel:', response.dipanggil);
                           $('#dipanggil-noreg').text(response.dipanggil.no_reg);
                           $('#dipanggil-nama').text(samarkanNama(response.dipanggil.nm_pasien));
                           $('#dipanggil-poli').text(response.dipanggil.nm_poli);
@@ -1012,14 +991,10 @@
                           $('#patient-calling').addClass('active');
                       }
                   } else {
-                      console.error('Gagal memuat data:', response.message);
                       showError('Gagal memuat data antrian');
                   }
               },
               error: function(xhr, status, error) {
-                  console.error('Error loading data:', error);
-                  console.error('XHR Status:', status);
-                  console.error('XHR Response:', xhr.responseText);
                   showError('Gagal memuat data antrian');
               }
           });
@@ -1027,18 +1002,15 @@
 
       // Fungsi untuk memperbarui tabel antrian
       function updateAntrianTable(data) {
-          console.log('Updating table with data:', data);
           const tbody = $('#antrian-body');
           tbody.empty();
 
           if (!Array.isArray(data)) {
-              console.error('Data is not an array:', data);
               showError('Format data tidak valid');
               return;
           }
 
           data.forEach((item, index) => {
-              console.log(`Processing row ${index}:`, item);
               const row = $('<tr>');
               
               // Tambahkan highlight jika status dipanggil
@@ -1085,32 +1057,26 @@
             // Mainkan suara
             await playAntrianSound(testData);
          } catch (error) {
-            console.error('Test sound error:', error);
             showError('Error: ' + error.message);
          }
       }
 
       // Panggil setupContent saat dokumen dimuat
       document.addEventListener('DOMContentLoaded', function() {
-         console.log('Document loaded, initializing...');
-         
          // Inisialisasi audio context dan element
          try {
              initAudio();
-             console.log('Audio context initialized:', audioContext.state);
              
              // Tambahkan event listener untuk user interaction
              document.body.addEventListener('click', function() {
                  if (audioContext.state === 'suspended') {
                      audioContext.resume().then(() => {
-                         console.log('Audio context resumed after user interaction');
                          showError('Sistem suara siap digunakan');
                      });
                  }
              }, { once: true });
              
          } catch (error) {
-             console.error('Error initializing audio:', error);
              showError('Error inisialisasi sistem suara: ' + error.message);
          }
          
@@ -1120,7 +1086,6 @@
          
          // Auto refresh setiap 30 detik
          setInterval(function() {
-             console.log('Auto refresh data antrian...');
              loadAntrianData();
          }, 30000);
          
