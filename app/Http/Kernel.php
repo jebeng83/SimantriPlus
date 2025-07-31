@@ -69,5 +69,6 @@ class Kernel extends HttpKernel
         'loginauth' => \App\Http\Middleware\LoginAuth::class,
         'decrypt' => \App\Http\Middleware\RequestDecryptMiddleware::class,
         'encrypt' => \App\Http\Middleware\RequestEncryptMiddleware::class,
+        'whatsapp.auth' => \App\Http\Middleware\WhatsAppApiAuth::class,
     ];
 }

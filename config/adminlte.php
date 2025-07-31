@@ -345,6 +345,16 @@ return [
                     'url'  => '/ilp/dashboard-ckg',
                     'icon' => 'fas fa-fw fa-chart-bar',
                 ],
+                [
+                    'text' => 'Data Siswa Sekolah',
+                    'url'  => '/ilp/data-siswa-sekolah',
+                    'icon' => 'fas fa-fw fa-graduation-cap',
+                ],
+                [
+                    'text' => 'Dashboard Sekolah',
+                    'url'  => '/ilp/dashboard-sekolah',
+                    'icon' => 'fas fa-fw fa-chart-pie',
+                ],
             ],
         ],
         [
@@ -408,6 +418,22 @@ return [
                     'text' => 'Referensi Dokter PCare',
                     'url'  => '/pcare/referensi/dokter',
                     'icon' => 'fas fa-fw fa-user-md',
+                ],
+            ],
+        ],
+        [
+            'text'    => 'WhatsApp Manajemen',
+            'icon'    => 'fab fa-fw fa-whatsapp',
+            'submenu' => [
+                [
+                    'text' => 'Node Dashboard',
+                    'url'  => '/ilp/whatsapp/node/dashboard',
+                    'icon' => 'fas fa-fw fa-server',
+                ],
+                [
+                    'text' => 'Queue Dashboard',
+                    'url'  => '/ilp/whatsapp/dashboard',
+                    'icon' => 'fas fa-fw fa-list-alt',
                 ],
             ],
         ],

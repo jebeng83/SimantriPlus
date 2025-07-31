@@ -1,0 +1,12 @@
+# Mas Kofa
+.wwebjs_cache/*
+.wwebjs_auth/*
+__history/*
+__recovery/*
+node_mrlee/.wwebjs_cache/*
+node_mrlee/.wwebjs_auth/*
+setting.ini
+wa_gateway.exe.WebView2/
+webWA_cache/*
+Win32/*
+media/*

@@ -1,0 +1,4 @@
+Untuk mengaktifkan Web WA, download dan install WebView2 Runtime :
+https://developer.microsoft.com/en-us/microsoft-edge/webview2/?form=MA13LH#download
+
+Pilih : Evergreen Standalone Installer (x86)

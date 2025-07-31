@@ -15,6 +15,10 @@ class Pasien extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
+    protected $fillable = [
+        'no_ktp'
+    ];
+
     // Relasi dengan tabel data_ibu_hamil
     public function dataIbuHamil()
     {

@@ -23,6 +23,18 @@ class Kernel extends ConsoleKernel
         $schedule->command('ckg:reset-kunjungan-sehat')
             ->monthlyOn(1, '00:00')
             ->appendOutputTo(storage_path('logs/reset-kunjungan-sehat.log'));
+            
+        // Process WhatsApp queue every 5 minutes
+        $schedule->command('whatsapp:process-queue --limit=20')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/whatsapp-queue.log'));
+            
+        // Retry failed WhatsApp messages every hour
+        $schedule->command('whatsapp:process-queue --retry-failed --limit=10')
+            ->hourly()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/whatsapp-retry.log'));
     }
 
     /**

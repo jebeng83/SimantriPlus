@@ -198,8 +198,21 @@ Route::prefix('fktp')->group(function () {
     Route::post('peserta', [App\Http\Controllers\API\WsFKTPController::class, 'registrasiPasienBaru']);
     Route::post('antrean', [App\Http\Controllers\API\WsFKTPController::class, 'ambilAntrean']);
     Route::get('antrean/status/{kodePoli}/{tanggalPeriksa}', [App\Http\Controllers\API\WsFKTPController::class, 'getStatusAntrean']);
-    Route::put('antrean/batal', [App\Http\Controllers\API\WsFKTPController::class, 'batalAntrean']);
 });
+
+// WhatsApp Gateway API Routes
+Route::prefix('whatsapp')->group(function () {
+    Route::post('/send', [App\Http\Controllers\WhatsAppController::class, 'sendMessage']);
+    Route::get('/session/status', [App\Http\Controllers\WhatsAppController::class, 'getSessionStatus']);
+    Route::get('/session/qr', [App\Http\Controllers\WhatsAppController::class, 'getQRCode']);
+    Route::post('/session/create', [App\Http\Controllers\WhatsAppController::class, 'createSession']);
+    Route::delete('/session/delete', [App\Http\Controllers\WhatsAppController::class, 'deleteSession']);
+    Route::post('/webhook', [App\Http\Controllers\WhatsAppController::class, 'webhook'])->withoutMiddleware(['auth:sanctum']);
+});
+
+// WhatsApp Gateway Public Webhook (tanpa autentikasi)
+Route::post('/whatsapp/webhook/public', [App\Http\Controllers\WhatsAppController::class, 'webhook'])
+    ->withoutMiddleware(['auth:sanctum']);
 
 // Route API untuk Mobile JKN yang dapat diakses tanpa autentikasi
 Route::prefix('mobile-jkn')->group(function () {

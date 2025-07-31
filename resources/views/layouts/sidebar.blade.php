@@ -1,5 +1,6 @@
 <!-- Sidebar -->
-<ul class="navbar-nav bg-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+<ul class="navbar-nav bg-primary sidebar sidebar-dark accordion" id="accordionSidebar"
+   style="height: 100vh; overflow-y: auto;">
 
    <!-- Sidebar - Brand -->
    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url('/') }}">
@@ -83,6 +84,14 @@
             <a class="collapse-item {{ request()->is('ilp/sasaran-ckg*') ? 'active' : '' }}"
                href="{{ route('ilp.sasaran-ckg') }}">
                <i class="fas fa-birthday-cake fa-sm fa-fw mr-2 text-gray-400"></i>Sasaran CKG
+            </a>
+            <a class="collapse-item {{ request()->is('ilp/dashboard-sekolah*') ? 'active' : '' }}"
+               href="{{ route('ilp.dashboard-sekolah') }}">
+               <i class="fas fa-school fa-sm fa-fw mr-2 text-gray-400"></i>Dashboard Sekolah
+            </a>
+            <a class="collapse-item {{ request()->is('ilp/data-siswa-sekolah*') ? 'active' : '' }}"
+               href="{{ route('ilp.data-siswa-sekolah.index') }}">
+               <i class="fas fa-graduation-cap fa-sm fa-fw mr-2 text-gray-400"></i>Data Siswa Sekolah
             </a>
          </div>
       </div>
