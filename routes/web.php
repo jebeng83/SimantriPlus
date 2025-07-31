@@ -39,11 +39,11 @@ Route::get('/error', [App\Http\Controllers\ErrorController::class, 'index'])->na
 Route::get('/not-found', [App\Http\Controllers\ErrorController::class, 'notFound'])->name('error.404');
 Route::get('/forbidden', [App\Http\Controllers\ErrorController::class, 'forbidden'])->name('error.403');
 
-Route::get('/infokesehatan', function (): \Illuminate\Http\RedirectResponse {
+Route::get('/infokesehatan', function () {
     return redirect()->away('https://ayosehat.kemkes.go.id/promosi-kesehatan');
 });
 
-Route::get('/skriningbpjs', function (): \Illuminate\Http\RedirectResponse {
+Route::get('/skriningbpjs', function () {
     return redirect()->away('https://webskrining.bpjs-kesehatan.go.id/skrining');
 });
 
@@ -51,16 +51,13 @@ Route::get('/skriningbpjs', function (): \Illuminate\Http\RedirectResponse {
 Route::get('/skrining', [App\Http\Controllers\SkriningController::class, 'index'])->name('skrining.minimal');
 
 // Route untuk menyimpan data skrining tanpa autentikasi
-Route::post('/skrining/store', function(Illuminate\Http\Request $request): \Illuminate\Http\RedirectResponse {
-    // Untuk sementara hanya redirect kembali dengan pesan sukses
-    return redirect()->back()->with('success', 'Data skrining berhasil disimpan');
-})->name('skrining.store');
+Route::post('/skrining/store', [\App\Http\Controllers\SkriningController::class, 'store'])->name('skrining.store');
 
 // Route untuk mendapatkan data pasien berdasarkan NIK
-Route::get('/pasien/get-by-nik', function(Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse {
+Route::get('/pasien/get-by-nik', function(\Illuminate\Http\Request $request) {
     $nik = $request->input('nik');
     
-    if (!$nik) {
+    if (empty($nik)) {
         return response()->json([
             'status' => 'error',
             'message' => 'NIK tidak boleh kosong'
@@ -69,7 +66,7 @@ Route::get('/pasien/get-by-nik', function(Illuminate\Http\Request $request): \Il
     
     $pasien = DB::table('pasien')->where('no_ktp', $nik)->first();
     
-    if ($pasien) {
+    if (!is_null($pasien)) {
         return response()->json([
             'status' => 'success',
             'data' => $pasien
@@ -82,15 +79,15 @@ Route::get('/pasien/get-by-nik', function(Illuminate\Http\Request $request): \Il
     ]);
 })->name('pasien.get-by-nik');
 
-Route::get('/offline', function (): \Illuminate\View\View {
+Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });
 
-Route::get('/kerjo-award', function (): \Illuminate\View\View {
+Route::get('/kerjo-award', function () {
     return view('kerjo_award');
 });
 
-Route::get('/clear-cache', function(): int {
+Route::get('/clear-cache', function() {
     $exitCode = Artisan::call('optimize:clear');
     return $exitCode;
 });
@@ -103,10 +100,10 @@ Route::get('/pegawai', [App\Http\Controllers\API\PemeriksaanController::class, '
 Route::get('/api/pasien', [App\Http\Controllers\RegisterController::class, 'getPasien'])->name('get.pasien');
 Route::get('/pasien/search', [App\Http\Controllers\PasienController::class, 'searchPasien'])->name('pasien.search');
 Route::get('/api/dokter', [App\Http\Controllers\RegisterController::class, 'getDokter'])->name('dokter');
-Route::get('/propinsi', [WilayahController::class, 'getPropinsi'])->name('propinsi');
-Route::get('/kabupaten', [WilayahController::class, 'getKabupaten'])->name('kabupaten');
-Route::get('/kecamatan', [WilayahController::class, 'getKecamatan'])->name('kecamatan');
-Route::get('/kelurahan', [WilayahController::class, 'getKelurahan'])->name('kelurahan');
+Route::get('/propinsi', [\App\Http\Controllers\WilayahController::class, 'getPropinsi'])->name('propinsi');
+Route::get('/kabupaten', [\App\Http\Controllers\WilayahController::class, 'getKabupaten'])->name('kabupaten');
+Route::get('/kecamatan', [\App\Http\Controllers\WilayahController::class, 'getKecamatan'])->name('kecamatan');
+Route::get('/kelurahan', [\App\Http\Controllers\WilayahController::class, 'getKelurahan'])->name('kelurahan');
 
 // Rute untuk berkas
 Route::get('/berkas/{noRawat}/{noRM}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRM'])->where('noRawat', '.*');
@@ -249,6 +246,46 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::post('/get-summary', [App\Http\Controllers\IlpController::class, 'getSummary'])->name('get-summary');
         Route::post('/send-pdf', [App\Http\Controllers\IlpController::class, 'sendPdf'])->name('send-pdf');
         Route::post('/send-whatsapp', [App\Http\Controllers\IlpController::class, 'sendWhatsApp'])->name('send-whatsapp');
+        
+        // WhatsApp Gateway Routes
+        Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+            Route::post('/send', [App\Http\Controllers\WhatsAppController::class, 'sendMessage'])->name('send');
+            Route::get('/session/status', [App\Http\Controllers\WhatsAppController::class, 'getSessionStatus'])->name('session.status');
+            Route::get('/session/qr', [App\Http\Controllers\WhatsAppController::class, 'getQRCode'])->name('session.qr');
+            Route::post('/session/create', [App\Http\Controllers\WhatsAppController::class, 'createSession'])->name('session.create');
+            Route::delete('/session/delete', [App\Http\Controllers\WhatsAppController::class, 'deleteSession'])->name('session.delete');
+            Route::post('/webhook', [App\Http\Controllers\WhatsAppController::class, 'webhook'])->name('webhook');
+            Route::get('/dashboard', function() {
+                return view('whatsapp.dashboard');
+            })->name('dashboard');
+            Route::get('/queue-dashboard', function() {
+                return view('whatsapp.queue-dashboard');
+            })->name('queue.dashboard');
+            
+            // Queue Management Routes
+            Route::post('/queue/process', [App\Http\Controllers\WhatsAppController::class, 'processQueue'])->name('queue.process');
+            Route::get('/queue/stats', [App\Http\Controllers\WhatsAppController::class, 'getQueueStats'])->name('queue.stats');
+            Route::get('/queue/list', [App\Http\Controllers\WhatsAppController::class, 'getQueueList'])->name('queue.list');
+            Route::delete('/queue/{id}', [App\Http\Controllers\WhatsAppController::class, 'deleteFromQueue'])->name('queue.delete');
+            Route::post('/queue/{id}/retry', [App\Http\Controllers\WhatsAppController::class, 'retryMessage'])->name('queue.retry');
+            
+            // Node.js WhatsApp Gateway Routes
+            Route::prefix('node')->name('node.')->group(function () {
+                Route::get('/dashboard', [App\Http\Controllers\WhatsAppNodeController::class, 'dashboard'])->name('dashboard');
+                Route::post('/qr-code', [App\Http\Controllers\WhatsAppNodeController::class, 'getQrCode'])->name('qr');
+                Route::get('/status', [App\Http\Controllers\WhatsAppNodeController::class, 'getServerStatus'])->name('status');
+                Route::post('/send-message', [App\Http\Controllers\WhatsAppNodeController::class, 'sendMessage'])->name('send-message');
+                Route::post('/send-file', [App\Http\Controllers\WhatsAppNodeController::class, 'sendFile'])->name('send-file');
+                Route::post('/process-queue', [App\Http\Controllers\WhatsAppNodeController::class, 'processQueueViaNode'])->name('process-queue');
+                Route::post('/start', [\App\Http\Controllers\WhatsAppNodeController::class, 'startServer'])->name('start');
+                Route::post('/stop', [App\Http\Controllers\WhatsAppNodeController::class, 'stopServer'])->name('stop');
+                Route::post('/clear-cache', [App\Http\Controllers\WhatsAppNodeController::class, 'clearCache'])->name('clear-cache');
+                Route::post('/quick-start', [App\Http\Controllers\WhatsAppNodeController::class, 'quickStartServer'])->name('quick-start');
+                Route::get('/logs', [App\Http\Controllers\WhatsAppNodeController::class, 'getLogs'])->name('logs');
+                Route::post('/execute-command', [App\Http\Controllers\WhatsAppNodeController::class, 'executeCommand'])->name('execute-command');
+                Route::get('/realtime-output', [App\Http\Controllers\WhatsAppNodeController::class, 'getRealtimeOutput'])->name('realtime-output');
+            });
+        });
         Route::get('/faktor-resiko', [App\Http\Controllers\ILP\FaktorResikoController::class, 'index'])->name('faktor-resiko');
         Route::get('/get-posyandu', [App\Http\Controllers\ILP\FaktorResikoController::class, 'getPosyandu'])->name('get-posyandu');
         
@@ -274,6 +311,17 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::delete('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'destroy'])
             ->name('dewasa.destroy')
             ->where('noRawat', '.*');
+        
+        // Route untuk Data Siswa Sekolah
+        Route::resource('data-siswa-sekolah', App\Http\Controllers\ILP\DataSiswaSekolahController::class);
+        Route::get('/get-kelas-by-sekolah', [App\Http\Controllers\ILP\DataSiswaSekolahController::class, 'getKelasBySekolah'])->name('get-kelas-by-sekolah');
+        Route::get('/data-siswa-sekolah/export/excel', [App\Http\Controllers\ILP\DataSiswaSekolahController::class, 'exportExcel'])->name('data-siswa-sekolah.export.excel');
+        Route::get('/data-siswa-sekolah/export/pdf', [App\Http\Controllers\ILP\DataSiswaSekolahController::class, 'exportPdf'])->name('data-siswa-sekolah.export.pdf');
+        
+        // Route untuk Dashboard Sekolah
+        Route::get('/dashboard-sekolah', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'index'])->name('dashboard-sekolah');
+        Route::get('/dashboard-sekolah/export/excel', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'exportExcel'])->name('dashboard-sekolah.export.excel');
+        Route::get('/dashboard-sekolah/export/pdf', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'exportPdf'])->name('dashboard-sekolah.export.pdf');
     });
 
     // Route untuk refresh CSRF token

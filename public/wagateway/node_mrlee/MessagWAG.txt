@@ -1,0 +1,18 @@
+CHAT
+-ping
+-ping reply
+-!this group info
+-!all_groups_info
+
+post/get http://localhost:8100
+
+GET 
+-/uptime
+
+POST
+-/Stop/WAG
+-/WA-QrCode
+-/send-message ->body->number, message
+-/send-fileurl ->body->number, caption, fileurl
+-/send-file ->body->number, caption, namafile
+-/send-group ->body->id/name, message

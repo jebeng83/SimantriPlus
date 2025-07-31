@@ -42,8 +42,8 @@ class AppServiceProvider extends ServiceProvider
             }
         }
         
-        // Handle session timeout
-        if (auth()->check()) {
+        // Handle session timeout - Optimized untuk produksi
+        if (auth()->check() && !app()->runningInConsole()) {
             $lastActivity = session('last_activity');
             $timeout = config('session.lifetime') * 60; // Convert minutes to seconds
             
@@ -56,16 +56,29 @@ class AppServiceProvider extends ServiceProvider
             session(['last_activity' => time()]);
         }
 
-        if (config('app.debug')) {
+        // Database query logging hanya untuk development
+        if (config('app.debug') && config('app.env') !== 'production') {
             DB::listen(function($query) {
-                Log::info(
-                    $query->sql,
-                    [
+                // Log hanya query yang lambat (> 1000ms)
+                if ($query->time > 1000) {
+                    Log::warning('Slow Query Detected', [
+                        'sql' => $query->sql,
                         'bindings' => $query->bindings,
-                        'time' => $query->time
-                    ]
-                );
+                        'time' => $query->time . 'ms'
+                    ]);
+                }
             });
+        }
+        
+        // Optimalisasi untuk produksi
+        if (config('app.env') === 'production') {
+            // Disable debug bar
+            if (class_exists('\Barryvdh\Debugbar\ServiceProvider')) {
+                $this->app['config']['debugbar.enabled'] = false;
+            }
+            
+            // Set timezone untuk konsistensi
+            date_default_timezone_set(config('app.timezone', 'Asia/Jakarta'));
         }
     }
 }

@@ -168,8 +168,9 @@
 
    /* Memperbaiki sidebar yang terpotong */
    .sidebar {
-      height: auto !important;
-      min-height: 100% !important;
+      height: 100vh !important;
+      min-height: 100vh !important;
+      overflow-y: auto !important;
       padding-bottom: 100px !important;
    }
 

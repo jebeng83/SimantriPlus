@@ -11,14 +11,16 @@ class PosyanduSeeder extends Seeder
     {
         $posyandu = [
             [
+                'kode_posyandu' => 'PSY001',
                 'nama_posyandu' => 'Posyandu Melati',
                 'alamat' => 'Jl. Melati No. 1',
-                'keterangan' => 'Posyandu Wilayah A'
+                'desa' => 'Desa Melati'
             ],
             [
+                'kode_posyandu' => 'PSY002',
                 'nama_posyandu' => 'Posyandu Mawar',
                 'alamat' => 'Jl. Mawar No. 2',
-                'keterangan' => 'Posyandu Wilayah B'
+                'desa' => 'Desa Mawar'
             ],
             // Tambahkan data posyandu lainnya
         ];
@@ -27,4 +29,4 @@ class PosyanduSeeder extends Seeder
             Posyandu::create($pos);
         }
     }
-} 
+}

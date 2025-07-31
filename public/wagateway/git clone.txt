@@ -1,0 +1,1 @@
+git clone https://x-token-auth:ATCTT3xFfGN0PjnT32kATogRWI_r_gTPHhFqR2SaZJTUST_3ktVr1deaQ-9Q2uKVW9f7OsNCb4nMRiIr93fE2Hf_Ne3MVg96XwBZQlRllej5YwYg7MkcXwpGlgaCBK9-NnZKiwFzTMFtmgOJKpHULoQwICbbca40yYQqHH6W00lzknclaWRKqn0=A06CCA6D@bitbucket.org/mas_kofa/wa-gateway.git

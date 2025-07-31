@@ -1,0 +1,55 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00b894;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00cec9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="stepGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#f1f2f6;stop-opacity:0.9" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient3)" rx="15"/>
+  
+  <!-- Title -->
+  <text x="200" y="25" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Solusi 3: Troubleshooting Lengkap</text>
+  
+  <!-- Step 1 -->
+  <rect x="20" y="40" width="360" height="45" fill="url(#stepGradient)" rx="8"/>
+  <circle cx="40" cy="62" r="12" fill="#e17055"/>
+  <text x="40" y="68" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">1</text>
+  <text x="65" y="58" fill="#2d3436" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Clear WhatsApp Cache</text>
+  <text x="65" y="75" fill="#636e72" font-family="Arial, sans-serif" font-size="10">Bersihkan cache untuk menghindari konflik session</text>
+  
+  <!-- Step 2 -->
+  <rect x="20" y="95" width="360" height="45" fill="url(#stepGradient)" rx="8"/>
+  <circle cx="40" cy="117" r="12" fill="#fdcb6e"/>
+  <text x="40" y="123" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">2</text>
+  <text x="65" y="113" fill="#2d3436" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Stop All Node Processes</text>
+  <text x="65" y="130" fill="#636e72" font-family="Arial, sans-serif" font-size="10">pkill -f "node.*appJM.js" untuk hentikan semua proses</text>
+  
+  <!-- Step 3 -->
+  <rect x="20" y="150" width="360" height="45" fill="url(#stepGradient)" rx="8"/>
+  <circle cx="40" cy="172" r="12" fill="#6c5ce7"/>
+  <text x="40" y="178" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">3</text>
+  <text x="65" y="168" fill="#2d3436" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Increase Timeout</text>
+  <text x="65" y="185" fill="#636e72" font-family="Arial, sans-serif" font-size="10">Tingkatkan timeout dari 60 detik ke 120 detik</text>
+  
+  <!-- Step 4 -->
+  <rect x="20" y="205" width="360" height="45" fill="url(#stepGradient)" rx="8"/>
+  <circle cx="40" cy="227" r="12" fill="#00b894"/>
+  <text x="40" y="233" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">4</text>
+  <text x="65" y="223" fill="#2d3436" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Manual Start</text>
+  <text x="65" y="240" fill="#636e72" font-family="Arial, sans-serif" font-size="10">Gunakan terminal manual sebagai backup solution</text>
+  
+  <!-- Bottom Info -->
+  <rect x="20" y="260" width="360" height="30" fill="rgba(255,255,255,0.2)" rx="5"/>
+  <text x="200" y="275" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="11" font-weight="bold">
+    💡 Jika masih gagal, restart sistem atau gunakan port alternatif
+  </text>
+  <text x="200" y="288" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="9">
+    Dokumentasi lengkap tersedia di README-WHATSAPP-GATEWAY.md
+  </text>
+</svg>

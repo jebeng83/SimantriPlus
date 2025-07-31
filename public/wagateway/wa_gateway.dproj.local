@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899/12/30 00:00:00.000.223,D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmUtama.pas=D:\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.003,D:\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.pas=D:\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmSetPort.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.899,=D:\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.241,D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.dfm=D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmDDL.dfm</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.152,D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\wa_gateway.dproj=D:\OneDrive\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.223,D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmUtama.dfm=D:\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.040,=D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.241,D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.pas=D:\OneDrive\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmDDL.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.003,D:\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\Unit1.dfm=D:\DATA\SOURCE\DELPHI\RSPON\WA GATEWAY\ufrmSetPort.dfm</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.777,=D:\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2025/05/24 10:51:50.243,=D:\DATA\SOURCE\DELPHI\OPEN SOURCE\WA GATEWAY\Unit1.pas</Transaction>
+    <Transaction>2025/05/24 10:53:10.052,D:\DATA\SOURCE\DELPHI\OPEN SOURCE\WA GATEWAY\ufrmLastQuery.pas=D:\DATA\SOURCE\DELPHI\OPEN SOURCE\WA GATEWAY\Unit1.pas</Transaction>
+    <Transaction>2025/05/24 10:53:10.052,D:\DATA\SOURCE\DELPHI\OPEN SOURCE\WA GATEWAY\ufrmLastQuery.dfm=D:\DATA\SOURCE\DELPHI\OPEN SOURCE\WA GATEWAY\Unit1.dfm</Transaction>
+  </Transactions>
+</BorlandProject>
