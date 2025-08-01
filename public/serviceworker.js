@@ -40,6 +40,14 @@ self.addEventListener('activate', event => {
 
 // Serve from Cache
 self.addEventListener("fetch", event => {
+    // Skip caching for external CDN requests
+    if (event.request.url.includes('cdn.datatables.net') || 
+        event.request.url.includes('cdnjs.cloudflare.com') ||
+        event.request.url.startsWith('http://') && !event.request.url.includes(self.location.origin)) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+    
     event.respondWith(
         caches.match(event.request)
             .then(response => {
@@ -48,5 +56,5 @@ self.addEventListener("fetch", event => {
             .catch(() => {
                 return caches.match('offline');
             })
-    )
+    );
 });

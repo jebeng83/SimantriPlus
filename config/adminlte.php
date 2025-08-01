@@ -526,27 +526,27 @@ return [
                 [
                     'type' => 'css',
                     'asset' => false,
-                    'location' => '//cdn.datatables.net/responsive/2.2.3/css/responsive.bootstrap.min.css',
+                    'location' => 'https://cdn.datatables.net/responsive/2.2.3/css/responsive.bootstrap.min.css',
                 ],
                 [
                     'type' => 'css',
                     'asset' => false,
-                    'location' => '//cdn.datatables.net/fixedheader/3.2.4/css/fixedHeader.bootstrap.min.css',
+                    'location' => 'https://cdn.datatables.net/fixedheader/3.2.4/css/fixedHeader.bootstrap.min.css',
                 ],
                 [
                     'type' => 'js',
                     'asset' => false,
-                    'location' => '//cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js',
+                    'location' => 'https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js',
                 ],
                 [
                     'type' => 'js',
                     'asset' => false,
-                    'location' => '//cdn.datatables.net/responsive/2.2.3/js/responsive.bootstrap.min.js',
+                    'location' => 'https://cdn.datatables.net/responsive/2.2.3/js/responsive.bootstrap.min.js',
                 ],
                 [
                     'type' => 'js',
                     'asset' => false,
-                    'location' => '//cdn.datatables.net/fixedheader/3.2.4/js/dataTables.fixedHeader.min.js',
+                    'location' => 'https://cdn.datatables.net/fixedheader/3.2.4/js/dataTables.fixedHeader.min.js',
                 ],
             ],
         ],

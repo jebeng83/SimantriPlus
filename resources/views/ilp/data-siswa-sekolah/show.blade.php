@@ -106,12 +106,9 @@
                                         <td><strong>No. Telepon Ortu</strong></td>
                                         <td>:</td>
                                         <td>
-                                            @php
-                                                $no_telepon = $siswa->no_telepon_ortu ?? $siswa->no_tlp ?? $siswa->no_whatsapp ?? null;
-                                            @endphp
-                                            @if($no_telepon && $no_telepon != '-')
-                                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $no_telepon) }}" target="_blank" class="text-success">
-                                                    <i class="fab fa-whatsapp"></i> {{ $no_telepon }}
+                                            @if($siswa->no_whatsapp && $siswa->no_whatsapp != '-')
+                                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $siswa->no_whatsapp) }}" target="_blank" class="text-success">
+                                                    <i class="fab fa-whatsapp"></i> {{ $siswa->no_whatsapp }}
                                                 </a>
                                             @else
                                                 <span class="text-muted">-</span>
@@ -171,33 +168,33 @@
                             <div class="col-md-6">
                                 <table class="table table-borderless">
                                     <tr>
-                                        <td width="40%"><strong>Nama Sekolah</strong></td>
+                                        <td width="40%"><strong>ID Sekolah</strong></td>
                                         <td width="5%">:</td>
-                                        <td>{{ $siswa->sekolah->nama_sekolah ?? '-' }}</td>
+                                        <td>{{ $siswa->id_sekolah ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Jenis Sekolah</strong></td>
                                         <td>:</td>
-                                        <td>{{ $siswa->sekolah->jenisSekolah->nama ?? '-' }}</td>
+                                        <td>-</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Kelurahan</strong></td>
                                         <td>:</td>
-                                        <td>{{ $siswa->sekolah->kelurahan->nm_kel ?? '-' }}</td>
+                                        <td>-</td>
                                     </tr>
                                 </table>
                             </div>
                             <div class="col-md-6">
                                 <table class="table table-borderless">
                                     <tr>
-                                        <td width="40%"><strong>Kelas</strong></td>
+                                        <td width="40%"><strong>ID Kelas</strong></td>
                                         <td width="5%">:</td>
-                                        <td>{{ $siswa->kelas->kelas ?? '-' }} {{ $siswa->kelas->tingkat ? '(' . $siswa->kelas->tingkat . ')' : '' }}</td>
+                                        <td>{{ $siswa->id_kelas ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Wali Kelas</strong></td>
                                         <td>:</td>
-                                        <td>{{ $siswa->kelas->wali_kelas ?? '-' }}</td>
+                                        <td>-</td>
                                     </tr>
                                 </table>
                             </div>
