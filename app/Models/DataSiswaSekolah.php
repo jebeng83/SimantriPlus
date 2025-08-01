@@ -27,8 +27,9 @@ class DataSiswaSekolah extends Model
         'nama_ortu',
         'jenis_disabilitas',
         'nik_ortu',
-        'no_tlp',
-        'no_whatsapp'
+        'no_tlp', // Legacy field - consider for removal
+        'no_whatsapp', // Primary phone field - mapped from form field 'no_telepon_ortu'
+        'no_telepon_ortu' // Virtual field that maps to no_whatsapp via mutator
     ];
 
     protected $dates = [
@@ -114,6 +115,24 @@ class DataSiswaSekolah extends Model
     public function getJenisKelaminLengkapAttribute()
     {
         return $this->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan';
+    }
+
+    /**
+     * Accessor untuk nomor telepon orang tua (virtual field)
+     * Maps to no_whatsapp field in database
+     */
+    public function getNoTeleponOrtuAttribute()
+    {
+        return $this->no_whatsapp;
+    }
+
+    /**
+     * Mutator untuk nomor telepon orang tua (virtual field)
+     * Maps to no_whatsapp field in database
+     */
+    public function setNoTeleponOrtuAttribute($value)
+    {
+        $this->attributes['no_whatsapp'] = $value;
     }
 
     /**

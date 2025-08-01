@@ -16,7 +16,13 @@ class Pasien extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'no_ktp'
+        'no_rkm_medis',
+        'no_ktp',
+        'nm_pasien',
+        'jk',
+        'tmp_lahir',
+        'tgl_lahir',
+        'alamat'
     ];
 
     // Relasi dengan tabel data_ibu_hamil

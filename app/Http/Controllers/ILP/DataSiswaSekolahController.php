@@ -196,20 +196,20 @@ class DataSiswaSekolahController extends Controller
             'tanggal_lahir' => 'required|date',
             'nama_ortu' => 'nullable|string|max:100',
             'nik_ortu' => 'nullable|string|max:16',
-            'no_tlp' => 'nullable|string|max:20',
-            'no_whatsapp' => 'nullable|string|max:20',
+            'no_telepon_ortu' => 'nullable|string|max:20',
             'id_sekolah' => 'required|exists:data_sekolah,id_sekolah',
             'id_kelas' => 'required|exists:data_kelas,id_kelas',
             'jenis_disabilitas' => 'nullable|string|max:100',
             'status' => 'nullable|string|max:100',
-            'status_siswa' => 'required|in:Aktif,Tidak Aktif,Lulus,Pindah,Keluar,Drop Out'
+            'status_siswa' => 'required|in:Aktif,Pindah,Lulus,Drop Out'
         ]);
         
         $validatedData = $request->validated();
+        // Note: no_telepon_ortu is automatically mapped to no_whatsapp via model mutator
         /** @var \App\Models\DataSiswaSekolah|null $siswa */
         $siswa = DataSiswaSekolah::create($validatedData);
         
-        if ($siswa && $siswa->exists) {
+        if ($siswa && $siswa->id) {
             return redirect()->route('ilp.data-siswa-sekolah.index')
                             ->with('success', 'Data siswa berhasil ditambahkan.');
         }
@@ -228,7 +228,7 @@ class DataSiswaSekolahController extends Controller
         View::share('title', 'Detail Data Siswa');
         
         /** @var \App\Models\DataSiswaSekolah $siswa */
-        $siswa = DataSiswaSekolah::with(['sekolah.jenisSekolah', 'sekolah.kelurahan', 'kelas', 'pasien'])
+        $siswa = DataSiswaSekolah::with(['pasien'])
                                 ->findOrFail($id);
         
         return view('ilp.data-siswa-sekolah.show', compact('siswa'));
@@ -244,22 +244,16 @@ class DataSiswaSekolahController extends Controller
     {
         View::share('title', 'Edit Data Siswa');
         
-        // Ambil data siswa dengan join lengkap ke semua tabel terkait
-        $siswa = DataSiswaSekolah::with([
-            'sekolah.jenisSekolah',  // Join ke data_sekolah dan jenis_sekolah
-            'sekolah.kelurahan',     // Join ke kelurahan
-            'kelas',                 // Join ke data_kelas
-            'pasien'                 // Join ke pasien
-        ])->findOrFail($id);
+        // Ambil data siswa dengan join ke pasien dan sekolah
+        $siswa = DataSiswaSekolah::with(['pasien', 'sekolah.jenisSekolah', 'sekolah.kelurahan'])->findOrFail($id);
         
         // Ambil daftar sekolah dengan jenis sekolah dan kelurahan untuk dropdown
         $daftarSekolah = DataSekolah::with(['jenisSekolah', 'kelurahan'])
                                    ->orderBy('nama_sekolah')
                                    ->get();
         
-        // Ambil daftar kelas dengan sekolah untuk dropdown
-        $daftarKelas = DataKelas::with('sekolah')
-                                ->orderBy('kelas')
+        // Ambil daftar kelas untuk dropdown
+        $daftarKelas = DataKelas::orderBy('kelas')
                                 ->get();
         
         // Ambil daftar jenis sekolah untuk dropdown
@@ -301,14 +295,14 @@ class DataSiswaSekolahController extends Controller
             'id_sekolah' => 'required|exists:data_sekolah,id_sekolah',
             'id_kelas' => 'required|exists:data_kelas,id_kelas',
             'status' => 'nullable|string|max:100',
-            'status_siswa' => 'required|in:Aktif,Tidak Aktif,Lulus,Pindah,Keluar,Drop Out',
+            'status_siswa' => 'required|in:Aktif,Pindah,Lulus,Drop Out',
             'jenis_sekolah' => 'required|exists:jenis_sekolah,id',
             'kelurahan' => 'required|exists:kelurahan,kd_kel'
         ]);
         
         // Update data sekolah jika jenis_sekolah atau kelurahan berubah
         $sekolah = DataSekolah::find($request->id_sekolah);
-        if ($sekolah) {
+        if ($sekolah && isset($sekolah->id_sekolah)) {
             $sekolah->update([
                 'id_jenis_sekolah' => $request->jenis_sekolah,
                 'kd_kel' => $request->kelurahan
@@ -316,12 +310,11 @@ class DataSiswaSekolahController extends Controller
         }
         
         // Update data siswa sekolah
-        if ($siswa !== null) {
-            $siswa->update([
+        $siswa->update([
             'nisn' => $request->nisn,
             'jenis_kelamin' => $request->jenis_kelamin,
             'tanggal_lahir' => $request->tanggal_lahir,
-            'no_whatsapp' => $request->no_telepon_ortu,
+            'no_telepon_ortu' => $request->no_telepon_ortu, // Uses mutator to map to no_whatsapp
             'id_sekolah' => $request->id_sekolah,
             'id_kelas' => $request->id_kelas,
             'status' => $request->status,
@@ -329,7 +322,7 @@ class DataSiswaSekolahController extends Controller
         ]);
         
         // Update data pasien jika ada relasi
-        if ($siswa && $siswa->pasien !== null) {
+        if ($siswa && isset($siswa->pasien) && $siswa->pasien && isset($siswa->pasien->no_rkm_medis)) {
             $siswa->pasien->update([
                 'no_ktp' => $request->nik,
                 'nm_pasien' => $request->nama_siswa,
@@ -338,7 +331,17 @@ class DataSiswaSekolahController extends Controller
                 'tgl_lahir' => $request->tanggal_lahir,
                 'alamat' => $request->alamat
             ]);
-        }
+        } else if ($siswa && isset($siswa->no_rkm_medis) && $siswa->no_rkm_medis) {
+            // Jika tidak ada relasi pasien, buat record pasien baru
+            $pasien = new \App\Models\Pasien();
+            $pasien->no_rkm_medis = $siswa->no_rkm_medis;
+            $pasien->no_ktp = $request->nik;
+            $pasien->nm_pasien = $request->nama_siswa;
+            $pasien->jk = $request->jenis_kelamin;
+            $pasien->tmp_lahir = $request->tempat_lahir;
+            $pasien->tgl_lahir = $request->tanggal_lahir;
+            $pasien->alamat = $request->alamat;
+            $pasien->save();
         }
         
         return redirect()->route('ilp.data-siswa-sekolah.index')
@@ -356,7 +359,7 @@ class DataSiswaSekolahController extends Controller
         /** @var \App\Models\DataSiswaSekolah|null $siswa */
         $siswa = DataSiswaSekolah::find($id);
         
-        if ($siswa && $siswa->exists) {
+        if ($siswa && isset($siswa->id)) {
             $siswa->delete();
             return redirect()->route('ilp.data-siswa-sekolah.index')
                             ->with('success', 'Data siswa berhasil dihapus.');
@@ -539,15 +542,9 @@ class DataSiswaSekolahController extends Controller
      */
     public function getKelasBySekolah(Request $request)
     {
-        $sekolah_id = $request->input('sekolah_id');
-        
-        if (!$sekolah_id) {
-            return response()->json([]);
-        }
-         
-        $kelas = DataKelas::where('id_sekolah', $sekolah_id)
-                            ->orderBy('kelas')
-                            ->get();
+        // Since sekolah_id column has been removed, return all available classes
+        $kelas = DataKelas::orderBy('kelas')
+            ->get(['id_kelas as id', 'kelas']); // Return only needed fields with proper naming
         
         return response()->json($kelas ?? []);
     }

@@ -13,21 +13,12 @@ class DataKelas extends Model
     protected $primaryKey = 'id_kelas';
     
     protected $fillable = [
-        'sekolah_id',
         'kelas',
         'tingkat',
         'wali_kelas',
         'jumlah_siswa',
         'status'
     ];
-
-    /**
-     * Relasi dengan sekolah
-     */
-    public function sekolah()
-    {
-        return $this->belongsTo(DataSekolah::class, 'sekolah_id', 'id_sekolah');
-    }
 
     /**
      * Relasi dengan siswa

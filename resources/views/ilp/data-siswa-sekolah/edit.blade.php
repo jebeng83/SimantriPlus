@@ -57,71 +57,6 @@
                             <!-- Informasi Data Tabel yang Di-Join -->
                             <div class="row mb-4">
                                 <div class="col-md-12">
-                                    <div class="alert alert-info">
-                                        <h5><i class="fas fa-info-circle mr-2"></i>Informasi Data Tabel</h5>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6><strong>Data Siswa Sekolah (Tabel Utama):</strong></h6>
-                                                <ul class="mb-2">
-                                                    <li>ID: {{ $siswa->id }}</li>
-                                                    <li>NIS: {{ $siswa->nis ?? 'Tidak ada' }}</li>
-                                                    <li>NISN: {{ $siswa->nisn ?? 'Tidak ada' }}</li>
-                                                    <li>No. RM Medis: {{ $siswa->no_rkm_medis ?? 'Tidak ada' }}</li>
-                                                    <li>Status Siswa: {{ $siswa->status_siswa ?? 'Tidak ada' }}</li>
-                                                </ul>
-                                                
-                                                <h6><strong>Data Pasien (Join via no_rkm_medis):</strong></h6>
-                                                @if($siswa->pasien)
-                                                    <ul class="mb-2">
-                                                        <li>No. RM Medis: {{ $siswa->pasien->no_rkm_medis }}</li>
-                                                        <li>Nama: {{ $siswa->pasien->nm_pasien ?? 'Tidak ada' }}</li>
-                                                        <li>No. KTP: {{ $siswa->pasien->no_ktp ?? 'Tidak ada' }}</li>
-                                                        <li>Jenis Kelamin: {{ $siswa->pasien->jk ?? 'Tidak ada' }}</li>
-                                                        <li>Alamat: {{ $siswa->pasien->alamat ?? 'Tidak ada' }}</li>
-                                                    </ul>
-                                                @else
-                                                    <p class="text-muted">Data pasien tidak ditemukan</p>
-                                                @endif
-                                            </div>
-                                            <div class="col-md-6">
-                                                <h6><strong>Data Sekolah (Join via id_sekolah):</strong></h6>
-                                                @if($siswa->sekolah)
-                                                    <ul class="mb-2">
-                                                        <li>ID Sekolah: {{ $siswa->sekolah->id_sekolah }}</li>
-                                                        <li>Nama Sekolah: {{ $siswa->sekolah->nama_sekolah }}</li>
-                                                        <li>Kode Kelurahan: {{ $siswa->sekolah->kd_kel ?? 'Tidak ada' }}</li>
-                                                    </ul>
-                                                    
-                                                    <h6><strong>Jenis Sekolah (Join via id_jenis_sekolah):</strong></h6>
-                                                    @if($siswa->sekolah->jenisSekolah)
-                                                        <ul class="mb-2">
-                                                            <li>ID: {{ $siswa->sekolah->jenisSekolah->id }}</li>
-                                                            <li>Nama: {{ $siswa->sekolah->jenisSekolah->nama_jenis_sekolah }}</li>
-                                                            <li>Keterangan: {{ $siswa->sekolah->jenisSekolah->keterangan ?? 'Tidak ada' }}</li>
-                                                        </ul>
-                                                    @else
-                                                        <p class="text-muted">Data jenis sekolah tidak ditemukan</p>
-                                                    @endif
-                                                @else
-                                                    <p class="text-muted">Data sekolah tidak ditemukan</p>
-                                                @endif
-                                                
-                                                <h6><strong>Data Kelas (Join via id_kelas):</strong></h6>
-                                                @if($siswa->kelas)
-                                                    <ul class="mb-2">
-                                                        <li>ID Kelas: {{ $siswa->kelas->id_kelas }}</li>
-                                                        <li>Nama Kelas: {{ $siswa->kelas->kelas }}</li>
-                                                        <li>Tingkat: {{ $siswa->kelas->tingkat ?? 'Tidak ada' }}</li>
-                                                        <li>Wali Kelas: {{ $siswa->kelas->wali_kelas ?? 'Tidak ada' }}</li>
-                                                        <li>Jumlah Siswa: {{ $siswa->kelas->jumlah_siswa ?? 'Tidak ada' }}</li>
-                                                        <li>Status: {{ $siswa->kelas->status ?? 'Tidak ada' }}</li>
-                                                    </ul>
-                                                @else
-                                                    <p class="text-muted">Data kelas tidak ditemukan</p>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -284,11 +219,11 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="no_whatsapp">No. Telepon Orang Tua</label>
-                                        <input type="text" class="form-control @error('no_whatsapp') is-invalid @enderror" 
-                                               id="no_whatsapp" name="no_whatsapp" value="{{ old('no_whatsapp', $siswa->no_whatsapp) }}" 
+                                        <label for="no_telepon_ortu">No. Telepon Orang Tua</label>
+                                        <input type="text" class="form-control @error('no_telepon_ortu') is-invalid @enderror" 
+                                               id="no_telepon_ortu" name="no_telepon_ortu" value="{{ old('no_telepon_ortu', $siswa->no_telepon_ortu) }}" 
                                                placeholder="Contoh: 08123456789">
-                                        @error('no_whatsapp')
+                                        @error('no_telepon_ortu')
                                             <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
                                         <small class="form-text text-muted">Format: 08xxxxxxxxxx atau +62xxxxxxxxxx</small>
@@ -329,13 +264,7 @@
                                             @foreach($daftarSekolah as $sekolah)
                                                 <option value="{{ $sekolah->id_sekolah }}" 
                                                         {{ old('id_sekolah', $siswa->id_sekolah) == $sekolah->id_sekolah ? 'selected' : '' }}>
-                                                    {{ $sekolah->nama_sekolah }} 
-                                                    @if($sekolah->jenisSekolah)
-                                                        ({{ $sekolah->jenisSekolah->nama }})
-                                                    @endif
-                                                    @if($sekolah->kelurahan)
-                                                        - {{ $sekolah->kelurahan->nm_kel }}
-                                                    @endif
+                                                    {{ $sekolah->nama_sekolah }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -343,18 +272,7 @@
                                             <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
                                         <small class="form-text text-muted">
-                                            Sekolah saat ini: 
-                                            @if($siswa->sekolah)
-                                                {{ $siswa->sekolah->nama_sekolah }}
-                                                @if($siswa->sekolah->jenisSekolah)
-                                                    ({{ $siswa->sekolah->jenisSekolah->nama }})
-                                                @endif
-                                                @if($siswa->sekolah->kelurahan)
-                                                    - {{ $siswa->sekolah->kelurahan->nm_kel }}
-                                                @endif
-                                            @else
-                                                Tidak ada data sekolah
-                                            @endif
+                                            Sekolah saat ini: Data sekolah tersimpan dengan ID {{ $siswa->id_sekolah }}
                                         </small>
                                     </div>
                                 </div>
@@ -368,9 +286,6 @@
                                                 <option value="{{ $kelas->id_kelas }}" 
                                                         {{ old('id_kelas', $siswa->id_kelas) == $kelas->id_kelas ? 'selected' : '' }}>
                                                     {{ $kelas->kelas }}
-                                                    @if($kelas->sekolah)
-                                                        - {{ $kelas->sekolah->nama_sekolah }}
-                                                    @endif
                                                 </option>
                                             @endforeach
                                         </select>
@@ -378,15 +293,7 @@
                                             <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
                                         <small class="form-text text-muted">
-                                            Kelas saat ini: 
-                                            @if($siswa->kelas)
-                                                {{ $siswa->kelas->kelas }}
-                                                @if($siswa->kelas->sekolah)
-                                                    - {{ $siswa->kelas->sekolah->nama_sekolah }}
-                                                @endif
-                                            @else
-                                                Tidak ada data kelas
-                                            @endif
+                                            Kelas saat ini: Data kelas tersimpan dengan ID {{ $siswa->id_kelas }}
                                         </small>
                                     </div>
                                 </div>
@@ -400,13 +307,11 @@
                                                 id="status_siswa" name="status_siswa" required>
                                             <option value="">Pilih Status</option>
                                             <option value="Aktif" {{ old('status_siswa', $siswa->status_siswa) == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                                            <option value="Tidak Aktif" {{ old('status_siswa', $siswa->status_siswa) == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
-                                            <option value="Lulus" {{ old('status_siswa', $siswa->status_siswa) == 'Lulus' ? 'selected' : '' }}>Lulus</option>
                                             <option value="Pindah" {{ old('status_siswa', $siswa->status_siswa) == 'Pindah' ? 'selected' : '' }}>Pindah</option>
-                                            <option value="Keluar" {{ old('status_siswa', $siswa->status_siswa) == 'Keluar' ? 'selected' : '' }}>Keluar</option>
+                                            <option value="Lulus" {{ old('status_siswa', $siswa->status_siswa) == 'Lulus' ? 'selected' : '' }}>Lulus</option>
                                             <option value="Drop Out" {{ old('status_siswa', $siswa->status_siswa) == 'Drop Out' ? 'selected' : '' }}>Drop Out</option>
                                         </select>
-                                        @error('status')
+                                        @error('status_siswa')
                                             <span class="invalid-feedback">{{ $message }}</span>
                                         @enderror
                                     </div>
@@ -423,7 +328,7 @@
                                             <option value="">Pilih Jenis Sekolah</option>
                                             @foreach($daftarJenisSekolah as $jenisSekolah)
                                                 <option value="{{ $jenisSekolah->id }}" 
-                                                    {{ old('jenis_sekolah', $siswa->sekolah->jenisSekolah->id ?? '') == $jenisSekolah->id ? 'selected' : '' }}>
+                                                    {{ old('jenis_sekolah', $siswa->sekolah->id_jenis_sekolah ?? '') == $jenisSekolah->id ? 'selected' : '' }}>
                                                     {{ $jenisSekolah->nama }}
                                                 </option>
                                             @endforeach
@@ -441,7 +346,7 @@
                                             <option value="">Pilih Kelurahan</option>
                                             @foreach($daftarKelurahan as $kelurahan)
                                                 <option value="{{ $kelurahan->kd_kel }}" 
-                                                    {{ old('kelurahan', $siswa->sekolah->kelurahan->kd_kel ?? '') == $kelurahan->kd_kel ? 'selected' : '' }}>
+                                                    {{ old('kelurahan', $siswa->sekolah->kd_kel ?? '') == $kelurahan->kd_kel ? 'selected' : '' }}>
                                                     {{ $kelurahan->nm_kel }}
                                                 </option>
                                             @endforeach
@@ -640,9 +545,11 @@
                              kelasSelect.append('<option value="' + kelas.id + '">' + kelas.kelas + '</option>');
                          });
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', error);
+                        console.error('Response:', xhr.responseText);
                         kelasSelect.html('<option value="">Error loading kelas</option>');
-                        alert('Gagal memuat data kelas');
+                        alert('Gagal memuat data kelas: ' + error);
                     }
                 });
             } else {

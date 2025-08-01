@@ -47,7 +47,7 @@
                   <button type="button" class="btn btn-sm btn-danger mr-2" id="exportPdf">
                      <i class="fas fa-file-pdf mr-1"></i> Export PDF
                   </button>
-                  <a href="{{ route('ilp.dashboard-sekolah') }}" class="btn btn-sm btn-outline-secondary">
+                  <a href="{{ route('ilp.dashboard-sekolah') }}" class="btn btn-sm btn-outline-secondary" id="resetFilter">
                      <i class="fas fa-sync mr-1"></i> Reset Filter
                   </a>
                </div>
@@ -60,7 +60,7 @@
                         <select class="form-control" name="sekolah" id="sekolahFilter">
                            <option value="">Semua Sekolah</option>
                            @foreach($daftarSekolah as $sekolah)
-                           <option value="{{ $sekolah->id }}" {{ $sekolahId == $sekolah->id ? 'selected' : '' }}>
+                           <option value="{{ $sekolah->id_sekolah }}" {{ $sekolahId == $sekolah->id_sekolah ? 'selected' : '' }}>
                               {{ $sekolah->nama_sekolah }}
                            </option>
                            @endforeach
@@ -86,7 +86,7 @@
                         <select class="form-control" name="kelas" id="kelasFilter">
                            <option value="">Semua Kelas</option>
                            @foreach($daftarKelas as $kelas)
-                           <option value="{{ $kelas->id }}" {{ $kelasId == $kelas->id ? 'selected' : '' }}>
+                           <option value="{{ $kelas->id_kelas }}" {{ $kelasId == $kelas->id_kelas ? 'selected' : '' }}>
                               {{ $kelas->kelas }}
                            </option>
                            @endforeach
@@ -165,7 +165,9 @@
             </h3>
          </div>
          <div class="card-body">
-            <canvas id="statusChart" width="400" height="200"></canvas>
+            <div style="height: 250px; position: relative;">
+               <canvas id="statusChart"></canvas>
+            </div>
             <div class="mt-3">
                <div class="row text-center">
                   <div class="col-3">
@@ -205,7 +207,9 @@
             </h3>
          </div>
          <div class="card-body">
-            <canvas id="ageChart" width="400" height="200"></canvas>
+            <div style="height: 300px; position: relative;">
+               <canvas id="ageChart"></canvas>
+            </div>
             <div class="mt-3">
                @foreach($distribusiUmur as $umur)
                <div class="progress-group">
@@ -450,6 +454,14 @@ $(document).ready(function() {
         $('#filterForm').submit();
     });
     
+    // Reset filter functionality
+    $('#resetFilter').click(function(e) {
+        e.preventDefault();
+        
+        // Redirect to dashboard without any parameters to reset all filters
+        window.location.href = '{{ route("ilp.dashboard-sekolah") }}';
+    });
+    
     // Status Chart
     var statusCtx = document.getElementById('statusChart').getContext('2d');
     var statusChart = new Chart(statusCtx, {
@@ -471,12 +483,15 @@ $(document).ready(function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            legend: {
-                position: 'bottom'
-            },
             plugins: {
                 legend: {
                     display: false
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
                 }
             }
         }
@@ -487,10 +502,10 @@ $(document).ready(function() {
     var ageChart = new Chart(ageCtx, {
         type: 'bar',
         data: {
-            labels: [{{ $distribusiUmur->pluck('kelompok_umur')->map(function($item) { return '"' . $item . '"'; })->implode(',') }}],
+            labels: {!! json_encode($distribusiUmur->pluck('kelompok_umur')->toArray()) !!},
             datasets: [{
                 label: 'Jumlah Siswa',
-                data: [{{ $distribusiUmur->pluck('jumlah')->implode(',') }}],
+                data: {!! json_encode($distribusiUmur->pluck('jumlah')->toArray()) !!},
                 backgroundColor: '#17a2b8',
                 borderColor: '#138496',
                 borderWidth: 1
@@ -503,13 +518,25 @@ $(document).ready(function() {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        maxTicksLimit: 10
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 0
                     }
                 }
             },
             plugins: {
                 legend: {
                     display: false
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
                 }
             }
         }
@@ -523,7 +550,7 @@ $(document).ready(function() {
         var jenisSekolah = $('select[name="jenis_sekolah"]').val();
         var kelas = $('select[name="kelas"]').val();
         
-        var exportUrl = '{{ route("ilp.dashboard-sekolah.export.excel") }}';
+        var exportUrl = '{{ url("ilp/dashboard-sekolah/export/excel") }}';
         var params = [];
         
         if (sekolah) params.push('sekolah=' + encodeURIComponent(sekolah));
@@ -554,7 +581,7 @@ $(document).ready(function() {
         var jenisSekolah = $('select[name="jenis_sekolah"]').val();
         var kelas = $('select[name="kelas"]').val();
         
-        var exportUrl = '{{ route("ilp.dashboard-sekolah.export.pdf") }}';
+        var exportUrl = '{{ url("ilp/dashboard-sekolah/export/pdf") }}';
         var params = [];
         
         if (sekolah) params.push('sekolah=' + encodeURIComponent(sekolah));

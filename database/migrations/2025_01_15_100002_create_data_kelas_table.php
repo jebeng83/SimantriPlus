@@ -14,9 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::create('data_kelas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sekolah_id')->constrained('data_sekolah')->onDelete('cascade');
-            $table->string('nama_kelas', 50);
+            $table->id('id_kelas');
+            $table->foreignId('sekolah_id')->constrained('data_sekolah', 'id_sekolah')->onDelete('cascade');
+            $table->string('kelas', 50);
             $table->string('tingkat', 10); // 1, 2, 3, 4, 5, 6 untuk SD
             $table->string('wali_kelas', 100)->nullable();
             $table->integer('jumlah_siswa')->default(0);
