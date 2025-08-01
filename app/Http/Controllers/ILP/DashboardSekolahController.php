@@ -198,49 +198,30 @@ class DashboardSekolahController extends Controller
     
     public function exportExcel(Request $request)
     {
-        // Get filter parameters
-        $sekolahId = $request->get('sekolah');
-        $jenisSekolahId = $request->get('jenis_sekolah');
-        $kelasId = $request->get('kelas');
-        
-        // Base query for export
-        $query = DataSiswaSekolah::select(
-            'data_siswa_sekolah.*',
-            'pasien.nm_pasien',
-            'pasien.jk',
-            'pasien.tgl_lahir',
-            'pasien.alamat',
-            'data_sekolah.nama_sekolah',
-            'data_kelas.kelas',
-            'jenis_sekolah.nama'
-        )
-        ->join('pasien', 'data_siswa_sekolah.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-        ->join('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
-        ->join('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
-        ->join('jenis_sekolah', 'data_sekolah.id_jenis_sekolah', '=', 'jenis_sekolah.id');
-        
-        // Apply filters
-        if ($sekolahId) {
-            $query->where('data_siswa_sekolah.id_sekolah', $sekolahId);
+        try {
+            // Get filter parameters
+            $filters = [
+                'sekolah' => $request->get('sekolah'),
+                'jenis_sekolah' => $request->get('jenis_sekolah'),
+                'kelas' => $request->get('kelas'),
+                'search' => $request->get('search')
+            ];
+            
+            // Create export instance with filters
+            $export = new DataSiswaSekolahExport($filters);
+            
+            // Generate filename with timestamp
+            $filename = 'dashboard_siswa_sekolah_' . date('YmdHis') . '.xlsx';
+            
+            // Return Excel download
+            return Excel::download($export, $filename);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengexport data: ' . $e->getMessage()
+            ], 500);
         }
-        
-        if ($jenisSekolahId) {
-            $query->where('data_sekolah.id_jenis_sekolah', $jenisSekolahId);
-        }
-        
-        if ($kelasId) {
-            $query->where('data_siswa_sekolah.id_kelas', $kelasId);
-        }
-        
-        $data = $query->get();
-        
-        // Create Excel export logic here
-        // For now, return JSON response
-        return response()->json([
-            'success' => true,
-            'message' => 'Export Excel berhasil',
-            'data' => $data
-        ]);
     }
     
     public function exportPdf(Request $request)
@@ -417,6 +398,11 @@ class DashboardSekolahController extends Controller
             
             // Generate PDF
             $pdf = Pdf::loadView('exports.dashboard-sekolah-pdf', $data);
+            
+            if ($pdf === null) {
+                throw new \Exception('Gagal membuat PDF');
+            }
+            
             $pdf->setPaper('A4', 'portrait');
             
             // Generate filename
