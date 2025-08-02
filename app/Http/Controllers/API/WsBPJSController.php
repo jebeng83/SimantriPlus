@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Traits\BpjsTraits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Controller untuk Web Service BPJS
@@ -562,7 +564,7 @@ class WsBPJSController extends Controller
      * {
      *   "metadata": {
      *     "code": 200,
-     *     "message": "OK"
+     *     "message": "Ok"
      *   }
      * }
      * 
@@ -582,12 +584,21 @@ class WsBPJSController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
+                $errorResponse = [
                     'metadata' => [
                         'code' => 400,
                         'message' => $validator->errors()->first()
                     ]
-                ], 400);
+                ];
+                
+                // Log validation error
+                \App\Models\AntreanBpjsLog::logActivity([
+                    'nomorkartu' => $request->nomorkartu ?? null,
+                    'status' => 'validation_error',
+                    'response' => json_encode($errorResponse)
+                ]);
+                
+                return response()->json($errorResponse, 400);
             }
 
             // Siapkan data untuk dikirim ke BPJS
@@ -599,8 +610,54 @@ class WsBPJSController extends Controller
             // Gunakan trait BpjsTraits untuk memanggil API BPJS
             $response = $this->requestPostBpjs($endpoint, $data, 'mobilejkn');
             
-            // Kembalikan respons sesuai format yang sudah didekripsi
-            return $response;
+            // Ambil data response untuk logging
+            $responseData = $response instanceof \Illuminate\Http\JsonResponse ? 
+                          $response->getData(true) : json_decode($response, true);
+            
+            // Siapkan response sesuai spesifikasi dengan format "Ok" dan code 200
+            $finalResponse = [
+                'metadata' => [
+                    'message' => 'Ok',
+                    'code' => 200
+                ]
+            ];
+            
+            // Jika response dari BPJS berhasil, gunakan format standar
+            if (isset($responseData['metadata']) || isset($responseData['metaData'])) {
+                $metadata = $responseData['metadata'] ?? $responseData['metaData'];
+                
+                // Jika sukses dari BPJS, gunakan format standar "Ok"
+                if (($metadata['code'] ?? 0) == 200) {
+                    $finalResponse = [
+                        'metadata' => [
+                            'message' => 'Ok',
+                            'code' => 200
+                        ]
+                    ];
+                } else {
+                    // Jika error dari BPJS, gunakan pesan error asli
+                    $finalResponse = [
+                        'metadata' => [
+                            'message' => $metadata['message'] ?? 'Error',
+                            'code' => $metadata['code'] ?? 500
+                        ]
+                    ];
+                }
+            }
+            
+            // Log ke antrean_bpjs_log
+            \App\Models\AntreanBpjsLog::logActivity([
+                'nomorkartu' => $request->nomorkartu,
+                'status' => $request->status == 1 ? 'hadir' : 'tidak_hadir',
+                'response' => json_encode([
+                    'request' => $request->all(),
+                    'bpjs_response' => $responseData,
+                    'final_response' => $finalResponse
+                ])
+            ]);
+            
+            // Kembalikan respons sesuai format spesifikasi
+            return response()->json($finalResponse, $finalResponse['metadata']['code']);
             
         } catch (\Exception $e) {
             Log::error('Error saat memperbarui status antrean BPJS', [
@@ -608,13 +665,26 @@ class WsBPJSController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
-            return response()->json([
+            
+            $errorResponse = [
                 'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
-            ], 500);
+            ];
+            
+            // Log error ke antrean_bpjs_log
+            \App\Models\AntreanBpjsLog::logActivity([
+                'nomorkartu' => $request->nomorkartu ?? null,
+                'status' => 'error',
+                'response' => json_encode([
+                    'request' => $request->all(),
+                    'error' => $e->getMessage(),
+                    'response' => $errorResponse
+                ])
+            ]);
+
+            return response()->json($errorResponse, 500);
         }
     }
 
