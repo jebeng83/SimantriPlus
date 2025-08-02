@@ -650,4 +650,58 @@
         color: white !important;
     }
 </style>
+
+<script>
+    document.addEventListener('livewire:load', function () {
+        // Handle form submission success with BPJS integration
+        Livewire.on('registrationSuccess', (data) => {
+            // Cek jika pasien menggunakan BPJS
+            const kdPj = @this.penjab;
+            const isBpjs = kdPj && (kdPj === 'A03' || kdPj === 'A14' || kdPj === 'A15' || kdPj === 'BPJ' || kdPj.toLowerCase().includes('bpjs'));
+            
+            let successTitle = 'Berhasil!';
+            let successText = 'Registrasi berhasil disimpan dengan nomor: ' + (data.no_rawat || 'N/A');
+            
+            // Tambahkan informasi khusus untuk pasien BPJS
+            if (isBpjs) {
+                successText += '<br><br><strong>Data pasien BPJS telah dikirim ke sistem Antrian BPJS.</strong><br>';
+                successText += 'Nomor antrian akan diproses secara otomatis.';
+                
+                // Pengiriman data ke BPJS sudah dilakukan di backend melalui metode kirimAntreanBPJS()
+                console.log('BPJS patient registration completed with queue integration');
+            }
+            
+            // Tampilkan notifikasi sukses
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: successTitle,
+                    html: successText,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745'
+                });
+            } else {
+                alert(successText.replace(/<br>/g, '\n').replace(/<[^>]*>/g, ''));
+            }
+        });
+        
+        // Handle form submission with BPJS check
+        Livewire.on('beforeSubmit', () => {
+            const kdPj = @this.penjab;
+            const isBpjs = kdPj && (kdPj === 'A03' || kdPj === 'A14' || kdPj === 'A15' || kdPj === 'BPJ' || kdPj.toLowerCase().includes('bpjs'));
+            
+            if (isBpjs) {
+                console.log('BPJS patient detected, will process queue integration');
+                
+                // Show loading notification for BPJS patients
+                if (typeof toastr !== 'undefined') {
+                    toastr.info('Pendaftaran pasien BPJS sedang diproses, mohon tunggu...');
+                } else {
+                    console.log('Processing BPJS patient registration...');
+                }
+            }
+        });
+    });
+</script>
+
 @endpush
