@@ -18,5 +18,15 @@
         <a href="{{ $url }}" class="dropdown-item">
             <i class="fas fa-stethoscope mr-2"></i> Pemeriksaan
         </a>
+        @if($row->kd_pj === 'BPJ')
+        <div class="dropdown-divider"></div>
+        <h6 class="dropdown-header">Status Antrean BPJS</h6>
+        <a type="button" wire:click="updateStatusAntreanBPJS('{{$row->no_rawat}}', 1)" class="dropdown-item">
+            <i class="fas fa-check-circle mr-2 text-success"></i> Hadir
+        </a>
+        <a type="button" wire:click="updateStatusAntreanBPJS('{{$row->no_rawat}}', 2)" class="dropdown-item">
+            <i class="fas fa-times-circle mr-2 text-danger"></i> Tidak Hadir
+        </a>
+        @endif
     </div>
 </div>

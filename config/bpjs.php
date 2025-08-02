@@ -21,6 +21,20 @@ return [
         'app_code' => env('BPJS_PCARE_APP_CODE', '095'),
         'kode_ppk' => env('BPJS_PCARE_KODE_PPK', ''),
     ],
+
+    // Konfigurasi untuk Antrean BPJS
+    'antrean' => [
+        'base_url_v1' => env('BPJS_ANTREAN_BASE_URL_V1', 'https://kerjo.simkeskhanza.com/api-bpjsfktp/'),
+        'base_url' => env('BPJS_ANTREAN_BASE_URL', 'https://kerjo.simkeskhanza.com/MjknKhanza/'),
+        'auth_url' => env('BPJS_ANTREAN_AUTH_URL', 'https://kerjo.simkeskhanza.com/api-bpjsfktp/auth'),
+        'username' => env('BPJS_ANTREAN_USERNAME', ''),
+        'password' => env('BPJS_ANTREAN_PASSWORD', ''),
+        'cons_id' => env('BPJS_ANTREAN_CONS_ID', ''),
+        'cons_pwd' => env('BPJS_ANTREAN_CONS_PWD', ''),
+        'user_key' => env('BPJS_ANTREAN_USER_KEY', ''),
+        'user' => env('BPJS_ANTREAN_USER', ''),
+        'pass' => env('BPJS_ANTREAN_PASS', ''),
+    ],
     
     'timeout' => 30,
-]; 
+];

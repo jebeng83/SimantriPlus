@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Log;
 use App\Models\Poliklinik;
 use App\Models\Dokter;
 use Carbon\Carbon;
+use App\Models\AntreanBpjsLog;
 
 class RegPeriksaTable extends DataTableComponent
 {
@@ -32,9 +34,6 @@ class RegPeriksaTable extends DataTableComponent
         $this->setPerPageAccepted([5, 10, 25, 50, 100]);
         $this->setPerPage(10);
         $this->setDefaultSort('tgl_registrasi', 'desc');
-        $this->setTableRowUrl(function($row) {
-            return route('ralan.pemeriksaan', ['no_rawat' => $row->no_rawat]);
-        });
     }
 
     public function filters(): array
@@ -123,6 +122,154 @@ class RegPeriksaTable extends DataTableComponent
         return RegPeriksa::where('tgl_registrasi', $tanggal)
                          ->where('stts', 'Belum')
                          ->count();
+    }
+
+    public function updateStatusAntreanBPJS($no_rawat, $status)
+    {
+        try {
+            // Ambil data registrasi
+            $regPeriksa = RegPeriksa::with(['pasien', 'poliklinik'])
+                ->where('no_rawat', $no_rawat)
+                ->first();
+
+            if (!$regPeriksa) {
+                session()->flash('error', 'Data registrasi tidak ditemukan.');
+                return;
+            }
+
+            // Cek apakah pasien menggunakan BPJS
+            if ($regPeriksa->kd_pj !== 'BPJ') {
+                session()->flash('error', 'Pasien tidak menggunakan BPJS.');
+                return;
+            }
+
+            // Siapkan data untuk API BPJS
+            $requestData = [
+                'tanggalperiksa' => $regPeriksa->tgl_registrasi,
+                'kodepoli' => $regPeriksa->kd_poli,
+                'nomorkartu' => $regPeriksa->pasien->no_peserta ?? '',
+                'status' => $status, // 1 = Hadir, 2 = Tidak Hadir
+                'waktu' => now()->timestamp * 1000 // timestamp dalam millisecond
+            ];
+
+            // Panggil API BPJS
+            $response = $this->callBPJSAPI($requestData);
+
+            // Log ke antrean_bpjs_log table
+            $responseWithStatus = $response['data'] ?? $response;
+            $responseWithStatus['success'] = $response['success'];
+            if (!$response['success']) {
+                $responseWithStatus['error_message'] = $response['message'];
+            }
+            
+            $logData = [
+                'no_rawat' => $no_rawat,
+                'no_rkm_medis' => $regPeriksa->no_rkm_medis,
+                'status' => $status == 1 ? 'Hadir' : 'Tidak Hadir',
+                'response' => json_encode($responseWithStatus)
+            ];
+            
+            AntreanBpjsLog::logActivity($logData);
+
+            if ($response['success']) {
+                $statusText = $status == 1 ? 'Hadir' : 'Tidak Hadir';
+                session()->flash('success', "Status antrean BPJS berhasil diupdate menjadi: {$statusText}");
+                $this->emit('refreshDatatable');
+            } else {
+                session()->flash('error', 'Gagal mengupdate status antrean BPJS: ' . $response['message']);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating BPJS queue status: ' . $e->getMessage());
+            
+            // Log error ke antrean_bpjs_log table
+             if (isset($regPeriksa)) {
+                 $logData = [
+                     'no_rawat' => $no_rawat,
+                     'no_rkm_medis' => $regPeriksa->no_rkm_medis,
+                     'status' => 'Error',
+                     'response' => json_encode([
+                         'error' => $e->getMessage(),
+                         'success' => false,
+                         'error_message' => $e->getMessage()
+                     ])
+                 ];
+                 
+                 AntreanBpjsLog::logActivity($logData);
+             }
+            
+            session()->flash('error', 'Terjadi kesalahan saat mengupdate status antrean BPJS.');
+        }
+    }
+
+    private function callBPJSAPI($requestData)
+    {
+        try {
+            // Ambil konfigurasi BPJS Antrean V2
+            $baseUrl = config('bpjs.antrean.base_url');
+            $authUrl = config('bpjs.antrean.auth_url');
+            $username = config('bpjs.antrean.username');
+            $password = config('bpjs.antrean.password');
+            $consId = config('bpjs.antrean.cons_id');
+            $consPwd = config('bpjs.antrean.cons_pwd');
+            $userKey = config('bpjs.antrean.user_key');
+            $user = config('bpjs.antrean.user');
+            $pass = config('bpjs.antrean.pass');
+
+            // Validasi konfigurasi
+            if (empty($baseUrl) || empty($consId) || empty($userKey) || empty($consPwd)) {
+                throw new \Exception('Konfigurasi BPJS Antrean V2 tidak lengkap. Periksa file .env');
+            }
+
+            // Generate timestamp dan signature untuk BPJS V2
+            $timestamp = time();
+            $signature = hash_hmac('sha256', $consId . '&' . $timestamp, $consPwd, true);
+            $encodedSignature = base64_encode($signature);
+
+            $url = "{$baseUrl}/antrean/panggil";
+
+            $headers = [
+                'X-cons-id' => $consId,
+                'X-timestamp' => $timestamp,
+                'X-signature' => $encodedSignature,
+                'user_key' => $userKey,
+                'Content-Type' => 'application/json'
+            ];
+
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post($url, [
+                'headers' => $headers,
+                'json' => $requestData,
+                'timeout' => 30
+            ]);
+
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            // Log response untuk debugging
+            Log::info('BPJS API V2 Response: ', [
+                'url' => $url,
+                'response' => $responseData
+            ]);
+
+            // Cek response berdasarkan struktur yang ada
+            $isSuccess = false;
+            if (isset($responseData['metadata']['code']) && $responseData['metadata']['code'] == 200) {
+                $isSuccess = true;
+            } elseif (isset($responseData['metaData']['code']) && $responseData['metaData']['code'] == 200) {
+                $isSuccess = true;
+            }
+
+            return [
+                'success' => $isSuccess,
+                'message' => $responseData['metadata']['message'] ?? $responseData['metaData']['message'] ?? 'Unknown response',
+                'data' => $responseData
+            ];
+        } catch (\Exception $e) {
+            Log::error('BPJS API V2 Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Gagal menghubungi API BPJS V2: ' . $e->getMessage()
+            ];
+        }
     }
 
     public function columns(): array
