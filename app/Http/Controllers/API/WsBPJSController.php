@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Controller untuk Web Service BPJS
@@ -223,7 +224,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'nomorkartu' => 'nullable|string|max:20',
                 'nik' => 'required|string|max:20',
                 'nohp' => 'required|string|max:15',
@@ -293,7 +294,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'no_rawat' => 'required|string'
             ]);
 
@@ -310,7 +311,7 @@ class WsBPJSController extends Controller
 
             // Query data dari database
             // 1. Ambil data registrasi dan pasien
-            $regPeriksa = \DB::table('reg_periksa')
+            $regPeriksa = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
                 ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
@@ -339,7 +340,7 @@ class WsBPJSController extends Controller
             }
 
             // 2. Ambil data mapping poliklinik BPJS
-            $mappingPoli = \DB::table('maping_poliklinik_pcare')
+            $mappingPoli = DB::table('maping_poliklinik_pcare')
                 ->where('kd_poli_rs', $regPeriksa->kd_poli)
                 ->select('kd_poli_pcare', 'nm_poli_pcare')
                 ->first();
@@ -354,7 +355,7 @@ class WsBPJSController extends Controller
             }
 
             // 3. Ambil data mapping dokter BPJS
-            $mappingDokter = \DB::table('maping_dokter_pcare')
+            $mappingDokter = DB::table('maping_dokter_pcare')
                 ->where('kd_dokter', $regPeriksa->kd_dokter)
                 ->select('kd_dokter_pcare', 'nm_dokter_pcare')
                 ->first();
@@ -369,7 +370,7 @@ class WsBPJSController extends Controller
             }
 
             // 4. Ambil data jadwal dokter
-            $jadwal = \DB::table('jadwal')
+            $jadwal = DB::table('jadwal')
                 ->where('kd_dokter', $regPeriksa->kd_dokter)
                 ->where('kd_poli', $regPeriksa->kd_poli)
                 ->where('hari_kerja', $this->getHariFromTanggal($regPeriksa->tgl_registrasi))
@@ -452,18 +453,23 @@ class WsBPJSController extends Controller
 
     /**
      * Helper untuk mendapatkan timestamp dalam format milliseconds
-     * yang diperlukan oleh BPJS
+     * yang diperlukan oleh BPJS (UTC timezone)
      * 
      * @param string|null $datetime Format Y-m-d H:i:s, default waktu sekarang
-     * @return int Timestamp dalam milliseconds
+     * @return int Timestamp dalam milliseconds (UTC)
      */
     private function getTimestampMillis($datetime = null)
     {
         if (empty($datetime)) {
-            $datetime = date('Y-m-d H:i:s');
+            // Gunakan waktu sekarang dalam UTC
+            $carbon = \Carbon\Carbon::now('UTC');
+        } else {
+            // Parse datetime dan convert ke UTC
+            $carbon = \Carbon\Carbon::parse($datetime)->utc();
         }
         
-        return (int)(strtotime($datetime) * 1000);
+        // Return timestamp dalam milliseconds
+        return (int)($carbon->timestamp * 1000);
     }
 
     /**
@@ -575,7 +581,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'tanggalperiksa' => 'required|date_format:Y-m-d',
                 'kodepoli' => 'required|string|max:10',
                 'nomorkartu' => 'required|string|max:20',
@@ -772,7 +778,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'no_rawat' => 'required|string',
                 'status' => 'required|integer|in:1,2'
             ]);
@@ -791,7 +797,7 @@ class WsBPJSController extends Controller
 
             // Query data dari database
             // 1. Ambil data registrasi dan pasien
-            $regPeriksa = \DB::table('reg_periksa')
+            $regPeriksa = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
                 ->where('reg_periksa.no_rawat', $noRawat)
@@ -812,7 +818,7 @@ class WsBPJSController extends Controller
             }
 
             // 2. Ambil data mapping poliklinik BPJS
-            $mappingPoli = \DB::table('maping_poliklinik_pcare')
+            $mappingPoli = DB::table('maping_poliklinik_pcare')
                 ->where('kd_poli_rs', $regPeriksa->kd_poli)
                 ->select('kd_poli_pcare')
                 ->first();
@@ -846,6 +852,33 @@ class WsBPJSController extends Controller
                 'no_rawat' => $noRawat,
                 'sent_data' => $dataUpdate
             ]);
+            
+            // Simpan respons ke tabel antrean_bpjs_log
+            try {
+                if (Schema::hasTable('antrean_bpjs_log')) {
+                    // Decode response untuk mendapatkan data
+                    $responseData = $response instanceof \Illuminate\Http\JsonResponse ? 
+                                   $response->getData(true) : json_decode($response->getContent(), true);
+                    
+                    DB::table('antrean_bpjs_log')->insert([
+                        'no_rawat' => $noRawat,
+                        'no_rkm_medis' => $regPeriksa->no_rkm_medis ?? null,
+                        'status' => 'Panggil: ' . ($status == 1 ? 'Hadir' : 'Tidak Hadir'),
+                        'response' => json_encode($responseData),
+                        'created_at' => now()
+                    ]);
+                    
+                    Log::info('Respons BPJS panggil antrean berhasil disimpan ke antrean_bpjs_log', [
+                        'no_rawat' => $noRawat,
+                        'status' => $status == 1 ? 'Hadir' : 'Tidak Hadir'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Gagal menyimpan respons BPJS ke antrean_bpjs_log', [
+                    'no_rawat' => $noRawat,
+                    'error' => $e->getMessage()
+                ]);
+            }
             
             // Kembalikan respons sesuai format yang sudah didekripsi
             return $response;
@@ -895,7 +928,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'tanggalperiksa' => 'required|date_format:Y-m-d',
                 'kodepoli' => 'required|string|max:10',
                 'nomorkartu' => 'required|string|max:20',
@@ -965,7 +998,7 @@ class WsBPJSController extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'no_rawat' => 'required|string',
                 'alasan' => 'required|string|max:255'
             ]);
@@ -984,7 +1017,7 @@ class WsBPJSController extends Controller
 
             // Query data dari database
             // 1. Ambil data registrasi dan pasien
-            $regPeriksa = \DB::table('reg_periksa')
+            $regPeriksa = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
                 ->where('reg_periksa.no_rawat', $noRawat)
@@ -1005,7 +1038,7 @@ class WsBPJSController extends Controller
             }
 
             // 2. Ambil data mapping poliklinik BPJS
-            $mappingPoli = \DB::table('maping_poliklinik_pcare')
+            $mappingPoli = DB::table('maping_poliklinik_pcare')
                 ->where('kd_poli_rs', $regPeriksa->kd_poli)
                 ->select('kd_poli_pcare')
                 ->first();

@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Referensi Dokter PCare')
+@section('title', 'Referensi Dokter PCare - Katalog BPJS')
 
 @section('content_header')
 <div class="d-flex justify-content-between align-items-center">
@@ -17,21 +17,16 @@
    <div class="col-md-12">
       <div class="card card-primary card-outline">
          <div class="card-header">
-            <h3 class="card-title">Data Jadwal Praktek Dokter</h3>
+            <h3 class="card-title">Data Dokter FKTP</h3>
+            <div class="card-tools">
+               <span class="badge badge-info">Sesuai Katalog BPJS</span>
+            </div>
          </div>
          <div class="card-body">
             <!-- Filter Section -->
             <div class="row mb-4">
                <div class="col-md-8">
                   <form id="filter-form" class="form-inline">
-                     <div class="form-group mr-2">
-                        <label for="kodepoli" class="mr-2">Poli:</label>
-                        <select class="form-control" id="kodepoli" name="kodepoli" required>
-                           @foreach($poliList as $kode => $nama)
-                           <option value="{{ $kode }}">{{ $nama }}</option>
-                           @endforeach
-                        </select>
-                     </div>
                      <div class="form-group mr-2">
                         <label for="tanggal" class="mr-2">Tanggal:</label>
                         <input type="date" class="form-control" id="tanggal" name="tanggal" value="{{ date('Y-m-d') }}"
@@ -47,13 +42,14 @@
                </div>
                <div class="col-md-4 text-right">
                   <div class="btn-group">
-                     <button type="button" id="export-excel" class="btn btn-success">
+                     <button type="button" id="export-excel" class="btn btn-success" disabled>
                         <i class="fas fa-file-excel"></i> Export Excel
                      </button>
-                     <button type="button" id="export-pdf" class="btn btn-danger">
+                     <button type="button" id="export-pdf" class="btn btn-danger" disabled>
                         <i class="fas fa-file-pdf"></i> Export PDF
                      </button>
                   </div>
+                  <small class="text-muted d-block mt-1">Export sedang dalam pengembangan</small>
                </div>
             </div>
 
@@ -70,7 +66,7 @@
 
             <div id="error-alert" class="alert alert-danger alert-dismissible d-none">
                <h5><i class="icon fas fa-ban"></i> Error</h5>
-               <span id="error-message"></span>
+               <span id="error-message">Terjadi kesalahan saat memuat data</span>
             </div>
 
             <!-- Table Section -->
@@ -79,12 +75,8 @@
                   <thead class="bg-primary">
                      <tr>
                         <th class="text-center" style="width: 50px">No</th>
-                        <th>Nama Dokter</th>
                         <th class="text-center" style="width: 120px">Kode Dokter</th>
-                        <th class="text-center" style="width: 120px">Kode Poli</th>
-                        <th>Nama Poli</th>
-                        <th class="text-center" style="width: 150px">Jam Praktek</th>
-                        <th class="text-center" style="width: 100px">Kapasitas</th>
+                        <th>Nama Dokter</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -189,42 +181,20 @@
                data: null,
                render: function (data, type, row, meta) {
                   return meta.row + meta.settings._iDisplayStart + 1;
-               }
-            },
-            { 
-               data: 'nmDokter',
-               render: function(data, type, row) {
-                  return data || '-';
-               }
+               },
+               className: 'text-center'
             },
             { 
                data: 'kdDokter',
                render: function(data, type, row) {
                   return data || '-';
-               }
+               },
+               className: 'text-center'
             },
             { 
-               data: 'kdPoli',
+               data: 'nmDokter',
                render: function(data, type, row) {
                   return data || '-';
-               }
-            },
-            { 
-               data: 'nmPoli',
-               render: function(data, type, row) {
-                  return data || '-';
-               }
-            },
-            { 
-               data: 'jamPraktek',
-               render: function(data, type, row) {
-                  return data || '<span class="text-muted">Jadwal tidak tersedia</span>';
-               }
-            },
-            { 
-               data: 'kapasitas',
-               render: function(data, type, row) {
-                  return data || '0';
                }
             }
          ]
@@ -235,20 +205,18 @@
          e.preventDefault();
          
          const tanggal = $('#tanggal').val();
-         const kodepoli = $('#kodepoli').val();
 
          // Debug log
          console.log('Form Data:', {
-            tanggal: tanggal,
-            kodepoli: kodepoli
+            tanggal: tanggal
          });
 
          // Validasi input
-         if (!tanggal || !kodepoli) {
+         if (!tanggal) {
             Swal.fire({
                icon: 'warning',
                title: 'Peringatan',
-               text: 'Silakan pilih Poli dan Tanggal terlebih dahulu'
+               text: 'Silakan pilih Tanggal terlebih dahulu'
             });
             return;
          }
@@ -258,13 +226,10 @@
          $('#error-alert').addClass('d-none');
          table.clear().draw();
 
-         // Make AJAX request
+         // Make AJAX request menggunakan endpoint yang sudah diuji
          $.ajax({
-            url: `/pcare/api/ref/dokter/tanggal/${tanggal}`,
+            url: `/test-dokter-fktp/0/100`,
             method: 'GET',
-            data: {
-               kodepoli: kodepoli
-            },
             dataType: 'json',
             headers: {
                'Accept': 'application/json',
@@ -273,39 +238,26 @@
             success: function(response) {
                $('#loading-alert').addClass('d-none');
                
-               console.log('Response:', response);
+               console.log('Response received:', response);
                
-               // Handle new response format
-               if (response.success && response.data) {
-                  const data = response.data;
-                  
-                  if (Array.isArray(data) && data.length > 0) {
-                     table.clear().rows.add(data).draw();
-                     $('#error-alert').addClass('d-none');
-                     
-                     // Show success message with source
-                     const source = response.source || 'API';
-                     Swal.fire({
-                        icon: 'success',
-                        title: 'Data Berhasil Dimuat',
-                        text: `Data dokter berhasil dimuat dari ${source}`,
-                        timer: 2000,
-                        showConfirmButton: false
-                     });
-                  } else {
-                     $('#error-message').text('Tidak ada data dokter yang tersedia untuk poli dan tanggal yang dipilih');
-                     $('#error-alert').removeClass('d-none');
-                  }
-               } else if (response.metadata && response.metadata.code === 200) {
-                  // Handle old response format
+               if (response.metaData && response.metaData.code === 200) {
                   if (response.response && Array.isArray(response.response.list)) {
                      const data = response.response.list;
                      
                      if (data.length > 0) {
                         table.clear().rows.add(data).draw();
                         $('#error-alert').addClass('d-none');
+                        
+                        // Tampilkan notifikasi sukses
+                        Swal.fire({
+                           icon: 'success',
+                           title: 'Berhasil',
+                           text: `Data dokter berhasil dimuat (${data.length} data)`,
+                           timer: 2000,
+                           showConfirmButton: false
+                        });
                      } else {
-                        $('#error-message').text('Tidak ada data dokter yang tersedia untuk poli dan tanggal yang dipilih');
+                        $('#error-message').text('Tidak ada data dokter yang tersedia');
                         $('#error-alert').removeClass('d-none');
                      }
                   } else {
@@ -313,7 +265,7 @@
                      $('#error-alert').removeClass('d-none');
                   }
                } else {
-                  const message = response.message || (response.metadata ? response.metadata.message : 'Terjadi kesalahan saat memuat data');
+                  const message = response.metaData ? response.metaData.message : 'Terjadi kesalahan saat memuat data';
                   $('#error-message').text(message);
                   $('#error-alert').removeClass('d-none');
                }
@@ -333,8 +285,8 @@
                   const response = JSON.parse(xhr.responseText);
                   if (response.message) {
                      errorMessage = response.message;
-                  } else if (response.metadata && response.metadata.message) {
-                     errorMessage = response.metadata.message;
+                  } else if (response.metaData && response.metaData.message) {
+                     errorMessage = response.metaData.message;
                   }
                } catch (e) {
                   console.error('Error parsing error response:', e);
@@ -356,45 +308,30 @@
 
       // Reset filter
       $('#reset-filter').on('click', function() {
-         $('#kodepoli').val('001');
          $('#tanggal').val('{{ date("Y-m-d") }}');
          table.clear().draw();
          $('#error-alert').addClass('d-none');
          $('#loading-alert').addClass('d-none');
       });
 
-      // Export Excel
+      // Export Excel (disabled)
       $('#export-excel').on('click', function() {
-         const tanggal = $('#tanggal').val();
-         const kodepoli = $('#kodepoli').val();
-         
-         if (!tanggal || !kodepoli) {
-            Swal.fire({
-               icon: 'warning',
-               title: 'Peringatan',
-               text: 'Parameter poli dan tanggal harus diisi'
-            });
-            return;
-         }
-         
-         window.location.href = `/pcare/api/ref/dokter/export/excel?tanggal=${tanggal}&kodepoli=${kodepoli}`;
+         Swal.fire({
+            icon: 'info',
+            title: 'Fitur Dalam Pengembangan',
+            text: 'Export Excel sedang dalam pengembangan untuk endpoint baru. Gunakan fitur copy/print browser untuk sementara.',
+            footer: 'Terima kasih atas pengertiannya'
+         });
       });
 
-      // Export PDF
+      // Export PDF (disabled)
       $('#export-pdf').on('click', function() {
-         const tanggal = $('#tanggal').val();
-         const kodepoli = $('#kodepoli').val();
-         
-         if (!tanggal || !kodepoli) {
-            Swal.fire({
-               icon: 'warning',
-               title: 'Peringatan',
-               text: 'Parameter poli dan tanggal harus diisi'
-            });
-            return;
-         }
-         
-         window.location.href = `/pcare/api/ref/dokter/export/pdf?tanggal=${tanggal}&kodepoli=${kodepoli}`;
+         Swal.fire({
+            icon: 'info',
+            title: 'Fitur Dalam Pengembangan',
+            text: 'Export PDF sedang dalam pengembangan untuk endpoint baru. Gunakan fitur copy/print browser untuk sementara.',
+            footer: 'Terima kasih atas pengertiannya'
+         });
       });
    });
 </script>

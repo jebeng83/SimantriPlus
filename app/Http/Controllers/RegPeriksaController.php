@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Traits\BpjsTraits;
 
 class RegPeriksaController extends Controller
@@ -20,7 +22,7 @@ class RegPeriksaController extends Controller
     public function create($no_rkm_medis)
     {
         try {
-            \Log::info('Membuka form registrasi periksa untuk pasien: ' . $no_rkm_medis);
+            Log::info('Membuka form registrasi periksa untuk pasien: ' . $no_rkm_medis);
             
             // Ambil data pasien dengan join ke penjab
             $pasien = DB::table('pasien')
@@ -36,7 +38,7 @@ class RegPeriksaController extends Controller
                 ->first();
 
             if (!$pasien) {
-                \Log::error('Pasien tidak ditemukan: ' . $no_rkm_medis);
+                Log::error('Pasien tidak ditemukan: ' . $no_rkm_medis);
                 return redirect()->back()->with('error', 'Data pasien tidak ditemukan');
             }
             
@@ -63,7 +65,7 @@ class RegPeriksaController extends Controller
                 'posyandu' => $posyandu
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error pada create registrasi: ' . $e->getMessage());
+            Log::error('Error pada create registrasi: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -85,24 +87,24 @@ class RegPeriksaController extends Controller
             ->first();
 
         if ($lastRawat) {
-            \Log::info('Last rawat found: ' . $lastRawat->no_rawat);
+            Log::info('Last rawat found: ' . $lastRawat->no_rawat);
             // Ambil 6 digit terakhir
             $lastNumber = (int) substr($lastRawat->no_rawat, -6);
             $nextNumber = $lastNumber + 1;
         } else {
-            \Log::info('No last rawat found, using 1');
+            Log::info('No last rawat found, using 1');
             $nextNumber = 1;
         }
 
         $no_rawat = $today . '/' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-        \Log::info('Nomor rawat yang dibuat: ' . $no_rawat);
+        Log::info('Nomor rawat yang dibuat: ' . $no_rawat);
         
         return $no_rawat;
     }
 
     public function store(Request $request)
     {
-        \Log::info('Mencoba menyimpan registrasi periksa', $request->all());
+        Log::info('Mencoba menyimpan registrasi periksa', $request->all());
         
         // Aktifkan query log untuk debugging
         DB::enableQueryLog();
@@ -114,14 +116,14 @@ class RegPeriksaController extends Controller
                 $input = $request->all();
             }
             
-            \Log::info('Data input yang diterima:', $input);
+            Log::info('Data input yang diterima:', $input);
             
             // Validasi input yang diperlukan
             if (empty($input['no_reg']) || empty($input['kd_dokter']) || 
                 empty($input['no_rkm_medis']) || empty($input['kd_poli']) || 
                 empty($input['kd_pj'])) {
                 
-                \Log::error('Validasi gagal', $input);
+                Log::error('Validasi gagal', $input);
                 return response()->json([
                     'success' => false,
                     'message' => 'Data wajib tidak lengkap: nomor registrasi, dokter, pasien, poliklinik, dan cara bayar diperlukan'
@@ -155,7 +157,7 @@ class RegPeriksaController extends Controller
                 'status_poli' => 'Lama'
             ];
 
-            \Log::info('Data yang akan disimpan:', $data);
+            Log::info('Data yang akan disimpan:', $data);
 
             DB::beginTransaction();
             
@@ -188,7 +190,7 @@ class RegPeriksaController extends Controller
                     
                     // Kirim data ke BPJS Antrean jika pasien BPJS
                     $kd_pj = $savedRecord->kd_pj;
-                    $bpjsCodes = ['A03', 'A14', 'A15', 'BPJ'];
+                    $bpjsCodes = ['A14', 'A15', 'BPJ']; // A14 = PBI, A15 = NON PBI, BPJ = BPJS
                     
                     // Siapkan data BPJS untuk dikirimkan di respons
                     $bpjsData = [];
@@ -996,8 +998,10 @@ class RegPeriksaController extends Controller
                 // Periksa respons
                 $responseContent = json_decode($response->getContent(), true);
                 
-                if (isset($responseContent['metadata']) && isset($responseContent['metadata']['code'])) {
-                    $metaData = $responseContent['metadata'];
+                // Handle both 'metadata' and 'metaData' formats
+                $metaData = $responseContent['metadata'] ?? $responseContent['metaData'] ?? null;
+                
+                if ($metaData && isset($metaData['code'])) {
                     
                     if ($metaData['code'] == 200) {
                         \Log::info('Pengiriman antrian BPJS berhasil', [
@@ -1106,4 +1110,4 @@ class RegPeriksaController extends Controller
         
         return $days[$day] ?? $day;
     }
-} 
+}
