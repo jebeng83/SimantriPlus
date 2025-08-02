@@ -18,7 +18,7 @@
         <a href="{{ $url }}" class="dropdown-item">
             <i class="fas fa-stethoscope mr-2"></i> Pemeriksaan
         </a>
-        @if($row->kd_pj === 'BPJ')
+        @if(in_array($row->kd_pj, ['BPJ', 'A14', 'A15']))
         <div class="dropdown-divider"></div>
         <h6 class="dropdown-header">Status Antrean BPJS</h6>
         <a type="button" wire:click="updateStatusAntreanBPJS('{{$row->no_rawat}}', 1)" class="dropdown-item">

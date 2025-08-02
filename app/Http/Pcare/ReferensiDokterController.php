@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\PCare;
 
 use App\Http\Controllers\Controller;
+use App\Traits\PcareTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -11,15 +12,15 @@ use GuzzleHttp\Client;
 use Exception;
 use LZCompressor\LZString;
 use Illuminate\Support\Facades\DB;
-use App\Services\PCare;
 
 class ReferensiDokterController extends Controller
 {
+    use PcareTrait;
+    
     protected $config;
     protected $client;
-    protected $pcare;
 
-    public function __construct(PCare $pcare)
+    public function __construct()
     {
         $this->config = [
             'base_url' => rtrim(env('BPJS_MOBILEJKN_BASE_URL', 'https://apijkn.bpjs-kesehatan.go.id/antreanfktp'), '/'),
@@ -65,7 +66,7 @@ class ReferensiDokterController extends Controller
             '008' => 'POLI KB'
         ];
 
-        return view('Pcare.refrensi-dokter', [
+        return view('Pcare.referensi.referensi-dokter-bpjs', [
             'poliList' => $poliMap
         ]);
     }
@@ -825,4 +826,4 @@ class ReferensiDokterController extends Controller
         // TODO: Implement PDF export
         return response()->json(['message' => 'Fitur export PDF akan segera tersedia']);
     }
-} 
+}

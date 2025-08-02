@@ -485,7 +485,7 @@ class FormPendaftaran extends Component
     {
         try {
             // Cek apakah pasien menggunakan BPJS
-            $isBPJS = in_array($this->penjab, ['A03', 'A14', 'A15', 'BPJ']) || 
+            $isBPJS = in_array($this->penjab, ['A14', 'A15', 'BPJ']) || 
                      stripos($this->penjab, 'bpjs') !== false;
             
             if ($isBPJS) {

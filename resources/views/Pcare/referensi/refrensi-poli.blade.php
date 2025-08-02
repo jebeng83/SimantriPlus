@@ -73,6 +73,7 @@
                                 <th class="text-center" style="width: 50px">No</th>
                                 <th class="text-center" style="width: 120px">Kode Poli</th>
                                 <th>Nama Poli</th>
+                                <th class="text-center" style="width: 120px">Status Poli Sakit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -190,6 +191,18 @@
                     render: function(data, type, row) {
                         return data || '-';
                     }
+                },
+                { 
+                    data: 'poliSakit',
+                    render: function(data, type, row) {
+                        if (data === true) {
+                            return '<span class="badge badge-success">Ya</span>';
+                        } else if (data === false) {
+                            return '<span class="badge badge-secondary">Tidak</span>';
+                        }
+                        return '<span class="badge badge-warning">-</span>';
+                    },
+                    className: 'text-center'
                 }
             ]
         });
@@ -220,9 +233,9 @@
             $('#error-alert').addClass('d-none');
             table.clear().draw();
 
-            // Make AJAX request
+            // Make AJAX request menggunakan endpoint yang sudah diuji
             $.ajax({
-                url: `/pcare/api/ref/poli?tanggal=${tanggal}`,
+                url: `/test-poli-fktp/0/100`,
                 method: 'GET',
                 dataType: 'json',
                 headers: {
@@ -232,15 +245,26 @@
                 success: function(response) {
                     $('#loading-alert').addClass('d-none');
                     
-                    if (response.metadata && response.metadata.code === 200) {
+                    console.log('Response received:', response);
+                    
+                    if (response.metaData && response.metaData.code === 200) {
                         if (response.response && Array.isArray(response.response.list)) {
                             const data = response.response.list;
                             
                             if (data.length > 0) {
                                 table.clear().rows.add(data).draw();
                                 $('#error-alert').addClass('d-none');
+                                
+                                // Tampilkan notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: `Data poli berhasil dimuat (${data.length} data)`,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
                             } else {
-                                $('#error-message').text('Tidak ada data poli yang tersedia untuk tanggal yang dipilih');
+                                $('#error-message').text('Tidak ada data poli yang tersedia');
                                 $('#error-alert').removeClass('d-none');
                             }
                         } else {
@@ -248,7 +272,7 @@
                             $('#error-alert').removeClass('d-none');
                         }
                     } else {
-                        const message = response.metadata ? response.metadata.message : 'Terjadi kesalahan saat memuat data';
+                        const message = response.metaData ? response.metaData.message : 'Terjadi kesalahan saat memuat data';
                         $('#error-message').text(message);
                         $('#error-alert').removeClass('d-none');
                     }
@@ -297,34 +321,22 @@
 
         // Export Excel
         $('#export-excel').on('click', function() {
-            const tanggal = $('#tanggal').val();
-            
-            if (!tanggal) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Peringatan',
-                    text: 'Parameter tanggal harus diisi'
-                });
-                return;
-            }
-            
-            window.location.href = `/pcare/api/ref/poli/export/excel?tanggal=${tanggal}`;
+            Swal.fire({
+                icon: 'info',
+                title: 'Informasi',
+                text: 'Fitur export Excel sedang dalam pengembangan untuk endpoint baru',
+                footer: 'Silakan gunakan fitur copy atau print dari browser untuk sementara'
+            });
         });
 
         // Export PDF
         $('#export-pdf').on('click', function() {
-            const tanggal = $('#tanggal').val();
-            
-            if (!tanggal) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Peringatan',
-                    text: 'Parameter tanggal harus diisi'
-                });
-                return;
-            }
-            
-            window.location.href = `/pcare/api/ref/poli/export/pdf?tanggal=${tanggal}`;
+            Swal.fire({
+                icon: 'info',
+                title: 'Informasi',
+                text: 'Fitur export PDF sedang dalam pengembangan untuk endpoint baru',
+                footer: 'Silakan gunakan fitur print dari browser untuk sementara'
+            });
         });
     });
 </script>

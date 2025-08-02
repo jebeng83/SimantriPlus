@@ -66,7 +66,7 @@ Route::get('/pasien/get-by-nik', function(\Illuminate\Http\Request $request) {
     
     $pasien = DB::table('pasien')->where('no_ktp', $nik)->first();
     
-    if (!is_null($pasien)) {
+    if ($pasien !== null) {
         return response()->json([
             'status' => 'success',
             'data' => $pasien
@@ -384,6 +384,36 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/referensi/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.referensi.dokter');
         Route::get('/api/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.ref.dokter.api');
     });
+
+    // Route testing untuk poli FKTP tanpa middleware
+    Route::get('/test-poli-fktp/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoliFktp'])
+        ->withoutMiddleware(['loginauth'])
+        ->name('test.poli.fktp');
+        
+    // Route test untuk endpoint dokter sesuai katalog BPJS
+    Route::get('/test-dokter-fktp/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokterPaginated'])
+        ->withoutMiddleware(['loginauth'])
+        ->name('test.dokter.fktp');
+        
+    // Route test sederhana untuk debug
+    Route::get('/test-simple', function () {
+    header('Content-Type: application/json');
+    echo '{"message":"Test simple works","timestamp":"' . date('Y-m-d H:i:s') . '"}';
+    exit;
+})->name('test.simple');
+    
+    // Route test controller sederhana
+    Route::get('/test-controller', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'testMethod'])
+        ->withoutMiddleware(['loginauth'])
+        ->name('test.controller');
+    
+    Route::get('/test-ref-poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'index'])
+        ->withoutMiddleware(['loginauth'])
+        ->name('test.ref.poli');
+        
+    Route::get('/test-api-ref-poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli'])
+        ->withoutMiddleware(['loginauth'])
+        ->name('test.api.ref.poli');
 
     // Antrian Poliklinik Routes
     Route::get('/antrian-poliklinik', [App\Http\Controllers\AntrianPoliklinikController::class, 'index'])

@@ -60,7 +60,8 @@ class LoginAuth
             $request->is('livewire*') || 
             $request->is('api/bpjs/*') || 
             $request->is('error/*') ||
-            $request->is('ilp/whatsapp/node/*')
+            $request->is('ilp/whatsapp/node/*') ||
+            $request->is('test-*')
         ) {
             return $next($request);
         }

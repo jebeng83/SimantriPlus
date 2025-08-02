@@ -476,6 +476,104 @@
         $('.search-input').on('keyup', function() {
             setTimeout(updateStatistics, 100);
         });
+        
+        // Event listener untuk menangkap respons BPJS saat klik menu aksi hadir/belum
+        document.addEventListener('livewire:load', function () {
+            // Tangkap event sebelum request dikirim
+            Livewire.hook('message.sent', (message, component) => {
+                // Cek apakah ini adalah call untuk updateStatusAntreanBPJS
+                if (message.updateQueue && message.updateQueue.some(update => 
+                    update.method === 'updateStatusAntreanBPJS'
+                )) {
+                    const updateCall = message.updateQueue.find(update => 
+                        update.method === 'updateStatusAntreanBPJS'
+                    );
+                    const [noRawat, status] = updateCall.payload.params;
+                    const statusText = status == 1 ? 'Hadir' : 'Tidak Hadir';
+                    
+                    console.group('🏥 BPJS API Request - Status Antrean');
+                    console.log('📋 No Rawat:', noRawat);
+                    console.log('📊 Status:', statusText + ' (' + status + ')');
+                    console.log('⏰ Waktu Request:', new Date().toLocaleString());
+                    console.groupEnd();
+                }
+            });
+            
+            // Tangkap event setelah response diterima
+            Livewire.hook('message.processed', (message, component) => {
+                // Cek apakah ada flash message yang mengindikasikan respons BPJS
+                if (component.serverMemo.data.flashMessages) {
+                    const flashMessages = component.serverMemo.data.flashMessages;
+                    
+                    // Cek untuk success message BPJS
+                    if (flashMessages.success && flashMessages.success.includes('Status antrean BPJS')) {
+                        console.group('✅ BPJS API Response - SUCCESS');
+                        console.log('📝 Message:', flashMessages.success);
+                        console.log('⏰ Waktu Response:', new Date().toLocaleString());
+                        console.log('🎯 Status: Berhasil mengupdate status antrean BPJS');
+                        console.groupEnd();
+                    }
+                    
+                    // Cek untuk error message BPJS
+                    if (flashMessages.error && flashMessages.error.includes('BPJS')) {
+                        console.group('❌ BPJS API Response - ERROR');
+                        console.log('📝 Error Message:', flashMessages.error);
+                        console.log('⏰ Waktu Response:', new Date().toLocaleString());
+                        console.log('🚨 Status: Gagal mengupdate status antrean BPJS');
+                        console.groupEnd();
+                    }
+                }
+            });
+            
+            // Event listener khusus untuk klik menu BPJS
+             $(document).on('click', '[wire\\:click*="updateStatusAntreanBPJS"]', function() {
+                 const wireClick = $(this).attr('wire:click');
+                 const match = wireClick.match(/updateStatusAntreanBPJS\('([^']+)',\s*(\d+)\)/);
+                 
+                 if (match) {
+                     const noRawat = match[1];
+                     const status = match[2];
+                     const statusText = status == '1' ? 'Hadir' : 'Tidak Hadir';
+                     const patientName = $(this).closest('tr').find('td:nth-child(3)').text().trim();
+                     
+                     console.group('🔄 BPJS Menu Action Clicked');
+                     console.log('👤 Nama Pasien:', patientName);
+                     console.log('📋 No Rawat:', noRawat);
+                     console.log('📊 Action:', 'Update Status ke ' + statusText);
+                     console.log('⏰ Waktu Klik:', new Date().toLocaleString());
+                     console.log('🔗 Mengirim request ke BPJS API...');
+                     console.groupEnd();
+                 }
+             });
+             
+             // Event listener untuk menangkap respons detail BPJS
+             Livewire.on('bpjsResponseReceived', (data) => {
+                 if (data.success) {
+                     console.group('🎉 BPJS API Response - DETAIL SUCCESS');
+                     console.log('👤 Nama Pasien:', data.patient_name);
+                     console.log('📋 No Rawat:', data.no_rawat);
+                     console.log('📊 Status Update:', data.status_text);
+                     console.log('⏰ Timestamp:', data.timestamp);
+                     console.log('📤 Request Data:', data.request_data);
+                     console.log('📥 Response Data:', data.response_data);
+                     console.log('✅ Status: SUCCESS - Data berhasil dikirim ke BPJS');
+                     console.groupEnd();
+                 } else {
+                     console.group('💥 BPJS API Response - DETAIL ERROR');
+                     console.log('👤 Nama Pasien:', data.patient_name);
+                     console.log('📋 No Rawat:', data.no_rawat);
+                     console.log('📊 Status Update:', data.status_text);
+                     console.log('⏰ Timestamp:', data.timestamp);
+                     console.log('📤 Request Data:', data.request_data);
+                     console.log('📥 Response Data:', data.response_data);
+                     console.log('❌ Status: ERROR - Gagal mengirim data ke BPJS');
+                     if (data.response_data.error_message) {
+                         console.log('🚨 Error Message:', data.response_data.error_message);
+                     }
+                     console.groupEnd();
+                 }
+             });
+        });
     });
 </script>
 @stop
