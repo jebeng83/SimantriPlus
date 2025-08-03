@@ -365,6 +365,10 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/data-pendaftaran', function () {
             return view('Pcare.data-pendaftaran-pcare');
         })->name('pcare.data-pendaftaran');
+        
+        Route::get('/data-peserta-by-nik', function () {
+            return view('Pcare.data-peserta-by-nik');
+        })->name('pcare.data-peserta-by-nik');
 
         Route::get('/data-kunjungan', [App\Http\Controllers\PcareKunjunganController::class, 'index'])->name('pcare.data-kunjungan');
         Route::get('/kunjungan/{noRawat}', [App\Http\Controllers\PcareKunjunganController::class, 'show'])->name('pcare.kunjungan.show');

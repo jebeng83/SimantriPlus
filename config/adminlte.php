@@ -434,6 +434,11 @@ return [
                     'url'  => '/pcare/referensi/dokter',
                     'icon' => 'fas fa-fw fa-user-md',
                 ],
+                [
+                    'text' => 'Cek Data Peserta By NIK',
+                    'url'  => '/pcare/data-peserta-by-nik',
+                    'icon' => 'fas fa-fw fa-id-card',
+                ],
             ],
         ],
         [
