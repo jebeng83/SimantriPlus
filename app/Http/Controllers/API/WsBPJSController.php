@@ -79,10 +79,13 @@ class WsBPJSController extends Controller
     public function getReferensiPoli($tanggal)
     {
         try {
+            Log::info('getReferensiPoli called', ['tanggal' => $tanggal]);
+            
             // Validasi format tanggal
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+                Log::error('Invalid date format', ['tanggal' => $tanggal]);
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => 'Format tanggal tidak valid. Gunakan format YYYY-MM-DD'
                     ]
@@ -95,7 +98,28 @@ class WsBPJSController extends Controller
             // Gunakan trait BpjsTraits untuk memanggil API BPJS
             $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
             
-            // Kembalikan respon sesuai format yang sudah didekripsi
+            // Pastikan response dalam format yang benar
+            if ($response instanceof \Illuminate\Http\JsonResponse) {
+                $responseData = $response->getData(true);
+                
+                // Konversi format response BPJS ke format yang diharapkan frontend
+                if (isset($responseData['metadata'])) {
+                    // Format response BPJS: { metadata: {...}, response: { list: [...] } }
+                    // Konversi ke format frontend: { metaData: {...}, response: [...] }
+                    $formattedResponse = [
+                        'metaData' => [
+                            'code' => $responseData['metadata']['code'] == 1 ? 200 : $responseData['metadata']['code'],
+                            'message' => $responseData['metadata']['message']
+                        ],
+                        'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
+                    ];
+                    
+                    return response()->json($formattedResponse, 200);
+                }
+                
+                return response()->json($responseData, $response->getStatusCode());
+            }
+            
             return $response;
             
         } catch (\Exception $e) {
@@ -106,7 +130,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -152,7 +176,7 @@ class WsBPJSController extends Controller
             // Validasi format tanggal
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => 'Format tanggal tidak valid. Gunakan format YYYY-MM-DD'
                     ]
@@ -162,7 +186,7 @@ class WsBPJSController extends Controller
             // Validasi kode poli (harus angka)
             if (!preg_match('/^\d+$/', $kodePoli)) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => 'Kode poli tidak valid. Gunakan angka saja'
                     ]
@@ -175,7 +199,28 @@ class WsBPJSController extends Controller
             // Gunakan trait BpjsTraits untuk memanggil API BPJS
             $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
             
-            // Kembalikan respon sesuai format yang sudah didekripsi
+            // Pastikan response dalam format yang benar
+            if ($response instanceof \Illuminate\Http\JsonResponse) {
+                $responseData = $response->getData(true);
+                
+                // Konversi format response BPJS ke format yang diharapkan frontend
+                if (isset($responseData['metadata'])) {
+                    // Format response BPJS: { metadata: {...}, response: { list: [...] } }
+                    // Konversi ke format frontend: { metaData: {...}, response: [...] }
+                    $formattedResponse = [
+                        'metaData' => [
+                            'code' => $responseData['metadata']['code'] == 1 ? 200 : $responseData['metadata']['code'],
+                            'message' => $responseData['metadata']['message']
+                        ],
+                        'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
+                    ];
+                    
+                    return response()->json($formattedResponse, 200);
+                }
+                
+                return response()->json($responseData, $response->getStatusCode());
+            }
+            
             return $response;
             
         } catch (\Exception $e) {
@@ -187,7 +232,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]

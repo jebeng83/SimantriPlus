@@ -40,11 +40,11 @@ Route::get('/not-found', [App\Http\Controllers\ErrorController::class, 'notFound
 Route::get('/forbidden', [App\Http\Controllers\ErrorController::class, 'forbidden'])->name('error.403');
 
 Route::get('/infokesehatan', function () {
-    return redirect()->away('https://ayosehat.kemkes.go.id/promosi-kesehatan');
+    return redirect('https://ayosehat.kemkes.go.id/promosi-kesehatan');
 });
 
 Route::get('/skriningbpjs', function () {
-    return redirect()->away('https://webskrining.bpjs-kesehatan.go.id/skrining');
+    return redirect('https://webskrining.bpjs-kesehatan.go.id/skrining');
 });
 
 // Route untuk form skrining minimal tanpa autentikasi
@@ -108,6 +108,19 @@ Route::get('/kelurahan', [\App\Http\Controllers\WilayahController::class, 'getKe
 // Rute untuk berkas
 Route::get('/berkas/{noRawat}/{noRM}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRM'])->where('noRawat', '.*');
 Route::get('/berkas-retensi/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getBerkasRetensi']);
+
+// Mobile JKN Reference Routes (tanpa autentikasi)
+Route::prefix('mobile-jkn')->name('mobile-jkn.ref.')->group(function () {
+    Route::get('/refrensi-poli-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiPoliHfis'])->name('refrensi-poli-hfis');
+    Route::get('/refrensi-dokter-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiDokterHfis'])->name('refrensi-dokter-hfis');
+});
+
+// Antrol BPJS Routes (tanpa autentikasi)
+Route::prefix('antrol-bpjs')->name('antrol-bpjs.')->group(function () {
+    Route::get('/pendaftaran-mobile-jkn', [App\Http\Controllers\MobileJknController::class, 'index'])->name('pendaftaran-mobile-jkn');
+    Route::get('/referensi-poli-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiPoliHfis'])->name('referensi-poli-hfis');
+    Route::get('/referensi-dokter-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiDokterHfis'])->name('referensi-dokter-hfis');
+});
 
 // Rute yang memerlukan autentikasi
 Route::middleware(['web', 'loginauth'])->group(function () {
@@ -192,7 +205,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::post('/daftar-antrean', [App\Http\Controllers\MobileJknController::class, 'daftarAntrean'])->name('daftar-antrean');
         Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
     });
-    
+     
     // Route Menu Ralan
     Route::prefix('ralan')->group(function () {
         Route::get('/pasien', [App\Http\Controllers\Ralan\PasienRalanController::class, 'index'])->name('ralan.pasien');

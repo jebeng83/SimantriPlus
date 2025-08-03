@@ -309,7 +309,7 @@ class MobileJknController extends Controller
             $token = $tokenData['response']['token'];
             
             // Cari pendaftaran aktif untuk pasien ini
-            $antrean = \DB::table('booking_registrasi')
+            $antrean = DB::table('booking_registrasi')
                 ->select(
                     'booking_registrasi.*',
                     'poliklinik.nm_poli',
@@ -422,7 +422,7 @@ class MobileJknController extends Controller
             }
             
             // Cari pasien
-            $pasien = \DB::table('pasien')
+            $pasien = DB::table('pasien')
                 ->where('no_peserta', $nomorKartu)
                 ->first();
             
@@ -436,7 +436,7 @@ class MobileJknController extends Controller
             }
             
             // Cari pendaftaran untuk dibatalkan
-            $antrean = \DB::table('booking_registrasi')
+            $antrean = DB::table('booking_registrasi')
                 ->select('booking_registrasi.*', 'maping_poliklinik_pcare.kd_poli_pcare')
                 ->leftJoin('maping_poliklinik_pcare', 'booking_registrasi.kd_poli', '=', 'maping_poliklinik_pcare.kd_poli_rs')
                 ->where('booking_registrasi.no_rkm_medis', $pasien->no_rkm_medis)
@@ -505,7 +505,7 @@ class MobileJknController extends Controller
                 (isset($responseData['metadata']['code']) && $responseData['metadata']['code'] == 200) ||
                 !str_contains(strtolower($responseData['metadata']['message'] ?? ''), 'tidak ditemukan')
             ) {
-                \DB::table('booking_registrasi')
+                DB::table('booking_registrasi')
                     ->where('no_rkm_medis', $pasien->no_rkm_medis)
                     ->where('tanggal_periksa', $request->tanggalperiksa)
                     ->where('kd_poli', $antrean->kd_poli)
@@ -572,7 +572,7 @@ class MobileJknController extends Controller
             }
             
             // Verifikasi pasien ada di database dan ambil nomor BPJS yang valid
-            $pasien = \DB::table('pasien')
+            $pasien = DB::table('pasien')
                 ->where(function($query) use ($nomorKartu, $nik) {
                     $query->where('no_peserta', $nomorKartu)
                           ->orWhere('no_ktp', $nik);
@@ -614,7 +614,7 @@ class MobileJknController extends Controller
             
             // Update nomor telepon pasien jika berbeda
             if ($pasien->no_tlp != $requestData['nohp']) {
-                \DB::table('pasien')
+                DB::table('pasien')
                     ->where('no_rkm_medis', $pasien->no_rkm_medis)
                     ->update(['no_tlp' => $requestData['nohp']]);
             }
@@ -718,7 +718,7 @@ class MobileJknController extends Controller
             Log::info('Mendapatkan sisa antrean dengan nomor kartu: ' . $nomorKartu . ', kode poli: ' . $kodePoli . ', tanggal: ' . $tanggalPeriksa);
             
             // Verifikasi pasien ada di database
-            $pasien = \DB::table('pasien')
+            $pasien = DB::table('pasien')
                 ->where('no_peserta', $nomorKartu)
                 ->orWhere('no_ktp', $nomorKartu)
                 ->first();
@@ -782,5 +782,21 @@ class MobileJknController extends Controller
                 ]
             ], 500);
         }
+    }
+    
+    /**
+     * Menampilkan halaman referensi poli HFIS BPJS
+     */
+    public function refrensiPoliHfis()
+    {
+        return view('mobile-jkn.refrensi-poli-hfis');
+    }
+    
+    /**
+     * Menampilkan halaman referensi dokter HFIS BPJS
+     */
+    public function refrensiDokterHfis()
+    {
+        return view('mobile-jkn.refrensi-dokter-hfis');
     }
 }

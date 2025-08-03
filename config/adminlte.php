@@ -390,10 +390,25 @@ return [
             'label_color' => 'primary',
         ],
         [
-            'text'        => 'Pendaftaran Mobile JKN',
-            'url'         => '/pendaftaran-mobile-jkn',
-            'icon'        => 'fas fa-fw fa-user-plus',
-            'label_color' => 'primary',
+            'text'    => 'Antrol BPJS',
+            'icon'    => 'fas fa-fw fa-hospital',
+            'submenu' => [
+                [
+                    'text' => 'Pendaftaran Mobile JKN',
+                    'url'  => '/antrol-bpjs/pendaftaran-mobile-jkn',
+                    'icon' => 'fas fa-fw fa-user-plus',
+                ],
+                [
+                    'text' => 'Referensi Poli HFIS BPJS',
+                    'url'  => '/antrol-bpjs/referensi-poli-hfis',
+                    'icon' => 'fas fa-fw fa-clinic-medical',
+                ],
+                [
+                    'text' => 'Referensi Dokter HFIS BPJS',
+                    'url'  => '/antrol-bpjs/referensi-dokter-hfis',
+                    'icon' => 'fas fa-fw fa-user-md',
+                ],
+            ],
         ],
         [
             'text'    => 'PCare BPJS',
