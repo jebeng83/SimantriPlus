@@ -81,11 +81,13 @@ trait BpjsTraits
                 )
             ]);
 
-            // Kirim request
+            // Kirim request dengan timeout
             $client = new Client();
             $response = $client->get($url, [
                 'headers' => $headers,
-                'verify' => false
+                'verify' => false,
+                'timeout' => 15, // 15 detik timeout
+                'connect_timeout' => 10 // 10 detik untuk koneksi
             ]);
 
             $statusCode = $response->getStatusCode();
@@ -256,12 +258,14 @@ trait BpjsTraits
                 )
             ]);
 
-            // Kirim request
+            // Kirim request dengan timeout
             $client = new Client();
             $response = $client->post($url, [
                 'headers' => $headers,
                 'json' => $request,
-                'verify' => false
+                'verify' => false,
+                'timeout' => 15, // 15 detik timeout
+                'connect_timeout' => 10 // 10 detik untuk koneksi
             ]);
 
             $statusCode = $response->getStatusCode();

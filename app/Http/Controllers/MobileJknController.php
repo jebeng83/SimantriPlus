@@ -21,25 +21,20 @@ class MobileJknController extends Controller
     }
 
     /**
-     * Mendapatkan data poli dari API BPJS
+     * Mendapatkan data poli dari API BPJS HFIS
      */
     public function getPoli(Request $request)
     {
         try {
             $tanggal = $request->input('tanggal', date('Y-m-d'));
             
-            // Gunakan WsBPJSController langsung, tanpa melalui HTTP request
-            $bpjsController = new \App\Http\Controllers\API\WsBPJSController();
-            $response = $bpjsController->getReferensiPoli($tanggal);
-            
-            // Jika response adalah objek response, return langsung
-            if (is_object($response) && method_exists($response, 'getContent')) {
-                return $response;
-            }
+            // Gunakan WsBPJSController langsung untuk menghindari circular call
+            $wsBpjsController = new \App\Http\Controllers\API\WsBPJSController();
+            $response = $wsBpjsController->getReferensiPoli($tanggal);
             
             return $response;
         } catch (\Exception $e) {
-            Log::error('Error mengambil data poli: ' . $e->getMessage(), [
+            Log::error('Error mengambil data poli HFIS: ' . $e->getMessage(), [
                 'tanggal' => $tanggal ?? date('Y-m-d'),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -54,7 +49,7 @@ class MobileJknController extends Controller
     }
 
     /**
-     * Mendapatkan data dokter berdasarkan kode poli dan tanggal
+     * Mendapatkan data dokter berdasarkan kode poli dan tanggal dari HFIS
      */
     public function getDokter(Request $request)
     {
@@ -71,18 +66,13 @@ class MobileJknController extends Controller
                 ], 400);
             }
             
-            // Gunakan WsBPJSController langsung, tanpa melalui HTTP request
-            $bpjsController = new \App\Http\Controllers\API\WsBPJSController();
-            $response = $bpjsController->getReferensiDokter($kodePoli, $tanggal);
-            
-            // Jika response adalah objek response, return langsung
-            if (is_object($response) && method_exists($response, 'getContent')) {
-                return $response;
-            }
+            // Gunakan WsBPJSController langsung untuk menghindari circular call
+            $wsBpjsController = new \App\Http\Controllers\API\WsBPJSController();
+            $response = $wsBpjsController->getReferensiDokter($kodePoli, $tanggal);
             
             return $response;
         } catch (\Exception $e) {
-            Log::error('Error mengambil data dokter: ' . $e->getMessage(), [
+            Log::error('Error mengambil data dokter HFIS: ' . $e->getMessage(), [
                 'kodePoli' => $kodePoli ?? '',
                 'tanggal' => $tanggal ?? date('Y-m-d'),
                 'trace' => $e->getTraceAsString()

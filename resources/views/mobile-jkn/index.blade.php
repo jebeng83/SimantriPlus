@@ -784,7 +784,7 @@
             success: function(data) {
                $('#kodepoli').empty().append('<option value="">-- Pilih Poli --</option>');
 
-               if (data.metadata && data.metadata.code === 200 && data.response) {
+               if (data.metaData && data.metaData.code === 200 && data.response) {
                   $.each(data.response, function(i, item) {
                      // Format nama poli untuk tampilan yang lebih baik
                      let namaPoliFormatted = item.namapoli;
@@ -805,7 +805,7 @@
                   setupDropdowns();
                } else {
                   // Handle error response format
-                  var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data poli';
+                  var message = (data.metaData && data.metaData.message) ? data.metaData.message : 'Gagal memuat data poli';
                   Swal.fire({
                      icon: 'error',
                      title: 'Error',
@@ -850,7 +850,7 @@
             success: function(data) {
                $('#kodedokter').empty().append('<option value="">-- Pilih Jadwal Dokter --</option>');
 
-               if (data.metadata && data.metadata.code === 200 && data.response) {
+               if (data.metaData && data.metaData.code === 200 && data.response) {
                   $.each(data.response, function(i, item) {
                      // Format tampilan dokter yang lebih informatif dengan waktu praktek dan kuota
                      const namaDokter = item.namadokter || "Dokter";
@@ -881,7 +881,7 @@
                   setupDropdowns();
                } else {
                   // Handle error response format
-                  var message = (data.metadata && data.metadata.message) ? data.metadata.message : 'Gagal memuat data dokter';
+                  var message = (data.metaData && data.metaData.message) ? data.metaData.message : 'Gagal memuat data dokter';
                   Swal.fire({
                      icon: 'error',
                      title: 'Error',

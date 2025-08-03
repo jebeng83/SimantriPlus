@@ -193,18 +193,8 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/test-token', [App\Http\Controllers\KYCController::class, 'testToken'])->name('kyc.new.test-token');
         Route::get('/search-patient', [App\Http\Controllers\KYCController::class, 'searchPatient'])->name('kyc.search-patient');
     });
-    
-    // Mobile JKN Routes
-    Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () {
-        Route::get('/', [App\Http\Controllers\MobileJknController::class, 'index'])->name('index');
-        Route::get('/get-peserta', [App\Http\Controllers\MobileJknController::class, 'getPeserta'])->name('get-peserta');
-        Route::get('/get-poli', [App\Http\Controllers\MobileJknController::class, 'getPoli'])->name('get-poli');
-        Route::get('/get-dokter', [App\Http\Controllers\MobileJknController::class, 'getDokter'])->name('get-dokter');
-        Route::get('/get-sisa-antrean', [App\Http\Controllers\MobileJknController::class, 'getSisaAntrean'])->name('get-sisa-antrean');
-        Route::get('/status-antrean', [App\Http\Controllers\MobileJknController::class, 'statusAntrean'])->name('get-status-antrean');
-        Route::post('/daftar-antrean', [App\Http\Controllers\MobileJknController::class, 'daftarAntrean'])->name('daftar-antrean');
-        Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
-    });
+     
+// Route Menu Ralan
      
     // Route Menu Ralan
     Route::prefix('ralan')->group(function () {
@@ -507,6 +497,18 @@ Route::get('/api/test', function() {
 // Duplikasi route PCare dihapus - sudah ada di atas
 
 // Include test routes untuk development
+// Mobile JKN Routes (Public Access)
+Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () {
+    Route::get('/', [App\Http\Controllers\MobileJknController::class, 'index'])->name('index');
+    Route::get('/get-peserta', [App\Http\Controllers\MobileJknController::class, 'getPeserta'])->name('get-peserta');
+    Route::get('/get-poli', [App\Http\Controllers\MobileJknController::class, 'getPoli'])->name('get-poli');
+    Route::get('/get-dokter', [App\Http\Controllers\MobileJknController::class, 'getDokter'])->name('get-dokter');
+    Route::get('/get-sisa-antrean', [App\Http\Controllers\MobileJknController::class, 'getSisaAntrean'])->name('get-sisa-antrean');
+    Route::get('/status-antrean', [App\Http\Controllers\MobileJknController::class, 'statusAntrean'])->name('get-status-antrean');
+    Route::post('/daftar-antrean', [App\Http\Controllers\MobileJknController::class, 'daftarAntrean'])->name('daftar-antrean');
+    Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
+});
+
 if (app()->environment('local')) {
     require __DIR__.'/test-auth-error.php';
 }
