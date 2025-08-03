@@ -118,6 +118,24 @@ trait BpjsTraits
                 'response' => $responseBody
             ]);
             
+            // Simpan error ke tabel antrean_bpjs_log
+            try {
+                \App\Models\AntreanBpjsLog::logActivity([
+                    'status' => 'error',
+                    'response' => json_encode([
+                        'error_type' => 'BPJS_' . strtoupper($prefix) . '_REQUEST_ERROR',
+                        'message' => $e->getMessage(),
+                        'url' => $url ?? null,
+                        'method' => 'GET',
+                        'status_code' => $statusCode,
+                        'response_body' => $responseBody,
+                        'timestamp' => now()->toISOString()
+                    ])
+                ]);
+            } catch (\Exception $logErr) {
+                Log::warning('Gagal menyimpan log error BPJS ke antrean_bpjs_log', ['error' => $logErr->getMessage()]);
+            }
+            
             // Cek jika error authentication/credential
             if ($statusCode === 401 || $statusCode === 403) {
                 return response()->json([
@@ -162,6 +180,22 @@ trait BpjsTraits
                 'message' => $e->getMessage(),
                 'url' => $url ?? null
             ]);
+            
+            // Simpan error ke tabel antrean_bpjs_log
+            try {
+                \App\Models\AntreanBpjsLog::logActivity([
+                    'status' => 'error',
+                    'response' => json_encode([
+                        'error_type' => 'BPJS_' . strtoupper($prefix) . '_ERROR',
+                        'message' => $e->getMessage(),
+                        'url' => $url ?? null,
+                        'method' => 'GET',
+                        'timestamp' => now()->toISOString()
+                    ])
+                ]);
+            } catch (\Exception $logErr) {
+                Log::warning('Gagal menyimpan log error BPJS ke antrean_bpjs_log', ['error' => $logErr->getMessage()]);
+            }
             
             // Cek jika error message mengandung kata kunci authentication
             $message = $e->getMessage();
@@ -297,6 +331,25 @@ trait BpjsTraits
                 'response' => $responseBody
             ]);
             
+            // Simpan error ke tabel antrean_bpjs_log
+            try {
+                \App\Models\AntreanBpjsLog::logActivity([
+                    'status' => 'error',
+                    'response' => json_encode([
+                        'error_type' => 'BPJS_' . strtoupper($prefix) . '_REQUEST_ERROR',
+                        'message' => $e->getMessage(),
+                        'url' => $url ?? null,
+                        'method' => 'POST',
+                        'request_data' => $request,
+                        'status_code' => $statusCode,
+                        'response_body' => $responseBody,
+                        'timestamp' => now()->toISOString()
+                    ])
+                ]);
+            } catch (\Exception $logErr) {
+                Log::warning('Gagal menyimpan log error BPJS ke antrean_bpjs_log', ['error' => $logErr->getMessage()]);
+            }
+            
             // Cek jika error authentication/credential
             if ($statusCode === 401 || $statusCode === 403) {
                 return response()->json([
@@ -342,6 +395,23 @@ trait BpjsTraits
                 'url' => $url ?? null,
                 'request' => $request
             ]);
+            
+            // Simpan error ke tabel antrean_bpjs_log
+            try {
+                \App\Models\AntreanBpjsLog::logActivity([
+                    'status' => 'error',
+                    'response' => json_encode([
+                        'error_type' => 'BPJS_' . strtoupper($prefix) . '_POST_ERROR',
+                        'message' => $e->getMessage(),
+                        'url' => $url ?? null,
+                        'method' => 'POST',
+                        'request_data' => $request,
+                        'timestamp' => now()->toISOString()
+                    ])
+                ]);
+            } catch (\Exception $logErr) {
+                Log::warning('Gagal menyimpan log error BPJS ke antrean_bpjs_log', ['error' => $logErr->getMessage()]);
+            }
             
             // Cek jika error message mengandung kata kunci authentication
             $message = $e->getMessage();

@@ -949,7 +949,7 @@
                   const data = response.response;
                   $('#nik').val(data.nik);
                   $('#nama').val(data.nama);
-                  $('#nohp').val(data.nohp || '');
+                  $('#nohp').val(data.noHP || '');
                   $('#faskes').val(data.faskes);
                   $('#detail-peserta').show();
                } else {
