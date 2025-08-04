@@ -21,6 +21,9 @@ class RegPeriksaTable extends DataTableComponent
     protected $model = RegPeriksa::class;
     
     public $tanggalFilter;
+    public $poliklinikFilter;
+    
+    protected $listeners = ['filterByPoliklinik'];
 
     public function mount()
     {
@@ -42,13 +45,15 @@ class RegPeriksaTable extends DataTableComponent
         return [
             DateFilter::make('Tanggal Registrasi')
                 ->config([
-                    'placeholder' => 'Pilih Tanggal',
-                    'allowInput' => true,
+                    'placeholder' => 'Hari Ini: ' . Carbon::today()->format('d/m/Y'),
+                    'allowInput' => false,
+                    'disabled' => true,
                 ])
                 ->setFilterDefaultValue(Carbon::today()->format('Y-m-d'))
                 ->filter(function (Builder $builder, string $value) {
-                    $this->tanggalFilter = $value;
-                    $builder->where('reg_periksa.tgl_registrasi', $value);
+                    // Paksa selalu menggunakan tanggal hari ini
+                    $this->tanggalFilter = Carbon::today()->format('Y-m-d');
+                    $builder->where('reg_periksa.tgl_registrasi', Carbon::today()->format('Y-m-d'));
                 }),
             SelectFilter::make('Poliklinik')
                 ->setFilterPillTitle('Poli')
@@ -92,9 +97,13 @@ class RegPeriksaTable extends DataTableComponent
                 'penjab.png_jawab'
             );
             
-        // Filter default ke hari ini
-        if (!$this->tanggalFilter) {
-            $query->where('reg_periksa.tgl_registrasi', Carbon::today()->format('Y-m-d'));
+        // Filter default ke hari ini - selalu aktif
+        $tanggal = $this->tanggalFilter ?: Carbon::today()->format('Y-m-d');
+        $query->where('reg_periksa.tgl_registrasi', $tanggal);
+        
+        // Apply poliklinik filter jika ada
+        if ($this->poliklinikFilter) {
+            $query->where('reg_periksa.kd_poli', $this->poliklinikFilter);
         }
         
         return $query;
@@ -134,13 +143,15 @@ class RegPeriksaTable extends DataTableComponent
     
     public function getTotalPasienHariIni()
     {
-        $tanggal = $this->tanggalFilter ?? Carbon::today()->format('Y-m-d');
+        // Selalu gunakan tanggal hari ini
+        $tanggal = Carbon::today()->format('Y-m-d');
         return RegPeriksa::where('tgl_registrasi', $tanggal)->count();
     }
     
     public function getTotalPasienBelumPeriksa()
     {
-        $tanggal = $this->tanggalFilter ?? Carbon::today()->format('Y-m-d');
+        // Selalu gunakan tanggal hari ini
+        $tanggal = Carbon::today()->format('Y-m-d');
         return RegPeriksa::where('tgl_registrasi', $tanggal)
                          ->where('stts', 'Belum')
                          ->count();
@@ -325,7 +336,18 @@ class RegPeriksaTable extends DataTableComponent
                 ->sortable(),
             Column::make("Pasien", "pasien.nm_pasien")
                 ->searchable()
-                ->sortable(),
+                ->sortable()
+                ->format(function ($value, $row, Column $column) {
+                    $noRawat = isset($row->no_rawat) 
+                        ? \App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat) 
+                        : '';
+                    $noRM = isset($row->no_rkm_medis) 
+                        ? \App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis) 
+                        : '';
+                    $url = route('ralan.pemeriksaan', ['no_rawat' => $noRawat, 'no_rm' => $noRM]);
+                    return '<a href="' . $url . '" class="text-primary font-weight-bold" style="text-decoration: none; cursor: pointer;" title="Klik untuk pemeriksaan">' . $value . '</a>';
+                })
+                ->html(),
             Column::make("JK", "pasien.jk")
                 ->sortable()
                 ->format(function ($value, $row, Column $column) {
@@ -375,5 +397,20 @@ class RegPeriksaTable extends DataTableComponent
                 })
                 ->html(),
         ];
+    }
+
+    public function filterByPoliklinik($kdPoli)
+    {
+        $this->poliklinikFilter = $kdPoli;
+        $this->setFilter('poliklinik', $kdPoli);
+    }
+
+    public function setFilter($filterName, $value)
+    {
+        if ($filterName === 'poliklinik') {
+            $this->poliklinikFilter = $value;
+            // Reset halaman ke 1 saat filter berubah
+            $this->setPage(1);
+        }
     }
 }

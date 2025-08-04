@@ -182,6 +182,12 @@
             <button type="submit" class="btn btn-primary ml-2"><i class="fas fa-save"></i> Simpan</button>
             <button type="button" id="resetFormBtn" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</button>
         </div>
+        <div class="mt-2">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                Untuk pasien BPJS, sistem akan otomatis mendaftarkan ke PCare setelah pemeriksaan disimpan.
+            </small>
+        </div>
     </form>
     <h5 class="pt-4">Riwayat Pemeriksaan</h5>
     <div class="table-responsive">

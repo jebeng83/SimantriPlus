@@ -100,7 +100,7 @@ class ReferensiDokterController extends Controller
             '090' => 'Psikiatri Anak'
         ];
         
-        return view('pcare.referensi.referensi-dokter-bpjs', compact('poliList'));
+        return view('Pcare.referensi.referensi-dokter-bpjs', compact('poliList'));
     }
 
     /**
