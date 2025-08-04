@@ -18,7 +18,7 @@ class PcareKunjunganController extends Controller
      */
     public function index()
     {
-        return view('pcare.kunjungan.index');
+        return view('Pcare.kunjungan.index');
     }
 
     /**

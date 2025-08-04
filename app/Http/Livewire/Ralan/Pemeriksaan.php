@@ -6,6 +6,8 @@ use App\Traits\SwalResponse;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class Pemeriksaan extends Component
 {
@@ -209,6 +211,9 @@ class Pemeriksaan extends Component
                 ->where('no_rawat', $decodedNoRawat)
                 ->update(['stts' => 'Sudah']);
 
+            // Coba daftarkan ke PCare BPJS jika pasien adalah peserta BPJS
+            $this->daftarPcareBpjs($decodedNoRawat);
+
             DB::commit();
             $this->getListPemeriksaan();
             
@@ -335,5 +340,153 @@ class Pemeriksaan extends Component
                 'toast' =>  false,
             ]);
         }
+    }
+
+    /**
+     * Mendaftarkan pasien ke PCare BPJS setelah pemeriksaan disimpan
+     *
+     * @param string $noRawat
+     * @return void
+     */
+    private function daftarPcareBpjs($noRawat)
+    {
+        try {
+            // Ambil data pasien dan registrasi
+            $dataPasien = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+                ->where('reg_periksa.no_rawat', $noRawat)
+                ->select(
+                    'reg_periksa.*',
+                    'pasien.nm_pasien',
+                    'pasien.no_peserta',
+                    'pasien.kd_pj',
+                    'poliklinik.nm_poli'
+                )
+                ->first();
+
+            // Cek apakah pasien adalah peserta BPJS (BPJ, PBI, NON)
+            $validBpjsTypes = ['BPJ', 'PBI', 'NON'];
+            if (!$dataPasien || !in_array($dataPasien->kd_pj, $validBpjsTypes) || empty($dataPasien->no_peserta)) {
+                Log::info('Pasien bukan peserta BPJS atau tidak memiliki nomor peserta', [
+                    'no_rawat' => $noRawat,
+                    'kd_pj' => $dataPasien->kd_pj ?? 'null',
+                    'no_peserta' => $dataPasien->no_peserta ?? 'null'
+                ]);
+                return;
+            }
+
+            // Cek apakah sudah terdaftar di PCare hari ini
+            $cekPcare = DB::table('pcare_pendaftaran')
+                ->where('no_rawat', $noRawat)
+                ->where('tglDaftar', date('d-m-Y'))
+                ->first();
+
+            if ($cekPcare) {
+                Log::info('Pasien sudah terdaftar di PCare hari ini', [
+                    'no_rawat' => $noRawat
+                ]);
+                return;
+            }
+
+            // Ambil mapping poli dari database
+            $kdPoliPcare = $this->getKdPoliPcare($dataPasien->kd_poli);
+
+            // Persiapkan vital signs dari hasil pemeriksaan
+            $sistole = 120;
+            $diastole = 80;
+            if (!empty($this->tensi) && strpos($this->tensi, '/') !== false) {
+                $tensiParts = explode('/', $this->tensi);
+                $sistole = (int)trim($tensiParts[0]) ?: 120;
+                $diastole = (int)trim($tensiParts[1]) ?: 80;
+            }
+
+            // Persiapkan data untuk PCare sesuai katalog BPJS
+            $pcareData = [
+                'kdProviderPeserta' => env('BPJS_PCARE_KODE_PPK', '11251616'),
+                'tglDaftar' => date('d-m-Y'),
+                'noKartu' => $dataPasien->no_peserta,
+                'kdPoli' => $kdPoliPcare,
+                'keluhan' => $this->keluhan ?: '',
+                'kunjSakit' => true,
+                'sistole' => $sistole,
+                'diastole' => $diastole,
+                'beratBadan' => (float)($this->berat ?: 0),
+                'tinggiBadan' => (float)($this->tinggi ?: 0),
+                'respRate' => (int)($this->respirasi ?: 0),
+                'lingkarPerut' => (float)($this->lingkar ?: 0),
+                'heartRate' => (int)($this->nadi ?: 0),
+                'rujukBalik' => 0,
+                'kdTkp' => '10'
+            ];
+
+            // Kirim request ke PCare API menggunakan environment variables
+            $baseUrl = env('BPJS_PCARE_BASE_URL', 'https://apijkn.bpjs-kesehatan.go.id/pcare-rest');
+            $consId = env('BPJS_PCARE_CONS_ID');
+            $userKey = env('BPJS_PCARE_USER_KEY');
+            $timestamp = time();
+            
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'X-cons-id' => $consId,
+                'X-timestamp' => $timestamp,
+                'X-signature' => hash_hmac('sha256', $consId . '&' . $timestamp, $userKey),
+                'user_key' => $userKey,
+            ])->timeout(30)->post($baseUrl . '/pendaftaran', $pcareData);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                if (isset($responseData['metaData']['code']) && $responseData['metaData']['code'] == 201) {
+                    Log::info('Pendaftaran PCare berhasil', [
+                        'no_rawat' => $noRawat,
+                        'response' => $responseData
+                    ]);
+                } else {
+                    Log::warning('Pendaftaran PCare gagal', [
+                        'no_rawat' => $noRawat,
+                        'response' => $responseData
+                    ]);
+                }
+            } else {
+                Log::error('Error calling PCare API', [
+                    'no_rawat' => $noRawat,
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error saat mendaftarkan ke PCare BPJS', [
+                'no_rawat' => $noRawat,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Ambil kode poli PCare dari database mapping
+     *
+     * @param string $kdPoli
+     * @return string
+     */
+    private function getKdPoliPcare($kdPoli)
+    {
+        // Ambil kode poli PCare dari tabel mapping
+        $mapping = DB::table('maping_poliklinik_pcare')
+            ->where('kd_poli_rs', $kdPoli)
+            ->first();
+
+        if ($mapping && !empty($mapping->kd_poli_pcare)) {
+            return $mapping->kd_poli_pcare;
+        }
+
+        // Default ke '001' jika tidak ditemukan mapping
+        Log::warning('Mapping poli PCare tidak ditemukan', [
+            'kd_poli' => $kdPoli
+        ]);
+        
+        return '001';
     }
 }

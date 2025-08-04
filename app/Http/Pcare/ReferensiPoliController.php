@@ -37,7 +37,7 @@ class ReferensiPoliController extends Controller
 
     public function index()
     {
-        return view('Pcare.refrensi-poli');
+        return view('Pcare.referensi.referensi-poli');
     }
 
     protected function generateSignature($timestamp)
@@ -246,4 +246,4 @@ class ReferensiPoliController extends Controller
         // TODO: Implement PDF export
         return response()->json(['message' => 'Fitur export PDF akan segera tersedia']);
     }
-} 
+}

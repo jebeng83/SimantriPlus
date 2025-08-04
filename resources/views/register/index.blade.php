@@ -15,7 +15,7 @@
                     <i class="fas fa-users"></i>
                 </div>
                 <div class="stat-info">
-                    <div class="stat-number" id="total-pasien">0</div>
+                    <div class="stat-number" id="total-pasien">{{ $totalPasien ?? 0 }}</div>
                     <div class="stat-label">Total Pasien</div>
                 </div>
             </div>
@@ -24,7 +24,7 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-info">
-                    <div class="stat-number" id="belum-periksa">0</div>
+                    <div class="stat-number" id="belum-periksa">{{ $belumPeriksa ?? 0 }}</div>
                     <div class="stat-label">Belum Periksa</div>
                 </div>
             </div>
@@ -39,13 +39,47 @@
 
 @section('content')
 <div class="registrasi-container">
-    <div class="info-cards-section mb-4">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <strong>Informasi:</strong> Data yang ditampilkan adalah registrasi pasien untuk hari ini ({{ date('d F Y') }}). 
-                    Gunakan filter tanggal untuk melihat data hari lain.
+    <!-- Filter Poli Section -->
+    <div class="filter-section mb-3">
+        <div class="card filter-card-horizontal">
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <h6 class="filter-title mb-0">
+                            <i class="fas fa-hospital mr-2"></i>Poli
+                        </h6>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <select id="filter-poli" class="form-control select2" style="width: 100%;">
+                                    <option value="">Pilih Poliklinik</option>
+                                    @foreach($poliklinik as $poli)
+                                        <option value="{{ $poli->kd_poli }}">{{ $poli->nm_poli }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="filter-actions d-flex justify-content-start ml-3">
+                                    <button id="lock-filter" class="btn btn-outline-primary btn-sm mr-2" title="Lock Filter">
+                                        <i class="fas fa-unlock" id="lock-icon"></i>
+                                    </button>
+                                    <button id="reset-filter" class="btn btn-outline-secondary btn-sm" title="Reset Filter">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <!-- Empty space for balance -->
+                    </div>
+                </div>
+                <div id="filter-status" class="mt-2" style="display: none;">
+                    <div class="alert alert-info alert-sm mb-0">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span id="filter-status-text">Filter tidak terkunci</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -283,6 +317,108 @@
         color: var(--accent-color);
     }
 
+    /* Filter Card Styles */
+    .filter-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: visible;
+    }
+
+    .filter-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .filter-card .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Horizontal Filter Card Styles */
+    .filter-card-horizontal {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: visible;
+    }
+
+    .filter-card-horizontal:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .filter-card-horizontal .card-body {
+        padding: 1rem 1.5rem;
+    }
+
+    .filter-title {
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 1.1rem;
+    }
+
+    .filter-header {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 0.75rem;
+    }
+
+    .filter-body {
+        padding-top: 0.5rem;
+    }
+
+    .filter-actions .btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .filter-actions .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .alert-sm {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-actions .btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .filter-actions .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    #filter-status {
+        background: rgba(79, 91, 218, 0.1);
+        border-radius: 6px;
+        padding: 0.5rem;
+    }
+
+    .filter-locked {
+        background: rgba(34, 197, 94, 0.1) !important;
+        border-color: #22c55e !important;
+    }
+
+    .filter-locked #filter-status {
+        background: rgba(34, 197, 94, 0.1);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .header-content {
@@ -297,6 +433,86 @@
         .stat-card {
             min-width: 120px;
         }
+
+        .filter-body .row {
+            flex-direction: column;
+        }
+
+        .filter-body .col-md-9,
+        .filter-body .col-md-3 {
+            margin-bottom: 1rem;
+        }
+
+        .filter-actions {
+            justify-content: center;
+        }
+
+        /* Horizontal filter responsive */
+        .filter-card-horizontal .row {
+            flex-direction: column;
+        }
+
+        .filter-card-horizontal .col-md-2,
+        .filter-card-horizontal .col-md-8 {
+            margin-bottom: 0.75rem;
+        }
+
+        .filter-card-horizontal .col-md-8 .row {
+            flex-direction: column;
+        }
+
+        .filter-card-horizontal .col-md-8 .col-md-8,
+        .filter-card-horizontal .col-md-8 .col-md-4 {
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-card-horizontal .col-md-8 .col-md-4 {
+            margin-bottom: 0;
+        }
+
+        .filter-card-horizontal .filter-actions {
+            justify-content: center;
+            margin-left: 0 !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .filter-card-horizontal .card-body {
+            padding: 0.75rem 1rem;
+        }
+
+        .filter-actions .btn {
+            width: 36px;
+            height: 36px;
+        }
+
+        .filter-title {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Patient Name Link Styles */
+    .table tbody tr td a {
+        transition: all 0.3s ease;
+        border-radius: 4px;
+        padding: 2px 6px;
+        display: inline-block;
+    }
+
+    .table tbody tr td a:hover {
+        background-color: rgba(79, 91, 218, 0.1);
+        text-decoration: none !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(79, 91, 218, 0.2);
+    }
+
+    .table tbody tr:hover td a {
+        color: #4f5bda !important;
+        font-weight: 600;
     }
 </style>
 @stop
@@ -451,22 +667,43 @@
         });
         
         // Function to update statistics
-        function updateStatistics() {
-            // Count total rows in table
-            const totalRows = $('.table tbody tr:visible').length;
-            $('#total-pasien').text(totalRows);
-            
-            // Count pending patients (status 'Belum')
-            let belumPeriksa = 0;
-            $('.table tbody tr:visible').each(function() {
-                const statusCell = $(this).find('td').filter(function() {
-                    return $(this).find('.badge-warning').length > 0;
-                });
-                if (statusCell.length > 0) {
-                    belumPeriksa++;
+        function updateStatistics(kdPoli = null) {
+            // Gunakan AJAX untuk mendapatkan data statistik yang akurat dari server
+            $.ajax({
+                url: '{{ route('register.stats') }}',
+                method: 'GET',
+                data: {
+                    date: getCurrentFilterDate(),
+                    kd_poli: kdPoli || $('#filter-poli').val()
+                },
+                success: function(response) {
+                    $('#total-pasien').text(response.totalPasien || 0);
+                    $('#belum-periksa').text(response.belumPeriksa || 0);
+                },
+                error: function() {
+                    // Fallback ke counting manual jika AJAX gagal
+                    const totalRows = $('.table tbody tr:visible').length;
+                    $('#total-pasien').text(totalRows);
+                    
+                    let belumPeriksa = 0;
+                    $('.table tbody tr:visible').each(function() {
+                        const statusCell = $(this).find('td').filter(function() {
+                            return $(this).find('.badge-warning').length > 0;
+                        });
+                        if (statusCell.length > 0) {
+                            belumPeriksa++;
+                        }
+                    });
+                    $('#belum-periksa').text(belumPeriksa);
                 }
             });
-            $('#belum-periksa').text(belumPeriksa);
+        }
+
+        // Function to get current filter date
+        function getCurrentFilterDate() {
+            // Ambil tanggal dari filter Livewire jika ada
+            const dateFilter = $('input[type="date"]').val();
+            return dateFilter || '{{ date('Y-m-d') }}';
         }
         
         // Initial statistics update
@@ -476,6 +713,157 @@
         $('.search-input').on('keyup', function() {
             setTimeout(updateStatistics, 100);
         });
+
+        // Filter Poli Functionality
+        let isFilterLocked = false;
+        let lockedPoliValue = '';
+
+        // Initialize Select2 for filter poli (menggunakan data yang sudah ada)
+        $('#filter-poli').select2({
+            placeholder: 'Pilih Poliklinik',
+            allowClear: true,
+            width: '100%'
+        });
+
+        // Handle filter poli change
+        $('#filter-poli').on('change', function() {
+            if (!isFilterLocked) {
+                applyPoliFilter($(this).val());
+                updateStatistics();
+            }
+        });
+
+        // Handle lock/unlock filter
+        $('#lock-filter').on('click', function() {
+            const $button = $(this);
+            const $icon = $('#lock-icon');
+            const $card = $('.filter-card');
+            const $status = $('#filter-status');
+            const $statusText = $('#filter-status-text');
+            const $select = $('#filter-poli');
+
+            if (!isFilterLocked) {
+                // Lock filter
+                isFilterLocked = true;
+                lockedPoliValue = $select.val();
+                
+                $icon.removeClass('fa-unlock').addClass('fa-lock');
+                $button.removeClass('btn-outline-primary').addClass('btn-success');
+                $button.attr('title', 'Unlock Filter');
+                $card.addClass('filter-locked');
+                $select.prop('disabled', true);
+                $status.show();
+                
+                if (lockedPoliValue) {
+                    const selectedText = $select.find('option:selected').text();
+                    $statusText.text(`Filter terkunci pada: ${selectedText}`);
+                } else {
+                    $statusText.text('Filter terkunci pada: Semua Poliklinik');
+                }
+                
+                // Show notification
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Filter Terkunci',
+                        text: 'Filter poliklinik telah dikunci. Data akan tetap menampilkan poliklinik yang dipilih.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } else {
+                // Unlock filter
+                isFilterLocked = false;
+                lockedPoliValue = '';
+                
+                $icon.removeClass('fa-lock').addClass('fa-unlock');
+                $button.removeClass('btn-success').addClass('btn-outline-primary');
+                $button.attr('title', 'Lock Filter');
+                $card.removeClass('filter-locked');
+                $select.prop('disabled', false);
+                $status.hide();
+                
+                // Show notification
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Filter Dibuka',
+                        text: 'Filter poliklinik telah dibuka. Anda dapat mengubah filter kembali.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            }
+        });
+
+        // Handle reset filter
+        $('#reset-filter').on('click', function() {
+            if (!isFilterLocked) {
+                $('#filter-poli').val('').trigger('change');
+                applyPoliFilter('');
+                updateStatistics();
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Filter Direset',
+                        text: 'Filter poliklinik telah direset ke "Semua Poliklinik".',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Filter Terkunci',
+                        text: 'Buka kunci filter terlebih dahulu untuk mereset.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            }
+        });
+
+        // Function to apply poli filter
+        function applyPoliFilter(poliValue) {
+            if (window.Livewire && window.Livewire.find) {
+                // Cari komponen Livewire table
+                const tableComponent = window.Livewire.find(
+                    $('[wire\\:id]').first().attr('wire:id')
+                );
+                
+                if (tableComponent) {
+                    // Trigger filter pada komponen Livewire
+                    tableComponent.call('setFilter', 'poliklinik', poliValue);
+                    
+                    // Update statistik dengan filter
+                    updateStatistics(poliValue);
+                    return;
+                }
+            }
+            
+            // Fallback: filter manual pada tabel yang sudah ada
+            if (poliValue === '') {
+                $('.table tbody tr').show();
+            } else {
+                $('.table tbody tr').each(function() {
+                    const poliCell = $(this).find('td:nth-child(8)'); // Kolom poliklinik
+                    const poliText = poliCell.text().trim();
+                    
+                    // Cari berdasarkan nama poli atau kode poli
+                    if (poliText.toLowerCase().includes(poliValue.toLowerCase()) || 
+                        $(this).data('poli-code') === poliValue) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            }
+            
+            // Update statistik setelah filter manual
+            updateStatistics(poliValue);
+        }
         
         // Event listener untuk menangkap respons BPJS saat klik menu aksi hadir/belum
         document.addEventListener('livewire:load', function () {

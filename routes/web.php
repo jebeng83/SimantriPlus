@@ -167,6 +167,8 @@ Route::middleware(['web', 'loginauth'])->group(function () {
     
     // Route untuk register
     Route::get('/register', [App\Http\Controllers\RegisterController::class, 'index'])->name('register');
+    Route::get('/register/stats', [App\Http\Controllers\RegisterController::class, 'getStats'])->name('register.stats');
+    Route::get('/api/poliklinik', [App\Http\Controllers\RegisterController::class, 'getPoliklinik'])->name('get.poliklinik');
     
     // Route untuk regperiksa
     Route::prefix('regperiksa')->group(function () {

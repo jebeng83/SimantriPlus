@@ -25,7 +25,7 @@ class ReferensiPoliController extends Controller
      */
     public function index()
     {
-        return view('pcare.referensi.refrensi-poli');
+        return view('Pcare.referensi.referensi-poli');
     }
 
     /**
@@ -217,7 +217,7 @@ class ReferensiPoliController extends Controller
 
             $data = $responseData['response'];
             
-            $pdf = Pdf::loadView('pcare.exports.poli', compact('data'));
+            $pdf = Pdf::loadView('exports.poli', compact('data'));
             $filename = 'referensi_poli_' . date('Y-m-d_H-i-s') . '.pdf';
             
             return $pdf->download($filename);

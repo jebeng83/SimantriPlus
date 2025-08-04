@@ -10,21 +10,28 @@ class RegisterController extends Controller
 {
     public function index()
     {
-        // $register = DB::table('reg_periksa')
-        //     ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-        //     ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
-        //     ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
-        //     ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
-        //     ->where('tgl_registrasi', date('Y-m-d'))
-        //     ->where('stts', 'Belum')
-        //     ->select('reg_periksa.*', 'pasien.nm_pasien', 'dokter.nm_dokter', 'poliklinik.nm_poli', 'penjab.png_jawab', 'pasien.no_tlp', 'pasien.jk')
-        //     ->get();
+        // Ambil data poliklinik untuk dropdown filter
+        $poliklinik = DB::table('poliklinik')
+            ->select('kd_poli', 'nm_poli')
+            ->orderBy('nm_poli')
+            ->get();
 
-        // $heads = ['No. Reg', 'No. Rawat', 'Tanggal', 'Jam', 'Dokter', 'No. RM', 'Pasien', 'JK', 'Umur', 'Poliklinik', 'Jenis Bayar', 'Penanggung Jawab', 'Alamat PJ', 'Hubungan PJ', 'Biaya Registrasi', 'Status', 'No. Telp', 'Stts Rawat', 'Stts Poli', 'Status Bayar'];
+        // Hitung statistik pasien hari ini
+        $today = date('Y-m-d');
+        $totalPasien = DB::table('reg_periksa')
+            ->where('tgl_registrasi', $today)
+            ->where('stts', 'Belum')
+            ->count();
+
+        $belumPeriksa = DB::table('reg_periksa')
+            ->where('tgl_registrasi', $today)
+            ->where('stts', 'Belum')
+            ->count();
 
         return view('register.index', [
-            // 'register' => $register,
-            // 'heads' => $heads,
+            'poliklinik' => $poliklinik,
+            'totalPasien' => $totalPasien,
+            'belumPeriksa' => $belumPeriksa,
         ]);
     }
 
@@ -111,5 +118,45 @@ class RegisterController extends Controller
                 ->limit($limit)
                 ->get();
         });
+    }
+
+    public function getStats(Request $request)
+    {
+        $date = $request->get('date', date('Y-m-d'));
+        $kdPoli = $request->get('kd_poli');
+
+        $query = DB::table('reg_periksa')
+            ->where('tgl_registrasi', $date)
+            ->where('stts', 'Belum');
+
+        if ($kdPoli) {
+            $query->where('kd_poli', $kdPoli);
+        }
+
+        $totalPasien = $query->count();
+        $belumPeriksa = $query->count(); // Sama karena sudah filter stts = 'Belum'
+
+        return response()->json([
+            'totalPasien' => $totalPasien,
+            'belumPeriksa' => $belumPeriksa
+        ]);
+    }
+
+    public function getPoliklinik(Request $request)
+    {
+        $q = $request->get('q');
+        $limit = $request->get('limit', 10);
+        
+        $query = DB::table('poliklinik')
+            ->select('kd_poli as id', 'nm_poli as text')
+            ->orderBy('nm_poli');
+
+        if (!empty($q)) {
+            $que = '%' . $q . '%';
+            $query->where('nm_poli', 'like', $que)
+                  ->orWhere('kd_poli', 'like', $que);
+        }
+
+        return $query->limit($limit)->get();
     }
 }
