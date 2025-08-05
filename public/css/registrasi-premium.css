@@ -19,7 +19,7 @@
 .registrasi-container {
     padding: 1.5rem;
     background-color: #f7f9fc;
-    min-height: 100vh;
+    min-height: auto;
 }
 
 /* Header Section */
@@ -417,4 +417,4 @@
     .datatable-wrapper {
         overflow-x: auto;
     }
-} 
+}

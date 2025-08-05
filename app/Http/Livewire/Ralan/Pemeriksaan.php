@@ -8,10 +8,12 @@ use Livewire\Component;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Traits\EnkripsiData;
+use App\Traits\PcareTrait;
 
 class Pemeriksaan extends Component
 {
-    use SwalResponse, LivewireAlert;
+    use LivewireAlert, EnkripsiData, PcareTrait;
     public $listPemeriksaan, $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
     public $tgl, $jam;
     public $listeners = ['refreshData' => '$refresh', 'hapusPemeriksaan' => 'hapus', 'updateStatus' => 'updateStatusPasien'];
@@ -24,6 +26,11 @@ class Pemeriksaan extends Component
             $this->getPemeriksaan();
             $this->getListPemeriksaan();
         }
+        
+        Log::info('=== SELESAI PROSES PENDAFTARAN PCARE ===', [
+            'no_rawat' => $noRawat,
+            'timestamp' => now()->toDateTimeString()
+        ]);
     }
 
     public function openModal()
@@ -350,8 +357,15 @@ class Pemeriksaan extends Component
      */
     private function daftarPcareBpjs($noRawat)
     {
+        Log::info('=== MULAI PROSES PENDAFTARAN PCARE ===', [
+            'no_rawat' => $noRawat,
+            'timestamp' => now()->toDateTimeString()
+        ]);
+        
         try {
             // Ambil data pasien dan registrasi
+            Log::info('Mengambil data pasien dari database', ['no_rawat' => $noRawat]);
+            
             $dataPasien = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
@@ -365,34 +379,63 @@ class Pemeriksaan extends Component
                 )
                 ->first();
 
+            Log::info('Data pasien berhasil diambil', [
+                'data_found' => $dataPasien ? 'yes' : 'no',
+                'nm_pasien' => $dataPasien->nm_pasien ?? 'null',
+                'kd_pj' => $dataPasien->kd_pj ?? 'null',
+                'no_peserta' => $dataPasien->no_peserta ?? 'null',
+                'kd_poli' => $dataPasien->kd_poli ?? 'null'
+            ]);
+
             // Cek apakah pasien adalah peserta BPJS (BPJ, PBI, NON)
             $validBpjsTypes = ['BPJ', 'PBI', 'NON'];
             if (!$dataPasien || !in_array($dataPasien->kd_pj, $validBpjsTypes) || empty($dataPasien->no_peserta)) {
-                Log::info('Pasien bukan peserta BPJS atau tidak memiliki nomor peserta', [
+                Log::info('Pasien tidak memenuhi syarat PCare', [
                     'no_rawat' => $noRawat,
+                    'reason' => !$dataPasien ? 'data_not_found' : (!in_array($dataPasien->kd_pj, $validBpjsTypes) ? 'bukan_bpjs' : 'no_peserta_kosong'),
                     'kd_pj' => $dataPasien->kd_pj ?? 'null',
-                    'no_peserta' => $dataPasien->no_peserta ?? 'null'
+                    'no_peserta' => $dataPasien->no_peserta ?? 'null',
+                    'valid_types' => $validBpjsTypes
                 ]);
                 return;
             }
 
             // Cek apakah sudah terdaftar di PCare hari ini
+            Log::info('Mengecek duplikasi pendaftaran PCare', [
+                'no_rawat' => $noRawat,
+                'tgl_check' => date('Y-m-d')
+            ]);
+            
             $cekPcare = DB::table('pcare_pendaftaran')
                 ->where('no_rawat', $noRawat)
-                ->where('tglDaftar', date('d-m-Y'))
+                ->where('tglDaftar', date('Y-m-d'))
                 ->first();
 
             if ($cekPcare) {
                 Log::info('Pasien sudah terdaftar di PCare hari ini', [
-                    'no_rawat' => $noRawat
+                    'no_rawat' => $noRawat,
+                    'existing_record' => $cekPcare
                 ]);
                 return;
             }
+            
+            Log::info('Tidak ada duplikasi, melanjutkan pendaftaran');
 
             // Ambil mapping poli dari database
+            Log::info('Mengambil mapping poli PCare', ['kd_poli_rs' => $dataPasien->kd_poli]);
             $kdPoliPcare = $this->getKdPoliPcare($dataPasien->kd_poli);
+            Log::info('Mapping poli berhasil', ['kd_poli_pcare' => $kdPoliPcare]);
 
             // Persiapkan vital signs dari hasil pemeriksaan
+            Log::info('Memproses vital signs', [
+                'tensi_input' => $this->tensi,
+                'berat' => $this->berat,
+                'tinggi' => $this->tinggi,
+                'respirasi' => $this->respirasi,
+                'nadi' => $this->nadi,
+                'lingkar' => $this->lingkar
+            ]);
+            
             $sistole = 120;
             $diastole = 80;
             if (!empty($this->tensi) && strpos($this->tensi, '/') !== false) {
@@ -400,6 +443,11 @@ class Pemeriksaan extends Component
                 $sistole = (int)trim($tensiParts[0]) ?: 120;
                 $diastole = (int)trim($tensiParts[1]) ?: 80;
             }
+            
+            Log::info('Vital signs diproses', [
+                'sistole' => $sistole,
+                'diastole' => $diastole
+            ]);
 
             // Persiapkan data untuk PCare sesuai katalog BPJS
             $pcareData = [
@@ -407,7 +455,7 @@ class Pemeriksaan extends Component
                 'tglDaftar' => date('d-m-Y'),
                 'noKartu' => $dataPasien->no_peserta,
                 'kdPoli' => $kdPoliPcare,
-                'keluhan' => $this->keluhan ?: '',
+                'keluhan' => $this->keluhan ?: null,
                 'kunjSakit' => true,
                 'sistole' => $sistole,
                 'diastole' => $diastole,
@@ -419,45 +467,159 @@ class Pemeriksaan extends Component
                 'rujukBalik' => 0,
                 'kdTkp' => '10'
             ];
-
-            // Kirim request ke PCare API menggunakan environment variables
-            $baseUrl = env('BPJS_PCARE_BASE_URL', 'https://apijkn.bpjs-kesehatan.go.id/pcare-rest');
-            $consId = env('BPJS_PCARE_CONS_ID');
-            $userKey = env('BPJS_PCARE_USER_KEY');
-            $timestamp = time();
             
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'X-cons-id' => $consId,
-                'X-timestamp' => $timestamp,
-                'X-signature' => hash_hmac('sha256', $consId . '&' . $timestamp, $userKey),
-                'user_key' => $userKey,
-            ])->timeout(30)->post($baseUrl . '/pendaftaran', $pcareData);
+            Log::info('Data PCare telah disiapkan', [
+                'pcare_data' => $pcareData
+            ]);
 
-            if ($response->successful()) {
-                $responseData = $response->json();
-                if (isset($responseData['metaData']['code']) && $responseData['metaData']['code'] == 201) {
-                    Log::info('Pendaftaran PCare berhasil', [
-                        'no_rawat' => $noRawat,
-                        'response' => $responseData
-                    ]);
-                } else {
-                    Log::warning('Pendaftaran PCare gagal', [
-                        'no_rawat' => $noRawat,
-                        'response' => $responseData
-                    ]);
-                }
-            } else {
-                Log::error('Error calling PCare API', [
+            // Validasi data sebelum dikirim
+            if (empty($pcareData['noKartu']) || empty($pcareData['kdPoli'])) {
+                Log::error('Data tidak lengkap untuk pendaftaran PCare', [
                     'no_rawat' => $noRawat,
-                    'status' => $response->status(),
-                    'body' => $response->body()
+                    'noKartu' => $pcareData['noKartu'],
+                    'kdPoli' => $pcareData['kdPoli'],
+                    'validation_failed' => true
+                ]);
+                return;
+            }
+            
+            Log::info('Validasi data berhasil, melanjutkan ke API call');
+
+            Log::info('Mengirim data pendaftaran ke PCare menggunakan PcareTrait', [
+                'no_rawat' => $noRawat,
+                'data' => $pcareData
+            ]);
+            
+            // Kirim request menggunakan PcareTrait yang sudah diperbaiki
+            $responseData = $this->requestPcare('pendaftaran', 'POST', $pcareData, 'text/plain');
+
+            Log::info('Response dari PCare API diterima', [
+                'status_code' => $responseData['metaData']['code'] ?? 'unknown',
+                'response_body' => json_encode($responseData),
+                'response_headers' => []
+            ]);
+            
+            Log::info('Response data parsed', [
+                'response_data' => $responseData,
+                'is_successful' => isset($responseData['metaData']['code']) && $responseData['metaData']['code'] == 201,
+                'metadata_code' => $responseData['metaData']['code'] ?? 'not_set'
+            ]);
+            
+            if (isset($responseData['metaData']['code']) && $responseData['metaData']['code'] == 201) {
+                // Simpan data pendaftaran ke database lokal
+                $this->simpanDataPendaftaranPcare($noRawat, $pcareData, $responseData);
+                
+                // Ambil nomor urut dari response sesuai format BPJS
+                $noUrut = $responseData['response']['message'] ?? null;
+                
+                Log::info('=== PENDAFTARAN PCARE BERHASIL ===', [
+                    'no_rawat' => $noRawat,
+                    'noUrut' => $noUrut,
+                    'full_response' => $responseData,
+                    'success' => true
+                ]);
+                
+                // Tampilkan notifikasi sukses ke user
+                $this->dispatchBrowserEvent('toast', [
+                    'type' => 'success',
+                    'message' => 'Pasien berhasil didaftarkan ke PCare BPJS dengan nomor urut: ' . ($noUrut ?? 'N/A')
+                ]);
+                
+            } else {
+                // Log error response dari PCare
+                $errorMessage = $responseData['metaData']['message'] ?? 'Unknown error';
+                Log::error('=== PENDAFTARAN PCARE GAGAL ===', [
+                    'no_rawat' => $noRawat,
+                    'status_code' => $responseData['metaData']['code'] ?? 'unknown',
+                    'error_message' => $errorMessage,
+                    'full_response' => $responseData,
+                    'request_data' => $pcareData,
+                    'success' => false
+                ]);
+                
+                // Tampilkan notifikasi warning ke user
+                $this->dispatchBrowserEvent('toast', [
+                    'type' => 'warning',
+                    'message' => 'Pendaftaran PCare gagal: ' . $errorMessage
                 ]);
             }
 
         } catch (\Exception $e) {
-            Log::error('Error saat mendaftarkan ke PCare BPJS', [
+            Log::error('=== EXCEPTION PADA PENDAFTARAN PCARE ===', [
+                'no_rawat' => $noRawat,
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'exception_type' => get_class($e)
+            ]);
+            
+            // Tampilkan notifikasi error ke user
+            $this->dispatchBrowserEvent('toast', [
+                'type' => 'error',
+                'message' => 'Terjadi kesalahan saat mendaftarkan ke PCare: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Simpan data pendaftaran PCare ke database lokal
+     *
+     * @param string $noRawat
+     * @param array $pcareData
+     * @param array $responseData
+     * @return void
+     */
+    private function simpanDataPendaftaranPcare($noRawat, $pcareData, $responseData)
+    {
+        try {
+            // Ambil data pasien untuk melengkapi informasi
+            $dataPasien = DB::table('reg_periksa')
+                ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+                ->where('reg_periksa.no_rawat', $noRawat)
+                ->select(
+                    'reg_periksa.no_rkm_medis',
+                    'pasien.nm_pasien',
+                    'poliklinik.nm_poli'
+                )
+                ->first();
+
+            // Konversi format tanggal dari d-m-Y ke Y-m-d untuk database
+            $tglDaftarParts = explode('-', $pcareData['tglDaftar']);
+            $tglDaftarDB = $tglDaftarParts[2] . '-' . $tglDaftarParts[1] . '-' . $tglDaftarParts[0];
+
+            DB::table('pcare_pendaftaran')->insert([
+                'no_rawat' => $noRawat,
+                'tglDaftar' => $tglDaftarDB,
+                'no_rkm_medis' => $dataPasien->no_rkm_medis ?? '',
+                'nm_pasien' => $dataPasien->nm_pasien ?? '',
+                'kdProviderPeserta' => $pcareData['kdProviderPeserta'],
+                'noKartu' => $pcareData['noKartu'],
+                'kdPoli' => $pcareData['kdPoli'],
+                'nmPoli' => $dataPasien->nm_poli ?? '',
+                'keluhan' => $pcareData['keluhan'] ?? '',
+                'kunjSakit' => $pcareData['kunjSakit'] ? 'Kunjungan Sakit' : 'Kunjungan Sehat',
+                'sistole' => (string)$pcareData['sistole'],
+                'diastole' => (string)$pcareData['diastole'],
+                'beratBadan' => (string)$pcareData['beratBadan'],
+                'tinggiBadan' => (string)$pcareData['tinggiBadan'],
+                'respRate' => (string)$pcareData['respRate'],
+                'lingkar_perut' => (string)$pcareData['lingkarPerut'],
+                'heartRate' => (string)$pcareData['heartRate'],
+                'rujukBalik' => (string)$pcareData['rujukBalik'],
+                'kdTkp' => $pcareData['kdTkp'],
+                'noUrut' => $responseData['response']['message'] ?? null,
+                'status' => 'Terkirim'
+            ]);
+            
+            Log::info('Data pendaftaran PCare berhasil disimpan ke database lokal', [
+                'no_rawat' => $noRawat,
+                'noUrut' => $responseData['response']['message'] ?? null
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error saat menyimpan data pendaftaran PCare ke database', [
                 'no_rawat' => $noRawat,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

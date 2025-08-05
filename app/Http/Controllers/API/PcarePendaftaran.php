@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use App\Traits\PcareTrait;
 
 class PcarePendaftaran extends Controller
@@ -151,6 +153,40 @@ class PcarePendaftaran extends Controller
     }
 
     /**
+     * Mendapatkan kdProviderPeserta dari environment variable
+     * 
+     * @param string $noKartu
+     * @return string|null
+     */
+    private function getKdProviderPeserta($noKartu)
+    {
+        try {
+            // Ambil kdProviderPeserta dari environment variable BPJS_PCARE_USER
+            $kdProviderPeserta = env('BPJS_PCARE_USER');
+            
+            Log::info('Getting kdProviderPeserta from environment', [
+                'noKartu' => $noKartu,
+                'kdProviderPeserta' => $kdProviderPeserta
+            ]);
+            
+            if (empty($kdProviderPeserta)) {
+                Log::error('BPJS_PCARE_USER environment variable is not set');
+                return null;
+            }
+            
+            return $kdProviderPeserta;
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting kdProviderPeserta from environment', [
+                'noKartu' => $noKartu,
+                'error' => $e->getMessage()
+            ]);
+            
+            return null;
+        }
+    }
+
+    /**
      * Menambahkan data pendaftaran ke PCare
      * Format endpoint: {Base URL}/{Service Name}/pendaftaran
      * 
@@ -162,7 +198,6 @@ class PcarePendaftaran extends Controller
         try {
             // Validasi input
             $validator = \Validator::make($request->all(), [
-                'kdProviderPeserta' => 'required|string',
                 'tglDaftar' => 'required|string|regex:/^\d{2}-\d{2}-\d{4}$/',
                 'noKartu' => 'required|string',
                 'kdPoli' => 'required|string',
@@ -188,9 +223,22 @@ class PcarePendaftaran extends Controller
                 ], 400);
             }
 
+            // Dapatkan kdProviderPeserta yang benar dari API PCare
+            $kdProviderPeserta = $this->getKdProviderPeserta($request->noKartu);
+            
+            if (!$kdProviderPeserta) {
+                return response()->json([
+                    'metaData' => [
+                        'code' => 400,
+                        'message' => 'Tidak dapat mendapatkan kdProviderPeserta untuk nomor kartu: ' . $request->noKartu
+                    ],
+                    'response' => null
+                ], 400);
+            }
+
             // Data untuk dikirim ke PCare
             $data = [
-                'kdProviderPeserta' => $request->kdProviderPeserta,
+                'kdProviderPeserta' => $kdProviderPeserta, // Gunakan kdProvider yang benar
                 'tglDaftar' => $request->tglDaftar,
                 'noKartu' => $request->noKartu,
                 'kdPoli' => $request->kdPoli,
@@ -207,20 +255,31 @@ class PcarePendaftaran extends Controller
                 'kdTkp' => $request->kdTkp
             ];
 
-            // Log request
+            // Log request dengan detail lengkap
             Log::info('PCare Add Pendaftaran Request', [
-                'data' => $data
+                'endpoint' => 'pendaftaran',
+                'method' => 'POST',
+                'data' => $data,
+                'timestamp' => now()->toISOString(),
+                'user_agent' => request()->header('User-Agent'),
+                'ip_address' => request()->ip()
             ]);
+
+            // Validasi data sebelum kirim
+            $this->validatePcareData($data);
 
             // Format endpoint dan kirim request dengan Content-Type text/plain
             $endpoint = "pendaftaran";
             $response = $this->requestPcare($endpoint, 'POST', $data, 'text/plain');
 
-            // Log response
+            // Log response dengan detail lengkap
             Log::info('PCare Add Pendaftaran Response', [
                 'status' => isset($response['metaData']) ? $response['metaData']['code'] : 'unknown',
                 'message' => isset($response['metaData']) ? $response['metaData']['message'] : 'unknown',
-                'noUrut' => isset($response['response']['message']) ? $response['response']['message'] : null
+                'noUrut' => isset($response['response']['message']) ? $response['response']['message'] : null,
+                'full_response' => $response,
+                'response_size' => strlen(json_encode($response)),
+                'timestamp' => now()->toISOString()
             ]);
 
             // Jika berhasil, simpan ke database
@@ -319,7 +378,11 @@ class PcarePendaftaran extends Controller
         } catch (\Exception $e) {
             Log::error('PCare Add Pendaftaran Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all(),
+                'timestamp' => now()->toISOString()
             ]);
 
             return response()->json([
@@ -330,6 +393,40 @@ class PcarePendaftaran extends Controller
                 'response' => null
             ], 500);
         }
+    }
+    
+    /**
+     * Validasi data sebelum dikirim ke PCare
+     * @param array $data
+     * @throws \Exception
+     */
+    private function validatePcareData($data)
+    {
+        // Validasi format tanggal
+        if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $data['tglDaftar'])) {
+            throw new \Exception('Format tanggal tidak valid: ' . $data['tglDaftar']);
+        }
+        
+        // Validasi nomor kartu BPJS
+        if (strlen($data['noKartu']) < 13) {
+            throw new \Exception('Nomor kartu BPJS tidak valid: ' . $data['noKartu']);
+        }
+        
+        // Validasi kode poli
+        if (empty($data['kdPoli'])) {
+            throw new \Exception('Kode poli tidak boleh kosong');
+        }
+        
+        // Validasi vital signs
+        if ($data['sistole'] < 50 || $data['sistole'] > 300) {
+            Log::warning('Sistole di luar range normal', ['sistole' => $data['sistole']]);
+        }
+        
+        if ($data['diastole'] < 30 || $data['diastole'] > 200) {
+            Log::warning('Diastole di luar range normal', ['diastole' => $data['diastole']]);
+        }
+        
+        Log::info('Validasi data PCare berhasil', ['data_keys' => array_keys($data)]);
     }
 
     /**

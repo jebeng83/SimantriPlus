@@ -69,9 +69,9 @@ trait PcareTrait
         try {
             // Cek jika request peserta sudah ada di cache
             $cacheKey = 'pcare_' . md5($endpoint . json_encode($data));
-            if ($method === 'GET' && \Cache::has($cacheKey)) {
+            if ($method === 'GET' && Cache::has($cacheKey)) {
                 Log::info('PCare API Cache Hit', ['endpoint' => $endpoint]);
-                return \Cache::get($cacheKey);
+                return Cache::get($cacheKey);
             }
             
             // Gunakan konfigurasi dari .env
@@ -178,18 +178,47 @@ trait PcareTrait
             
             // Function untuk melakukan retry
             $sendRequest = function() use ($method, $httpClient, $fullUrl, $data, $contentType, $endpoint) {
-                // Khusus untuk peserta dengan method GET
-                if ($method === 'GET' && strpos($endpoint, 'peserta') !== false) {
-                    return $httpClient->get($fullUrl);
+                // Log pengiriman data ke PCare untuk endpoint pendaftaran
+                if (strpos($endpoint, 'pendaftaran') !== false && $method === 'POST') {
+                    Log::info('=== MENGIRIM DATA KE PENDAFTARAN PCARE ===', [
+                        'endpoint' => $endpoint,
+                        'url' => $fullUrl,
+                        'method' => $method,
+                        'content_type' => $contentType,
+                        'data_to_send' => $data,
+                        'timestamp' => now()->toDateTimeString()
+                    ]);
                 }
                 
-                return match($method) {
-                    'GET' => $httpClient->get($fullUrl),
-                    'POST' => $httpClient->withBody($data, $contentType ?? 'application/json')->post($fullUrl),
-                    'PUT' => $httpClient->withBody($data, $contentType ?? 'application/json')->put($fullUrl),
-                    'DELETE' => $httpClient->withBody($data, $contentType ?? 'application/json')->delete($fullUrl),
-                    default => throw new \Exception("Method HTTP tidak valid")
-                };
+                if ($method === 'POST') {
+                    if ($contentType === 'text/plain' && !is_null($data)) {
+                        // Untuk PCare pendaftaran dengan content-type text/plain
+                        Log::info('Mengirim POST request dengan text/plain body', [
+                            'endpoint' => $endpoint,
+                            'body_content' => $data
+                        ]);
+                        return $httpClient->withBody($data, 'text/plain')->post($fullUrl);
+                    } else {
+                        // Untuk request JSON biasa
+                        return $httpClient->post($fullUrl, $data);
+                    }
+                } elseif ($method === 'PUT') {
+                    if ($contentType === 'text/plain' && !is_null($data)) {
+                        return $httpClient->withBody($data, 'text/plain')->put($fullUrl);
+                    } else {
+                        return $httpClient->put($fullUrl, $data);
+                    }
+                } elseif ($method === 'DELETE') {
+                    if ($contentType === 'text/plain' && !is_null($data)) {
+                        return $httpClient->withBody($data, 'text/plain')->delete($fullUrl);
+                    } else {
+                        return $httpClient->delete($fullUrl, $data);
+                    }
+                } elseif ($method === 'GET') {
+                    return $httpClient->get($fullUrl);
+                } else {
+                    throw new \Exception("Method HTTP tidak valid: " . $method);
+                }
             };
             
             // Coba dengan retry
@@ -222,6 +251,18 @@ trait PcareTrait
                 'status' => $response->status(),
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
+            
+            // Log khusus untuk response pendaftaran PCare
+            if (strpos($endpoint, 'pendaftaran') !== false) {
+                Log::info('=== RESPONSE PENDAFTARAN PCARE DITERIMA ===', [
+                    'endpoint' => $endpoint,
+                    'status_code' => $response->status(),
+                    'response_body' => $response->body(),
+                    'response_headers' => $response->headers(),
+                    'success' => $response->successful(),
+                    'timestamp' => now()->toDateTimeString()
+                ]);
+            }
             
             // Log response body terpisah untuk mengurangi ukuran log
             if ($response->status() >= 400) {
@@ -297,7 +338,7 @@ trait PcareTrait
             // Simpan ke cache jika GET request
             if ($method === 'GET' && isset($responseData['metaData']) && $responseData['metaData']['code'] == 200) {
                 // Simpan cache selama 30 menit
-                \Cache::put($cacheKey, $responseData, now()->addMinutes(30));
+                Cache::put($cacheKey, $responseData, now()->addMinutes(30));
             }
             
             return $responseData;
@@ -320,9 +361,9 @@ trait PcareTrait
             $errorMessage = $e->getMessage();
             $statusCode = 500;
             
-            if (method_exists($e, 'getResponse') && $e->getResponse()) {
-                $statusCode = $e->getResponse()->getStatusCode();
-                $responseBody = $e->getResponse()->getBody()->getContents();
+            if (method_exists($e, 'response') && $e->response) {
+                $statusCode = $e->response->status();
+                $responseBody = $e->response->body();
                 
                 Log::info('PcareTrait Response Body', [
                     'status_code' => $statusCode,

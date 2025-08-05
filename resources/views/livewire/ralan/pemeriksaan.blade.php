@@ -1859,5 +1859,38 @@
     window.addEventListener('swal:pemeriksaan', function(e) {
         Swal.fire(e.detail);
     });
+    
+    // Event listener untuk notifikasi toast dari PCare
+    window.addEventListener('toast', function(e) {
+        const { type, message } = e.detail;
+        
+        let icon = 'info';
+        let title = 'Informasi';
+        
+        switch(type) {
+            case 'success':
+                icon = 'success';
+                title = 'Berhasil';
+                break;
+            case 'warning':
+                icon = 'warning';
+                title = 'Peringatan';
+                break;
+            case 'error':
+                icon = 'error';
+                title = 'Error';
+                break;
+        }
+        
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            timer: type === 'success' ? 3000 : 5000,
+            showConfirmButton: type === 'error',
+            toast: true,
+            position: 'top-end'
+        });
+    });
 </script>
 @endsection
