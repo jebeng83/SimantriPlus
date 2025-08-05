@@ -228,11 +228,27 @@
     }
 
     /* Modal Styles */
+    .modal {
+        z-index: 1055 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 1050 !important;
+    }
+    
+    .modal-dialog {
+        margin: 1.75rem auto;
+        max-width: 90vw;
+        width: auto;
+    }
+    
     .modal-content {
         border: none;
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        max-height: 90vh;
+        overflow-y: auto;
     }
 
     .modal-header {
@@ -240,6 +256,9 @@
         color: white;
         border-bottom: 0;
         padding: 1.25rem 1.5rem;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
     .modal-title {
@@ -250,6 +269,8 @@
 
     .modal-body {
         padding: 1.5rem;
+        max-height: calc(90vh - 120px);
+        overflow-y: auto;
     }
 
     .select2-container--default .select2-selection--single {
@@ -513,6 +534,121 @@
     .table tbody tr:hover td a {
         color: #4f5bda !important;
         font-weight: 600;
+    }
+    
+    /* Fix untuk modal ketika data sedikit */
+    body.modal-open {
+        overflow: hidden !important;
+        padding-right: 0 !important;
+    }
+    
+    .registrasi-container {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Pastikan modal selalu di atas */
+    .modal.show {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.show .modal-dialog {
+        transform: none;
+        margin: auto;
+    }
+    
+    /* Modal dengan scroll vertikal */
+    .modal-dialog {
+        max-width: 800px;
+        width: 90%;
+        margin: 1.75rem auto;
+    }
+    
+    .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .modal-header {
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 1051;
+        background: white;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: calc(90vh - 120px);
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        flex-shrink: 0;
+        position: sticky;
+        bottom: 0;
+        z-index: 1051;
+        background: white;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    /* Custom scrollbar untuk modal */
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    /* Responsive modal */
+    @media (max-width: 768px) {
+        .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100vw - 1rem);
+            width: calc(100vw - 1rem);
+        }
+        
+        .modal-content {
+            max-height: 95vh;
+        }
+        
+        .modal-body {
+            max-height: calc(95vh - 120px);
+            padding: 1rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .modal-dialog {
+            margin: 0.25rem;
+            max-width: calc(100vw - 0.5rem);
+            width: calc(100vw - 0.5rem);
+        }
+        
+        .modal-content {
+            max-height: 98vh;
+        }
+        
+        .modal-body {
+            max-height: calc(98vh - 100px);
+            padding: 0.75rem;
+        }
     }
 </style>
 @stop
