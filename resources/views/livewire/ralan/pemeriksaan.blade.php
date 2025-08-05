@@ -180,6 +180,7 @@
         </div>
         <div class="d-flex flex-row-reverse">
             <button type="submit" class="btn btn-primary ml-2"><i class="fas fa-save"></i> Simpan</button>
+            <button type="button" wire:click="kunjunganPcare" class="btn btn-success ml-2"><i class="fas fa-hospital"></i> Kunjungan PCare</button>
             <button type="button" id="resetFormBtn" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</button>
         </div>
         <div class="mt-2">
