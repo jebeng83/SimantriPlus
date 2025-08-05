@@ -91,7 +91,7 @@
             minimumInputLength: 3
         });
 
-        // Inisialisasi Select2 untuk prosedur
+        // Inisialisasi Select2 untuk prosedur dengan default 89.06
         $('#prosedur-select').select2({
             placeholder: 'Pilih prosedur',
             ajax: {
@@ -112,6 +112,15 @@
             },
             minimumInputLength: 3
         });
+        
+        // Set default prosedur ke 89.06 - Limited consultation
+        setTimeout(function() {
+            var defaultOption = new Option('89.06 - Limited consultation', '89.06', true, true);
+            $('#prosedur-select').append(defaultOption).trigger('change');
+            $('#hidden-prosedur').val('89.06');
+            @this.set('prosedur', '89.06');
+            @this.call('setProsedur', '89.06');
+        }, 100);
 
         // Event handler untuk diagnosa
         $('#diagnosa-select').on('select2:select', function (e) {
@@ -140,10 +149,8 @@
             @this.call('setPrioritas', prioritasValue);
         });
         
-        // Set prioritas default ke 1 jika belum dipilih
-        if (!$('#prioritas-select').val()) {
-            $('#prioritas-select').val('1').trigger('change');
-        }
+        // Set prioritas default ke 1 (Diagnosa Ke-1)
+        $('#prioritas-select').val('1').trigger('change');
     });
     
     // Validasi sebelum submit form
@@ -180,18 +187,12 @@
         $('#hidden-prosedur').val('');
     });
     
-    // Set prioritas default
+    // Set prioritas default ke 1 (Diagnosa Ke-1)
     document.addEventListener('DOMContentLoaded', function() {
-        // Set prioritas jika ada
-        var prioritasValue = $('#prioritas-select').val();
-        if (prioritasValue) {
-            $('#hidden-prioritas').val(prioritasValue);
-            @this.set('prioritas', prioritasValue);
-            @this.call('setPrioritas', prioritasValue);
-        } else {
-            // Set default ke 1 jika tidak ada
-            $('#prioritas-select').val('1').trigger('change');
-        }
+        $('#prioritas-select').val('1').trigger('change');
+        $('#hidden-prioritas').val('1');
+        @this.set('prioritas', '1');
+        @this.call('setPrioritas', '1');
     });
 </script>
 @endpush

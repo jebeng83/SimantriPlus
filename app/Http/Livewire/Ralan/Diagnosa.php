@@ -115,14 +115,21 @@ class Diagnosa extends Component
         // Pastikan prioritas adalah angka
         $this->prioritas = (int)$this->prioritas;
 
+        // Set default prosedur jika kosong
+        if (empty($this->prosedur)) {
+            $this->prosedur = '89.06'; // Default ke 89.06 - Limited consultation
+        }
+
         // Validasi input
         $this->validate([
             'diagnosa' => 'required',
             'prioritas' => 'required|numeric',
+            'prosedur' => 'required',
         ], [
             'diagnosa.required' => 'Diagnosa tidak boleh kosong',
             'prioritas.required' => 'Prioritas tidak boleh kosong',
             'prioritas.numeric' => 'Prioritas harus berupa angka',
+            'prosedur.required' => 'Prosedur tidak boleh kosong',
         ]);
 
         // Verifikasi no_rawat tidak kosong
@@ -224,36 +231,53 @@ class Diagnosa extends Component
                 throw $e;
             }
 
-            // Simpan prosedur jika ada
-            if (!empty($this->prosedur)) {
-                try {
-                    // Cek apakah prosedur sudah ada untuk no_rawat ini (tanpa memandang prioritas)
-                    $existingProsedur = DB::table('prosedur_pasien')
+            // Simpan prosedur (wajib ada karena sudah divalidasi)
+            try {
+                // Cek apakah prosedur sudah ada untuk no_rawat ini (primary key: no_rawat + kode + status)
+                $existingProsedur = DB::table('prosedur_pasien')
+                    ->where('no_rawat', $decryptedNoRawat)
+                    ->where('kode', $this->prosedur)
+                    ->where('status', 'Ralan')
+                    ->first();
+                    
+                if (!$existingProsedur) {
+                    // Insert prosedur baru
+                    $dataProsedur = [
+                        'no_rawat' => $decryptedNoRawat,
+                        'kode' => $this->prosedur,
+                        'status' => 'Ralan',
+                        'prioritas' => $this->prioritas,
+                    ];
+                    
+                    DB::table('prosedur_pasien')->insert($dataProsedur);
+                    
+                    Log::info('Prosedur berhasil disimpan', [
+                        'noRawat' => $decryptedNoRawat,
+                        'prosedur' => $this->prosedur,
+                        'prioritas' => $this->prioritas
+                    ]);
+                } else {
+                    // Update prioritas jika prosedur sudah ada
+                    DB::table('prosedur_pasien')
                         ->where('no_rawat', $decryptedNoRawat)
                         ->where('kode', $this->prosedur)
                         ->where('status', 'Ralan')
-                        ->first();
-                        
-                    // Jika sudah ada, tidak perlu simpan lagi
-                    if (!$existingProsedur) {
-                        $dataProsedur = [
-                            'no_rawat' => $decryptedNoRawat,
-                            'kode' => $this->prosedur,
-                            'status' => 'Ralan',
-                            'prioritas' => $this->prioritas,
-                        ];
-                        
-                        DB::table('prosedur_pasien')->insert($dataProsedur);
-                    }
-                } catch (\Exception $e) {
-                    Log::error('Gagal menyimpan prosedur: ' . $e->getMessage(), [
+                        ->update(['prioritas' => $this->prioritas]);
+                    
+                    Log::info('Prioritas prosedur berhasil diupdate', [
                         'noRawat' => $decryptedNoRawat,
                         'prosedur' => $this->prosedur,
-                        'prioritas' => $this->prioritas,
-                        'error' => $e->getMessage()
+                        'prioritas' => $this->prioritas
                     ]);
-                    throw $e;
                 }
+            } catch (\Exception $e) {
+                Log::error('Gagal menyimpan prosedur: ' . $e->getMessage(), [
+                    'noRawat' => $decryptedNoRawat,
+                    'prosedur' => $this->prosedur,
+                    'prioritas' => $this->prioritas,
+                    'error' => $e->getMessage()
+                ]);
+                throw $e;
             }
             
             DB::commit();
