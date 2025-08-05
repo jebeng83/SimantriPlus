@@ -210,8 +210,16 @@ class Pemeriksaan extends Component
                 // Handle new format (201 CREATED)
                 if ($responseCode == '201' || $responseCode == 201) {
                     $isSuccess = true;
-                    // Extract noKunjungan from response.message in new format
-                    $noKunjungan = $responseData['response']['message'] ?? null;
+                    // Extract noKunjungan from response array in new format
+                    $noKunjungan = null;
+                    if (isset($responseData['response']) && is_array($responseData['response'])) {
+                        foreach ($responseData['response'] as $item) {
+                            if (isset($item['field']) && $item['field'] === 'noKunjungan') {
+                                $noKunjungan = $item['message'] ?? null;
+                                break;
+                            }
+                        }
+                    }
                     Log::info('PCare kunjungan berhasil dengan format baru', [
                         'code' => $responseCode,
                         'message' => $responseData['metaData']['message'] ?? '',
