@@ -144,6 +144,9 @@ Route::prefix('pcare')->group(function () {
     Route::get('poli/fktp/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoliFktp']);
     Route::get('dokter/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokterPaginated']);
     
+    // Test connection endpoint untuk debugging
+    Route::get('test-connection', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'testConnection']);
+    
     // API untuk referensi poli dan dokter
     Route::get('ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli']);
     Route::get('ref/poli/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli']);

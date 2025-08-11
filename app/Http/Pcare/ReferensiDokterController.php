@@ -27,7 +27,7 @@ class ReferensiDokterController extends Controller
             'cons_id' => env('BPJS_MOBILEJKN_CONS_ID', '7925'),
             'secret_key' => env('BPJS_MOBILEJKN_CONS_PWD', '2eF2C8E837'),
             'user_key' => env('BPJS_MOBILEJKN_USER_KEY', 'e0fc15a6c8f737a8c46d9072e63b6102'),
-            'username' => env('BPJS_MOBILEJKN_USER', 'siswo-11251616'),
+            'username' => env('BPJS_MOBILEJKN_USER', 'siswo-11251919'),
             'password' => env('BPJS_MOBILEJKN_PASS', 'Siswo102#'),
             'kode_aplikasi' => env('BPJS_PCARE_APP_CODE', '095')
         ];
@@ -52,8 +52,6 @@ class ReferensiDokterController extends Controller
             'username' => $this->config['username'],
             'kode_aplikasi' => $this->config['kode_aplikasi']
         ]);
-
-        $this->pcare = $pcare;
     }
 
     public function index()

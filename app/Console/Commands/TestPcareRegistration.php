@@ -119,10 +119,10 @@ class TestPcareRegistration extends Command
             $this->info('5. Menyiapkan data PCare...');
             
             // Dapatkan kdProviderPeserta dari environment variable (sama seperti PcarePendaftaran controller)
-            $kdProviderPeserta = env('BPJS_PCARE_USER');
+            $kdProviderPeserta = env('BPJS_PCARE_KODE_PPK', '11251919');
             
             if (empty($kdProviderPeserta)) {
-                $this->error('BPJS_PCARE_USER environment variable is not set');
+                $this->error('BPJS_PCARE_KODE_PPK environment variable is not set');
                 return 1;
             }
             

@@ -11,10 +11,12 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Poliklinik;
 use App\Models\Dokter;
 use Carbon\Carbon;
 use App\Models\AntreanBpjsLog;
+use App\Services\RegPeriksaOptimizationService;
 
 class RegPeriksaTable extends DataTableComponent
 {
@@ -23,12 +25,27 @@ class RegPeriksaTable extends DataTableComponent
     public $tanggalFilter;
     public $poliklinikFilter;
     
-    protected $listeners = ['filterByPoliklinik'];
+    protected $listeners = ['filterByPoliklinik', 'refreshDatatable' => 'refreshData', 'registrationSuccess' => 'refreshData'];
+    
+    protected $optimizationService;
 
     public function mount()
     {
         // Set default tanggal ke hari ini
         $this->tanggalFilter = Carbon::today()->format('Y-m-d');
+        
+        // Initialize optimization service
+        $this->initializeOptimizationService();
+    }
+    
+    /**
+     * Pastikan optimization service terinisialisasi
+     */
+    private function initializeOptimizationService()
+    {
+        if (!$this->optimizationService) {
+            $this->optimizationService = new RegPeriksaOptimizationService();
+        }
     }
 
     public function configure(): void
@@ -80,39 +97,41 @@ class RegPeriksaTable extends DataTableComponent
 
     public function builder(): Builder
     {
-        $query = RegPeriksa::query()
-            ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-            ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
-            ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
-            ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
-            ->where('reg_periksa.stts', 'Belum')
-            ->select(
-                'reg_periksa.*', 
-                'pasien.nm_pasien', 
-                'pasien.no_tlp', 
-                'pasien.jk',
-                'pasien.tgl_lahir',
-                'dokter.nm_dokter', 
-                'poliklinik.nm_poli', 
-                'penjab.png_jawab'
-            );
-            
-        // Filter default ke hari ini - selalu aktif
+        // Pastikan optimization service terinisialisasi
+        $this->initializeOptimizationService();
+        
+        // Gunakan optimization service untuk query yang sudah dioptimasi
         $tanggal = $this->tanggalFilter ?: Carbon::today()->format('Y-m-d');
-        $query->where('reg_periksa.tgl_registrasi', $tanggal);
         
-        // Apply poliklinik filter jika ada
-        if ($this->poliklinikFilter) {
-            $query->where('reg_periksa.kd_poli', $this->poliklinikFilter);
-        }
-        
-        return $query;
+        return $this->optimizationService->getOptimizedQuery(
+            $tanggal,
+            $this->poliklinikFilter,
+            null // dokter filter bisa ditambahkan nanti jika diperlukan
+        );
     }
 
+    public function refreshData()
+    {
+        // Pastikan optimization service terinisialisasi
+        $this->initializeOptimizationService();
+        
+        // Clear cache ketika refresh data menggunakan optimization service
+        $this->optimizationService->clearAllCaches();
+        
+        // Force refresh the component
+        $this->resetPage();
+        $this->emit('$refresh');
+    }
+    
     public function hapus($no_rawat)
     {
         try {
             RegPeriksa::where('no_rawat', $no_rawat)->delete();
+            
+            // Clear cache setelah hapus data
+            $this->optimizationService->clearAllCaches();
+            
+            $this->refreshData();
             $this->emit('refreshDatatable');
             session()->flash('success', 'Data registrasi berhasil dihapus.');
         } catch (\Exception $e) {
@@ -141,20 +160,44 @@ class RegPeriksaTable extends DataTableComponent
         return (int)($carbon->timestamp * 1000);
     }
     
+    /**
+     * Get total pasien hari ini dengan caching menggunakan optimization service
+     */
     public function getTotalPasienHariIni()
     {
-        // Selalu gunakan tanggal hari ini
-        $tanggal = Carbon::today()->format('Y-m-d');
-        return RegPeriksa::where('tgl_registrasi', $tanggal)->count();
+        return $this->optimizationService->getTotalPasienHariIni();
     }
     
+    /**
+     * Get total pasien belum periksa dengan caching menggunakan optimization service
+     */
     public function getTotalPasienBelumPeriksa()
     {
-        // Selalu gunakan tanggal hari ini
-        $tanggal = Carbon::today()->format('Y-m-d');
-        return RegPeriksa::where('tgl_registrasi', $tanggal)
-                         ->where('stts', 'Belum')
-                         ->count();
+        return $this->optimizationService->getTotalPasienBelumPeriksa();
+    }
+    
+    /**
+     * Get statistik poliklinik dengan caching menggunakan optimization service
+     */
+    public function getStatistikPoliklinik()
+    {
+        return $this->optimizationService->getStatistikPoliklinik();
+    }
+    
+    /**
+     * Get statistik dokter dengan caching menggunakan optimization service
+     */
+    public function getStatistikDokter($poliklinik = null)
+    {
+        return $this->optimizationService->getStatistikDokter(null, $poliklinik);
+    }
+    
+    /**
+     * Clear cache ketika ada perubahan data menggunakan optimization service
+     */
+    public function clearStatistikCache()
+    {
+        $this->optimizationService->clearAllCaches();
     }
 
     public function updateStatusAntreanBPJS($no_rawat, $status)
@@ -256,6 +299,103 @@ class RegPeriksaTable extends DataTableComponent
         }
     }
 
+    public function batalAntreanBPJS($no_rawat, $alasan = 'Dibatalkan oleh petugas')
+    {
+        try {
+            // Ambil data registrasi
+            $regPeriksa = RegPeriksa::with(['pasien', 'poliklinik'])
+                ->where('no_rawat', $no_rawat)
+                ->first();
+
+            if (!$regPeriksa) {
+                session()->flash('error', 'Data registrasi tidak ditemukan.');
+                return;
+            }
+
+            // Cek apakah pasien menggunakan BPJS
+            if ($regPeriksa->kd_pj !== 'BPJ') {
+                session()->flash('error', 'Pasien tidak menggunakan BPJS.');
+                return;
+            }
+
+            // Ambil mapping kode poli BPJS
+            $mappingPoli = DB::table('maping_poliklinik_pcare')
+                ->where('kd_poli_rs', $regPeriksa->kd_poli)
+                ->select('kd_poli_pcare')
+                ->first();
+
+            if (!$mappingPoli) {
+                session()->flash('error', 'Mapping poliklinik BPJS tidak ditemukan untuk kode poli: ' . $regPeriksa->kd_poli);
+                return;
+            }
+
+            // Siapkan data untuk API BPJS
+            $requestData = [
+                'tanggalperiksa' => $regPeriksa->tgl_registrasi,
+                'kodepoli' => $mappingPoli->kd_poli_pcare,
+                'nomorkartu' => $regPeriksa->pasien->no_peserta ?? '',
+                'alasan' => $alasan
+            ];
+
+            // Panggil API BPJS untuk batal antrean
+            $response = $this->callBPJSBatalAPI($requestData);
+
+            // Log ke antrean_bpjs_log table
+            $responseWithStatus = $response['data'] ?? $response;
+            $responseWithStatus['success'] = $response['success'];
+            if (!$response['success']) {
+                $responseWithStatus['error_message'] = $response['message'];
+            }
+            
+            $logData = [
+                'no_rawat' => $no_rawat,
+                'no_rkm_medis' => $regPeriksa->no_rkm_medis,
+                'status' => 'Batal Antrean',
+                'response' => json_encode($responseWithStatus)
+            ];
+            
+            AntreanBpjsLog::logActivity($logData);
+
+            // Emit event dengan detail respons BPJS untuk logging di frontend
+            $this->emit('bpjsResponseReceived', [
+                'success' => $response['success'],
+                'status_text' => 'Batal Antrean',
+                'no_rawat' => $no_rawat,
+                'patient_name' => $regPeriksa->pasien->nm_pasien ?? 'Unknown',
+                'response_data' => $responseWithStatus,
+                'request_data' => $requestData,
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
+            if ($response['success']) {
+                session()->flash('success', 'Antrean BPJS berhasil dibatalkan.');
+                $this->emit('refreshDatatable');
+            } else {
+                session()->flash('error', 'Gagal membatalkan antrean BPJS: ' . $response['message']);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error cancelling BPJS queue: ' . $e->getMessage());
+            
+            // Log error ke antrean_bpjs_log table
+             if (isset($regPeriksa)) {
+                 $logData = [
+                     'no_rawat' => $no_rawat,
+                     'no_rkm_medis' => $regPeriksa->no_rkm_medis,
+                     'status' => 'Error Batal',
+                     'response' => json_encode([
+                         'error' => $e->getMessage(),
+                         'success' => false,
+                         'error_message' => $e->getMessage()
+                     ])
+                 ];
+                 
+                 AntreanBpjsLog::logActivity($logData);
+             }
+            
+            session()->flash('error', 'Terjadi kesalahan saat membatalkan antrean BPJS.');
+        }
+    }
+
     private function callBPJSAPI($requestData)
     {
         try {
@@ -308,6 +448,64 @@ class RegPeriksaTable extends DataTableComponent
             
         } catch (\Exception $e) {
             Log::error('BPJS API Error via WsBPJSController: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Gagal menghubungi API BPJS: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    private function callBPJSBatalAPI($requestData)
+    {
+        try {
+            // Gunakan WsBPJSController yang sudah ada untuk konsistensi
+            $controller = new \App\Http\Controllers\API\WsBPJSController();
+            
+            // Siapkan request object
+            $request = new \Illuminate\Http\Request();
+            $request->merge([
+                'tanggalperiksa' => $requestData['tanggalperiksa'],
+                'kodepoli' => $requestData['kodepoli'],
+                'nomorkartu' => $requestData['nomorkartu'],
+                'alasan' => $requestData['alasan']
+            ]);
+            
+            // Panggil method batalAntrean dari WsBPJSController
+            $response = $controller->batalAntrean($request);
+            
+            // Ambil data dari response
+            $responseData = $response->getData(true);
+            
+            // Log response untuk debugging
+            Log::info('BPJS Batal Antrean API Response via WsBPJSController: ', [
+                'request_data' => $requestData,
+                'response' => $responseData,
+                'response_structure' => [
+                    'has_metadata' => isset($responseData['metadata']),
+                    'has_metaData' => isset($responseData['metaData']),
+                    'response_keys' => array_keys($responseData ?? [])
+                ]
+            ]);
+            
+            // Parse response menggunakan format standar BPJS
+            $metadata = $responseData['metadata'] ?? $responseData['metaData'] ?? null;
+            
+            $isSuccess = false;
+            $message = 'Unknown response';
+            
+            if ($metadata && isset($metadata['code'])) {
+                $isSuccess = $metadata['code'] == 200;
+                $message = $metadata['message'] ?? ($isSuccess ? 'Success' : 'Error');
+            }
+            
+            return [
+                'success' => $isSuccess,
+                'message' => $message,
+                'data' => $responseData
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('BPJS Batal Antrean API Error via WsBPJSController: ' . $e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Gagal menghubungi API BPJS: ' . $e->getMessage()

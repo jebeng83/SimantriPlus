@@ -10,6 +10,9 @@
                     <i class="fas fa-clock"></i> Jam: <span id="current-time">{{ date('H:i:s') }}</span>
                 </span>
             </div>
+            <div>
+                <button type="button" wire:click="kunjunganPcare" class="btn btn-success"><i class="fas fa-hospital"></i> Kunjungan PCare</button>
+            </div>
         </div>
 
         <!-- Tambahkan template selector dengan menambahkan id yang jelas -->
@@ -180,7 +183,6 @@
         </div>
         <div class="d-flex flex-row-reverse">
             <button type="submit" class="btn btn-primary ml-2"><i class="fas fa-save"></i> Simpan</button>
-            <button type="button" wire:click="kunjunganPcare" class="btn btn-success ml-2"><i class="fas fa-hospital"></i> Kunjungan PCare</button>
             <button type="button" id="resetFormBtn" class="btn btn-secondary"><i class="fas fa-undo"></i> Reset</button>
         </div>
         <div class="mt-2">
@@ -223,6 +225,31 @@
                             <button
                                 wire:click='confirmHapus("{{$item->no_rawat}}", "{{$item->tgl_perawatan}}","{{$item->jam_rawat}}")'
                                 class="btn btn-sm btn-danger">Hapus</button>
+                            
+                            <!-- Dropdown Kehadiran -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-user-check"></i> Kehadiran
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item attendance-option" href="#" 
+                                       data-no-rawat="{{$item->no_rawat}}" 
+                                       data-tgl="{{$item->tgl_perawatan}}" 
+                                       data-jam="{{$item->jam_rawat}}" 
+                                       data-status="hadir"
+                                       onclick="handleAttendanceClick(this, event)">
+                                        <i class="fas fa-check-circle text-success"></i> Hadir
+                                    </a>
+                                    <a class="dropdown-item attendance-option" href="#" 
+                                       data-no-rawat="{{$item->no_rawat}}" 
+                                       data-tgl="{{$item->tgl_perawatan}}" 
+                                       data-jam="{{$item->jam_rawat}}" 
+                                       data-status="tidak-hadir"
+                                       onclick="handleAttendanceClick(this, event)">
+                                        <i class="fas fa-times-circle text-danger"></i> Tidak Hadir
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -301,9 +328,119 @@
         }
     }
     
+    // Debug function untuk dropdown kehadiran
+    function handleAttendanceClick(element, event) {
+        event.preventDefault();
+        
+        // Ambil data dari element
+        const noRawat = element.getAttribute('data-no-rawat');
+        const tgl = element.getAttribute('data-tgl');
+        const jam = element.getAttribute('data-jam');
+        const status = element.getAttribute('data-status');
+        
+        // Debug information
+        console.group('🔍 DEBUG: Attendance Dropdown Click');
+        console.log('📋 Event Details:', {
+            timestamp: new Date().toISOString(),
+            element: element,
+            event: event
+        });
+        
+        console.log('📊 Data Attributes:', {
+            noRawat: noRawat,
+            tanggal: tgl,
+            jam: jam,
+            status: status
+        });
+        
+        console.log('🎯 Element Info:', {
+            tagName: element.tagName,
+            className: element.className,
+            innerHTML: element.innerHTML,
+            parentElement: element.parentElement
+        });
+        
+        console.log('🖱️ Event Info:', {
+            type: event.type,
+            target: event.target,
+            currentTarget: event.currentTarget,
+            bubbles: event.bubbles,
+            cancelable: event.cancelable
+        });
+        
+        // Tampilkan alert dengan informasi debug
+        Swal.fire({
+            title: '🔍 Debug: Kehadiran Clicked',
+            html: `
+                <div class="text-left">
+                    <h6><i class="fas fa-info-circle"></i> Data Pemeriksaan:</h6>
+                    <ul class="list-unstyled ml-3">
+                        <li><strong>No Rawat:</strong> ${noRawat}</li>
+                        <li><strong>Tanggal:</strong> ${tgl}</li>
+                        <li><strong>Jam:</strong> ${jam}</li>
+                        <li><strong>Status:</strong> <span class="badge ${status === 'hadir' ? 'badge-success' : 'badge-danger'}">${status}</span></li>
+                    </ul>
+                    
+                    <h6><i class="fas fa-code"></i> Debug Info:</h6>
+                    <ul class="list-unstyled ml-3">
+                        <li><strong>Element:</strong> ${element.tagName}</li>
+                        <li><strong>Classes:</strong> ${element.className}</li>
+                        <li><strong>Timestamp:</strong> ${new Date().toLocaleString()}</li>
+                    </ul>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-lightbulb"></i> 
+                        <strong>Debug Mode:</strong> Lihat console browser untuk detail lengkap
+                    </div>
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'OK',
+            width: '600px',
+            customClass: {
+                popup: 'debug-alert',
+                title: 'debug-title'
+            }
+        });
+        
+        // Log ke server (opsional)
+        if (window.Livewire) {
+            console.log('📡 Sending to Livewire...');
+            // Uncomment jika ingin mengirim ke backend
+            // @this.call('debugAttendance', noRawat, tgl, jam, status);
+        }
+        
+        console.groupEnd();
+        
+        // Tutup dropdown setelah klik
+        $(element).closest('.dropdown-menu').prev('.dropdown-toggle').dropdown('toggle');
+    }
+    
     $(document).ready(function() {
         // Mulai update jam
         updateClock();
+        
+        // Debug: Log ketika dropdown kehadiran dibuka
+        $(document).on('show.bs.dropdown', '.btn-group .dropdown-toggle', function(e) {
+            if ($(this).text().includes('Kehadiran')) {
+                console.log('🔽 Dropdown Kehadiran dibuka:', {
+                    timestamp: new Date().toISOString(),
+                    element: this,
+                    event: e
+                });
+            }
+        });
+        
+        // Debug: Log ketika dropdown kehadiran ditutup
+        $(document).on('hide.bs.dropdown', '.btn-group .dropdown-toggle', function(e) {
+            if ($(this).text().includes('Kehadiran')) {
+                console.log('🔼 Dropdown Kehadiran ditutup:', {
+                    timestamp: new Date().toISOString(),
+                    element: this,
+                    event: e
+                });
+            }
+        });
         
         // Periksa apakah form kosong dan terapkan template normal jika kosong
         let keluhanValue = $('textarea[wire\\:model\\.defer="keluhan"]').val().trim();
@@ -1890,8 +2027,152 @@
             timer: type === 'success' ? 3000 : 5000,
             showConfirmButton: type === 'error',
             toast: true,
-            position: 'top-end'
+            position: 'top-end',
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown animate__faster'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp animate__faster'
+            }
         });
+    });
+    
+    // Event listener khusus untuk alert PCare dengan redirect
+    window.addEventListener('swal:alert', function(e) {
+        const { type, title, text, timer, toast, position } = e.detail;
+        
+        // Jika ini adalah alert sukses kunjungan PCare, tambahkan animasi dan redirect
+        if (type === 'success' && text && text.includes('Kunjungan PCare berhasil')) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: type,
+                timer: timer || 3000,
+                toast: toast || false,
+                position: position || 'center',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showClass: {
+                    popup: 'animate__animated animate__bounceIn animate__faster',
+                    backdrop: 'animate__animated animate__fadeIn animate__faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__bounceOut animate__faster',
+                    backdrop: 'animate__animated animate__fadeOut animate__faster'
+                },
+                customClass: {
+                    popup: 'pcare-success-alert',
+                    title: 'pcare-success-title',
+                    content: 'pcare-success-content'
+                },
+                didOpen: () => {
+                    // Tambahkan efek visual tambahan
+                    const popup = Swal.getPopup();
+                    popup.style.transform = 'scale(1)';
+                    popup.style.transition = 'all 0.3s ease-in-out';
+                },
+                willClose: () => {
+                    // Animasi sebelum redirect
+                    const popup = Swal.getPopup();
+                    popup.style.transform = 'scale(0.8)';
+                    popup.style.opacity = '0';
+                }
+            }).then(() => {
+                // Redirect ke halaman register setelah alert ditutup
+                setTimeout(() => {
+                    window.location.href = '/register';
+                }, 500);
+            });
+        } else {
+            // Alert biasa tanpa redirect
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: type,
+                timer: timer,
+                toast: toast,
+                position: position,
+                showConfirmButton: type === 'error',
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown animate__faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp animate__faster'
+                }
+            });
+        }
     });
 </script>
 @endsection
+
+@push('styles')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<style>
+.pcare-success-alert {
+    border-radius: 15px !important;
+    box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3) !important;
+    border: 2px solid #28a745 !important;
+}
+
+.pcare-success-title {
+    color: #28a745 !important;
+    font-weight: bold !important;
+    font-size: 1.5rem !important;
+}
+
+.pcare-success-content {
+    color: #155724 !important;
+    font-size: 1.1rem !important;
+}
+
+.swal2-popup.pcare-success-alert {
+    background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%) !important;
+}
+
+.swal2-icon.swal2-success {
+    border-color: #28a745 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    border-color: #28a745 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-fix {
+    background-color: #28a745 !important;
+}
+
+/* Debug Alert Styling */
+.debug-alert {
+    border-radius: 10px !important;
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2) !important;
+    border: 2px solid #007bff !important;
+}
+
+.debug-title {
+    color: #007bff !important;
+    font-weight: bold !important;
+    font-size: 1.3rem !important;
+}
+
+.swal2-popup.debug-alert {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%) !important;
+}
+
+/* Dropdown Kehadiran Styling */
+.attendance-option {
+    transition: all 0.3s ease !important;
+}
+
+.attendance-option:hover {
+    background-color: #f8f9fa !important;
+    transform: translateX(5px) !important;
+}
+
+.btn-group .dropdown-menu {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #dee2e6 !important;
+}
+</style>
+@endpush

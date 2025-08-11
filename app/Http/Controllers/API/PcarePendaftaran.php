@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Traits\PcareTrait;
 
 class PcarePendaftaran extends Controller
@@ -161,8 +162,8 @@ class PcarePendaftaran extends Controller
     private function getKdProviderPeserta($noKartu)
     {
         try {
-            // Ambil kdProviderPeserta dari environment variable BPJS_PCARE_USER
-            $kdProviderPeserta = env('BPJS_PCARE_USER');
+            // Ambil kdProviderPeserta dari environment variable BPJS_PCARE_KODE_PPK
+            $kdProviderPeserta = env('BPJS_PCARE_KODE_PPK', '11251919');
             
             Log::info('Getting kdProviderPeserta from environment', [
                 'noKartu' => $noKartu,
@@ -170,7 +171,7 @@ class PcarePendaftaran extends Controller
             ]);
             
             if (empty($kdProviderPeserta)) {
-                Log::error('BPJS_PCARE_USER environment variable is not set');
+                Log::error('BPJS_PCARE_KODE_PPK environment variable is not set');
                 return null;
             }
             
@@ -197,7 +198,7 @@ class PcarePendaftaran extends Controller
     {
         try {
             // Validasi input
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'tglDaftar' => 'required|string|regex:/^\d{2}-\d{2}-\d{4}$/',
                 'noKartu' => 'required|string',
                 'kdPoli' => 'required|string',
@@ -295,7 +296,7 @@ class PcarePendaftaran extends Controller
                     $nmPoli = $request->nmPoli;
                     
                     // Cari no_rawat yang valid dari tabel reg_periksa
-                    $rawatTerbaru = \DB::table('reg_periksa')
+                    $rawatTerbaru = DB::table('reg_periksa')
                         ->where('no_rkm_medis', $no_rkm_medis)
                         ->orderBy('tgl_registrasi', 'desc')
                         ->orderBy('jam_reg', 'desc')
@@ -333,7 +334,7 @@ class PcarePendaftaran extends Controller
                     $tglDaftarDB = $tglDaftarParts[2] . '-' . $tglDaftarParts[1] . '-' . $tglDaftarParts[0];
                     
                     // Simpan ke database
-                    \DB::table('pcare_pendaftaran')->insert([
+                    DB::table('pcare_pendaftaran')->insert([
                         'no_rawat' => $no_rawat,
                         'tglDaftar' => $tglDaftarDB,
                         'no_rkm_medis' => $no_rkm_medis,
@@ -511,7 +512,7 @@ class PcarePendaftaran extends Controller
                     $tglDaftarDB = $tglDaftarParts[2] . '-' . $tglDaftarParts[1] . '-' . $tglDaftarParts[0];
                     
                     // Update status pendaftaran di database
-                    $updated = \DB::table('pcare_pendaftaran')
+                    $updated = DB::table('pcare_pendaftaran')
                         ->where('noKartu', $noKartu)
                         ->where('tglDaftar', $tglDaftarDB)
                         ->where('noUrut', $noUrut)

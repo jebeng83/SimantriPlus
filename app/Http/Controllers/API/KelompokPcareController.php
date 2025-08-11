@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use App\Traits\PcareTrait;
 use Illuminate\Validation\ValidationException;
 
@@ -203,7 +204,7 @@ class KelompokPcareController extends Controller
                 'biaya' => 'required|numeric'
             ];
             
-            $validator = \Validator::make($input, $rules);
+            $validator = Validator::make($input, $rules);
             
             if ($validator->fails()) {
                 Log::error('Validation failed', [

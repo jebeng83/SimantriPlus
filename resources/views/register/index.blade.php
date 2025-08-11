@@ -93,7 +93,7 @@
     </div>
 
     <div id="table-container" class="datatable-wrapper">
-        <livewire:reg-periksa-table />
+        <livewire:reg-periksa-table wire:id="reg-periksa-table" />
     </div>
 </div>
 
@@ -666,6 +666,78 @@
                 $(this).html(mainText + ' <span class="sort-icon">' + arrowChar + '</span>');
             }
         });
+        
+        // Global function untuk batal antrean BPJS
+        window.batalAntrean = function(noRawat, namaPasien) {
+            console.group('🚫 BPJS Batal Antrean Function Called');
+            console.log('👤 Nama Pasien:', namaPasien);
+            console.log('📋 No Rawat:', noRawat);
+            console.log('⏰ Waktu:', new Date().toLocaleString());
+            console.groupEnd();
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Batal Antrean BPJS',
+                    text: `Apakah Anda yakin ingin membatalkan antrean BPJS untuk pasien ${namaPasien}?`,
+                    input: 'textarea',
+                    inputLabel: 'Alasan Pembatalan',
+                    inputPlaceholder: 'Masukkan alasan pembatalan antrean...',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'Alasan pembatalan harus diisi!';
+                        }
+                        if (value.length < 10) {
+                            return 'Alasan pembatalan minimal 10 karakter!';
+                        }
+                    },
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Batalkan!',
+                    cancelButtonText: 'Batal',
+                    preConfirm: (alasan) => {
+                        console.log('💬 Alasan pembatalan:', alasan);
+                        return alasan;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const alasan = result.value;
+                        
+                        console.group('🔄 Processing Batal Antrean BPJS');
+                        console.log('👤 Nama Pasien:', namaPasien);
+                        console.log('📋 No Rawat:', noRawat);
+                        console.log('💬 Alasan:', alasan);
+                        console.log('🔗 Mengirim request ke BPJS API...');
+                        console.groupEnd();
+                        
+                        // Emit event ke Livewire component
+                        const tableComponent = window.livewire.find('reg-periksa-table');
+                        if (tableComponent) {
+                            tableComponent.call('batalAntreanBPJS', noRawat, alasan);
+                        } else {
+                            // Fallback: emit global event
+                            Livewire.emit('batalAntreanBPJS', noRawat, alasan);
+                        }
+                    } else {
+                        console.log('🚫 Pembatalan antrean dibatalkan oleh user');
+                    }
+                });
+            } else {
+                // Fallback jika SweetAlert tidak tersedia
+                const alasan = prompt(`Masukkan alasan pembatalan antrean untuk ${namaPasien}:`);
+                if (alasan && alasan.trim().length >= 10) {
+                    const tableComponent = window.livewire.find('reg-periksa-table');
+                    if (tableComponent) {
+                        tableComponent.call('batalAntreanBPJS', noRawat, alasan.trim());
+                    } else {
+                        Livewire.emit('batalAntreanBPJS', noRawat, alasan.trim());
+                    }
+                } else {
+                    alert('Alasan pembatalan harus diisi minimal 10 karakter!');
+                }
+            }
+        };
 
         // Format status bayar dengan badge
         $('.table tbody tr').each(function() {
@@ -740,8 +812,73 @@
                 // Re-apply premium styling after table refreshes
                 setTimeout(function() {
                     $('.table').addClass('registrasi-table');
+                    
+                    // Re-apply filter yang terkunci setelah table refresh
+                     if (isFilterLocked && lockedPoliValue) {
+                         console.log('Re-applying locked filter after Livewire refresh:', lockedPoliValue);
+                         // Delay sedikit untuk memastikan table sudah sepenuhnya dimuat
+                         setTimeout(() => {
+                             applyPoliFilter(lockedPoliValue);
+                         }, 200);
+                     }
+                    
                     updateStatistics();
                 }, 100);
+            });
+            
+            // Event listener untuk registrasi berhasil
+            Livewire.on('registrationSuccess', (data) => {
+                console.log('Registration success event received:', data);
+                
+                // Refresh Livewire component langsung
+                const tableComponent = window.livewire.find('reg-periksa-table');
+                if (tableComponent) {
+                    tableComponent.call('refreshData');
+                } else {
+                    // Fallback: emit event untuk refresh
+                    Livewire.emit('refreshDatatable');
+                }
+                
+                // Refresh data table dan statistik
+                setTimeout(() => {
+                    updateStatistics();
+                    
+                    // Re-apply filter jika terkunci
+                    if (isFilterLocked && lockedPoliValue) {
+                        applyPoliFilter(lockedPoliValue);
+                    }
+                }, 300);
+                
+                // Show success notification
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Registrasi Berhasil',
+                        text: `Pasien berhasil didaftarkan dengan No. Rawat: ${data.no_rawat}`,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+            
+            // Event listener untuk refresh datatable
+            Livewire.on('refreshDatatable', () => {
+                console.log('Refresh datatable event received');
+                
+                // Refresh Livewire component langsung
+                const tableComponent = window.livewire.find('reg-periksa-table');
+                if (tableComponent) {
+                    tableComponent.call('refreshData');
+                }
+                
+                setTimeout(() => {
+                    updateStatistics();
+                    
+                    // Re-apply filter jika terkunci
+                    if (isFilterLocked && lockedPoliValue) {
+                        applyPoliFilter(lockedPoliValue);
+                    }
+                }, 300);
             });
             
             // Handle session expired errors
@@ -849,6 +986,40 @@
         $('.search-input').on('keyup', function() {
             setTimeout(updateStatistics, 100);
         });
+        
+        // Function to initialize filter on page load
+        function initializeFilter() {
+            // Cek apakah ada filter yang tersimpan di localStorage
+            const savedFilterState = localStorage.getItem('poliFilterState');
+            if (savedFilterState) {
+                const filterState = JSON.parse(savedFilterState);
+                if (filterState.isLocked && filterState.value) {
+                    // Restore locked filter state
+                    isFilterLocked = true;
+                    lockedPoliValue = filterState.value;
+                    
+                    // Update UI
+                    $('#filter-poli').val(lockedPoliValue).trigger('change.select2');
+                    $('#lock-icon').removeClass('fa-unlock').addClass('fa-lock');
+                    $('#lock-filter').removeClass('btn-outline-primary').addClass('btn-success');
+                    $('#lock-filter').attr('title', 'Unlock Filter');
+                    $('.filter-card').addClass('filter-locked');
+                    $('#filter-poli').prop('disabled', true);
+                    $('#filter-status').show();
+                    
+                    const selectedText = $('#filter-poli').find('option:selected').text();
+                    $('#filter-status-text').text(`Filter terkunci pada: ${selectedText}`);
+                    
+                    // Apply filter
+                    setTimeout(() => {
+                        applyPoliFilter(lockedPoliValue);
+                    }, 500);
+                }
+            }
+        }
+        
+        // Initialize filter after page load
+        setTimeout(initializeFilter, 1500);
 
         // Filter Poli Functionality
         let isFilterLocked = false;
@@ -860,12 +1031,30 @@
             allowClear: true,
             width: '100%'
         });
+        
+        // Debug: Log when filter is initialized
+        console.log('Filter poli initialized with Select2');
 
         // Handle filter poli change
         $('#filter-poli').on('change', function() {
+            const selectedValue = $(this).val();
+            
             if (!isFilterLocked) {
-                applyPoliFilter($(this).val());
-                updateStatistics();
+                applyPoliFilter(selectedValue);
+                updateStatistics(selectedValue);
+            } else {
+                // Jika filter terkunci, kembalikan ke nilai yang terkunci
+                $(this).val(lockedPoliValue).trigger('change.select2');
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Filter Terkunci',
+                        text: 'Filter poliklinik sedang terkunci. Buka kunci terlebih dahulu untuk mengubah filter.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
             }
         });
 
@@ -897,6 +1086,15 @@
                     $statusText.text('Filter terkunci pada: Semua Poliklinik');
                 }
                 
+                // Apply filter immediately when locked
+                applyPoliFilter(lockedPoliValue);
+                
+                // Save filter state to localStorage
+                localStorage.setItem('poliFilterState', JSON.stringify({
+                    isLocked: true,
+                    value: lockedPoliValue
+                }));
+                
                 // Show notification
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -919,6 +1117,9 @@
                 $select.prop('disabled', false);
                 $status.hide();
                 
+                // Remove filter state from localStorage
+                localStorage.removeItem('poliFilterState');
+                
                 // Show notification
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -936,8 +1137,21 @@
         $('#reset-filter').on('click', function() {
             if (!isFilterLocked) {
                 $('#filter-poli').val('').trigger('change');
-                applyPoliFilter('');
-                updateStatistics();
+                
+                // Refresh Livewire component langsung
+                const tableComponent = window.livewire.find('reg-periksa-table');
+                if (tableComponent) {
+                    tableComponent.call('refreshData');
+                } else {
+                    // Fallback: emit event untuk refresh
+                    Livewire.emit('refreshDatatable');
+                }
+                
+                // Apply filter dan update statistik
+                setTimeout(() => {
+                    applyPoliFilter('');
+                    updateStatistics('');
+                }, 300);
                 
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -963,26 +1177,43 @@
 
         // Function to apply poli filter
         function applyPoliFilter(poliValue) {
-            if (window.Livewire && window.Livewire.find) {
-                // Cari komponen Livewire table
-                const tableComponent = window.Livewire.find(
-                    $('[wire\\:id]').first().attr('wire:id')
-                );
+            console.log('applyPoliFilter called with value:', poliValue);
+            
+            // Cari komponen Livewire table dengan cara yang lebih spesifik
+            const tableElement = document.querySelector('[wire\\:id]');
+            
+            if (tableElement && window.Livewire) {
+                const wireId = tableElement.getAttribute('wire:id');
+                console.log('Found table element with wire:id:', wireId);
+                const tableComponent = window.Livewire.find(wireId);
                 
                 if (tableComponent) {
-                    // Trigger filter pada komponen Livewire
-                    tableComponent.call('setFilter', 'poliklinik', poliValue);
+                    console.log('Livewire component found, applying filter via Livewire:', poliValue);
+                    
+                    // Gunakan method filterByPoliklinik yang sudah ada di komponen
+                    tableComponent.call('filterByPoliklinik', poliValue);
                     
                     // Update statistik dengan filter
-                    updateStatistics(poliValue);
+                    setTimeout(() => {
+                        updateStatistics(poliValue);
+                    }, 500); // Delay untuk memastikan filter sudah diterapkan
+                    
                     return;
+                } else {
+                    console.log('Livewire component not found for wireId:', wireId);
                 }
+            } else {
+                console.log('Table element or Livewire not found, tableElement:', !!tableElement, 'Livewire:', !!window.Livewire);
             }
             
             // Fallback: filter manual pada tabel yang sudah ada
+            console.log('Using fallback manual filter:', poliValue);
+            
             if (poliValue === '') {
                 $('.table tbody tr').show();
+                console.log('Showing all rows (no filter)');
             } else {
+                let visibleCount = 0;
                 $('.table tbody tr').each(function() {
                     const poliCell = $(this).find('td:nth-child(8)'); // Kolom poliklinik
                     const poliText = poliCell.text().trim();
@@ -991,10 +1222,12 @@
                     if (poliText.toLowerCase().includes(poliValue.toLowerCase()) || 
                         $(this).data('poli-code') === poliValue) {
                         $(this).show();
+                        visibleCount++;
                     } else {
                         $(this).hide();
                     }
                 });
+                console.log(`Manual filter applied. Visible rows: ${visibleCount}`);
             }
             
             // Update statistik setelah filter manual
@@ -1070,6 +1303,25 @@
                  }
              });
              
+             // Event listener untuk menangkap klik tombol batal antrean
+             $(document).on('click', '[onclick*="batalAntrean"]', function() {
+                 const onclickAttr = $(this).attr('onclick');
+                 const match = onclickAttr.match(/batalAntrean\('([^']+)',\s*'([^']+)'\)/);
+                 
+                 if (match) {
+                     const noRawat = match[1];
+                     const namaPasien = match[2];
+                     
+                     console.group('🚫 BPJS Batal Antrean Action Clicked');
+                     console.log('👤 Nama Pasien:', namaPasien);
+                     console.log('📋 No Rawat:', noRawat);
+                     console.log('📊 Action:', 'Batal Antrean BPJS');
+                     console.log('⏰ Waktu Klik:', new Date().toLocaleString());
+                     console.log('🔗 Menunggu input alasan pembatalan...');
+                     console.groupEnd();
+                 }
+             });
+             
              // Event listener untuk menangkap respons detail BPJS
              Livewire.on('bpjsResponseReceived', (data) => {
                  if (data.success) {
@@ -1095,6 +1347,59 @@
                          console.log('🚨 Error Message:', data.response_data.error_message);
                      }
                      console.groupEnd();
+                 }
+             });
+             
+             // Event listener untuk menangkap respons batal antrean BPJS
+             Livewire.on('bpjsBatalAntreanResponse', (data) => {
+                 if (data.success) {
+                     console.group('🎉 BPJS Batal Antrean Response - SUCCESS');
+                     console.log('👤 Nama Pasien:', data.patient_name);
+                     console.log('📋 No Rawat:', data.no_rawat);
+                     console.log('📊 Action:', 'Batal Antrean BPJS');
+                     console.log('💬 Alasan:', data.alasan);
+                     console.log('⏰ Timestamp:', data.timestamp);
+                     console.log('📤 Request Data:', data.request_data);
+                     console.log('📥 Response Data:', data.response_data);
+                     console.log('✅ Status: SUCCESS - Antrean berhasil dibatalkan di BPJS');
+                     console.groupEnd();
+                     
+                     // Show success notification
+                     if (typeof Swal !== 'undefined') {
+                         Swal.fire({
+                             icon: 'success',
+                             title: 'Antrean Dibatalkan',
+                             text: `Antrean BPJS untuk ${data.patient_name} berhasil dibatalkan.`,
+                             timer: 3000,
+                             showConfirmButton: false
+                         });
+                     }
+                 } else {
+                     console.group('💥 BPJS Batal Antrean Response - ERROR');
+                     console.log('👤 Nama Pasien:', data.patient_name);
+                     console.log('📋 No Rawat:', data.no_rawat);
+                     console.log('📊 Action:', 'Batal Antrean BPJS');
+                     console.log('💬 Alasan:', data.alasan);
+                     console.log('⏰ Timestamp:', data.timestamp);
+                     console.log('📤 Request Data:', data.request_data);
+                     console.log('📥 Response Data:', data.response_data);
+                     console.log('❌ Status: ERROR - Gagal membatalkan antrean di BPJS');
+                     if (data.response_data && data.response_data.error_message) {
+                         console.log('🚨 Error Message:', data.response_data.error_message);
+                     }
+                     console.groupEnd();
+                     
+                     // Show error notification
+                     if (typeof Swal !== 'undefined') {
+                         Swal.fire({
+                             icon: 'error',
+                             title: 'Gagal Membatalkan Antrean',
+                             text: data.response_data && data.response_data.error_message ? 
+                                   data.response_data.error_message : 
+                                   'Terjadi kesalahan saat membatalkan antrean BPJS.',
+                             confirmButtonText: 'OK'
+                         });
+                     }
                  }
              });
         });

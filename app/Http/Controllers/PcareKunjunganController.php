@@ -331,7 +331,7 @@ class PcareKunjunganController extends Controller
             'alergiMakan' => '00',
             'alergiUdara' => '00',
             'alergiObat' => '00',
-            'kdPrognosa' => '01', // Baik
+            'kdPrognosa' => '02', // Baik
             'terapiObat' => (string)$terapiObatString,
             'terapiNonObat' => (string)($pemeriksaanData->instruksi ?? 'Edukasi Kesehatan'),
             'bmhp' => 'Tidak Ada',
