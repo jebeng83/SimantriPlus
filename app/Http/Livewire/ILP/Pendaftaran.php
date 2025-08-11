@@ -13,6 +13,7 @@ use Jantinnerezo\LivewireAlert\LivewireAlert;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class Pendaftaran extends Component
 {
@@ -285,7 +286,7 @@ class Pendaftaran extends Component
         $search = $this->search_term;
         
         // Log untuk debugging
-        \Log::info('Melakukan pencarian pasien dengan term: ' . $search);
+        Log::info('Melakukan pencarian pasien dengan term: ' . $search);
         
         // Coba pencarian exact match terlebih dahulu untuk no_rkm_medis atau no_ktp
         $exactResults = DB::table('pasien')
@@ -297,7 +298,7 @@ class Pendaftaran extends Component
         
         // Jika ditemukan dengan exact match, langsung kembalikan hasilnya
         if ($exactResults->count() > 0) {
-            \Log::info('Ditemukan dengan exact match: ' . $exactResults->count() . ' pasien');
+            Log::info('Ditemukan dengan exact match: ' . $exactResults->count() . ' pasien');
             $results = $exactResults;
         } else {
             // Jika tidak ditemukan exact match, coba dengan LIKE
@@ -310,13 +311,13 @@ class Pendaftaran extends Component
                 ->limit(10)
                 ->get();
                 
-            \Log::info('Pencarian dengan LIKE: ' . $results->count() . ' pasien ditemukan');
+            Log::info('Pencarian dengan LIKE: ' . $results->count() . ' pasien ditemukan');
         }
         
         // Log hasil pencarian
-        \Log::info('Total hasil pencarian: ' . $results->count() . ' pasien ditemukan');
+        Log::info('Total hasil pencarian: ' . $results->count() . ' pasien ditemukan');
         if ($results->count() > 0) {
-            \Log::info('Contoh pasien pertama: ', ['pasien' => $results->first()]);
+            Log::info('Contoh pasien pertama: ', ['pasien' => $results->first()]);
         }
         
         // Tambahkan masked_ktp ke hasil pencarian
@@ -347,11 +348,11 @@ class Pendaftaran extends Component
             // Panggil method generateNoReg dari FormPendaftaran
             $no_reg = $formPendaftaran->generateNoReg();
             
-            \Log::info("ILP Pendaftaran: Nomor registrasi didapatkan dari FormPendaftaran: $no_reg");
+            Log::info("ILP Pendaftaran: Nomor registrasi didapatkan dari FormPendaftaran: $no_reg");
             
             return $no_reg;
         } catch (\Exception $e) {
-            \Log::error('Error generateNoReg ILP via FormPendaftaran: ' . $e->getMessage());
+            Log::error('Error generateNoReg ILP via FormPendaftaran: ' . $e->getMessage());
             
             // Fallback jika terjadi error
             $tgl = Carbon::parse($this->tgl_registrasi)->format('Y-m-d');
@@ -362,7 +363,7 @@ class Pendaftaran extends Component
                 ->max('no_reg');
                 
             $no_reg = str_pad(intval($max ?? 0) + 1, 3, '0', STR_PAD_LEFT);
-            \Log::info("ILP Pendaftaran: Fallback nomor registrasi: $no_reg");
+            Log::info("ILP Pendaftaran: Fallback nomor registrasi: $no_reg");
             
             return $no_reg;
         }
@@ -386,12 +387,58 @@ class Pendaftaran extends Component
 
     public function rubahUmur($tgl_lahir)
     {
-        $tgl_lahir = Carbon::parse($tgl_lahir);
-        $this->umur = $tgl_lahir->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
-
-        Pasien::where('no_rkm_medis', $this->no_rkm_medis)->update([
-            'umur' => $this->umur
-        ]);
+        try {
+            if (empty($tgl_lahir) || empty($this->no_rkm_medis)) {
+                return;
+            }
+            
+            // Parse tanggal lahir dengan format yang benar
+            $tgl_lahir_parsed = Carbon::parse($tgl_lahir);
+            $umur_calculated = $tgl_lahir_parsed->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
+            $this->umur = $umur_calculated;
+            // Update dengan retry untuk mitigasi error 1615
+            $maxAttempts = 3;
+            $attempt = 0;
+            $lastException = null;
+            while ($attempt < $maxAttempts) {
+                try {
+                    $attempt++;
+                    $affected = DB::table('pasien')
+                        ->where('no_rkm_medis', '=', $this->no_rkm_medis)
+                        ->update([
+                            'umur' => $umur_calculated
+                        ]);
+                    if ($affected === 0) {
+                        Log::warning('No rows affected when updating umur for no_rkm_medis: ' . $this->no_rkm_medis);
+                    }
+                    $lastException = null;
+                    break;
+                } catch (\Exception $inner) {
+                    $message = $inner->getMessage();
+                    $is1615 = stripos($message, '1615') !== false || stripos($message, 'Prepared statement needs to be re-prepared') !== false;
+                    if ($is1615 && $attempt < $maxAttempts) {
+                        Log::warning('Retry update umur karena error 1615. Attempt: ' . $attempt . ' RM: ' . $this->no_rkm_medis);
+                        try { DB::purge(); DB::reconnect(); } catch (\Throwable $t) { /* ignore */ }
+                        usleep(150000 * $attempt);
+                        $lastException = $inner;
+                        continue;
+                    }
+                    $lastException = $inner;
+                    break;
+                }
+            }
+            if ($lastException) {
+                throw $lastException;
+            }
+                
+        } catch (\Exception $e) {
+            Log::error('Error updating umur pasien: ' . $e->getMessage(), [
+                'no_rkm_medis' => $this->no_rkm_medis,
+                'tgl_lahir' => $tgl_lahir,
+                'umur' => $this->umur ?? null,
+                'error_detail' => $e->getMessage()
+            ]);
+        }
     }
 
     public function openModal()
@@ -464,8 +511,9 @@ class Pendaftaran extends Component
 
             DB::beginTransaction();
 
+            // Update umur pasien sebelum transaksi utama untuk menghindari konflik prepared statement
             $pasien = Pasien::where('no_rkm_medis', $this->no_rkm_medis)->first();
-            if ($pasien) {
+            if ($pasien && $pasien->tgl_lahir) {
                 $this->rubahUmur($pasien->tgl_lahir);
                 
                 // Update data posyandu dan status pasien
@@ -529,7 +577,7 @@ class Pendaftaran extends Component
             $search = trim($query); // Bersihkan whitespace
             
             // Log untuk debugging
-            \Log::info('API: Memulai pencarian pasien', [
+            Log::info('API: Memulai pencarian pasien', [
                 'raw_query' => $query,
                 'cleaned_query' => $search
             ]);
@@ -545,7 +593,7 @@ class Pendaftaran extends Component
             $cleanKtp = preg_replace('/[^0-9]/', '', $search);
             
             // Log KTP yang sudah dibersihkan
-            \Log::info('API: KTP yang sudah dibersihkan', [
+            Log::info('API: KTP yang sudah dibersihkan', [
                 'original' => $search,
                 'cleaned' => $cleanKtp
             ]);
@@ -559,7 +607,7 @@ class Pendaftaran extends Component
                     $q->where('no_ktp', $cleanKtp)
                       ->orWhere('no_ktp', 'like', '%' . $cleanKtp . '%');
                 });
-                \Log::info('API: Mencari berdasarkan KTP', ['ktp' => $cleanKtp]);
+                Log::info('API: Mencari berdasarkan KTP', ['ktp' => $cleanKtp]);
             } else {
                 // Jika bukan KTP, cari berdasarkan berbagai kriteria
                 $query->where(function($q) use ($search, $cleanKtp) {
@@ -569,14 +617,14 @@ class Pendaftaran extends Component
                       ->orWhere('alamat', 'like', '%' . $search . '%')
                       ->orWhere('no_tlp', 'like', '%' . $cleanKtp . '%');
                 });
-                \Log::info('API: Mencari berdasarkan multiple kriteria', [
+                Log::info('API: Mencari berdasarkan multiple kriteria', [
                     'search' => $search,
                     'cleanKtp' => $cleanKtp
                 ]);
             }
             
             // Debug query yang akan dijalankan
-            \Log::info('API: Query yang akan dijalankan', [
+            Log::info('API: Query yang akan dijalankan', [
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings()
             ]);
@@ -585,7 +633,7 @@ class Pendaftaran extends Component
             $results = $query->limit(10)->get();
             
             // Log hasil pencarian
-            \Log::info('API: Hasil pencarian', [
+            Log::info('API: Hasil pencarian', [
                 'total_results' => $results->count(),
                 'first_result' => $results->first()
             ]);
@@ -594,7 +642,7 @@ class Pendaftaran extends Component
 
         } catch (\Exception $e) {
             // Log error jika terjadi
-            \Log::error('API: Error saat mencari pasien', [
+            Log::error('API: Error saat mencari pasien', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -654,4 +702,4 @@ class Pendaftaran extends Component
         $this->emit('refreshDatatable');
         $this->render();
     }
-} 
+}

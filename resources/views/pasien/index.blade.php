@@ -1165,6 +1165,7 @@
                         dataType: 'json',
                         contentType: 'application/json',
                         data: JSON.stringify({
+                            kdProviderPeserta: '{{ $kdProviderPeserta }}',
                             noKartu: noKartu,
                             tglDaftar: moment().format('DD-MM-YYYY'),
                             kdPoli: '021',

@@ -46,11 +46,8 @@ trait PcareTrait
         $password = env('BPJS_PCARE_PASS');
         $appCode = env('BPJS_PCARE_APP_CODE', "095");
         
-        // Pastikan format password sesuai dengan yang berhasil (Pcare152# bukan Pcare152)
-        // Jika password tidak mengandung karakter #, tambahkan
-        if (strpos($password, '#') === false) {
-            $password .= '#';
-        }
+        // Gunakan password sesuai dengan yang dikonfigurasi di environment
+        // PCare tidak selalu memerlukan '#' di akhir password
         
         $data = $username . ":" . $password . ":" . $appCode;
         return base64_encode($data);
@@ -79,6 +76,16 @@ trait PcareTrait
             $consId = env('BPJS_PCARE_CONS_ID');
             $userKey = env('BPJS_PCARE_USER_KEY');
             
+            // Validasi konfigurasi environment
+            if (empty($baseUrl) || empty($consId) || empty($userKey)) {
+                Log::error('PCare API Configuration Missing', [
+                    'baseUrl_empty' => empty($baseUrl),
+                    'consId_empty' => empty($consId),
+                    'userKey_empty' => empty($userKey)
+                ]);
+                throw new \Exception('Konfigurasi PCare tidak lengkap. Periksa environment variables.');
+            }
+            
             $timestamp = $this->getTimestamp();
             $signature = $this->generateSignature($timestamp);
             $authorization = $this->generateAuthorization();
@@ -105,6 +112,9 @@ trait PcareTrait
                 // Untuk peserta, gunakan content type yang spesifik sesuai dokumentasi BPJS
                 if (strpos($endpoint, 'peserta') !== false) {
                     $headers['Content-Type'] = 'application/json; charset=utf-8';
+                } elseif (strpos($endpoint, 'dokter') !== false) {
+                    // Untuk endpoint dokter, gunakan content type sesuai katalog BPJS
+                    $headers['Content-Type'] = 'application/json; charset=utf-8';
                 } else {
                     $headers['Content-Type'] = 'application/json';
                 }
@@ -124,13 +134,31 @@ trait PcareTrait
                     $parts = explode('nik/', $endpoint);
                     $endpoint = 'peserta/nik/' . $parts[1];
                 }
+            } elseif (strpos($endpoint, 'dokter') !== false) {
+                // Khusus untuk endpoint dokter sesuai katalog BPJS
+                // Format: {Base URL}/{Service Name}/dokter/{Parameter 1}/{Parameter 2}
+                // Parameter 1: Row data awal yang akan ditampilkan
+                // Parameter 2: Limit jumlah data yang akan ditampilkan
+                
+                if (!preg_match('/dokter\/(\d+)\/(\d+)/', $endpoint)) {
+                    // Jika endpoint dokter tidak memiliki format pagination, tambahkan default
+                    if ($endpoint === 'dokter') {
+                        $endpoint = 'dokter/0/100';
+                    }
+                }
             } else {
-                // Untuk endpoint lain seperti provider, dokter, dll
+                // Untuk endpoint lain seperti provider, dll
                 if ($method === 'GET') {
-                    if (strpos($endpoint, '?') === false) {
-                        $endpoint .= '?offset=0&limit=10';
-                    } else if (strpos($endpoint, 'offset=') === false) {
-                        $endpoint .= '&offset=0&limit=10';
+                    // Jangan tambahkan parameter offset/limit jika endpoint sudah menggunakan format pagination
+                    // seperti dokter/{start}/{limit} atau poli/{start}/{limit}
+                    $isPaginatedEndpoint = preg_match('/\/(\d+)\/(\d+)$/', $endpoint);
+                    
+                    if (!$isPaginatedEndpoint) {
+                        if (strpos($endpoint, '?') === false) {
+                            $endpoint .= '?offset=0&limit=10';
+                        } else if (strpos($endpoint, 'offset=') === false) {
+                            $endpoint .= '&offset=0&limit=10';
+                        }
                     }
                 }
             }
@@ -160,18 +188,14 @@ trait PcareTrait
                 'url' => $fullUrl,
                 'method' => $method,
                 'contentType' => $headers['Content-Type'], // Log content type dari header, bukan parameter
+                'headers' => array_keys($headers), // Log header keys untuk debugging
                 'timestamp' => date('Y-m-d H:i:s')
             ]);
             
-            // Untuk method GET pada endpoint peserta, gunakan content type yang spesifik
-            if ($method === 'GET' && strpos($endpoint, 'peserta') !== false) {
+            // Untuk method GET pada endpoint peserta dan dokter, gunakan content type yang spesifik
+            if ($method === 'GET' && (strpos($endpoint, 'peserta') !== false || strpos($endpoint, 'dokter') !== false)) {
                 $httpClient = Http::timeout(30)
-                    ->withHeaders($headers)
-                    ->withOptions([
-                        'headers' => [
-                            'Content-Type' => 'application/json; charset=utf-8'
-                        ]
-                    ]);
+                    ->withHeaders($headers);
             } else {
                 $httpClient = Http::timeout(30)->withHeaders($headers);
             }
@@ -225,6 +249,7 @@ trait PcareTrait
             $maxRetries = 3;
             $attempt = 0;
             $response = null;
+            $lastException = null;
             
             do {
                 $attempt++;
@@ -232,8 +257,35 @@ trait PcareTrait
                     $response = $sendRequest();
                     break; // Jika berhasil, keluar dari loop
                 } catch (\Exception $e) {
+                    $lastException = $e;
+                    
+                    // Cek apakah ini adalah HTML error response dari BPJS
+                    if ($e instanceof \Illuminate\Http\Client\RequestException && $e->response) {
+                        $responseBody = $e->response->body();
+                        if (stripos($responseBody, '<!DOCTYPE html') !== false || 
+                            stripos($responseBody, '<html') !== false ||
+                            stripos($responseBody, 'Request Error') !== false) {
+                            
+                            Log::error('PCare API HTML Error Response', [
+                                'message' => 'Server BPJS PCare mengembalikan halaman error HTML. Status: ' . $e->response->status() . '. Endpoint: ' . $endpoint,
+                                'attempt' => $attempt,
+                                'endpoint' => $endpoint
+                            ]);
+                            
+                            // Return error response immediately for HTML errors
+                            return [
+                                'metaData' => [
+                                    'code' => $e->response->status(),
+                                    'message' => 'Server BPJS PCare sedang bermasalah. Silakan coba beberapa saat lagi.'
+                                ],
+                                'response' => null
+                            ];
+                        }
+                    }
+                    
                     if ($attempt >= $maxRetries) {
-                        throw $e; // Jika sudah mencapai max retry, lempar exception
+                        // Jangan throw exception, akan dihandle di catch block
+                        break;
                     }
                     
                     Log::warning('PCare API Retry', [
@@ -245,6 +297,11 @@ trait PcareTrait
                     sleep(1);
                 }
             } while ($attempt < $maxRetries);
+            
+            // Jika masih ada exception setelah max retries, throw untuk dihandle di catch block
+            if ($lastException && !$response) {
+                throw $lastException;
+            }
             
             // Log response
             Log::info('PCare API Response', [
@@ -266,9 +323,36 @@ trait PcareTrait
             
             // Log response body terpisah untuk mengurangi ukuran log
             if ($response->status() >= 400) {
+                $responseBody = $response->body();
                 Log::warning('PCare API Response Body', [
-                    'body' => $response->body()
+                    'status' => $response->status(),
+                    'endpoint' => $endpoint,
+                    'body' => $responseBody,
+                    'body_length' => strlen($responseBody),
+                    'is_html' => (stripos($responseBody, '<!DOCTYPE html') !== false || stripos($responseBody, '<html') !== false),
+                    'has_request_error' => (stripos($responseBody, 'Request Error') !== false)
                 ]);
+                
+                // Cek apakah response adalah HTML error page
+                if (stripos($responseBody, '<!DOCTYPE html') !== false || 
+                    stripos($responseBody, '<html') !== false ||
+                    stripos($responseBody, 'Request Error') !== false) {
+                    
+                    Log::error('PCare API Error', [
+                        'message' => 'Server BPJS PCare mengembalikan halaman error HTML. Status: ' . $response->status() . '. Endpoint: ' . $endpoint,
+                        'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
+                        'endpoint' => $endpoint
+                    ]);
+                    
+                    // Return error response instead of throwing exception
+                    return [
+                        'metaData' => [
+                            'code' => $response->status(),
+                            'message' => 'Server BPJS PCare sedang bermasalah. Silakan coba beberapa saat lagi.'
+                        ],
+                        'response' => null
+                    ];
+                }
             }
             
             // Cek jika response error StartIndex
@@ -278,12 +362,13 @@ trait PcareTrait
                 ]);
                 
                 // Hanya tambahkan parameter startIndex untuk endpoint yang memerlukan pagination
-                // Endpoint yang memerlukan pagination: pendaftaran/tglDaftar, kelompok/kegiatan, dll
+                // Endpoint yang memerlukan pagination: pendaftaran/tglDaftar, kelompok/kegiatan, dokter, dll
                 // Jangan tambahkan untuk endpoint individual seperti peserta/{noKartu} atau peserta/nik/{nik}
                 $needsPagination = (
                     strpos($endpoint, 'pendaftaran/tglDaftar') !== false ||
                     strpos($endpoint, 'kelompok/kegiatan') !== false ||
-                    strpos($endpoint, 'kunjungan/tglDaftar') !== false
+                    strpos($endpoint, 'kunjungan/tglDaftar') !== false ||
+                    strpos($endpoint, 'dokter/') !== false
                 );
                 
                 // Jangan tambahkan pagination untuk endpoint peserta individual
@@ -354,14 +439,14 @@ trait PcareTrait
             Log::error('PcareTrait Exception', [
                 'message' => $e->getMessage(),
                 'class' => get_class($e),
-                'has_response' => method_exists($e, 'getResponse') && $e->getResponse()
+                'has_response' => ($e instanceof \Illuminate\Http\Client\RequestException && $e->response)
             ]);
             
             // Cek apakah error authentication/credential
             $errorMessage = $e->getMessage();
             $statusCode = 500;
             
-            if (method_exists($e, 'response') && $e->response) {
+            if ($e instanceof \Illuminate\Http\Client\RequestException && $e->response) {
                 $statusCode = $e->response->status();
                 $responseBody = $e->response->body();
                 
@@ -369,6 +454,72 @@ trait PcareTrait
                     'status_code' => $statusCode,
                     'response_body' => $responseBody
                 ]);
+                
+                // Khusus untuk endpoint dokter, coba retry dengan format alternatif jika error
+                if (strpos($endpoint, 'dokter') !== false && $statusCode === 400) {
+                    Log::info('Dokter endpoint error, attempting retry with alternative formats');
+                    
+                    // Coba format alternatif untuk dokter
+                    $alternativeEndpoints = [];
+                    
+                    // Jika endpoint saat ini adalah dokter/0/100, coba dokter/1/100
+                    if (preg_match('/dokter\/(\d+)\/(\d+)/', $endpoint, $matches)) {
+                        $start = intval($matches[1]);
+                        $limit = intval($matches[2]);
+                        
+                        if ($start === 0) {
+                            $alternativeEndpoints[] = "dokter/1/{$limit}";
+                        }
+                        $alternativeEndpoints[] = 'dokter';
+                        $alternativeEndpoints[] = 'ref/dokter';
+                    } else {
+                        $alternativeEndpoints[] = 'dokter/0/100';
+                        $alternativeEndpoints[] = 'dokter/1/100';
+                        $alternativeEndpoints[] = 'ref/dokter';
+                    }
+                    
+                    // Coba setiap endpoint alternatif
+                    foreach ($alternativeEndpoints as $altEndpoint) {
+                        try {
+                            Log::info('Trying alternative dokter endpoint', ['endpoint' => $altEndpoint]);
+                            
+                            // Buat URL alternatif
+                            if (strpos($baseUrl, 'pcare-rest') !== false) {
+                                $altUrl = $baseUrl . '/' . $altEndpoint;
+                            } else {
+                                $altUrl = $baseUrl . '/pcare-rest/' . $altEndpoint;
+                            }
+                            
+                            // Gunakan headers yang sama tapi dengan Content-Type yang sesuai katalog BPJS
+                            $altHeaders = $headers;
+                            $altHeaders['Content-Type'] = 'application/json; charset=utf-8';
+                            
+                            $altResponse = Http::timeout(30)->withHeaders($altHeaders)->get($altUrl);
+                            
+                            Log::info('Alternative dokter endpoint response', [
+                                'endpoint' => $altEndpoint,
+                                'status' => $altResponse->status()
+                            ]);
+                            
+                            if ($altResponse->successful()) {
+                                $altResponseData = $altResponse->json() ?? [];
+                                
+                                // Decrypt response jika ada
+                                if (isset($altResponseData['response']) && is_string($altResponseData['response'])) {
+                                    $altResponseData['response'] = $this->decrypt($altResponseData['response'], $timestamp);
+                                }
+                                
+                                return $altResponseData;
+                            }
+                        } catch (\Exception $altE) {
+                            Log::warning('Alternative dokter endpoint failed', [
+                                'endpoint' => $altEndpoint,
+                                'error' => $altE->getMessage()
+                            ]);
+                            continue;
+                        }
+                    }
+                }
                 
                 // Cek response body untuk error authentication
                 if (stripos($responseBody, 'username') !== false ||
@@ -386,6 +537,22 @@ trait PcareTrait
                         'response' => null
                     ];
                 }
+            }
+            
+            // Cek apakah error HTML response dari server BPJS
+            if (stripos($errorMessage, 'Request Error') !== false ||
+                stripos($errorMessage, 'html') !== false ||
+                stripos($errorMessage, 'DOCTYPE') !== false ||
+                stripos($errorMessage, 'Server BPJS PCare mengembalikan halaman error HTML') !== false) {
+                
+                Log::info('HTML error page detected from BPJS PCare server');
+                return [
+                    'metaData' => [
+                        'code' => 503,
+                        'message' => 'Server BPJS PCare sedang bermasalah. Silakan coba beberapa saat lagi.'
+                    ],
+                    'response' => null
+                ];
             }
             
             // Cek error message untuk authentication keywords
@@ -489,6 +656,14 @@ trait PcareTrait
     protected function getErrorMessage(Exception $e)
     {
         $message = $e->getMessage();
+        
+        // Cek apakah error HTML response dari server BPJS
+        if (stripos($message, 'Request Error') !== false ||
+            stripos($message, 'html') !== false ||
+            stripos($message, 'DOCTYPE') !== false ||
+            stripos($message, 'Server BPJS PCare mengembalikan halaman error HTML') !== false) {
+            return 'Server BPJS PCare sedang bermasalah. Silakan coba beberapa saat lagi.';
+        }
         
         // Cek apakah error authentication/credential
         if (stripos($message, 'username') !== false || 

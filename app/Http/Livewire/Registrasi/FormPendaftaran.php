@@ -271,12 +271,61 @@ class FormPendaftaran extends Component
 
     public function rubahUmur($tgl_lahir)
     {
-        $tgl_lahir = Carbon::parse($tgl_lahir);
-        $this->umur = $tgl_lahir->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
-
-        Pasien::where('no_rkm_medis', $this->no_rkm_medis)->update([
-            'umur' => $this->umur
-        ]);
+        try {
+            if (empty($tgl_lahir) || empty($this->no_rkm_medis)) {
+                return;
+            }
+            
+            // Parse tanggal lahir dengan format yang benar
+            $tgl_lahir_parsed = Carbon::parse($tgl_lahir);
+            $umur_calculated = $tgl_lahir_parsed->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
+            $this->umur = $umur_calculated;
+            // Update dengan retry untuk mengatasi error 1615 (Prepared statement needs to be re-prepared)
+            $maxAttempts = 3;
+            $attempt = 0;
+            $lastException = null;
+            while ($attempt < $maxAttempts) {
+                try {
+                    $attempt++;
+                    $affected = DB::table('pasien')
+                        ->where('no_rkm_medis', '=', $this->no_rkm_medis)
+                        ->update([
+                            'umur' => $umur_calculated
+                        ]);
+                    if ($affected === 0) {
+                        \Log::warning('No rows affected when updating umur for no_rkm_medis: ' . $this->no_rkm_medis);
+                    }
+                    // Berhasil, keluar dari loop retry
+                    $lastException = null;
+                    break;
+                } catch (\Exception $inner) {
+                    $message = $inner->getMessage();
+                    $is1615 = stripos($message, '1615') !== false || stripos($message, 'Prepared statement needs to be re-prepared') !== false;
+                    if ($is1615 && $attempt < $maxAttempts) {
+                        \Log::warning('Retry update umur karena error 1615. Attempt: ' . $attempt . ' RM: ' . $this->no_rkm_medis);
+                        // Reset koneksi dan coba lagi dengan backoff kecil
+                        try { DB::purge(); DB::reconnect(); } catch (\Throwable $t) { /* ignore */ }
+                        usleep(150000 * $attempt); // 150ms, 300ms, ...
+                        $lastException = $inner;
+                        continue;
+                    }
+                    // Bukan error 1615 atau sudah habis retry
+                    $lastException = $inner;
+                    break;
+                }
+            }
+            if ($lastException) {
+                throw $lastException;
+            }
+                
+        } catch (\Exception $e) {
+            \Log::error('Error updating umur pasien: ' . $e->getMessage(), [
+                'no_rkm_medis' => $this->no_rkm_medis,
+                'tgl_lahir' => $tgl_lahir,
+                'umur' => $this->umur ?? null,
+                'error_detail' => $e->getMessage()
+            ]);
+        }
     }
 
     public function bukaModalPendaftaran($no_rawat)
@@ -342,7 +391,11 @@ class FormPendaftaran extends Component
 
             DB::beginTransaction();
 
-            $this->rubahUmur(Pasien::where('no_rkm_medis', $this->no_rkm_medis)->first()->tgl_lahir);
+            // Update umur pasien sebelum transaksi utama untuk menghindari konflik prepared statement
+            $pasien = Pasien::where('no_rkm_medis', $this->no_rkm_medis)->first();
+            if ($pasien && $pasien->tgl_lahir) {
+                $this->rubahUmur($pasien->tgl_lahir);
+            }
 
             if (!empty($this->no_rawat)) {
                 DB::table('reg_periksa')->where('no_rawat', $this->no_rawat)->update([

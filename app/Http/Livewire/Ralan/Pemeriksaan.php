@@ -174,7 +174,7 @@ class Pemeriksaan extends Component
                 'alergiMakan' => '00',
                 'alergiUdara' => '00',
                 'alergiObat' => '00',
-                'kdPrognosa' => '01', // Baik
+                'kdPrognosa' => '02', // Baik
                 'terapiObat' => (string)($terapiObatString ?: 'Tidak Ada'),
                 'terapiNonObat' => (string)($pemeriksaanData->instruksi ?? 'Edukasi Kesehatan'),
                 'bmhp' => 'Tidak Ada',
@@ -239,6 +239,24 @@ class Pemeriksaan extends Component
             }
             
             if ($isSuccess) {
+                // Validasi noKunjungan sebelum menyimpan ke database
+                if (empty($noKunjungan) || is_null($noKunjungan) || trim($noKunjungan) === '') {
+                    Log::error('noKunjungan kosong atau tidak valid dari respons BPJS PCare', [
+                        'no_rawat' => $decodedNoRawat,
+                        'noKunjungan_value' => $noKunjungan,
+                        'noKunjungan_type' => gettype($noKunjungan),
+                        'response_data' => $responseData
+                    ]);
+                    
+                    $this->alert('error', 'Gagal mendapatkan nomor kunjungan yang valid dari PCare BPJS. Silakan coba lagi.');
+                    return;
+                }
+                
+                Log::info('noKunjungan berhasil diperoleh dari PCare', [
+                    'no_rawat' => $decodedNoRawat,
+                    'noKunjungan' => $noKunjungan
+                ]);
+                
                 // Definisikan variabel nama untuk database
                 $nmPoli = $dataPasien->nm_poli ?? '';
                 $nmSadar = 'Compos Mentis'; // Default untuk kdSadar '04'
@@ -250,7 +268,7 @@ class Pemeriksaan extends Component
                 $nmAlergiMakanan = 'Tidak ada'; // Default untuk kode '00'
                 $nmAlergiUdara = 'Tidak ada'; // Default untuk kode '00'
                 $nmAlergiObat = 'Tidak ada'; // Default untuk kode '00'
-                $nmPrognosa = 'Baik'; // Default untuk kdPrognosa '01'
+                $nmPrognosa = 'Baik'; // Default untuk kdPrognosa '02'
 
                 // Simpan data kunjungan ke database lokal
                 DB::table('pcare_kunjungan_umum')->insert([
@@ -297,7 +315,10 @@ class Pemeriksaan extends Component
                     'bmhp' => $kunjunganData['bmhp'] ?? ''
                 ]);
 
-                $this->alert('success', 'Kunjungan PCare berhasil dikirim', [
+                $this->dispatchBrowserEvent('swal:alert', [
+                    'type' => 'success',
+                    'title' => 'Berhasil',
+                    'text' => 'Kunjungan PCare berhasil dikirim',
                     'position' => 'center',
                     'timer' => 3000,
                     'toast' => false,
@@ -765,7 +786,7 @@ class Pemeriksaan extends Component
 
             // Persiapkan data untuk PCare sesuai katalog BPJS
             $pcareData = [
-                'kdProviderPeserta' => env('BPJS_PCARE_KODE_PPK', '11251616'),
+                'kdProviderPeserta' => env('BPJS_PCARE_KODE_PPK', '11251919'),
                 'tglDaftar' => date('d-m-Y'),
                 'noKartu' => $dataPasien->no_peserta,
                 'kdPoli' => $kdPoliPcare,

@@ -147,11 +147,8 @@ if (typeof $ !== 'undefined') {
         $('#metaDataContainer').hide();
         
         // Make AJAX request
-        const apiUrl = '{{ url("/api/mobile-jkn/referensi-poli") }}/' + tanggal;
-        console.log('Making AJAX request to:', apiUrl);
-        
         $.ajax({
-            url: apiUrl,
+            url: '/api/mobile-jkn/referensi-poli/' + tanggal,
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -188,6 +185,10 @@ if (typeof $ !== 'undefined') {
                 }
             },
             error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                
                 $('#loadingIndicator').hide();
                 let errorMessage = 'Terjadi kesalahan saat memuat data';
                 
@@ -208,7 +209,7 @@ if (typeof $ !== 'undefined') {
         if (metaData) {
             $('#metaCode').text(metaData.code || '-')
                 .removeClass('badge-success badge-warning badge-danger')
-                .addClass(metaData.code === 200 ? 'badge-success' : 'badge-danger');
+                .addClass(metaData.code === 200 || metaData.code === 1 ? 'badge-success' : 'badge-danger');
             $('#metaMessage').text(metaData.message || '-');
             $('#metaTimestamp').text(new Date().toLocaleString('id-ID'));
             $('#metaDataContainer').show();

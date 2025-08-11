@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use App\Traits\PcareTrait;
 use Illuminate\Validation\ValidationException;
 
@@ -34,9 +36,9 @@ class PcareController extends Controller
 
             // Cek cache dulu
             $cacheKey = 'peserta_' . $noKartu;
-            if (\Cache::has($cacheKey)) {
+            if (Cache::has($cacheKey)) {
                 Log::info('PCare Get Peserta From Cache', ['noKartu' => $noKartu]);
-                return response()->json(\Cache::get($cacheKey));
+                return response()->json(Cache::get($cacheKey));
             }
 
             // Log request
@@ -70,7 +72,7 @@ class PcareController extends Controller
             // Cek response
             if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
                 // Simpan ke cache selama 6 jam
-                \Cache::put($cacheKey, $response, now()->addHours(6));
+                Cache::put($cacheKey, $response, now()->addHours(6));
                 
                 // Format response sesuai dengan contoh Java
                 $peserta = $response['response'];
@@ -167,9 +169,9 @@ class PcareController extends Controller
 
             // Cek cache dulu
             $cacheKey = 'peserta_nik_' . $nik;
-            if (\Cache::has($cacheKey)) {
+            if (Cache::has($cacheKey)) {
                 Log::info('PCare Get Peserta By NIK From Cache', ['nik' => $nik]);
-                return response()->json(\Cache::get($cacheKey));
+                return response()->json(Cache::get($cacheKey));
             }
 
             // Log request
@@ -186,7 +188,7 @@ class PcareController extends Controller
 
             // Cek response dan simpan ke cache
             if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
-                \Cache::put($cacheKey, $response, now()->addHours(6));
+                Cache::put($cacheKey, $response, now()->addHours(6));
                 return response()->json($response);
             }
 
@@ -567,7 +569,7 @@ class PcareController extends Controller
     {
         try {
             // Log raw request untuk debugging
-            \Log::info('PCare Add Pendaftaran - Raw Request', [
+            Log::info('PCare Add Pendaftaran - Raw Request', [
                 'raw_input' => $request->all()
             ]);
             
@@ -576,11 +578,11 @@ class PcareController extends Controller
                 isset($request->noKartu) && !isset($request->no_rawat) && !isset($request->no_rkm_medis) && 
                 isset($request->keluhan) && $request->keluhan === 'Konsultasi Kesehatan') {
                 
-                \Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
+                Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
                 
                 // Persiapkan data untuk dikirim ke PCare (minimal yang diperlukan)
                 $dataRequest = [
-                    'kdProviderPeserta' => $request->kdProviderPeserta ?? '11251616',
+                    'kdProviderPeserta' => $request->kdProviderPeserta ?? env('BPJS_PCARE_KODE_PPK', '11251919'),
                     'tglDaftar' => $request->tglDaftar,
                     'noKartu' => $request->noKartu,
                     'kdPoli' => $request->kdPoli ?? '021',
@@ -597,14 +599,14 @@ class PcareController extends Controller
                     'kdTkp' => $request->kdTkp ?? '10'
                 ];
                 
-                \Log::info('PCare Kunjungan Sehat - Request Data', [
+                Log::info('PCare Kunjungan Sehat - Request Data', [
                     'data' => $dataRequest
                 ]);
                 
                 // Kirim request ke PCare dengan Content-Type text/plain
                 $response = $this->requestPcare('pendaftaran', 'POST', $dataRequest, 'text/plain');
                 
-                \Log::info('PCare Kunjungan Sehat - Response', [
+                Log::info('PCare Kunjungan Sehat - Response', [
                     'metaData' => $response['metaData'] ?? null,
                     'response' => $response['response'] ?? null
                 ]);
@@ -613,7 +615,7 @@ class PcareController extends Controller
             }
             
             // Validasi input (untuk pendaftaran normal)
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'no_rawat' => 'required|string',
                 'no_rkm_medis' => 'required|string',
                 'nm_pasien' => 'required|string',
@@ -636,7 +638,7 @@ class PcareController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::warning('PCare Add Pendaftaran - Validation Failed', [
+                Log::warning('PCare Add Pendaftaran - Validation Failed', [
                     'errors' => $validator->errors()->toArray()
                 ]);
                 
@@ -659,7 +661,7 @@ class PcareController extends Controller
                     $kunjSakit = false;
                 }
                 
-                \Log::info('PCare Add Pendaftaran - Converted kunjSakit', [
+                Log::info('PCare Add Pendaftaran - Converted kunjSakit', [
                     'original' => $request->kunjSakit,
                     'converted' => $kunjSakit ? 'Kunjungan Sakit' : 'Kunjungan Sehat'
                 ]);
@@ -685,7 +687,7 @@ class PcareController extends Controller
             ];
 
             // Log data yang akan dikirim ke PCare
-            \Log::info('PCare Add Pendaftaran - Request Data', [
+            Log::info('PCare Add Pendaftaran - Request Data', [
                 'data' => $dataRequest
             ]);
 
@@ -693,7 +695,7 @@ class PcareController extends Controller
             $response = $this->requestPcare('pendaftaran', 'POST', $dataRequest, 'text/plain');
 
             // Log response dari PCare
-            \Log::info('PCare Add Pendaftaran - Response', [
+            Log::info('PCare Add Pendaftaran - Response', [
                 'metaData' => $response['metaData'] ?? null,
                 'response' => $response['response'] ?? null
             ]);
@@ -738,7 +740,7 @@ class PcareController extends Controller
                 ];
                 
                 // Log data yang akan disimpan
-                \Log::info('PCare Add Pendaftaran - Data yang akan disimpan', [
+                Log::info('PCare Add Pendaftaran - Data yang akan disimpan', [
                     'no_rawat' => $dataSave['no_rawat'],
                     'no_rkm_medis' => $dataSave['no_rkm_medis'],
                     'kunjSakit' => $dataSave['kunjSakit']
@@ -755,7 +757,7 @@ class PcareController extends Controller
 
             return response()->json($response);
         } catch (\Exception $e) {
-            \Log::error('PCare Add Pendaftaran - Exception', [
+            Log::error('PCare Add Pendaftaran - Exception', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -784,7 +786,7 @@ class PcareController extends Controller
     {
         try {
             // Log data yang diterima untuk debugging
-            \Log::info('Menyimpan pendaftaran PCare ke database', [
+            Log::info('Menyimpan pendaftaran PCare ke database', [
                 'no_rawat_original' => $data['no_rawat'],
                 'no_rkm_medis' => $data['no_rkm_medis']
             ]);
@@ -800,7 +802,7 @@ class PcareController extends Controller
             if ($pendaftaranPasienHariIni) {
                 // Jika pasien sudah terdaftar hari ini, prioritaskan menggunakan pendaftaran yang sudah ada
                 $data['no_rawat'] = $pendaftaranPasienHariIni->no_rawat;
-                \Log::info('Pasien sudah terdaftar hari ini, menggunakan pendaftaran yang sudah ada', [
+                Log::info('Pasien sudah terdaftar hari ini, menggunakan pendaftaran yang sudah ada', [
                     'no_rawat' => $data['no_rawat'],
                     'no_rkm_medis' => $data['no_rkm_medis'],
                     'kd_poli' => $pendaftaranPasienHariIni->kd_poli,
@@ -821,7 +823,7 @@ class PcareController extends Controller
                     if ($rawatTerbaru->tgl_registrasi == $today) {
                         // Jika pendaftaran terbaru adalah hari ini, gunakan no_rawat tersebut
                         $data['no_rawat'] = $rawatTerbaru->no_rawat;
-                        \Log::info('Menggunakan pendaftaran terbaru pasien hari ini', [
+                        Log::info('Menggunakan pendaftaran terbaru pasien hari ini', [
                             'no_rawat' => $data['no_rawat'],
                             'tgl_registrasi' => $rawatTerbaru->tgl_registrasi
                         ]);
@@ -839,7 +841,7 @@ class PcareController extends Controller
                             $newNumber = str_pad(intval($lastNumber) + 1, 6, '0', STR_PAD_LEFT);
                             $data['no_rawat'] = $formattedDate . '/' . $newNumber;
                             
-                            \Log::info('Membuat no_rawat baru untuk pasien hari ini', [
+                            Log::info('Membuat no_rawat baru untuk pasien hari ini', [
                                 'no_rawat_baru' => $data['no_rawat']
                             ]);
                             
@@ -866,7 +868,7 @@ class PcareController extends Controller
                                 'status_poli' => 'Lama'
                             ]);
                             
-                            \Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
+                            Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
                                 'no_rawat' => $data['no_rawat']
                             ]);
                         } else {
@@ -874,7 +876,7 @@ class PcareController extends Controller
                             $formattedDate = date('Y/m/d');
                             $data['no_rawat'] = $formattedDate . '/000001';
                             
-                            \Log::info('Membuat no_rawat default untuk pendaftaran baru', [
+                            Log::info('Membuat no_rawat default untuk pendaftaran baru', [
                                 'no_rawat_default' => $data['no_rawat']
                             ]);
                             
@@ -901,7 +903,7 @@ class PcareController extends Controller
                                 'status_poli' => 'Lama'
                             ]);
                             
-                            \Log::info('Entry default dibuat di reg_periksa', [
+                            Log::info('Entry default dibuat di reg_periksa', [
                                 'no_rawat' => $data['no_rawat']
                             ]);
                         }
@@ -929,7 +931,7 @@ class PcareController extends Controller
                             $newNumber = '000001';
                         }
                         
-                        \Log::info('Format no_rawat tidak valid, membuat yang baru', [
+                        Log::info('Format no_rawat tidak valid, membuat yang baru', [
                             'no_rawat_baru' => $data['no_rawat']
                         ]);
                         
@@ -956,7 +958,7 @@ class PcareController extends Controller
                             'status_poli' => 'Lama'
                         ]);
                         
-                        \Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
+                        Log::info('Entry baru dibuat di reg_periksa untuk pendaftaran PCare', [
                             'no_rawat' => $data['no_rawat']
                         ]);
                     }
@@ -1007,7 +1009,7 @@ class PcareController extends Controller
             }
             
             // Log data yang akan disimpan ke database
-            \Log::info('Data pendaftaran PCare yang akan disimpan ke database', [
+            Log::info('Data pendaftaran PCare yang akan disimpan ke database', [
                 'no_rawat' => $data['no_rawat'],
                 'tglDaftar' => $tglDaftarDB,
                 'no_rkm_medis' => $data['no_rkm_medis'],
@@ -1045,7 +1047,7 @@ class PcareController extends Controller
             ];
             
             if ($cekPendaftaran) {
-                \Log::info('Pendaftaran PCare sudah ada, melakukan update', [
+                Log::info('Pendaftaran PCare sudah ada, melakukan update', [
                     'no_rawat' => $data['no_rawat']
                 ]);
                 
@@ -1055,11 +1057,11 @@ class PcareController extends Controller
                         ->where('no_rawat', $data['no_rawat'])
                         ->update($pendaftaranData);
                         
-                    \Log::info('Update pendaftaran PCare berhasil', [
+                    Log::info('Update pendaftaran PCare berhasil', [
                         'no_rawat' => $data['no_rawat']
                     ]);
                 } catch (\Exception $updateError) {
-                    \Log::error('Gagal update pendaftaran PCare', [
+                    Log::error('Gagal update pendaftaran PCare', [
                         'error' => $updateError->getMessage(),
                         'no_rawat' => $data['no_rawat']
                     ]);
@@ -1071,17 +1073,17 @@ class PcareController extends Controller
                     // Tambahkan no_rawat ke data
                     $pendaftaranData['no_rawat'] = $data['no_rawat'];
                     
-                    \Log::info('Inserting data to pcare_pendaftaran', [
+                    Log::info('Inserting data to pcare_pendaftaran', [
                         'data' => $pendaftaranData
                     ]);
                     
                     DB::table('pcare_pendaftaran')->insert($pendaftaranData);
                     
-                    \Log::info('Insert pendaftaran PCare berhasil', [
+                    Log::info('Insert pendaftaran PCare berhasil', [
                         'no_rawat' => $data['no_rawat']
                     ]);
                 } catch (\Exception $insertError) {
-                    \Log::error('Gagal insert pendaftaran PCare', [
+                    Log::error('Gagal insert pendaftaran PCare', [
                         'error' => $insertError->getMessage(),
                         'no_rawat' => $data['no_rawat'],
                         'data' => $pendaftaranData
@@ -1115,11 +1117,11 @@ class PcareController extends Controller
                         
                         DB::table('pcare_pendaftaran')->insert($minimalData);
                         
-                        \Log::info('Insert pendaftaran PCare dengan data minimal berhasil', [
+                        Log::info('Insert pendaftaran PCare dengan data minimal berhasil', [
                             'no_rawat' => $data['no_rawat']
                         ]);
                     } catch (\Exception $minimalInsertError) {
-                        \Log::error('Gagal insert pendaftaran PCare dengan data minimal', [
+                        Log::error('Gagal insert pendaftaran PCare dengan data minimal', [
                             'error' => $minimalInsertError->getMessage(),
                             'no_rawat' => $data['no_rawat']
                         ]);
@@ -1141,7 +1143,7 @@ class PcareController extends Controller
             // Simpan ke tabel pemeriksaan berdasarkan jenis rawat
             if ($jenisRawat == 'Ralan' || (isset($data['save_to_pemeriksaan_ralan']) && $data['save_to_pemeriksaan_ralan'] == true)) {
                 // 2. Simpan ke tabel pemeriksaan_ralan
-                \Log::info('Menyimpan data ke pemeriksaan_ralan', [
+                Log::info('Menyimpan data ke pemeriksaan_ralan', [
                     'alasan' => ($jenisRawat == 'Ralan' ? 'Jenis rawat Ralan' : 'Flag save_to_pemeriksaan_ralan = true'),
                     'no_rawat' => $data['no_rawat']
                 ]);
@@ -1154,7 +1156,7 @@ class PcareController extends Controller
                     
                 // Dapatkan user yang sedang login
                 $usernameLogin = session('username') ?? '';
-                \Log::info('Mencari NIP berdasarkan username login', [
+                Log::info('Mencari NIP berdasarkan username login', [
                     'username' => $usernameLogin
                 ]);
                 
@@ -1167,7 +1169,7 @@ class PcareController extends Controller
                     
                     if ($pegawai) {
                         $nipPegawai = $pegawai->nik;
-                        \Log::info('NIP pegawai ditemukan', [
+                        Log::info('NIP pegawai ditemukan', [
                             'nik' => $pegawai->nik,
                             'nama' => $pegawai->nama
                         ]);
@@ -1179,11 +1181,11 @@ class PcareController extends Controller
                             
                         if ($user && !empty($user->nip)) {
                             $nipPegawai = $user->nip;
-                            \Log::info('NIP pegawai ditemukan dari tabel user', [
+                            Log::info('NIP pegawai ditemukan dari tabel user', [
                                 'nip' => $user->nip
                             ]);
                         } else {
-                            \Log::warning('NIP pegawai tidak ditemukan untuk username', [
+                            Log::warning('NIP pegawai tidak ditemukan untuk username', [
                                 'username' => $usernameLogin
                             ]);
                         }
@@ -1235,7 +1237,7 @@ class PcareController extends Controller
                     'nip' => substr($nip, 0, 20)
                 ];
                 
-                \Log::info('Data pemeriksaan_ralan yang akan disimpan', [
+                Log::info('Data pemeriksaan_ralan yang akan disimpan', [
                     'no_rawat' => $data['no_rawat'],
                     'nip' => $nip,
                     'tgl_perawatan' => $tglDaftarDB
@@ -1249,19 +1251,19 @@ class PcareController extends Controller
                             ->where('tgl_perawatan', $tglDaftarDB)
                             ->update($pemeriksaanData);
                         
-                        \Log::info('Update pemeriksaan_ralan berhasil', [
+                        Log::info('Update pemeriksaan_ralan berhasil', [
                             'no_rawat' => $data['no_rawat']
                         ]);
                     } else {
                         // Insert pemeriksaan baru
                         DB::table('pemeriksaan_ralan')->insert($pemeriksaanData);
                         
-                        \Log::info('Insert pemeriksaan_ralan berhasil', [
+                        Log::info('Insert pemeriksaan_ralan berhasil', [
                             'no_rawat' => $data['no_rawat']
                         ]);
                     }
                 } catch (\Exception $pemeriksaanError) {
-                    \Log::error('Gagal menyimpan ke pemeriksaan_ralan', [
+                    Log::error('Gagal menyimpan ke pemeriksaan_ralan', [
                         'error' => $pemeriksaanError->getMessage(),
                         'no_rawat' => $data['no_rawat']
                     ]);
@@ -1272,7 +1274,7 @@ class PcareController extends Controller
             // Pemeriksaan ranap - Simpan jika jenisRawat = Ranap atau jika flag save_to_pemeriksaan_ranap = true
             if ($jenisRawat == 'Ranap' || (isset($data['save_to_pemeriksaan_ranap']) && $data['save_to_pemeriksaan_ranap'] == true)) {
                 // 3. Simpan ke tabel pemeriksaan_ranap
-                \Log::info('Menyimpan data ke pemeriksaan_ranap', [
+                Log::info('Menyimpan data ke pemeriksaan_ranap', [
                     'alasan' => ($jenisRawat == 'Ranap' ? 'Jenis rawat Ranap' : 'Flag save_to_pemeriksaan_ranap = true'),
                     'no_rawat' => $data['no_rawat']
                 ]);
@@ -1286,7 +1288,7 @@ class PcareController extends Controller
                 // Dapatkan user yang sedang login jika belum didefinisikan
                 if (!isset($usernameLogin)) {
                     $usernameLogin = session('username') ?? '';
-                    \Log::info('Mencari NIP berdasarkan username login untuk pemeriksaan_ranap', [
+                    Log::info('Mencari NIP berdasarkan username login untuk pemeriksaan_ranap', [
                         'username' => $usernameLogin
                     ]);
                 }
@@ -1302,7 +1304,7 @@ class PcareController extends Controller
                         
                         if ($pegawai) {
                             $nipPegawai = $pegawai->nik;
-                            \Log::info('NIP pegawai ditemukan untuk pemeriksaan_ranap', [
+                            Log::info('NIP pegawai ditemukan untuk pemeriksaan_ranap', [
                                 'nik' => $pegawai->nik,
                                 'nama' => $pegawai->nama
                             ]);
@@ -1314,11 +1316,11 @@ class PcareController extends Controller
                                 
                             if ($user && !empty($user->nip)) {
                                 $nipPegawai = $user->nip;
-                                \Log::info('NIP pegawai ditemukan dari tabel user untuk pemeriksaan_ranap', [
+                                Log::info('NIP pegawai ditemukan dari tabel user untuk pemeriksaan_ranap', [
                                     'nip' => $user->nip
                                 ]);
                             } else {
-                                \Log::warning('NIP pegawai tidak ditemukan untuk username (pemeriksaan_ranap)', [
+                                Log::warning('NIP pegawai tidak ditemukan untuk username (pemeriksaan_ranap)', [
                                     'username' => $usernameLogin
                                 ]);
                             }
@@ -1371,7 +1373,7 @@ class PcareController extends Controller
                     'nip' => substr($nip, 0, 20)
                 ];
                 
-                \Log::info('Data pemeriksaan_ranap yang akan disimpan', [
+                Log::info('Data pemeriksaan_ranap yang akan disimpan', [
                     'no_rawat' => $data['no_rawat'],
                     'nip' => $nip,
                     'tgl_perawatan' => $tglDaftarDB
@@ -1385,19 +1387,19 @@ class PcareController extends Controller
                             ->where('tgl_perawatan', $tglDaftarDB)
                             ->update($pemeriksaanData);
                             
-                        \Log::info('Update pemeriksaan_ranap berhasil', [
-                            'no_rawat' => $data['no_rawat']
-                        ]);
+                        Log::info('Update pemeriksaan_ranap berhasil', [
+                                'no_rawat' => $data['no_rawat']
+                            ]);
                     } else {
                         // Insert pemeriksaan baru
                         DB::table('pemeriksaan_ranap')->insert($pemeriksaanData);
                         
-                        \Log::info('Insert pemeriksaan_ranap berhasil', [
+                        Log::info('Insert pemeriksaan_ranap berhasil', [
                             'no_rawat' => $data['no_rawat']
                         ]);
                     }
                 } catch (\Exception $pemeriksaanError) {
-                    \Log::error('Gagal menyimpan ke pemeriksaan_ranap', [
+                    Log::error('Gagal menyimpan ke pemeriksaan_ranap', [
                         'error' => $pemeriksaanError->getMessage(),
                         'no_rawat' => $data['no_rawat']
                     ]);
@@ -1406,7 +1408,7 @@ class PcareController extends Controller
             }
             
             DB::commit();
-            \Log::info('PCare Pendaftaran berhasil disimpan ke database', [
+            Log::info('PCare Pendaftaran berhasil disimpan ke database', [
                 'no_rawat' => $data['no_rawat'],
                 'no_rkm_medis' => $data['no_rkm_medis'],
                 'noUrut' => $noUrut,
@@ -1416,7 +1418,7 @@ class PcareController extends Controller
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Gagal menyimpan pendaftaran PCare ke database', [
+            Log::error('Gagal menyimpan pendaftaran PCare ke database', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),

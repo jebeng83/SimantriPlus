@@ -61,9 +61,12 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                 PDO::ATTR_TIMEOUT => env('DB_TIMEOUT', 30),
-                PDO::ATTR_PERSISTENT => true,
+                // Matikan persistent connection secara default untuk mengurangi risiko error 1615
+                PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', false),
                 PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'",
+                // Gunakan emulasi prepared statements agar server tidak menyimpan prepared statement yang rentan invalidasi
+                PDO::ATTR_EMULATE_PREPARES => env('DB_EMULATE_PREPARES', true),
             ]) : [],
             'pool' => [
                 'min' => env('DB_POOL_MIN', 5),

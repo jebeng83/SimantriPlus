@@ -515,6 +515,6 @@ Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () 
     Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
 });
 
-if (app()->environment('local')) {
-    require __DIR__.'/test-auth-error.php';
-}
+// if (app()->environment('local')) {
+//     require __DIR__.'/test-auth-error.php';
+// }

@@ -775,19 +775,42 @@
          }
 
          $.ajax({
-            url: '/pendaftaran-mobile-jkn/get-poli?tanggal=' + tanggal,
-            type: 'GET',
-            dataType: 'json',
+            url: '/api/mobile-jkn/referensi-poli/' + tanggal,
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
             beforeSend: function() {
                $('#kodepoli').empty().append('<option value="">Sedang memuat...</option>');
             },
             success: function(data) {
                $('#kodepoli').empty().append('<option value="">-- Pilih Poli --</option>');
 
-               if (data.metaData && data.metaData.code === 200 && data.response) {
-                  $.each(data.response, function(i, item) {
+               // Handle both metaData and metadata formats
+               const metadata = data.metaData || data.metadata;
+               
+               if (metadata && (metadata.code === 200 || metadata.code === 1)) {
+                  // Handle different response structures
+                  let poliData = [];
+                  if (data.response && Array.isArray(data.response.list)) {
+                     // BPJS official format: data.response.list
+                     poliData = data.response.list;
+                  } else if (data.response && Array.isArray(data.response)) {
+                     // Current format: data.response as array
+                     poliData = data.response;
+                  } else if (Array.isArray(data.response)) {
+                     // Direct array format
+                     poliData = data.response;
+                  }
+                  
+                  $.each(poliData, function(i, item) {
+                     // Handle different field names from BPJS response
+                     const kodePoli = item.kodepoli || item.kdPoli || item.kode || '';
+                     const namaPoli = item.namapoli || item.nmPoli || item.nama || '';
+                     
                      // Format nama poli untuk tampilan yang lebih baik
-                     let namaPoliFormatted = item.namapoli;
+                     let namaPoliFormatted = namaPoli;
                      
                      // Batasi panjang teks poli untuk tampilan dropdown
                      const displayText = trimText(namaPoliFormatted, 50);
@@ -795,9 +818,9 @@
                      // Membuat pilihan dengan tampilan lebih informatif
                      $('#kodepoli').append(
                         $('<option></option>')
-                           .attr('value', item.kodepoli)
+                           .attr('value', kodePoli)
                            .text(displayText)
-                           .attr('title', item.namapoli) // Tambahkan tooltip
+                           .attr('title', namaPoli) // Tambahkan tooltip
                      );
                   });
                   
@@ -805,7 +828,7 @@
                   setupDropdowns();
                } else {
                   // Handle error response format
-                  var message = (data.metaData && data.metaData.message) ? data.metaData.message : 'Gagal memuat data poli';
+                  var message = (metadata && metadata.message) ? metadata.message : 'Gagal memuat data poli';
                   Swal.fire({
                      icon: 'error',
                      title: 'Error',
@@ -816,10 +839,22 @@
             },
             error: function(xhr, status, error) {
                $('#kodepoli').empty().append('<option value="">-- Pilih Poli --</option>');
+               
+               let errorMessage = 'Gagal memuat data poli';
+               if (xhr.responseJSON && xhr.responseJSON.message) {
+                  errorMessage = xhr.responseJSON.message;
+               } else if (xhr.status === 404) {
+                  errorMessage = 'Data poli tidak ditemukan';
+               } else if (xhr.status === 500) {
+                  errorMessage = 'Terjadi kesalahan server';
+               } else if (error) {
+                  errorMessage = 'Error: ' + error;
+               }
+               
                Swal.fire({
                   icon: 'error',
                   title: 'Error',
-                  text: 'Error loading poli: ' + error
+                  text: errorMessage
                });
                console.error('Error loading poli:', error, xhr.responseText);
             }
@@ -841,17 +876,36 @@
          }
 
          $.ajax({
-            url: '/pendaftaran-mobile-jkn/get-dokter?kodePoli=' + kodePoli + '&tanggal=' + tanggal,
-            type: 'GET',
-            dataType: 'json',
+            url: '/api/mobile-jkn/referensi-dokter/kodepoli/' + kodePoli + '/tanggal/' + tanggal,
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
             beforeSend: function() {
                $('#kodedokter').empty().append('<option value="">Sedang memuat...</option>');
             },
             success: function(data) {
                $('#kodedokter').empty().append('<option value="">-- Pilih Jadwal Dokter --</option>');
 
-               if (data.metaData && data.metaData.code === 200 && data.response) {
-                  $.each(data.response, function(i, item) {
+               // Handle both metaData and metadata formats
+               const metadata = data.metaData || data.metadata;
+               
+               if (metadata && (metadata.code === 200 || metadata.code === 1)) {
+                  // Handle different response structures
+                  let dokterData = [];
+                  if (data.response && Array.isArray(data.response.list)) {
+                     // BPJS official format: data.response.list
+                     dokterData = data.response.list;
+                  } else if (data.response && Array.isArray(data.response)) {
+                     // Current format: data.response as array
+                     dokterData = data.response;
+                  } else if (Array.isArray(data.response)) {
+                     // Direct array format
+                     dokterData = data.response;
+                  }
+                  
+                  $.each(dokterData, function(i, item) {
                      // Format tampilan dokter yang lebih informatif dengan waktu praktek dan kuota
                      const namaDokter = item.namadokter || "Dokter";
                      const jamPraktek = item.jampraktek || "-";
@@ -881,7 +935,7 @@
                   setupDropdowns();
                } else {
                   // Handle error response format
-                  var message = (data.metaData && data.metaData.message) ? data.metaData.message : 'Gagal memuat data dokter';
+                  var message = (metadata && metadata.message) ? metadata.message : 'Gagal memuat data dokter';
                   Swal.fire({
                      icon: 'error',
                      title: 'Error',
@@ -892,10 +946,22 @@
             },
             error: function(xhr, status, error) {
                $('#kodedokter').empty().append('<option value="">-- Pilih Jadwal Dokter --</option>');
+               
+               let errorMessage = 'Gagal memuat data dokter';
+               if (xhr.responseJSON && xhr.responseJSON.message) {
+                  errorMessage = xhr.responseJSON.message;
+               } else if (xhr.status === 404) {
+                  errorMessage = 'Data dokter tidak ditemukan';
+               } else if (xhr.status === 500) {
+                  errorMessage = 'Terjadi kesalahan server';
+               } else if (error) {
+                  errorMessage = 'Error: ' + error;
+               }
+               
                Swal.fire({
                   icon: 'error',
                   title: 'Error',
-                  text: 'Error loading dokter: ' + error
+                  text: errorMessage
                });
                console.error('Error loading dokter:', error, xhr.responseText);
             }

@@ -130,7 +130,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -232,7 +232,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metaData' => [
+                'metadata' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -314,7 +314,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -345,7 +345,7 @@ class WsBPJSController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => $validator->errors()->first()
                     ]
@@ -377,7 +377,7 @@ class WsBPJSController extends Controller
 
             if (!$regPeriksa) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Data registrasi tidak ditemukan'
                     ]
@@ -392,7 +392,7 @@ class WsBPJSController extends Controller
 
             if (!$mappingPoli) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Mapping poliklinik BPJS tidak ditemukan'
                     ]
@@ -407,7 +407,7 @@ class WsBPJSController extends Controller
 
             if (!$mappingDokter) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Mapping dokter BPJS tidak ditemukan'
                     ]
@@ -424,7 +424,7 @@ class WsBPJSController extends Controller
 
             if (!$jadwal) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Jadwal dokter tidak ditemukan'
                     ]
@@ -470,7 +470,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -550,7 +550,7 @@ class WsBPJSController extends Controller
             // Validasi format tanggal
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalPeriksa)) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => 'Format tanggal tidak valid. Gunakan format YYYY-MM-DD'
                     ]
@@ -560,7 +560,7 @@ class WsBPJSController extends Controller
             // Validasi kode poli
             if (empty($kodePoli)) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => 'Kode poli tidak boleh kosong'
                     ]
@@ -585,7 +585,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -767,7 +767,7 @@ class WsBPJSController extends Controller
             $currentDatetime = date('Y-m-d H:i:s');
             
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 200,
                     'message' => 'OK'
                 ],
@@ -785,7 +785,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -830,7 +830,7 @@ class WsBPJSController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => $validator->errors()->first()
                     ]
@@ -855,7 +855,7 @@ class WsBPJSController extends Controller
 
             if (!$regPeriksa) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Data registrasi tidak ditemukan'
                     ]
@@ -870,7 +870,7 @@ class WsBPJSController extends Controller
 
             if (!$mappingPoli) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Mapping poliklinik BPJS tidak ditemukan'
                     ]
@@ -937,7 +937,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -982,7 +982,7 @@ class WsBPJSController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => $validator->errors()->first()
                     ]
@@ -1009,7 +1009,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
@@ -1050,7 +1050,7 @@ class WsBPJSController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 400,
                         'message' => $validator->errors()->first()
                     ]
@@ -1075,7 +1075,7 @@ class WsBPJSController extends Controller
 
             if (!$regPeriksa) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Data registrasi tidak ditemukan'
                     ]
@@ -1090,7 +1090,7 @@ class WsBPJSController extends Controller
 
             if (!$mappingPoli) {
                 return response()->json([
-                    'metadata' => [
+                    'metaData' => [
                         'code' => 404,
                         'message' => 'Mapping poliklinik BPJS tidak ditemukan'
                     ]
@@ -1129,7 +1129,7 @@ class WsBPJSController extends Controller
             ]);
 
             return response()->json([
-                'metadata' => [
+                'metaData' => [
                     'code' => 500,
                     'message' => 'Terjadi kesalahan: ' . $e->getMessage()
                 ]
