@@ -238,8 +238,8 @@
 @stop
 
 @section('css')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap4.min.css">
+<link rel="stylesheet" href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ asset('epasien/plugins/jquery-datatable/extensions/responsive/css/responsive.dataTables.min.css') }}">
 <style>
    .badge-terkirim {
       background-color: #28a745;
@@ -254,10 +254,10 @@
 @stop
 
 @section('js')
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap4.min.js"></script>
+<script src="{{ asset('epasien/plugins/jquery-datatable/jquery.dataTables.js') }}"></script>
+<script src="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/js/dataTables.bootstrap.min.js') }}"></script>
+<script src="{{ asset('epasien/plugins/jquery-datatable/extensions/responsive/js/dataTables.responsive.min.js') }}"></script>
+<script src="{{ asset('epasien/plugins/jquery-datatable/extensions/responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>

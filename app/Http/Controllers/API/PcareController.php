@@ -23,6 +23,18 @@ class PcareController extends Controller
     public function getPeserta($noKartu)
     {
         try {
+            // Perbaiki format nomor kartu (hapus non-digit, hapus leading zeros, padding hingga 13 digit)
+            $noKartu = preg_replace('/[^0-9]/', '', $noKartu); // Hapus karakter non-digit
+            $noKartuClean = ltrim($noKartu, '0'); // Hapus leading zeros
+            $noKartu = str_pad($noKartuClean, 13, '0', STR_PAD_LEFT); // Padding hingga 13 digit
+            
+            // Log nomor kartu yang sudah diperbaiki
+            Log::info('PCare Get Peserta Format Fix', [
+                'original' => $noKartu,
+                'cleaned' => $noKartuClean,
+                'padded' => $noKartu
+            ]);
+            
             // Validasi format nomor kartu
             if (!preg_match('/^\d{13}$/', $noKartu)) {
                 return response()->json([

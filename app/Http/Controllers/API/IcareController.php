@@ -20,6 +20,27 @@ class IcareController extends Controller
     public function getPeserta($noKartu)
     {
         try {
+            // Perbaiki format nomor kartu (hapus non-digit, hapus leading zeros, padding hingga 13 digit)
+            $noKartu = preg_replace('/[^0-9]/', '', $noKartu); // Hapus karakter non-digit
+            
+            // Jika lebih dari 13 digit, ambil 13 digit terakhir
+            if (strlen($noKartu) > 13) {
+                $noKartu = substr($noKartu, -13);
+                Log::info('ICare Get Peserta - Nomor kartu terlalu panjang, dipotong menjadi 13 digit terakhir', [
+                    'noKartu' => $noKartu
+                ]);
+            }
+            
+            $noKartuClean = ltrim($noKartu, '0'); // Hapus leading zeros
+            $noKartu = str_pad($noKartuClean, 13, '0', STR_PAD_LEFT); // Padding hingga 13 digit
+            
+            // Log nomor kartu yang sudah diperbaiki
+            Log::info('ICare Get Peserta Format Fix', [
+                'original' => $noKartu,
+                'cleaned' => $noKartuClean,
+                'padded' => $noKartu
+            ]);
+            
             // Validasi format nomor kartu
             if (!preg_match('/^\d{13}$/', $noKartu)) {
                 return response()->json([
@@ -358,4 +379,4 @@ class IcareController extends Controller
             ], 500);
         }
     }
-} 
+}
