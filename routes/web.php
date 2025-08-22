@@ -302,6 +302,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         // Route untuk Pendaftaran CKG
         Route::get('/pendaftaran-ckg', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'index'])->name('pendaftaran-ckg');
         Route::get('/pendaftaran-ckg/detail', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detail'])->name('ckg.detail');
+        Route::get('/pendaftaran-ckg/detail-sekolah', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detailSekolah'])->name('ckg.detail-sekolah');
         Route::post('/pendaftaran-ckg/update-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateStatus'])->name('ckg.update-status');
         Route::get('/pendaftaran-ckg/check-processing-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'checkProcessingStatus'])->name('ckg.check-processing-status');
         Route::post('/pendaftaran-ckg/set-processing', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'setProcessing'])->name('ckg.set-processing');

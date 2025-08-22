@@ -17,6 +17,29 @@
       </div>
    </div>
 </div>
+
+<!-- Modal Detail CKG Sekolah -->
+<div class="modal fade" id="detailSekolahModal" tabindex="-1" role="dialog" aria-labelledby="detailSekolahModalLabel"
+   aria-hidden="true">
+   <div class="modal-dialog modal-xl" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h5 class="modal-title" id="detailSekolahModalLabel">Detail CKG Sekolah</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+               <span aria-hidden="true">&times;</span>
+            </button>
+         </div>
+         <div class="modal-body">
+            <div id="detail-sekolah-content">
+               <!-- Detail sekolah content will be loaded here -->
+            </div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+         </div>
+      </div>
+   </div>
+</div>
 @stop
 
 @section('content')
@@ -66,6 +89,30 @@
                </div>
                <div class="col-md-3">
                   <div class="form-group">
+                     <label>Nama Sekolah:</label>
+                     <select class="form-control" name="nama_sekolah" id="nama_sekolah">
+                        <option value="">Semua Sekolah</option>
+                        @foreach($daftar_sekolah as $sekolah)
+                        <option value="{{ $sekolah->id_sekolah }}" {{ request('nama_sekolah')==$sekolah->id_sekolah ? 'selected' : '' }}>{{ $sekolah->nama_sekolah }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+               </div>
+            </div>
+            <div class="row">
+               <div class="col-md-3">
+                  <div class="form-group">
+                     <label>Kelas:</label>
+                     <select class="form-control" name="kelas" id="kelas">
+                        <option value="">Semua Kelas</option>
+                        @foreach($daftar_kelas as $kelas_item)
+                        <option value="{{ $kelas_item->id_kelas }}" {{ request('kelas')==$kelas_item->id_kelas ? 'selected' : '' }}>{{ $kelas_item->kelas }}</option>
+                        @endforeach
+                     </select>
+                  </div>
+               </div>
+               <div class="col-md-9">
+                  <div class="form-group">
                      <label>&nbsp;</label>
                      <div class="d-flex">
                         <button type="submit" class="btn btn-primary mr-2">
@@ -99,6 +146,8 @@
                      <th>Jenis Kelamin</th>
                      <th>No. Handphone</th>
                      <th>No. Peserta BPJS</th>
+                     <th>Nama Sekolah</th>
+                     <th>Kelas</th>
                      <th>Tanggal Skrining</th>
                      <th>Kunjungan Sehat</th>
                      <th>Status</th>
@@ -117,6 +166,8 @@
                      </td>
                      <td data-label="No. Handphone">{{ $pendaftaran->no_handphone }}</td>
                      <td data-label="No. Peserta BPJS">{{ $pendaftaran->no_peserta ?? '-' }}</td>
+                     <td data-label="Nama Sekolah">{{ $pendaftaran->nama_sekolah ?? '-' }}</td>
+                     <td data-label="Kelas">{{ $pendaftaran->kelas ?? '-' }}</td>
                      <td data-label="Tanggal Skrining">{{ $pendaftaran->tanggal_skrining ? date('d-m-Y',
                         strtotime($pendaftaran->tanggal_skrining)) : '-' }}</td>
                      <td data-label="Kunjungan Sehat">
@@ -139,6 +190,10 @@
                            <button type="button" class="btn btn-info btn-sm detail-btn" data-toggle="modal"
                               data-target="#detailModal" data-id="{{ $pendaftaran->id_pkg }}">
                               <i class="fas fa-eye"></i> Detail
+                           </button>
+                           <button type="button" class="btn btn-primary btn-sm detail-sekolah-btn" data-toggle="modal"
+                              data-target="#detailSekolahModal" data-id="{{ $pendaftaran->id_pkg }}">
+                              <i class="fas fa-school"></i> Detail CKG Sekolah
                            </button>
                            <button type="button" class="btn btn-success btn-sm set-status-btn"
                               data-id="{{ $pendaftaran->id_pkg }}" data-status="{{ $pendaftaran->status }}">
@@ -500,10 +555,31 @@
                                 button.removeClass('btn-secondary currently-processing').addClass('btn-info');
                                 button.html('<i class="fas fa-eye"></i> Detail');
                                 
+                                let errorMessage = 'Terjadi kesalahan saat mengambil data';
+                                let errorTitle = 'Error!';
+                                let suggestion = '';
+                                
+                                if (xhr.status === 404 && xhr.responseJSON) {
+                                    errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
+                                    errorMessage = xhr.responseJSON.message || errorMessage;
+                                    suggestion = xhr.responseJSON.suggestion || '';
+                                } else if (xhr.status === 500) {
+                                    errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi atau hubungi administrator.';
+                                } else if (xhr.status === 400) {
+                                    errorMessage = 'Permintaan tidak valid. Periksa data yang dikirim.';
+                                }
+                                
+                                let alertText = errorMessage;
+                                if (suggestion) {
+                                    alertText += '\n\n' + suggestion;
+                                }
+                                
                                 Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Terjadi kesalahan saat mengambil data',
-                                    icon: 'error'
+                                    title: errorTitle,
+                                    text: alertText,
+                                    icon: xhr.status === 404 ? 'warning' : 'error',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#3085d6'
                                 });
                             }
                         });
@@ -517,10 +593,31 @@
                     }
                 },
                 error: function(xhr) {
+                    let errorMessage = 'Terjadi kesalahan saat mengakses data';
+                    let errorTitle = 'Error!';
+                    let suggestion = '';
+                    
+                    if (xhr.status === 404 && xhr.responseJSON) {
+                        errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
+                        errorMessage = xhr.responseJSON.message || errorMessage;
+                        suggestion = xhr.responseJSON.suggestion || '';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi atau hubungi administrator.';
+                    } else if (xhr.status === 400) {
+                        errorMessage = 'Permintaan tidak valid. Periksa data yang dikirim.';
+                    }
+                    
+                    let alertText = errorMessage;
+                    if (suggestion) {
+                        alertText += '\n\n' + suggestion;
+                    }
+                    
                     Swal.fire({
-                        title: 'Error!',
-                        text: 'Terjadi kesalahan saat mengakses data',
-                        icon: 'error'
+                        title: errorTitle,
+                        text: alertText,
+                        icon: xhr.status === 404 ? 'warning' : 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6'
                     });
                 }
             });
@@ -550,6 +647,51 @@
                         console.error('Error releasing processing status:', xhr);
                     }
                 });
+            });
+        });
+
+        // Detail CKG Sekolah button click - menggunakan event delegation untuk pagination
+        $(document).on('click', '.detail-sekolah-btn', function() {
+            const id = $(this).data('id');
+            
+            // Load detail sekolah content
+            $.ajax({
+                url: "{{ route('ilp.ckg.detail-sekolah') }}",
+                type: "GET",
+                data: {
+                    id: id
+                },
+                beforeSend: function() {
+                    $('#detail-sekolah-content').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-3x"></i><p class="mt-2">Memuat data...</p></div>');
+                },
+                success: function(response) {
+                    $('#detail-sekolah-content').html(response);
+                    $('#detailSekolahModal').modal('show');
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Terjadi kesalahan saat mengambil data sekolah';
+                    let errorTitle = 'Error!';
+                    let suggestion = '';
+                    
+                    if (xhr.status === 404 && xhr.responseJSON) {
+                        errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
+                        errorMessage = xhr.responseJSON.message || errorMessage;
+                        suggestion = xhr.responseJSON.suggestion || '';
+                    }
+                    
+                    let alertText = errorMessage;
+                    if (suggestion) {
+                        alertText += '\n\n' + suggestion;
+                    }
+                    
+                    Swal.fire({
+                        title: errorTitle,
+                        text: alertText,
+                        icon: 'warning',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
             });
         });
 
@@ -994,19 +1136,34 @@
                     console.error('Error updating status:', xhr);
                     
                     let errorMessage = 'Terjadi kesalahan saat memperbarui status';
+                    let errorTitle = 'Error!';
+                    let suggestion = '';
                     
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                    if (xhr.status === 404 && xhr.responseJSON) {
+                        errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
+                        errorMessage = xhr.responseJSON.message || errorMessage;
+                        suggestion = xhr.responseJSON.suggestion || '';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     } else if (xhr.status === 422) {
                         errorMessage = 'Data tidak valid. Silakan periksa kembali.';
                     } else if (xhr.status === 500) {
-                        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+                        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi atau hubungi administrator.';
+                    } else if (xhr.status === 400) {
+                        errorMessage = 'Permintaan tidak valid. Periksa data yang dikirim.';
+                    }
+                    
+                    let alertText = errorMessage;
+                    if (suggestion) {
+                        alertText += '\n\n' + suggestion;
                     }
                     
                     Swal.fire({
-                        title: 'Error!',
-                        text: errorMessage,
-                        icon: 'error'
+                        title: errorTitle,
+                        text: alertText,
+                        icon: xhr.status === 404 ? 'warning' : 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6'
                     });
                 }
             });

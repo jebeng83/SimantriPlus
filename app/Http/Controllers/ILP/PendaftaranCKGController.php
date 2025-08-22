@@ -24,10 +24,15 @@ class PendaftaranCKGController extends Controller
         $tanggal_awal = $request->input('tanggal_awal');
         $tanggal_akhir = $request->input('tanggal_akhir');
         $status = $request->input('status');
+        $nama_sekolah = $request->input('nama_sekolah');
+        $kelas = $request->input('kelas');
         
         // Query dasar
         $query = DB::table('skrining_pkg')
             ->leftJoin('pasien', 'skrining_pkg.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+            ->leftJoin('data_siswa_sekolah', 'skrining_pkg.no_rkm_medis', '=', 'data_siswa_sekolah.no_rkm_medis')
+            ->leftJoin('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
+            ->leftJoin('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
             ->select(
                 'skrining_pkg.id_pkg',
                 'skrining_pkg.nik',
@@ -40,7 +45,9 @@ class PendaftaranCKGController extends Controller
                 'skrining_pkg.tanggal_skrining',
                 'skrining_pkg.status',
                 'skrining_pkg.kunjungan_sehat',
-                'pasien.no_peserta'
+                'pasien.no_peserta',
+                'data_sekolah.nama_sekolah',
+                'data_kelas.kelas'
             );
                      
         // Terapkan filter jika ada
@@ -56,8 +63,25 @@ class PendaftaranCKGController extends Controller
             $query->where('skrining_pkg.status', $status);
         }
         
+        if ($nama_sekolah !== null && $nama_sekolah !== '') {
+            $query->where('data_sekolah.id_sekolah', $nama_sekolah);
+        }
+        
+        if ($kelas !== null && $kelas !== '') {
+            $query->where('data_kelas.id_kelas', $kelas);
+        }
+        
         // Ambil data
         $data_pendaftaran = $query->orderBy('tanggal_skrining', 'desc')->get();
+        
+        // Ambil data untuk dropdown filter
+        $daftar_sekolah = DB::table('data_sekolah')
+            ->orderBy('nama_sekolah')
+            ->get(['id_sekolah', 'nama_sekolah']);
+            
+        $daftar_kelas = DB::table('data_kelas')
+            ->orderBy('kelas')
+            ->get(['id_kelas', 'kelas']);
         
         // Log hasil query untuk debugging
         Log::info('Jumlah data pendaftaran CKG: ' . count($data_pendaftaran));
@@ -65,7 +89,7 @@ class PendaftaranCKGController extends Controller
             Log::info('Data pertama: ', (array) $data_pendaftaran[0]);
         }
 
-        return view('ilp.pendaftaran_ckg', compact('data_pendaftaran'));
+        return view('ilp.pendaftaran_ckg', compact('data_pendaftaran', 'daftar_sekolah', 'daftar_kelas'));
     }
 
     /**
@@ -100,7 +124,11 @@ class PendaftaranCKGController extends Controller
             
         if (!$detail) {
             Log::error('Data CKG tidak ditemukan untuk ID: ' . $id);
-            return response()->json(['error' => 'Data tidak ditemukan'], 404);
+            return response()->json([
+                'error' => 'Data CKG Tidak Ditemukan',
+                'message' => 'Data CKG dengan ID ' . $id . ' tidak ditemukan di sistem. Pastikan ID yang dimasukkan benar.',
+                'suggestion' => 'Silakan periksa kembali ID CKG atau hubungi administrator jika masalah berlanjut.'
+            ], 404);
         }
         
         // Log hasil query untuk debugging
@@ -114,6 +142,162 @@ class PendaftaranCKGController extends Controller
         
         // Mengembalikan view partial untuk detail
         return view('ilp.partials.detail_ckg', compact('detail', 'pegawai_aktif'));
+    }
+
+    /**
+     * Menampilkan detail siswa sekolah CKG
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function detailSekolah(Request $request)
+    {
+        $id = $request->input('id');
+        
+        // Log untuk debugging
+        Log::info('Detail CKG Sekolah dipanggil dengan ID: ' . $id);
+        
+        // Mengambil data detail siswa dengan join ke tabel yang diperlukan
+        $detail = DB::table('data_siswa_sekolah')
+            ->leftJoin('pasien', 'data_siswa_sekolah.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+            ->leftJoin('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
+            ->leftJoin('jenis_sekolah', 'data_sekolah.id_jenis_sekolah', '=', 'jenis_sekolah.id')
+            ->leftJoin('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
+            // Join untuk kelurahan, kecamatan, kabupaten tidak diperlukan karena field sudah berisi nama langsung
+            ->leftJoin('skrining_siswa_sd', 'data_siswa_sekolah.no_rkm_medis', '=', 'skrining_siswa_sd.no_rkm_medis')
+            ->leftJoin('skrining_pkg', 'data_siswa_sekolah.no_rkm_medis', '=', 'skrining_pkg.no_rkm_medis')
+            ->leftJoin('users', 'skrining_pkg.id_petugas_entri', '=', 'users.id')
+            ->select(
+                'data_siswa_sekolah.*',
+                'pasien.no_rkm_medis as no_pasien',
+                'pasien.no_ktp',
+                'pasien.tgl_lahir',
+                'pasien.nm_pasien as nama_siswa',
+                'pasien.alamatpj as alamat_siswa',
+                'pasien.kelurahanpj as kelurahan_siswa',
+                'pasien.kecamatanpj as kecamatan_siswa',
+                'pasien.kabupatenpj as kabupaten_siswa',
+                'data_siswa_sekolah.jenis_disabilitas',
+                'data_siswa_sekolah.no_whatsapp',
+                'data_siswa_sekolah.nik_ortu',
+                'data_siswa_sekolah.nama_ortu',
+                'data_siswa_sekolah.tanggal_lahir as tanggal_lahir_ortu',
+                'data_siswa_sekolah.jenis_kelamin as jenis_kelamin_ortu',
+                'data_siswa_sekolah.status as status_ortu',
+                'data_sekolah.nama_sekolah',
+                'jenis_sekolah.nama as jenis_sekolah',
+                'data_kelas.kelas as nama_kelas',
+                'skrining_siswa_sd.created_at as tanggal_skrining',
+                'users.name as petugas_skrining',
+                'skrining_siswa_sd.berat_badan',
+                'skrining_siswa_sd.tinggi_badan',
+                'skrining_siswa_sd.imt',
+                'skrining_siswa_sd.kategori_status_gizi as status_gizi',
+                'skrining_siswa_sd.sistole as tekanan_darah',
+                'skrining_siswa_sd.sistole',
+                'skrining_siswa_sd.diastole',
+                'skrining_siswa_sd.visus_mata_kanan as visus_od',
+                'skrining_siswa_sd.visus_mata_kiri as visus_os',
+                'skrining_siswa_sd.selaput_mata_kanan as kelainan_mata',
+                'skrining_siswa_sd.gangguan_telingga_kanan as pendengaran_kanan',
+                'skrining_siswa_sd.gangguan_telingga_kiri as pendengaran_kiri',
+                'skrining_siswa_sd.gangguan_telingga_kanan as kelainan_telinga',
+                'skrining_siswa_sd.gangguan_telingga_kanan',
+                'skrining_siswa_sd.gangguan_telingga_kiri',
+                'skrining_siswa_sd.serumen_kanan',
+                'skrining_siswa_sd.serumen_kiri',
+                'skrining_siswa_sd.infeksi_telingga_kanan',
+                'skrining_siswa_sd.infeksi_telingga_kiri',
+                'skrining_siswa_sd.selaput_mata_kanan',
+                'skrining_siswa_sd.selaput_mata_kiri',
+                'skrining_siswa_sd.visus_mata_kanan',
+                'skrining_siswa_sd.visus_mata_kiri',
+                'skrining_siswa_sd.kacamata',
+                'skrining_siswa_sd.gigi_karies',
+                'skrining_siswa_sd.hasil_gds',
+                'skrining_siswa_sd.pemeriksaan_hb',
+                'skrining_siswa_sd.imunisasi_bcg as status_imunisasi',
+                'skrining_siswa_sd.kebugaran_jantung as kesimpulan',
+                'skrining_siswa_sd.kebugaran_jantung as tindak_lanjut',
+                'skrining_siswa_sd.kebugaran_jantung as status_skrining',
+                'skrining_siswa_sd.sering_bangun_sd',
+                'skrining_siswa_sd.sering_haus_sekolah',
+                'skrining_siswa_sd.sering_lapar',
+                'skrining_siswa_sd.berat_turun_sekolah',
+                'skrining_siswa_sd.sering_ngompol_sekolah',
+                'skrining_siswa_sd.riwayat_dm_sd',
+                'skrining_siswa_sd.gejala_cemas_khawatir',
+                'skrining_siswa_sd.gejala_cemas_berfikir_lebih',
+                'skrining_siswa_sd.gejala_cemas_sulit_konsentrasi',
+                'skrining_siswa_sd.depresi_anak_sedih',
+                'skrining_siswa_sd.depresi_anak_tidaksuka',
+                'skrining_siswa_sd.depresi_anak_capek',
+                'skrining_siswa_sd.menstruasi',
+                'skrining_siswa_sd.haid_pertama',
+                'skrining_siswa_sd.keputihan',
+                'skrining_siswa_sd.gatal_kemaluan_puteri',
+                'skrining_siswa_sd.gatal_kemaluan_putra',
+                'skrining_siswa_sd.nyeri_bak_bab',
+                'skrining_siswa_sd.luka_penis_dubur',
+                'skrining_siswa_sd.malaria_gejala',
+                'skrining_siswa_sd.malaria_sakit',
+                'skrining_siswa_sd.malaria_tempat',
+                'skrining_siswa_sd.aktivitas_fisik_jumlah',
+                'skrining_siswa_sd.aktifitas_fisik_waktu',
+                'skrining_siswa_sd.kebugaran_tulang',
+                'skrining_siswa_sd.kebugaran_jantung',
+                'skrining_siswa_sd.kebugaran_asma',
+                'skrining_siswa_sd.kebugaran_pingsan',
+                'skrining_siswa_sd.tropis_bercak',
+                'skrining_siswa_sd.tropis_koreng',
+                'skrining_siswa_sd.merokok_aktif_sd',
+                'skrining_siswa_sd.jenis_rokok_sd',
+                'skrining_siswa_sd.jumlah_rokok_sd',
+                'skrining_siswa_sd.lama_rokok_sd',
+                'skrining_siswa_sd.terpapar_rokok_sd',
+                'skrining_siswa_sd.talasemia_1',
+                'skrining_siswa_sd.talasemia_2',
+                'skrining_siswa_sd.imunisasi_hepatitis',
+                'skrining_siswa_sd.imunisasi_bcg',
+                'skrining_siswa_sd.imunisasi_opv1',
+                'skrining_siswa_sd.imunisasi_dpt1',
+                'skrining_siswa_sd.imunisasi_opv2',
+                'skrining_siswa_sd.imunisasi_dpt2',
+                'skrining_siswa_sd.imunisasi_opv3',
+                'skrining_siswa_sd.imunisasi_dpt3',
+                'skrining_siswa_sd.imunisasi_opv4',
+                'skrining_siswa_sd.imunisasi_ipv',
+                'skrining_siswa_sd.imunisasi_campak1',
+                'skrining_siswa_sd.imunisasi_dpt4',
+                'skrining_siswa_sd.imunisasi_campak2',
+                'skrining_siswa_sd.tes_hepatitis_sekolah',
+                'skrining_siswa_sd.keluarga_hepatitis_sekolah',
+                'skrining_siswa_sd.tranfusi_darah_sekolah',
+                'skrining_siswa_sd.cucidarah_sekolah',
+                'skrining_siswa_sd.tbc_batuk_lama',
+                'skrining_siswa_sd.tbc_bb_turun',
+                'skrining_siswa_sd.tbc_demam',
+                'skrining_siswa_sd.tbc_lesu',
+                'skrining_siswa_sd.tbc_kontak',
+                'skrining_pkg.id_pkg'
+            )
+            ->where('skrining_pkg.id_pkg', $id)
+            ->first();
+            
+        if (!$detail) {
+            Log::error('Data siswa sekolah tidak ditemukan untuk ID: ' . $id);
+            return response()->json([
+                'error' => 'Data Siswa Tidak Ditemukan',
+                'message' => 'Data siswa dengan ID ' . $id . ' tidak ditemukan di tabel data_siswa_sekolah. Pastikan siswa sudah terdaftar di sistem sekolah.',
+                'suggestion' => 'Silakan periksa kembali ID siswa atau hubungi administrator untuk mendaftarkan siswa ke dalam sistem.'
+            ], 404);
+        }
+        
+        // Log hasil query untuk debugging
+        Log::info('Data detail siswa sekolah ditemukan: ', (array) $detail);
+        
+        // Mengembalikan view partial untuk detail sekolah
+        return view('ilp.partials.detail_ckg_sekolah', compact('detail'));
     }
 
     /**
@@ -151,8 +335,10 @@ class PendaftaranCKGController extends Controller
             
         if (!$currentData) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Data tidak ditemukan'
+                'success' => false,
+                'error' => 'Data CKG Tidak Ditemukan',
+                'message' => 'Data CKG dengan ID ' . $id . ' tidak ditemukan di sistem.',
+                'suggestion' => 'Silakan periksa kembali ID CKG atau refresh halaman untuk memperbarui data.'
             ], 404);
         }
         
