@@ -167,10 +167,12 @@ class PendaftaranCKGController extends Controller
             ->leftJoin('skrining_siswa_sd', 'data_siswa_sekolah.no_rkm_medis', '=', 'skrining_siswa_sd.no_rkm_medis')
             ->leftJoin('skrining_pkg', 'data_siswa_sekolah.no_rkm_medis', '=', 'skrining_pkg.no_rkm_medis')
             ->leftJoin('users', 'skrining_pkg.id_petugas_entri', '=', 'users.id')
+            ->leftJoin('pegawai', 'skrining_pkg.id_petugas_entri', '=', 'pegawai.nik')
             ->select(
                 'data_siswa_sekolah.*',
                 'pasien.no_rkm_medis as no_pasien',
                 'pasien.no_ktp',
+                'pasien.no_peserta',
                 'pasien.tgl_lahir',
                 'pasien.nm_pasien as nama_siswa',
                 'pasien.alamatpj as alamat_siswa',
@@ -213,6 +215,7 @@ class PendaftaranCKGController extends Controller
                 'skrining_siswa_sd.visus_mata_kanan',
                 'skrining_siswa_sd.visus_mata_kiri',
                 'skrining_siswa_sd.kacamata',
+                'skrining_siswa_sd.kebugaran_jasmani',
                 'skrining_siswa_sd.gigi_karies',
                 'skrining_siswa_sd.hasil_gds',
                 'skrining_siswa_sd.pemeriksaan_hb',
@@ -279,25 +282,101 @@ class PendaftaranCKGController extends Controller
                 'skrining_siswa_sd.tbc_demam',
                 'skrining_siswa_sd.tbc_lesu',
                 'skrining_siswa_sd.tbc_kontak',
-                'skrining_pkg.id_pkg'
+                'skrining_pkg.id_pkg',
+                'skrining_pkg.id_petugas_entri',
+                'skrining_pkg.status',
+                'pegawai.nama as petugas_entry_nama'
             )
             ->where('skrining_pkg.id_pkg', $id)
             ->first();
             
         if (!$detail) {
-            Log::error('Data siswa sekolah tidak ditemukan untuk ID: ' . $id);
-            return response()->json([
-                'error' => 'Data Siswa Tidak Ditemukan',
-                'message' => 'Data siswa dengan ID ' . $id . ' tidak ditemukan di tabel data_siswa_sekolah. Pastikan siswa sudah terdaftar di sistem sekolah.',
-                'suggestion' => 'Silakan periksa kembali ID siswa atau hubungi administrator untuk mendaftarkan siswa ke dalam sistem.'
-            ], 404);
+            // Cek apakah data ada di skrining_pkg tapi bukan siswa sekolah
+            $pkgData = DB::table('skrining_pkg')->where('id_pkg', $id)->first();
+            
+            if ($pkgData) {
+                Log::error('Data dengan ID ' . $id . ' ditemukan di skrining_pkg tapi tidak ada di data_siswa_sekolah. no_rkm_medis: ' . $pkgData->no_rkm_medis);
+                return response()->json([
+                    'error' => 'Bukan Data Siswa Sekolah',
+                    'message' => 'Data dengan ID ' . $id . ' adalah data skrining umum, bukan data siswa sekolah. Silakan gunakan tombol "Detail CKG" untuk melihat data ini.',
+                    'suggestion' => 'Gunakan tombol "Detail CKG" (bukan "Detail CKG Sekolah") untuk melihat data skrining umum.'
+                ], 400);
+            } else {
+                Log::error('Data tidak ditemukan untuk ID: ' . $id);
+                return response()->json([
+                    'error' => 'Data Tidak Ditemukan',
+                    'message' => 'Data dengan ID ' . $id . ' tidak ditemukan di sistem.',
+                    'suggestion' => 'Silakan periksa kembali ID atau refresh halaman untuk memperbarui data.'
+                ], 404);
+            }
         }
         
         // Log hasil query untuk debugging
         Log::info('Data detail siswa sekolah ditemukan: ', (array) $detail);
         
+        // Update status menjadi "Sedang Diproses" (status = '2') ketika detail dibuka
+        if ($detail->status != '1') { // Jika belum selesai
+            DB::table('skrining_pkg')
+                ->where('id_pkg', $id)
+                ->update([
+                    'status' => '2', // Sedang Diproses
+                    'updated_at' => now()
+                ]);
+            
+            // Update status di object detail untuk ditampilkan
+            $detail->status = '2';
+            
+            Log::info('Status diupdate menjadi Sedang Diproses untuk ID: ' . $id);
+        }
+        
+        // Ambil data pegawai aktif untuk dropdown petugas entry
+        $pegawai_aktif = Pegawai::where('stts_aktif', 'Aktif')
+            ->select('nik', 'nama')
+            ->orderBy('nama')
+            ->get();
+        
         // Mengembalikan view partial untuk detail sekolah
-        return view('ilp.partials.detail_ckg_sekolah', compact('detail'));
+        return view('ilp.partials.detail_ckg_sekolah', compact('detail', 'pegawai_aktif'));
+    }
+
+    /**
+     * Memperbarui petugas entry untuk siswa sekolah
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updatePetugasEntrySekolah(Request $request)
+    {
+        $id = $request->input('id');
+        $id_petugas_entri = $request->input('id_petugas_entri');
+        
+        try {
+            // Update petugas entry di tabel skrining_pkg
+            $updated = DB::table('skrining_pkg')
+                ->where('id_pkg', $id)
+                ->update([
+                    'id_petugas_entri' => $id_petugas_entri,
+                    'updated_at' => now()
+                ]);
+                
+            if ($updated) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Petugas entry berhasil diperbarui'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan atau tidak ada perubahan'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating petugas entry: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbarui petugas entry'
+            ]);
+        }
     }
 
     /**

@@ -18,6 +18,10 @@
                         <td>{{ $detail->no_ktp ?? '-' }}</td>
                      </tr>
                      <tr>
+                        <th>No. Peserta BPJS</th>
+                        <td id="no-peserta-bpjs-sekolah">{{ $detail->no_peserta ?? '-' }}</td>
+                     </tr>
+                     <tr>
                         <th>Nama Siswa</th>
                         <td id="nama-siswa">{{ $detail->nama_siswa ?? '-' }}</td>
                      </tr>
@@ -74,8 +78,30 @@
                         <td>{{ $detail->tanggal_skrining ? date('d-m-Y', strtotime($detail->tanggal_skrining)) : '-' }}</td>
                      </tr>
                      <tr>
-                        <th>Petugas Skrining</th>
-                        <td>{{ $detail->petugas_skrining ?? '-' }}</td>
+                        <th>Petugas Entry <span class="text-danger">*</span></th>
+                        <td>
+                           @if(isset($detail->id_petugas_entri) && $detail->petugas_entry_nama)
+                    {{ $detail->petugas_entry_nama ?? '-' }}
+                           @else
+                              <select name="id_petugas_entri" id="id_petugas_entri" class="form-control" required style="border-left: 3px solid #dc3545;">
+                                 <option value="">-- Pilih Petugas Entry --</option>
+                                 @foreach($pegawai_aktif as $pegawai)
+                                    <option value="{{ $pegawai->nik }}" {{ (isset($detail->id_petugas_entri) && $detail->id_petugas_entri == $pegawai->nik) ? 'selected' : '' }}>
+                                       {{ $pegawai->nama }}
+                                    </option>
+                                 @endforeach
+                              </select>
+                              <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Field ini wajib diisi</small>
+                           @endif
+                        </td>
+                     </tr>
+                     <tr>
+                        <th>Status</th>
+                        <td>
+                           <span class="badge {{ $detail->status == '1' ? 'badge-success' : ($detail->status == '2' ? 'badge-info' : 'badge-warning') }}">
+                              {{ $detail->status == '1' ? 'Selesai' : ($detail->status == '2' ? 'Sedang Diproses' : 'Menunggu') }}
+                           </span>
+                        </td>
                      </tr>
                      <tr>
                         <th>Status Skrining</th>
@@ -1443,6 +1469,33 @@
                   </div>
                </div>
                
+               <!-- Hasil Pemeriksaan Kebugaran -->
+               <div class="card mb-0">
+                  <div class="card-header" id="headingHasilKebugaran">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#collapseHasilKebugaran" aria-expanded="false" aria-controls="collapseHasilKebugaran">
+                           Hasil Pemeriksaan Kebugaran
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="collapseHasilKebugaran" class="collapse" aria-labelledby="headingHasilKebugaran"
+                     data-parent="#accordionPemeriksaan">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <table class="table table-bordered">
+                                 <tr>
+                                    <th width="30%">Hasil Pemeriksaan Kebugaran Jasmani Anak</th>
+                                    <td>{{ $detail->kebugaran_jasmani ?? '-' }}</td>
+                                 </tr>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
             </div>
          </div>
       </div>
@@ -1461,6 +1514,49 @@
    @endif
 
 </div>
+
+<script>
+$(document).ready(function() {
+    // Handle petugas entry dropdown change
+    $('#id_petugas_entri').on('change', function() {
+        var petugasId = $(this).val();
+        var pkgId = '{{ $detail->id_pkg ?? "" }}';
+        
+        if (petugasId && pkgId) {
+            // Show loading state
+            $(this).prop('disabled', true);
+            
+            $.ajax({
+                url: '{{ route("ilp.pendaftaran-ckg.update-petugas-entry-sekolah") }}',
+                method: 'POST',
+                data: {
+                    '_token': '{{ csrf_token() }}',
+                    'id': pkgId,
+                    'id_petugas_entri': petugasId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message || 'Petugas entry berhasil diperbarui');
+                        // Reload the detail to show updated data
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        toastr.error(response.message || 'Gagal memperbarui petugas entry');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error updating petugas entry:', error);
+                    toastr.error('Terjadi kesalahan saat memperbarui petugas entry');
+                },
+                complete: function() {
+                    $('#id_petugas_entri').prop('disabled', false);
+                }
+            });
+        }
+    });
+});
+</script>
 
 <script>
 $(document).ready(function() {

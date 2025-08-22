@@ -35,6 +35,10 @@
             </div>
          </div>
          <div class="modal-footer">
+            <button type="button" class="btn btn-info" id="btn-kunjungan-sehat-sekolah" style="display: none;">
+               <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
+            </button>
+            <button type="button" class="btn btn-success" id="btn-selesai-sekolah">Selesai</button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
          </div>
       </div>
@@ -378,6 +382,157 @@
             }
         });
         
+        // Release processing status when Detail CKG Sekolah modal is closed
+        $('#detailSekolahModal').on('hidden.bs.modal', function () {
+            // Find the currently processing record and release it
+            $('.detail-sekolah-btn.currently-processing').each(function() {
+                const button = $(this);
+                const id = button.data('id');
+                
+                // Release processing status on server
+                $.ajax({
+                    url: "{{ route('ilp.ckg.release-processing') }}",
+                    type: "POST",
+                    data: {
+                        id: id,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+                        button.prop('disabled', false);
+                        button.removeClass('btn-secondary currently-processing').addClass('btn-primary');
+                        button.html('<i class="fas fa-school"></i> Detail CKG Sekolah');
+                    },
+                    error: function(xhr) {
+                        console.error('Error releasing processing status:', xhr);
+                    }
+                });
+            });
+        });
+        
+        // Event handler untuk tombol "Jadikan Kunjungan Sehat" di modal sekolah
+        $(document).on('click', '#btn-kunjungan-sehat-sekolah', function() {
+            const currentId = $('#detailSekolahModal').data('current-id');
+            const noPesertaBpjs = $('#no-peserta-bpjs-sekolah').text().trim();
+            const namaLengkap = $('#nama-siswa').text().trim();
+            
+            console.log('Kunjungan Sehat button clicked. ID:', currentId, 'BPJS:', noPesertaBpjs);
+            
+            // Validasi nomor BPJS
+            if (!noPesertaBpjs || noPesertaBpjs.length !== 13 || noPesertaBpjs === '-') {
+                Swal.fire({
+                    title: 'Nomor BPJS Tidak Valid',
+                    text: 'Nomor peserta BPJS harus 13 digit untuk dapat didaftarkan kunjungan sehat.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            
+            // Konfirmasi pendaftaran kunjungan sehat
+            Swal.fire({
+                title: 'Konfirmasi Kunjungan Sehat',
+                text: `Daftarkan ${namaLengkap} (${noPesertaBpjs}) untuk kunjungan sehat?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Daftarkan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    daftarKunjunganSehat(currentId, noPesertaBpjs, namaLengkap);
+                }
+            });
+        });
+        
+        // Event handler untuk tombol "Selesai" di modal sekolah
+        $(document).on('click', '#btn-selesai-sekolah', function() {
+            const currentId = $('#detailSekolahModal').data('current-id');
+            
+            console.log('Selesai button clicked (sekolah). ID:', currentId);
+            
+            // Konfirmasi sebelum menyimpan
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: 'Apakah Anda yakin ingin menyelesaikan data ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Selesai',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading
+                    Swal.fire({
+                        title: 'Memproses',
+                        text: 'Menyimpan data...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Kirim request untuk update status
+                    $.ajax({
+                        url: "{{ route('ilp.ckg.update-status') }}",
+                        type: "POST",
+                        data: {
+                            id: currentId,
+                            status: '1', // Set status menjadi selesai
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.success) {
+                                $('#detailSekolahModal').modal('hide');
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: 'Data berhasil diselesaikan',
+                                    icon: 'success'
+                                }).then(() => {
+                                    // Save current page state before reload
+                                    saveCurrentPageState();
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: response.message || 'Gagal menyelesaikan data',
+                                    icon: 'error'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.close();
+                            console.error('Error completing data:', xhr);
+                            
+                            let errorMessage = 'Terjadi kesalahan saat menyelesaikan data';
+                            
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.status === 422) {
+                                errorMessage = 'Data tidak valid. Silakan periksa kembali.';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+                            }
+                            
+                            Swal.fire({
+                                title: 'Error!',
+                                text: errorMessage,
+                                icon: 'error'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        
+
+        
+
+        
         // Function to save current page state
         function saveCurrentPageState() {
             if (table) {
@@ -520,7 +675,17 @@
                                 id: id
                             },
                             beforeSend: function() {
-                                $('#detail-content').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-3x"></i><p class="mt-2">Memuat data...</p></div>');
+                                $('#detail-content').html(`
+                                    <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                            <p class="mt-3 text-muted">Sedang memuat data pasien...</p>
+                                            <small class="text-muted">Mohon tunggu sebentar</small>
+                                        </div>
+                                    </div>
+                                `);
                             },
                             success: function(response) {
                                 $('#detail-content').html(response);
@@ -653,43 +818,128 @@
         // Detail CKG Sekolah button click - menggunakan event delegation untuk pagination
         $(document).on('click', '.detail-sekolah-btn', function() {
             const id = $(this).data('id');
+            const button = $(this);
             
-            // Load detail sekolah content
+            // Check if button is already disabled (being processed)
+            if (button.prop('disabled')) {
+                Swal.fire({
+                    title: 'Maaf!',
+                    text: 'Data sedang diproses oleh petugas lain',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            
+            // Set processing status on server
             $.ajax({
-                url: "{{ route('ilp.ckg.detail-sekolah') }}",
-                type: "GET",
+                url: "{{ route('ilp.ckg.set-processing') }}",
+                type: "POST",
                 data: {
-                    id: id
+                    id: id,
+                    _token: "{{ csrf_token() }}"
                 },
+                success: function(response) {
+                    if (response.success) {
+                        // Disable button and change appearance
+                        button.prop('disabled', true);
+                        button.removeClass('btn-primary').addClass('btn-secondary');
+                        button.addClass('currently-processing');
+                        button.html('<i class="fas fa-lock"></i> Sedang Diproses');
+                        
+                        // Load detail sekolah content
+                        $.ajax({
+                            url: "{{ route('ilp.ckg.detail-sekolah') }}",
+                            type: "GET",
+                            data: {
+                                id: id
+                            },
                 beforeSend: function() {
-                    $('#detail-sekolah-content').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-3x"></i><p class="mt-2">Memuat data...</p></div>');
+                    $('#detail-sekolah-content').html(`
+                        <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Sedang memuat data siswa...</p>
+                                <small class="text-muted">Mohon tunggu sebentar</small>
+                            </div>
+                        </div>
+                    `);
                 },
                 success: function(response) {
                     $('#detail-sekolah-content').html(response);
+                    $('#detailSekolahModal').data('current-id', id);
                     $('#detailSekolahModal').modal('show');
+                    
+                    // Check if BPJS number exists and show/hide kunjungan sehat button
+                    setTimeout(function() {
+                        const noPesertaBpjs = $('#no-peserta-bpjs-sekolah').text().trim();
+                        if (noPesertaBpjs && noPesertaBpjs.length === 13 && noPesertaBpjs !== '-') {
+                            $('#btn-kunjungan-sehat-sekolah').show();
+                        } else {
+                            $('#btn-kunjungan-sehat-sekolah').hide();
+                        }
+                    }, 200);
+                            },
+                            error: function(xhr) {
+                                // Release processing status on error
+                                $.ajax({
+                                    url: "{{ route('ilp.ckg.release-processing') }}",
+                                    type: "POST",
+                                    data: {
+                                        id: id,
+                                        _token: "{{ csrf_token() }}"
+                                    }
+                                });
+                                
+                                let errorMessage = 'Terjadi kesalahan saat mengambil data sekolah';
+                                let errorTitle = 'Error!';
+                                let suggestion = '';
+                                let iconType = 'error';
+                                
+                                if ((xhr.status === 404 || xhr.status === 400) && xhr.responseJSON) {
+                                    errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
+                                    errorMessage = xhr.responseJSON.message || errorMessage;
+                                    suggestion = xhr.responseJSON.suggestion || '';
+                                    
+                                    // Untuk status 400 (bukan data siswa sekolah), gunakan icon info
+                                    if (xhr.status === 400) {
+                                        iconType = 'info';
+                                    } else {
+                                        iconType = 'warning';
+                                    }
+                                }
+                                
+                                let alertText = errorMessage;
+                                if (suggestion) {
+                                    alertText += '\n\n' + suggestion;
+                                }
+                                
+                                Swal.fire({
+                                    title: errorTitle,
+                                    text: alertText,
+                                    icon: iconType,
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#3085d6'
+                                });
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: response.message || 'Gagal mengatur status processing',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
                 },
                 error: function(xhr) {
-                    let errorMessage = 'Terjadi kesalahan saat mengambil data sekolah';
-                    let errorTitle = 'Error!';
-                    let suggestion = '';
-                    
-                    if (xhr.status === 404 && xhr.responseJSON) {
-                        errorTitle = xhr.responseJSON.error || 'Data Tidak Ditemukan';
-                        errorMessage = xhr.responseJSON.message || errorMessage;
-                        suggestion = xhr.responseJSON.suggestion || '';
-                    }
-                    
-                    let alertText = errorMessage;
-                    if (suggestion) {
-                        alertText += '\n\n' + suggestion;
-                    }
-                    
                     Swal.fire({
-                        title: errorTitle,
-                        text: alertText,
-                        icon: 'warning',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#3085d6'
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan saat mengatur status processing',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
                     });
                 }
             });
