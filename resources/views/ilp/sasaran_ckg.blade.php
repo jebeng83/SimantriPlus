@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('adminlte::page')
 
 @section('title', $title)
 
@@ -144,7 +144,8 @@
 
 @section('js')
 <!-- DataTables & Plugins -->
-<link rel="stylesheet" href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
+<link rel="stylesheet"
+   href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
 <script src="{{ asset('epasien/plugins/jquery-datatable/jquery.dataTables.js') }}"></script>
 <script src="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/js/dataTables.bootstrap.min.js') }}"></script>
 <!-- SweetAlert2 -->
