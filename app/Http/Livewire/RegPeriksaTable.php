@@ -9,15 +9,18 @@ use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Log;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Log;
 use App\Models\Poliklinik;
 use App\Models\Dokter;
 use Carbon\Carbon;
 use App\Models\AntreanBpjsLog;
 use App\Services\RegPeriksaOptimizationService;
-
+use App\Services\AsyncDataService;
+use App\Jobs\ProcessRegPeriksaDataJob;
 class RegPeriksaTable extends DataTableComponent
 {
     protected $model = RegPeriksa::class;
@@ -25,17 +28,51 @@ class RegPeriksaTable extends DataTableComponent
     public $tanggalFilter;
     public $poliklinikFilter;
     
-    protected $listeners = ['filterByPoliklinik', 'refreshDatatable' => 'refreshData', 'registrationSuccess' => 'refreshData'];
+    // Filter Lock Properties
+    public $isFilterLocked = false;
+    public $persistedFilters = [];
+    
+    protected $listeners = [
+        'filterByPoliklinik', 
+        'refreshDatatable' => 'refreshData', 
+        'registrationSuccess' => 'refreshData', 
+        'resetFilters', 
+        'toggleFilterLock', 
+        'loadPersistedFilters', 
+        'getFilterLockStatus',
+        'initializeComponent' => 'handleComponentInitialization'
+    ];
     
     protected $optimizationService;
+    protected $asyncDataService;
 
     public function mount()
     {
-        // Set default tanggal ke hari ini
-        $this->tanggalFilter = Carbon::today()->format('Y-m-d');
+        // Load filter lock status from session
+        $this->isFilterLocked = session('reg_periksa_filter_lock', false);
+        
+        // Component mounted - filter lock status loaded from session
+        Log::info('RegPeriksaTable mounted', [
+            'isFilterLocked' => $this->isFilterLocked,
+            'session_id' => session()->getId()
+        ]);
+        
+        // Load persisted filters if filter is locked
+        if ($this->isFilterLocked) {
+            $this->loadPersistedFilters();
+            Log::info('Loaded persisted filters', ['filters' => $this->persistedFilters]);
+        } else {
+            // Set default tanggal ke hari ini jika filter tidak terkunci
+            $this->tanggalFilter = Carbon::today()->format('Y-m-d');
+        }
         
         // Initialize optimization service
         $this->initializeOptimizationService();
+        
+        // Emit initial filter lock status after mount
+        $this->dispatchBrowserEvent('component-mounted', [
+            'isFilterLocked' => $this->isFilterLocked
+        ]);
     }
     
     /**
@@ -46,68 +83,131 @@ class RegPeriksaTable extends DataTableComponent
         if (!$this->optimizationService) {
             $this->optimizationService = new RegPeriksaOptimizationService();
         }
+        
+        if (!$this->asyncDataService) {
+            $this->asyncDataService = new AsyncDataService();
+        }
     }
 
     public function configure(): void
     {
         $this->setPrimaryKey('no_rawat');
-        $this->setFilterLayoutSlideDown();
-        $this->setPerPageAccepted([5, 10, 25, 50, 100]);
+        $this->setPerPageAccepted([5, 10, 25, 50]);
         $this->setPerPage(10);
         $this->setDefaultSort('tgl_registrasi', 'desc');
+        
+        // Configure filters with proper layout and buttons
+        $this->setFiltersEnabled();
+        $this->setFiltersVisibilityEnabled();
+        $this->setFilterPillsEnabled();
+        $this->setFilterLayoutSlideDown();
+        $this->setFilterSlideDownDefaultStatusEnabled();
+        
+        // Optimize pagination for large datasets
+        $this->setPaginationMethod('simple');
+        $this->setUseHeaderAsFooterEnabled();
     }
 
     public function filters(): array
     {
         return [
-            DateFilter::make('Tanggal Registrasi')
+            DateFilter::make('Tanggal Dari')
                 ->config([
-                    'placeholder' => 'Hari Ini: ' . Carbon::today()->format('d/m/Y'),
-                    'allowInput' => false,
-                    'disabled' => true,
+                    'placeholder' => 'Pilih tanggal mulai',
+                    'allowInput' => true,
+                    'disabled' => false,
                 ])
                 ->setFilterDefaultValue(Carbon::today()->format('Y-m-d'))
                 ->filter(function (Builder $builder, string $value) {
-                    // Paksa selalu menggunakan tanggal hari ini
-                    $this->tanggalFilter = Carbon::today()->format('Y-m-d');
-                    $builder->where('reg_periksa.tgl_registrasi', Carbon::today()->format('Y-m-d'));
+                    if ($value) {
+                        $builder->where('reg_periksa.tgl_registrasi', '>=', $value);
+                    }
+                }),
+            DateFilter::make('Tanggal Sampai')
+                ->config([
+                    'placeholder' => 'Pilih tanggal akhir',
+                    'allowInput' => true,
+                    'disabled' => false,
+                ])
+                ->setFilterDefaultValue(Carbon::today()->format('Y-m-d'))
+                ->filter(function (Builder $builder, string $value) {
+                    if ($value) {
+                        $builder->where('reg_periksa.tgl_registrasi', '<=', $value);
+                    }
+                }),
+            SelectFilter::make('Status')
+                ->options([
+                    '' => 'Semua Status',
+                    'Belum' => 'Belum Periksa',
+                    'Berkas Diterima' => 'Berkas Diterima',
+                    'Sudah' => 'Sudah Periksa',
+                    'Batal' => 'Batal',
+                    'Dirujuk' => 'Dirujuk',
+                ])
+                ->filter(function (Builder $builder, $value) {
+                    if ($value) {
+                        $builder->where('reg_periksa.stts', $value);
+                    }
                 }),
             SelectFilter::make('Poliklinik')
-                ->setFilterPillTitle('Poli')
-                ->setFilterPillValues([
-                    '' => 'Semua Poliklinik',
-                ])
+                ->options($this->getPoliklinikOptions())
                 ->filter(function (Builder $builder, $value) {
                     if ($value) {
                         $builder->where('reg_periksa.kd_poli', $value);
                     }
                 }),
             SelectFilter::make('Dokter')
-                ->setFilterPillTitle('Dokter')
-                ->setFilterPillValues([
-                    '' => 'Semua Dokter',
-                ])
+                ->options($this->getDokterOptions())
                 ->filter(function (Builder $builder, $value) {
                     if ($value) {
                         $builder->where('reg_periksa.kd_dokter', $value);
                     }
-                }),
+                })
         ];
     }
 
     public function builder(): Builder
     {
-        // Pastikan optimization service terinisialisasi
+        // Use optimization service for async loading and caching
         $this->initializeOptimizationService();
         
-        // Gunakan optimization service untuk query yang sudah dioptimasi
-        $tanggal = $this->tanggalFilter ?: Carbon::today()->format('Y-m-d');
+        // Get base query with optimizations
+        $query = RegPeriksa::query()
+            ->select([
+                // Minimal essential columns for initial load
+                'reg_periksa.no_rawat',
+                'reg_periksa.no_reg',
+                'reg_periksa.tgl_registrasi',
+                'reg_periksa.jam_reg',
+                'reg_periksa.no_rkm_medis',
+                'reg_periksa.kd_dokter',
+                'reg_periksa.kd_poli',
+                'reg_periksa.kd_pj',
+                'reg_periksa.stts',
+                // Essential display columns with aliases
+                'pasien.nm_pasien',
+                'pasien.jk',
+                'dokter.nm_dokter',
+                'poliklinik.nm_poli',
+                'penjab.png_jawab'
+            ])
+            // Optimized joins with proper index usage
+            ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+            ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
+            ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+            ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj');
+            
+        // Apply default date filter for performance
+        $defaultDate = $this->getAppliedFilterWithValue('tanggal_dari') ?? Carbon::today()->format('Y-m-d');
+        if ($defaultDate) {
+            $query->where('reg_periksa.tgl_registrasi', '>=', $defaultDate);
+        }
         
-        return $this->optimizationService->getOptimizedQuery(
-            $tanggal,
-            $this->poliklinikFilter,
-            null // dokter filter bisa ditambahkan nanti jika diperlukan
-        );
+        // Add ordering with index-friendly approach
+        $query->orderBy('reg_periksa.tgl_registrasi', 'desc')
+              ->orderBy('reg_periksa.jam_reg', 'desc');
+              
+        return $query;
     }
 
     public function refreshData()
@@ -121,6 +221,165 @@ class RegPeriksaTable extends DataTableComponent
         // Force refresh the component
         $this->resetPage();
         $this->emit('$refresh');
+    }
+    
+    /**
+     * Override getRowsProperty untuk implementasi async loading dengan job queue
+     */
+    public function getRowsProperty()
+    {
+        $cacheKey = $this->generateCacheKey();
+        
+        // Try to get from cache first
+        $cachedData = Cache::get($cacheKey);
+        
+        if ($cachedData) {
+            return collect($cachedData['data']);
+        }
+        
+        // If not in cache, dispatch background job
+        $this->dispatchBackgroundJob($cacheKey);
+        
+        // Return minimal placeholder data while processing
+        return $this->getPlaceholderData();
+    }
+    
+    /**
+     * Dispatch background job for data processing
+     */
+    private function dispatchBackgroundJob(string $cacheKey): void
+    {
+        $jobCacheKey = "job_dispatched_{$cacheKey}";
+        
+        // Prevent duplicate job dispatch
+        if (!Cache::has($jobCacheKey)) {
+            ProcessRegPeriksaDataJob::dispatch(
+                $this->getAppliedFilters(),
+                $this->page,
+                $this->getPerPage(),
+                $cacheKey
+            )->onQueue('data-processing');
+            
+            // Mark job as dispatched for 1 minute
+            Cache::put($jobCacheKey, true, 60);
+        }
+    }
+    
+    /**
+     * Get placeholder data while background processing
+     */
+    private function getPlaceholderData()
+    {
+        // Return empty collection with loading indicator
+        return collect([]);
+    }
+    
+    /**
+     * Override getTotalRowCountProperty untuk optimasi count query
+     */
+    public function getTotalRowCountProperty()
+    {
+        // Cache count query untuk menghindari slow query
+        $countCacheKey = $this->generateCountCacheKey();
+        
+        return Cache::remember($countCacheKey, 120, function () {
+            // Gunakan query yang lebih sederhana untuk count
+            $query = RegPeriksa::query();
+            
+            // Apply filters yang sama seperti di builder
+            $defaultDate = $this->getAppliedFilterWithValue('tanggal_dari') ?? Carbon::today()->format('Y-m-d');
+            if ($defaultDate) {
+                $query->where('tgl_registrasi', '>=', $defaultDate);
+            }
+            
+            // Apply filter lainnya jika ada
+            if ($this->hasFilter('tanggal_sampai')) {
+                $endDate = $this->getAppliedFilterWithValue('tanggal_sampai');
+                if ($endDate) {
+                    $query->where('tgl_registrasi', '<=', $endDate);
+                }
+            }
+            
+            if ($this->hasFilter('status')) {
+                $status = $this->getAppliedFilterWithValue('status');
+                if ($status) {
+                    $query->where('stts', $status);
+                }
+            }
+            
+            if ($this->hasFilter('poliklinik')) {
+                $poli = $this->getAppliedFilterWithValue('poliklinik');
+                if ($poli) {
+                    $query->where('kd_poli', $poli);
+                }
+            }
+            
+            if ($this->hasFilter('dokter')) {
+                $dokter = $this->getAppliedFilterWithValue('dokter');
+                if ($dokter) {
+                    $query->where('kd_dokter', $dokter);
+                }
+            }
+            
+            return $query->count();
+        });
+    }
+    
+    /**
+     * Generate cache key untuk rows dengan job queue support
+     */
+    private function generateCacheKey(): string
+    {
+        $filters = $this->getAppliedFilters();
+        $page = $this->page;
+        $perPage = $this->getPerPage();
+        
+        return 'reg_periksa_data_' . md5(serialize([
+            'filters' => $filters,
+            'page' => $page,
+            'per_page' => $perPage
+        ]));
+    }
+    
+    /**
+     * Generate cache key untuk count
+     */
+    private function generateCountCacheKey(): string
+    {
+        $filters = collect($this->getAppliedFilters())->map(function ($value, $key) {
+            return $key . ':' . $value;
+        })->implode('|');
+        
+        return 'reg_periksa_count_' . md5($filters);
+    }
+    
+    /**
+     * Clear cache ketika ada perubahan filter dan save filters jika locked
+     */
+    public function updatedFilters()
+    {
+        // Clear cache ketika filter berubah
+        $this->clearFilterCache();
+        $this->resetPage();
+        
+        // Save filters if locked
+        if ($this->isFilterLocked) {
+            $this->saveCurrentFilters();
+        }
+    }
+    
+    /**
+     * Clear filter-related cache
+     */
+    private function clearFilterCache()
+    {
+        // Clear cache untuk rows dan count
+        Cache::forget($this->generateCacheKey());
+        Cache::forget($this->generateCountCacheKey());
+        
+        // Clear optimization service cache juga
+        $this->initializeOptimizationService();
+        $this->optimizationService->clearAllCaches();
     }
     
     public function hapus($no_rawat)
@@ -277,7 +536,7 @@ class RegPeriksaTable extends DataTableComponent
                 session()->flash('error', 'Gagal mengupdate status antrean BPJS: ' . $response['message']);
             }
         } catch (\Exception $e) {
-            Log::error('Error updating BPJS queue status: ' . $e->getMessage());
+            // Error updating BPJS queue status
             
             // Log error ke antrean_bpjs_log table
              if (isset($regPeriksa)) {
@@ -374,7 +633,7 @@ class RegPeriksaTable extends DataTableComponent
                 session()->flash('error', 'Gagal membatalkan antrean BPJS: ' . $response['message']);
             }
         } catch (\Exception $e) {
-            Log::error('Error cancelling BPJS queue: ' . $e->getMessage());
+            // Error cancelling BPJS queue
             
             // Log error ke antrean_bpjs_log table
              if (isset($regPeriksa)) {
@@ -418,16 +677,7 @@ class RegPeriksaTable extends DataTableComponent
             // Ambil data dari response
             $responseData = $response->getData(true);
             
-            // Log response untuk debugging
-            Log::info('BPJS API Response via WsBPJSController: ', [
-                'request_data' => $requestData,
-                'response' => $responseData,
-                'response_structure' => [
-                    'has_metadata' => isset($responseData['metadata']),
-                    'has_metaData' => isset($responseData['metaData']),
-                    'response_keys' => array_keys($responseData ?? [])
-                ]
-            ]);
+            // BPJS API Response logged for debugging
             
             // Parse response menggunakan format standar BPJS
             $metadata = $responseData['metadata'] ?? $responseData['metaData'] ?? null;
@@ -447,7 +697,7 @@ class RegPeriksaTable extends DataTableComponent
             ];
             
         } catch (\Exception $e) {
-            Log::error('BPJS API Error via WsBPJSController: ' . $e->getMessage());
+            // BPJS API Error via WsBPJSController
             return [
                 'success' => false,
                 'message' => 'Gagal menghubungi API BPJS: ' . $e->getMessage()
@@ -476,16 +726,7 @@ class RegPeriksaTable extends DataTableComponent
             // Ambil data dari response
             $responseData = $response->getData(true);
             
-            // Log response untuk debugging
-            Log::info('BPJS Batal Antrean API Response via WsBPJSController: ', [
-                'request_data' => $requestData,
-                'response' => $responseData,
-                'response_structure' => [
-                    'has_metadata' => isset($responseData['metadata']),
-                    'has_metaData' => isset($responseData['metaData']),
-                    'response_keys' => array_keys($responseData ?? [])
-                ]
-            ]);
+            // BPJS Batal Antrean API Response logged for debugging
             
             // Parse response menggunakan format standar BPJS
             $metadata = $responseData['metadata'] ?? $responseData['metaData'] ?? null;
@@ -505,7 +746,7 @@ class RegPeriksaTable extends DataTableComponent
             ];
             
         } catch (\Exception $e) {
-            Log::error('BPJS Batal Antrean API Error via WsBPJSController: ' . $e->getMessage());
+            // BPJS Batal Antrean API Error via WsBPJSController
             return [
                 'success' => false,
                 'message' => 'Gagal menghubungi API BPJS: ' . $e->getMessage()
@@ -597,6 +838,43 @@ class RegPeriksaTable extends DataTableComponent
         ];
     }
 
+    /**
+     * Get poliklinik options for filter dropdown
+     */
+    public function getPoliklinikOptions()
+    {
+        $polikliniks = DB::table('poliklinik')
+            ->where('status', '1')
+            ->select('kd_poli', 'nm_poli')
+            ->orderBy('nm_poli')
+            ->get();
+
+        $options = ['' => 'Semua Poliklinik'];
+        foreach ($polikliniks as $poliklinik) {
+            $options[$poliklinik->kd_poli] = $poliklinik->nm_poli;
+        }
+        
+        return $options;
+    }
+    
+    /**
+     * Get dokter options for filter dropdown
+     */
+    public function getDokterOptions()
+    {
+        $dokters = DB::table('dokter')
+            ->where('status', '1')
+            ->select('kd_dokter', 'nm_dokter')
+            ->get();
+
+        $options = ['' => 'Semua Dokter'];
+        foreach ($dokters as $dokter) {
+            $options[$dokter->kd_dokter] = $dokter->nm_dokter;
+        }
+
+        return $options;
+    }
+
     public function filterByPoliklinik($kdPoli)
     {
         $this->poliklinikFilter = $kdPoli;
@@ -605,10 +883,308 @@ class RegPeriksaTable extends DataTableComponent
 
     public function setFilter($filterName, $value)
     {
-        if ($filterName === 'poliklinik') {
-            $this->poliklinikFilter = $value;
-            // Reset halaman ke 1 saat filter berubah
-            $this->setPage(1);
+        Log::info('Setting filter', ['filterName' => $filterName, 'value' => $value]);
+        
+        // Use Livewire Tables API to set filters properly
+        try {
+            // Set filter using the correct Livewire Tables method
+            $this->setFilterValue($filterName, $value);
+            
+            // Handle component-specific filters
+            if ($filterName === 'poliklinik' || $filterName === 'Poliklinik') {
+                $this->poliklinikFilter = $value;
+            }
+            
+            Log::info('Filter set successfully', ['filterName' => $filterName, 'value' => $value]);
+            
+        } catch (\Exception $e) {
+            Log::warning('Failed to set filter using setFilterValue', [
+                'filterName' => $filterName, 
+                'value' => $value,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Handle component-specific filters directly
+            if ($filterName === 'poliklinik' || $filterName === 'Poliklinik') {
+                $this->poliklinikFilter = $value;
+            }
+        }
+        
+        // Reset halaman ke 1 saat filter berubah
+        $this->setPage(1);
+    }
+
+    public function resetFilters()
+    {
+        // Jika filter terkunci, jangan reset
+        if ($this->isFilterLocked) {
+            $this->emit('filterLockActive', 'Filter sedang terkunci. Buka kunci terlebih dahulu untuk mereset filter.');
+            return;
+        }
+        
+        // Reset semua filter ke nilai default
+        $this->tanggalFilter = Carbon::today()->format('Y-m-d');
+        $this->poliklinikFilter = null;
+        
+        // Reset semua filter di Livewire Tables ke nilai default menggunakan method yang benar
+        $this->setFilter('Tanggal Dari', Carbon::today()->format('Y-m-d'));
+        $this->setFilter('Tanggal Sampai', Carbon::today()->format('Y-m-d'));
+        $this->setFilter('Status', '');
+        $this->setFilter('Poliklinik', '');
+        $this->setFilter('Dokter', '');
+        
+        // Reset halaman ke 1
+        $this->resetPage();
+        
+        // Refresh data
+        $this->refreshData();
+        
+        // Clear persisted filters
+        $this->clearPersistedFilters();
+    }
+    
+    /**
+     * Toggle filter lock status
+     */
+    public function toggleFilterLock()
+    {
+        $this->isFilterLocked = !$this->isFilterLocked;
+        
+        Log::info('🔄 Toggling filter lock', ['newStatus' => $this->isFilterLocked]);
+        
+        // Save lock status to session
+        session(['reg_periksa_filter_lock' => $this->isFilterLocked]);
+        
+        if ($this->isFilterLocked) {
+            // Save current filters when locking
+            $this->saveCurrentFilters();
+            
+            Log::info('🔒 Filter locked and saved to session');
+            
+            $this->emit('filterLockToggled', [
+                'locked' => true,
+                'message' => 'Filter berhasil dikunci. Filter akan dipertahankan setelah refresh halaman.'
+            ]);
+        } else {
+            // Clear persisted filters when unlocking
+            $this->clearPersistedFilters();
+            
+            Log::info('🔓 Filter unlocked and cleared from session');
+            
+            $this->emit('filterLockToggled', [
+                'locked' => false,
+                'message' => 'Filter lock dibuka. Filter akan direset ke default setelah refresh halaman.'
+            ]);
+        }
+        
+        // Emit event to update UI
+        $this->emit('filterLockUpdated', $this->isFilterLocked);
+        
+        // Dispatch browser event for frontend
+        $this->dispatchBrowserEvent('filter-lock-changed', [
+            'isLocked' => $this->isFilterLocked,
+            'message' => $this->isFilterLocked ? 'Filter dikunci' : 'Filter dibuka'
+        ]);
+    }
+    
+    /**
+     * Get current filter lock status
+     */
+    public function getFilterLockStatus()
+    {
+        Log::info('Getting filter lock status', ['isFilterLocked' => $this->isFilterLocked]);
+        $this->emit('filterLockUpdated', $this->isFilterLocked);
+    }
+    
+    /**
+     * Handle component initialization from frontend
+     */
+    public function handleComponentInitialization()
+    {
+        Log::info('🚀 Component initialization triggered');
+        
+        $isFilterLocked = session('reg_periksa_filter_lock', false);
+        $sessionFilters = session('reg_periksa_filters', []);
+        
+        Log::info('📊 Filter lock status', [
+            'isFilterLocked' => $isFilterLocked,
+            'sessionFilters' => $sessionFilters
+        ]);
+        
+        $this->isFilterLocked = $isFilterLocked;
+        
+        if ($isFilterLocked && !empty($sessionFilters)) {
+            Log::info('🔒 Filter is locked, loading persisted filters');
+            $this->loadPersistedFilters();
+            
+            // Force refresh the component with new filters
+            $this->emit('$refresh');
+            
+            // Dispatch browser event with message
+            $this->dispatchBrowserEvent('filters-loaded', [
+                'message' => 'Filter yang tersimpan berhasil dimuat',
+                'persistedFilters' => $sessionFilters
+            ]);
+        } else {
+            Log::info('🔓 Filter not locked, setting default date filters');
+            // Set default date filters to today
+            $today = now()->format('Y-m-d');
+            
+            // Use setFilter method to properly set filters
+            $this->setFilter('Tanggal Dari', $today);
+            $this->setFilter('Tanggal Sampai', $today);
+            $this->setFilter('Status', '');
+            $this->setFilter('Poliklinik', '');
+            $this->setFilter('Dokter', '');
+            
+            $this->tanggalFilter = $today;
+            
+            // Reset pagination and clear cache
+            $this->resetPage();
+            $this->clearFilterCache();
+        }
+        
+        // Dispatch component mounted event
+        $this->dispatchBrowserEvent('component-mounted', [
+            'isFilterLocked' => $isFilterLocked
+        ]);
+        
+        Log::info('✅ Component initialization completed');
+    }
+    
+    /**
+     * Apply filters from session data
+     */
+    private function applyFiltersFromSession()
+    {
+        $sessionFilters = session('reg_periksa_filters', []);
+        
+        foreach ($sessionFilters as $filterName => $filterValue) {
+            if (!empty($filterValue)) {
+                Log::info('🎯 Applying session filter', ['filter' => $filterName, 'value' => $filterValue]);
+                
+                // Use setFilter method instead of direct property access
+                $this->setFilter($filterName, $filterValue);
+                
+                Log::info('✅ Filter applied successfully', ['filter' => $filterName]);
+            }
         }
     }
+    
+    /**
+     * Save current filter values to session
+     */
+    public function saveCurrentFilters()
+    {
+        // Get current filter values using proper Livewire Tables methods
+        $currentFilters = [];
+        
+        try {
+            // Try to get applied filters using Livewire Tables API
+            $appliedFilters = $this->getAppliedFilters();
+            
+            $currentFilters = [
+                'Tanggal Dari' => $appliedFilters['Tanggal Dari'] ?? $this->getAppliedFilterWithValue('Tanggal Dari') ?? null,
+                'Tanggal Sampai' => $appliedFilters['Tanggal Sampai'] ?? $this->getAppliedFilterWithValue('Tanggal Sampai') ?? null,
+                'Status' => $appliedFilters['Status'] ?? $this->getAppliedFilterWithValue('Status') ?? null,
+                'Poliklinik' => $appliedFilters['Poliklinik'] ?? $this->getAppliedFilterWithValue('Poliklinik') ?? $this->poliklinikFilter,
+                'Dokter' => $appliedFilters['Dokter'] ?? $this->getAppliedFilterWithValue('Dokter') ?? null,
+                'tanggalFilter' => $this->tanggalFilter,
+                'poliklinikFilter' => $this->poliklinikFilter,
+            ];
+            
+        } catch (\Exception $e) {
+            Log::warning('Failed to get applied filters, using fallback method', ['error' => $e->getMessage()]);
+            
+            // Fallback method using component properties
+            $currentFilters = [
+                'Tanggal Dari' => $this->getAppliedFilterWithValue('Tanggal Dari'),
+                'Tanggal Sampai' => $this->getAppliedFilterWithValue('Tanggal Sampai'),
+                'Status' => $this->getAppliedFilterWithValue('Status'),
+                'Poliklinik' => $this->poliklinikFilter,
+                'Dokter' => $this->getAppliedFilterWithValue('Dokter'),
+                'tanggalFilter' => $this->tanggalFilter,
+                'poliklinikFilter' => $this->poliklinikFilter,
+            ];
+        }
+        
+        // Remove null values to keep session clean
+        $currentFilters = array_filter($currentFilters, function($value) {
+            return $value !== null && $value !== '';
+        });
+        
+        Log::info('💾 Saving current filters to session', ['filters' => $currentFilters]);
+        
+        session(['reg_periksa_filters' => $currentFilters]);
+        $this->persistedFilters = $currentFilters;
+        
+        Log::info('✅ Filters saved to session successfully');
+    }
+    
+    /**
+     * Load persisted filters from session
+     */
+    public function loadPersistedFilters()
+    {
+        $savedFilters = session('reg_periksa_filters', []);
+        
+        Log::info('🔄 Loading persisted filters from session', ['savedFilters' => $savedFilters]);
+        
+        if (!empty($savedFilters)) {
+            $this->persistedFilters = $savedFilters;
+            
+            // Apply saved filters using setFilter method for proper handling
+            if (isset($savedFilters['Tanggal Dari']) && $savedFilters['Tanggal Dari']) {
+                Log::info('🎯 Applying Tanggal Dari filter', ['value' => $savedFilters['Tanggal Dari']]);
+                $this->setFilter('Tanggal Dari', $savedFilters['Tanggal Dari']);
+            }
+            if (isset($savedFilters['Tanggal Sampai']) && $savedFilters['Tanggal Sampai']) {
+                Log::info('🎯 Applying Tanggal Sampai filter', ['value' => $savedFilters['Tanggal Sampai']]);
+                $this->setFilter('Tanggal Sampai', $savedFilters['Tanggal Sampai']);
+            }
+            if (isset($savedFilters['Status']) && $savedFilters['Status']) {
+                Log::info('🎯 Applying Status filter', ['value' => $savedFilters['Status']]);
+                $this->setFilter('Status', $savedFilters['Status']);
+            }
+            if (isset($savedFilters['Poliklinik']) && $savedFilters['Poliklinik']) {
+                Log::info('🎯 Applying Poliklinik filter', ['value' => $savedFilters['Poliklinik']]);
+                $this->setFilter('Poliklinik', $savedFilters['Poliklinik']);
+                $this->poliklinikFilter = $savedFilters['Poliklinik'];
+            }
+            if (isset($savedFilters['Dokter']) && $savedFilters['Dokter']) {
+                Log::info('🎯 Applying Dokter filter', ['value' => $savedFilters['Dokter']]);
+                $this->setFilter('Dokter', $savedFilters['Dokter']);
+            }
+            
+            // Apply component filters
+            if (isset($savedFilters['tanggalFilter'])) {
+                $this->tanggalFilter = $savedFilters['tanggalFilter'];
+            }
+            if (isset($savedFilters['poliklinikFilter'])) {
+                $this->poliklinikFilter = $savedFilters['poliklinikFilter'];
+            }
+            
+            // Force table to rebuild with new filters
+            $this->resetPage();
+            $this->clearFilterCache();
+            
+            Log::info('✅ Filters applied successfully', [
+                'tanggalFilter' => $this->tanggalFilter,
+                'poliklinikFilter' => $this->poliklinikFilter,
+                'appliedFilters' => $this->getAppliedFilters()
+            ]);
+        } else {
+            Log::info('📋 No persisted filters found');
+        }
+    }
+    
+    /**
+     * Clear persisted filters from session
+     */
+    public function clearPersistedFilters()
+    {
+        session()->forget('reg_periksa_filters');
+        $this->persistedFilters = [];
+    }
+    
 }

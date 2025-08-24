@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Carbon;
 use App\Http\Livewire\ILP\Pendaftaran;
 use App\Exports\PasienExport;
@@ -45,8 +46,13 @@ class PasienController extends Controller
         $posyandu = DB::table('data_posyandu')
                     ->useWritePdo()
                     ->get();
+        
+        // Ambil data penjab langsung dari database
+        $penjab = DB::table('penjab')
+                  ->useWritePdo()
+                  ->get();
 
-        return view('pasien.edit', ['pasien' => $pasien, 'posyandu' => $posyandu]);
+        return view('pasien.edit', ['pasien' => $pasien, 'posyandu' => $posyandu, 'penjab' => $penjab]);
     }
 
     public function searchPasien(Request $request)
@@ -143,6 +149,7 @@ class PasienController extends Controller
             'data_posyandu' => 'required',
             'no_kk' => 'required',
             'pekerjaan' => 'nullable',
+            'kd_pj' => 'required|exists:penjab,kd_pj',
         ], [
             'nm_pasien.required' => 'Nama Pasien tidak boleh kosong',
             'no_ktp.required' => 'No. KTP/SIM tidak boleh kosong',
@@ -154,6 +161,8 @@ class PasienController extends Controller
             'status.required' => 'Status tidak boleh kosong',
             'data_posyandu.required' => 'Posyandu tidak boleh kosong',
             'no_kk.required' => 'No. KK tidak boleh kosong',
+            'kd_pj.required' => 'Penjab tidak boleh kosong',
+            'kd_pj.exists' => 'Penjab yang dipilih tidak valid',
         ]);
 
         try {
@@ -185,6 +194,7 @@ class PasienController extends Controller
                     'data_posyandu' => $request->data_posyandu,
                     'no_kk' => $request->no_kk,
                     'pekerjaan' => $request->pekerjaan,
+                    'kd_pj' => $request->kd_pj,
                 ]);
                 
             if ($affected === 0) {
@@ -192,22 +202,22 @@ class PasienController extends Controller
             }
 
             // Log sukses update
-            $noRkmMedisLog = (string)($no_rkm_medis ?? 'unknown');
+            $noRkmMedisLog = $no_rkm_medis !== null ? (string)$no_rkm_medis : 'unknown';
             Log::info('PasienController - simpan: Berhasil memperbarui data pasien', [
                 'no_rkm_medis' => $noRkmMedisLog
             ]);
 
-            return redirect('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui');
+            return Redirect::to('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui');
         } catch (\Exception $e) {
             // Log error dengan type safety
             $errorMessage = $e->getMessage();
-            $noRkmMedis = isset($no_rkm_medis) ? (string)$no_rkm_medis : 'unknown';
+            $noRkmMedis = $no_rkm_medis !== null ? (string)$no_rkm_medis : 'unknown';
             Log::error('PasienController - simpan: Gagal memperbarui data pasien', [
                 'no_rkm_medis' => $noRkmMedis,
                 'error' => $errorMessage
             ]);
             
-            return redirect('/data-pasien')->with('error', 'Data Pasien gagal diperbarui: ' . $errorMessage);
+            return Redirect::to('/data-pasien')->with('error', 'Data Pasien gagal diperbarui: ' . $errorMessage);
         }
     }
 

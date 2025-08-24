@@ -1228,6 +1228,9 @@
         let pasienData = [];
         let filteredData = [];
         
+        // Inisialisasi data dari tabel SEBELUM DataTable diinisialisasi
+        initializePaginationData();
+        
         // Modifikasi setup DataTable untuk tabel pasien ralan
         let tablePasienRalan = $('#tablePasienRalan').DataTable({
             "paging": false,
@@ -1236,15 +1239,14 @@
             "autoWidth": false,
             "responsive": true,
             "order": [[0, 'asc']],
+            "retrieve": true, // Mencegah reinisialisasi
+            "destroy": false, // Jangan hancurkan data yang ada
             "language": {
                 "search": "Cari:",
                 "zeroRecords": "Tidak ada data yang ditemukan",
                 "infoEmpty": "Tidak ada data yang tersedia"
             }
         });
-        
-        // Menginisialisasi data dari tabel
-        initializePaginationData();
         
         // Tambahkan fungsi pencarian manual dengan delay
         $('#searchBox').on('keyup', function() {
@@ -1328,11 +1330,18 @@
         });
         
         // Set filter status default dan terapkan filter saat halaman dimuat
-        $(document).ready(function() {
-            // Filter otomatis dengan nilai "Belum" saat halaman dimuat
-            const defaultStatus = $('#filterStatus').val(); // Ambil nilai dari select (yang sudah dipilih "Belum")
-            filterAndDisplayPasien(defaultStatus);
-        });
+        // Pindahkan ke setTimeout untuk memastikan DOM sudah siap
+        setTimeout(function() {
+            // Tampilkan semua data saat halaman dimuat (tanpa filter default)
+            console.log('Page loaded, showing all data');
+            console.log('Total data available:', pasienData.length);
+            
+            // Reset filter dropdown ke "Semua"
+            $('#filterStatus').val('');
+            
+            // Tampilkan semua data
+            filterAndDisplayPasien('');
+        }, 100);
         
         // Tambahkan event listener untuk tombol filter status
         $('#filterStatus').on('change', function() {
@@ -1351,26 +1360,52 @@
             // Kumpulkan data pasien dari tabel
             pasienData = [];
             $('#tablePasienRalan tbody tr').each(function() {
+                const $row = $(this);
+                
+                // Skip jika ini adalah row kosong atau pesan
+                if ($row.find('td').length < 6) {
+                    return;
+                }
+                
                 const row = {
-                    no_reg: $(this).find('td:eq(0)').text(),
-                    nama: $(this).find('td:eq(1)').text(),
-                    no_rawat: $(this).find('td:eq(2)').text(),
-                    telp: $(this).find('td:eq(3)').text(),
-                    dokter: $(this).find('td:eq(4)').text(),
-                    status: $(this).find('td:eq(5)').text().trim(),
-                    html: $(this)[0].outerHTML
+                    no_reg: $row.find('td:eq(0)').text().trim(),
+                    nama: $row.find('td:eq(1)').text().trim(),
+                    no_rawat: $row.find('td:eq(2)').text().trim(),
+                    telp: $row.find('td:eq(3)').text().trim(),
+                    dokter: $row.find('td:eq(4)').text().trim(),
+                    status: $row.find('td:eq(5)').text().trim(),
+                    html: $row[0].outerHTML
                 };
-                pasienData.push(row);
+                
+                // Hanya tambahkan jika ada data yang valid
+                if (row.no_reg || row.nama || row.no_rawat) {
+                    pasienData.push(row);
+                }
             });
+            
+            console.log('Data pasien yang diinisialisasi:', pasienData.length, 'rows');
+            console.log('Sample data:', pasienData.slice(0, 2));
             
             // Set data yang difilter sama dengan data asli di awal
             filteredData = [...pasienData];
             
-            // Buat paginasi
-            createPagination(filteredData.length, pageSize, 'pasien-pagination');
-            
-            // Tampilkan halaman pertama
-            displayPasienPage(1);
+            // Tampilkan semua data jika ada
+            if (pasienData.length > 0) {
+                displayPasienPage(1);
+                createPagination(filteredData.length, pageSize, 'pasien-pagination');
+                updatePaginationInfo(1, Math.min(pageSize, filteredData.length), 'showing-from', 'showing-to', 'total-entries');
+            } else {
+                console.log('No patient data found in table');
+                // Tampilkan pesan tidak ada data
+                $('#tablePasienRalan tbody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Tidak ada data pasien
+                        </td>
+                    </tr>
+                `);
+            }
             
             // Inisialisasi data rujukan internal
             const rujukData = [];
@@ -1387,12 +1422,21 @@
         
         // Fungsi untuk memfilter dan menampilkan data pasien
         function filterAndDisplayPasien(status) {
+            console.log('Filtering with status:', status);
+            console.log('Available data:', pasienData.length);
+            
             // Filter data berdasarkan status
             if (status) {
-                filteredData = pasienData.filter(item => item.status.includes(status));
+                filteredData = pasienData.filter(item => {
+                    const itemStatus = item.status.toLowerCase();
+                    const filterStatus = status.toLowerCase();
+                    return itemStatus.includes(filterStatus);
+                });
             } else {
                 filteredData = [...pasienData];
             }
+            
+            console.log('Filtered data:', filteredData.length);
             
             // Update paginasi
             createPagination(filteredData.length, pageSize, 'pasien-pagination');
@@ -1402,19 +1446,42 @@
             
             // Tampilkan halaman pertama
             displayPasienPage(1);
+            
+            // Tampilkan notifikasi jika tidak ada data
+            if (filteredData.length === 0 && status) {
+                toastr.warning(`Tidak ada pasien dengan status "${status}"`);
+            }
         }
         
         // Fungsi untuk menampilkan halaman tertentu dari data pasien
         function displayPasienPage(pageNum) {
+            console.log('Displaying page:', pageNum, 'of filtered data:', filteredData.length);
+            
             const startIndex = (pageNum - 1) * pageSize;
             const endIndex = Math.min(startIndex + pageSize, filteredData.length);
+            
+            console.log('Showing rows from index', startIndex, 'to', endIndex);
             
             // Kosongkan tabel
             $('#tablePasienRalan tbody').empty();
             
             // Tampilkan data untuk halaman ini
-            for (let i = startIndex; i < endIndex; i++) {
-                $('#tablePasienRalan tbody').append(filteredData[i].html);
+            if (filteredData.length > 0) {
+                for (let i = startIndex; i < endIndex; i++) {
+                    if (filteredData[i] && filteredData[i].html) {
+                        $('#tablePasienRalan tbody').append(filteredData[i].html);
+                    }
+                }
+            } else {
+                // Tampilkan pesan jika tidak ada data
+                $('#tablePasienRalan tbody').append(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Tidak ada data pasien yang sesuai dengan filter
+                        </td>
+                    </tr>
+                `);
             }
             
             // Update info paginasi

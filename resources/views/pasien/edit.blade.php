@@ -143,6 +143,20 @@
             @enderror
         </div>
         <div class="form-group">
+            <label for="kd_pj">Penjab</label>
+            <select class="form-control" id="kd_pj" name="kd_pj">
+                <option value="">Pilih Penjab</option>
+                @foreach($penjab as $pj)
+                <option value="{{ $pj->kd_pj }}" @if($pasien->kd_pj == $pj->kd_pj) selected @endif>
+                    {{ $pj->png_jawab }}
+                </option>
+                @endforeach
+            </select>
+            @error('kd_pj')
+            <div class="text-danger">{{ $message }}</div>
+            @enderror
+        </div>
+        <div class="form-group">
             <label for="no_peserta">No. Peserta</label>
             <input type="text" class="form-control" id="no_peserta" name="no_peserta" value="{{ $pasien->no_peserta }}">
             @error('no_peserta')
@@ -248,6 +262,7 @@
                 $('#no_tlp').val(data.no_tlp);
                 $('#alamat').val(data.alamat);
                 $('#data_posyandu').val(data.data_posyandu);
+                $('#kd_pj').val(data.kd_pj);
                 
                 console.log('Data pasien berhasil disegarkan dari database');
             },

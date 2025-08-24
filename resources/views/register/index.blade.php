@@ -39,51 +39,7 @@
 
 @section('content')
 <div class="registrasi-container">
-    <!-- Filter Poli Section -->
-    <div class="filter-section mb-3">
-        <div class="card filter-card-horizontal">
-            <div class="card-body py-3">
-                <div class="row align-items-center">
-                    <div class="col-md-2">
-                        <h6 class="filter-title mb-0">
-                            <i class="fas fa-hospital mr-2"></i>Poli
-                        </h6>
-                    </div>
-                    <div class="col-md-8">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <select id="filter-poli" class="form-control select2" style="width: 100%;">
-                                    <option value="">Pilih Poliklinik</option>
-                                    @foreach($poliklinik as $poli)
-                                        <option value="{{ $poli->kd_poli }}">{{ $poli->nm_poli }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="filter-actions d-flex justify-content-start ml-3">
-                                    <button id="lock-filter" class="btn btn-outline-primary btn-sm mr-2" title="Lock Filter">
-                                        <i class="fas fa-unlock" id="lock-icon"></i>
-                                    </button>
-                                    <button id="reset-filter" class="btn btn-outline-secondary btn-sm" title="Reset Filter">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <!-- Empty space for balance -->
-                    </div>
-                </div>
-                <div id="filter-status" class="mt-2" style="display: none;">
-                    <div class="alert alert-info alert-sm mb-0">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        <span id="filter-status-text">Filter tidak terkunci</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Filter akan ditampilkan oleh Livewire Tables component -->
 
     <div id="loading-container" class="text-center py-5" style="display: none;">
         <div class="spinner-border text-primary" role="status">
@@ -93,6 +49,15 @@
     </div>
 
     <div id="table-container" class="datatable-wrapper">
+        <!-- Filter Lock Toggle -->
+        <div class="mb-3 d-flex justify-content-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="filter-lock-btn"
+                onclick="toggleFilterLock()" title="Kunci filter untuk mempertahankan setelah refresh">
+                <i class="fas fa-lock" id="lock-icon"></i>
+                <span id="lock-text">Kunci Filter</span>
+            </button>
+        </div>
+
         <livewire:reg-periksa-table wire:id="reg-periksa-table" />
     </div>
 </div>
@@ -122,6 +87,39 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('css/adminlte-premium.css') }}">
 <link rel="stylesheet" href="{{ asset('css/registrasi-premium.css') }}">
+
+<style>
+    /* Filter Lock Button Styling */
+    #filter-lock-btn {
+        border: 1px solid #6c757d;
+        background-color: transparent;
+        color: #6c757d;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    #filter-lock-btn:hover {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    #filter-lock-btn.btn-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+    }
+
+    #filter-lock-btn.btn-warning:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+
+    #filter-lock-btn i {
+        margin-right: 0.5rem;
+    }
+</style>
 <style>
     /* Header Styles */
     .registrasi-header {
@@ -231,17 +229,17 @@
     .modal {
         z-index: 1055 !important;
     }
-    
+
     .modal-backdrop {
         z-index: 1050 !important;
     }
-    
+
     .modal-dialog {
         margin: 1.75rem auto;
         max-width: 90vw;
         width: auto;
     }
-    
+
     .modal-content {
         border: none;
         border-radius: 12px;
@@ -440,17 +438,138 @@
         background: rgba(34, 197, 94, 0.1);
     }
 
+    /* Enhanced Filter Card Styles */
+    .filter-card-enhanced {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: visible;
+    }
+
+    .filter-card-enhanced:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .filter-card-enhanced .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 1rem 1.5rem;
+    }
+
+    .filter-card-enhanced .card-body {
+        padding: 1.5rem;
+    }
+
+    .filter-card-enhanced .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .filter-card-enhanced .form-control {
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .filter-card-enhanced .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    .poli-lock-section {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 1rem;
+    }
+
+    .filter-actions .btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .filter-actions .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    #apply-filters {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+
+    #apply-filters:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+
+    /* Enhanced Filter Responsive Styles */
+    .filter-actions .btn {
+        min-height: 38px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .filter-actions .flex-fill {
+        min-width: 120px;
+    }
+
+    .poli-lock-section {
+        border-color: #e2e8f0 !important;
+    }
+
+    .filter-card-enhanced .row.g-3>* {
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
+    }
+
+
+
     /* Responsive */
+    @media (max-width: 768px) {
+        .filter-actions {
+            flex-direction: column;
+        }
+
+        .filter-actions .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-actions .btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .poli-lock-section .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .poli-lock-section #filter-status {
+            width: 100%;
+            margin-top: 0.5rem;
+            margin-left: 0 !important;
+        }
+
+
+    }
+
     @media (max-width: 768px) {
         .header-content {
             flex-direction: column;
             text-align: center;
         }
-        
+
         .stats-section {
             justify-content: center;
         }
-        
+
         .stat-card {
             min-width: 120px;
         }
@@ -535,43 +654,43 @@
         color: #4f5bda !important;
         font-weight: 600;
     }
-    
+
     /* Fix untuk modal ketika data sedikit */
     body.modal-open {
         overflow: hidden !important;
         padding-right: 0 !important;
     }
-    
+
     .registrasi-container {
         position: relative;
         z-index: 1;
     }
-    
+
     /* Pastikan modal selalu di atas */
     .modal.show {
         display: flex !important;
         align-items: center;
         justify-content: center;
     }
-    
+
     .modal.show .modal-dialog {
         transform: none;
         margin: auto;
     }
-    
+
     /* Modal dengan scroll vertikal */
     .modal-dialog {
         max-width: 800px;
         width: 90%;
         margin: 1.75rem auto;
     }
-    
+
     .modal-content {
         max-height: 90vh;
         display: flex;
         flex-direction: column;
     }
-    
+
     .modal-header {
         flex-shrink: 0;
         position: sticky;
@@ -580,14 +699,14 @@
         background: white;
         border-bottom: 1px solid #dee2e6;
     }
-    
+
     .modal-body {
         flex: 1;
         overflow-y: auto;
         max-height: calc(90vh - 120px);
         padding: 1.5rem;
     }
-    
+
     .modal-footer {
         flex-shrink: 0;
         position: sticky;
@@ -596,26 +715,26 @@
         background: white;
         border-top: 1px solid #dee2e6;
     }
-    
+
     /* Custom scrollbar untuk modal */
     .modal-body::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     .modal-body::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 4px;
     }
-    
+
     .modal-body::-webkit-scrollbar-thumb {
         background: #c1c1c1;
         border-radius: 4px;
     }
-    
+
     .modal-body::-webkit-scrollbar-thumb:hover {
         background: #a8a8a8;
     }
-    
+
     /* Responsive modal */
     @media (max-width: 768px) {
         .modal-dialog {
@@ -623,28 +742,28 @@
             max-width: calc(100vw - 1rem);
             width: calc(100vw - 1rem);
         }
-        
+
         .modal-content {
             max-height: 95vh;
         }
-        
+
         .modal-body {
             max-height: calc(95vh - 120px);
             padding: 1rem;
         }
     }
-    
+
     @media (max-width: 576px) {
         .modal-dialog {
             margin: 0.25rem;
             max-width: calc(100vw - 0.5rem);
             width: calc(100vw - 0.5rem);
         }
-        
+
         .modal-content {
             max-height: 98vh;
         }
-        
+
         .modal-body {
             max-height: calc(98vh - 100px);
             padding: 0.75rem;
@@ -666,15 +785,9 @@
                 $(this).html(mainText + ' <span class="sort-icon">' + arrowChar + '</span>');
             }
         });
-        
+
         // Global function untuk batal antrean BPJS
         window.batalAntrean = function(noRawat, namaPasien) {
-            console.group('🚫 BPJS Batal Antrean Function Called');
-            console.log('👤 Nama Pasien:', namaPasien);
-            console.log('📋 No Rawat:', noRawat);
-            console.log('⏰ Waktu:', new Date().toLocaleString());
-            console.groupEnd();
-            
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: 'Batal Antrean BPJS',
@@ -695,41 +808,39 @@
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
                     confirmButtonText: 'Ya, Batalkan!',
-                    cancelButtonText: 'Batal',
-                    preConfirm: (alasan) => {
-                        console.log('💬 Alasan pembatalan:', alasan);
-                        return alasan;
-                    }
+                    cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         const alasan = result.value;
                         
-                        console.group('🔄 Processing Batal Antrean BPJS');
-                        console.log('👤 Nama Pasien:', namaPasien);
-                        console.log('📋 No Rawat:', noRawat);
-                        console.log('💬 Alasan:', alasan);
-                        console.log('🔗 Mengirim request ke BPJS API...');
-                        console.groupEnd();
-                        
                         // Emit event ke Livewire component
-                        const tableComponent = window.livewire.find('reg-periksa-table');
-                        if (tableComponent) {
-                            tableComponent.call('batalAntreanBPJS', noRawat, alasan);
+                        const tableElement = document.querySelector('[wire\\:id]');
+                        if (tableElement && window.Livewire) {
+                            const wireId = tableElement.getAttribute('wire:id');
+                            const tableComponent = window.Livewire.find(wireId);
+                            if (tableComponent) {
+                                tableComponent.call('batalAntreanBPJS', noRawat, alasan);
+                            } else {
+                                Livewire.emit('batalAntreanBPJS', noRawat, alasan);
+                            }
                         } else {
-                            // Fallback: emit global event
                             Livewire.emit('batalAntreanBPJS', noRawat, alasan);
                         }
-                    } else {
-                        console.log('🚫 Pembatalan antrean dibatalkan oleh user');
                     }
                 });
             } else {
                 // Fallback jika SweetAlert tidak tersedia
                 const alasan = prompt(`Masukkan alasan pembatalan antrean untuk ${namaPasien}:`);
                 if (alasan && alasan.trim().length >= 10) {
-                    const tableComponent = window.livewire.find('reg-periksa-table');
-                    if (tableComponent) {
-                        tableComponent.call('batalAntreanBPJS', noRawat, alasan.trim());
+                    const tableElement = document.querySelector('[wire\\:id]');
+                    if (tableElement && window.Livewire) {
+                        const wireId = tableElement.getAttribute('wire:id');
+                        const tableComponent = window.Livewire.find(wireId);
+                        if (tableComponent) {
+                            tableComponent.call('batalAntreanBPJS', noRawat, alasan.trim());
+                        } else {
+                            Livewire.emit('batalAntreanBPJS', noRawat, alasan.trim());
+                        }
                     } else {
                         Livewire.emit('batalAntreanBPJS', noRawat, alasan.trim());
                     }
@@ -758,36 +869,6 @@
             }
         });
         
-        // Preload resources
-        function preloadResources() {
-            // Preload Select2 resources
-            $.getScript('{{ asset('vendor/select2/js/select2.full.min.js') }}');
-            $('<link>').attr({
-                rel: 'stylesheet',
-                type: 'text/css',
-                href: '{{ asset('vendor/select2/css/select2.min.css') }}'
-            }).appendTo('head');
-            
-            // Preload patient data for faster search
-            $.ajax({
-                url: '{{ url('/api/pasien') }}',
-                data: { q: '', preload: true, limit: 20 },
-                dataType: 'json',
-                cache: true
-            });
-            
-            // Preload doctor data
-            $.ajax({
-                url: '{{ route('dokter') }}',
-                data: { q: '', preload: true, limit: 20 },
-                dataType: 'json',
-                cache: true
-            });
-        }
-        
-        // Call preload function
-        preloadResources();
-        
         // Handle modal loading
         $('.btn-register').on('click', function() {
             $('#form-container').hide();
@@ -812,41 +893,29 @@
                 // Re-apply premium styling after table refreshes
                 setTimeout(function() {
                     $('.table').addClass('registrasi-table');
-                    
-                    // Re-apply filter yang terkunci setelah table refresh
-                     if (isFilterLocked && lockedPoliValue) {
-                         console.log('Re-applying locked filter after Livewire refresh:', lockedPoliValue);
-                         // Delay sedikit untuk memastikan table sudah sepenuhnya dimuat
-                         setTimeout(() => {
-                             applyPoliFilter(lockedPoliValue);
-                         }, 200);
-                     }
-                    
                     updateStatistics();
                 }, 100);
             });
             
             // Event listener untuk registrasi berhasil
             Livewire.on('registrationSuccess', (data) => {
-                console.log('Registration success event received:', data);
-                
                 // Refresh Livewire component langsung
-                const tableComponent = window.livewire.find('reg-periksa-table');
-                if (tableComponent) {
-                    tableComponent.call('refreshData');
+                const tableElement = document.querySelector('[wire\\:id]');
+                if (tableElement && window.Livewire) {
+                    const wireId = tableElement.getAttribute('wire:id');
+                    const tableComponent = window.Livewire.find(wireId);
+                    if (tableComponent) {
+                        tableComponent.call('refreshData');
+                    } else {
+                        Livewire.emit('refreshDatatable');
+                    }
                 } else {
-                    // Fallback: emit event untuk refresh
                     Livewire.emit('refreshDatatable');
                 }
                 
                 // Refresh data table dan statistik
                 setTimeout(() => {
                     updateStatistics();
-                    
-                    // Re-apply filter jika terkunci
-                    if (isFilterLocked && lockedPoliValue) {
-                        applyPoliFilter(lockedPoliValue);
-                    }
                 }, 300);
                 
                 // Show success notification
@@ -863,28 +932,24 @@
             
             // Event listener untuk refresh datatable
             Livewire.on('refreshDatatable', () => {
-                console.log('Refresh datatable event received');
-                
                 // Refresh Livewire component langsung
-                const tableComponent = window.livewire.find('reg-periksa-table');
-                if (tableComponent) {
-                    tableComponent.call('refreshData');
+                const tableElement = document.querySelector('[wire\\:id]');
+                if (tableElement && window.Livewire) {
+                    const wireId = tableElement.getAttribute('wire:id');
+                    const tableComponent = window.Livewire.find(wireId);
+                    if (tableComponent) {
+                        tableComponent.call('refreshData');
+                    }
                 }
                 
                 setTimeout(() => {
                     updateStatistics();
-                    
-                    // Re-apply filter jika terkunci
-                    if (isFilterLocked && lockedPoliValue) {
-                        applyPoliFilter(lockedPoliValue);
-                    }
                 }, 300);
             });
             
             // Handle session expired errors
             Livewire.hook('message.failed', (message, component) => {
                 if (message.response && message.response.includes('This page has expired')) {
-                    // Jika sesi berakhir, muat ulang halaman
                     Swal.fire({
                         title: 'Sesi Telah Berakhir',
                         text: 'Halaman akan dimuat ulang untuk memperbarui sesi.',
@@ -917,12 +982,11 @@
 
         // Handling dropdown menu in table
         $(document).on('click', '.action-dropdown .dropdown-item', function() {
-            // Add loading animation for button clicks
             if ($(this).attr('wire:click') || $(this).attr('href')) {
                 const $button = $(this).closest('.btn-group').find('.dropdown-toggle');
                 const originalText = $button.html();
                 
-                if (!$(this).attr('href')) { // Only for wire:click, not for direct links
+                if (!$(this).attr('href')) {
                     $button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
                     
                     setTimeout(function() {
@@ -932,16 +996,8 @@
             }
         });
         
-        // Re-initialize dropdowns after Livewire updates
-        Livewire.hook('message.processed', (message, component) => {
-            // Apply premium styling to new dropdown menus
-            $('.dropdown-toggle').dropdown();
-            updateStatistics();
-        });
-        
         // Function to update statistics
         function updateStatistics(kdPoli = null) {
-            // Gunakan AJAX untuk mendapatkan data statistik yang akurat dari server
             $.ajax({
                 url: '{{ route('register.stats') }}',
                 method: 'GET',
@@ -974,7 +1030,6 @@
 
         // Function to get current filter date
         function getCurrentFilterDate() {
-            // Ambil tanggal dari filter Livewire jika ada
             const dateFilter = $('input[type="date"]').val();
             return dateFilter || '{{ date('Y-m-d') }}';
         }
@@ -986,423 +1041,273 @@
         $('.search-input').on('keyup', function() {
             setTimeout(updateStatistics, 100);
         });
-        
-        // Function to initialize filter on page load
-        function initializeFilter() {
-            // Cek apakah ada filter yang tersimpan di localStorage
-            const savedFilterState = localStorage.getItem('poliFilterState');
-            if (savedFilterState) {
-                const filterState = JSON.parse(savedFilterState);
-                if (filterState.isLocked && filterState.value) {
-                    // Restore locked filter state
-                    isFilterLocked = true;
-                    lockedPoliValue = filterState.value;
-                    
-                    // Update UI
-                    $('#filter-poli').val(lockedPoliValue).trigger('change.select2');
-                    $('#lock-icon').removeClass('fa-unlock').addClass('fa-lock');
-                    $('#lock-filter').removeClass('btn-outline-primary').addClass('btn-success');
-                    $('#lock-filter').attr('title', 'Unlock Filter');
-                    $('.filter-card').addClass('filter-locked');
-                    $('#filter-poli').prop('disabled', true);
-                    $('#filter-status').show();
-                    
-                    const selectedText = $('#filter-poli').find('option:selected').text();
-                    $('#filter-status-text').text(`Filter terkunci pada: ${selectedText}`);
-                    
-                    // Apply filter
-                    setTimeout(() => {
-                        applyPoliFilter(lockedPoliValue);
-                    }, 500);
-                }
-            }
-        }
-        
-        // Initialize filter after page load
-        setTimeout(initializeFilter, 1500);
 
-        // Filter Poli Functionality
-        let isFilterLocked = false;
-        let lockedPoliValue = '';
-
-        // Initialize Select2 for filter poli (menggunakan data yang sudah ada)
+        // Initialize Select2 for filters
         $('#filter-poli').select2({
             placeholder: 'Pilih Poliklinik',
             allowClear: true,
             width: '100%'
         });
         
-        // Debug: Log when filter is initialized
-        console.log('Filter poli initialized with Select2');
+        $('#filter-status').select2({
+            placeholder: 'Pilih Status',
+            allowClear: true,
+            width: '100%'
+        });
+        
+        // Set default date values
+        const today = new Date().toISOString().split('T')[0];
+        $('#filter-date-from').val(today);
+        $('#filter-date-to').val(today);
 
         // Handle filter poli change
         $('#filter-poli').on('change', function() {
             const selectedValue = $(this).val();
-            
-            if (!isFilterLocked) {
-                applyPoliFilter(selectedValue);
-                updateStatistics(selectedValue);
-            } else {
-                // Jika filter terkunci, kembalikan ke nilai yang terkunci
-                $(this).val(lockedPoliValue).trigger('change.select2');
-                
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Filter Terkunci',
-                        text: 'Filter poliklinik sedang terkunci. Buka kunci terlebih dahulu untuk mengubah filter.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            }
-        });
-
-        // Handle lock/unlock filter
-        $('#lock-filter').on('click', function() {
-            const $button = $(this);
-            const $icon = $('#lock-icon');
-            const $card = $('.filter-card');
-            const $status = $('#filter-status');
-            const $statusText = $('#filter-status-text');
-            const $select = $('#filter-poli');
-
-            if (!isFilterLocked) {
-                // Lock filter
-                isFilterLocked = true;
-                lockedPoliValue = $select.val();
-                
-                $icon.removeClass('fa-unlock').addClass('fa-lock');
-                $button.removeClass('btn-outline-primary').addClass('btn-success');
-                $button.attr('title', 'Unlock Filter');
-                $card.addClass('filter-locked');
-                $select.prop('disabled', true);
-                $status.show();
-                
-                if (lockedPoliValue) {
-                    const selectedText = $select.find('option:selected').text();
-                    $statusText.text(`Filter terkunci pada: ${selectedText}`);
-                } else {
-                    $statusText.text('Filter terkunci pada: Semua Poliklinik');
-                }
-                
-                // Apply filter immediately when locked
-                applyPoliFilter(lockedPoliValue);
-                
-                // Save filter state to localStorage
-                localStorage.setItem('poliFilterState', JSON.stringify({
-                    isLocked: true,
-                    value: lockedPoliValue
-                }));
-                
-                // Show notification
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Filter Terkunci',
-                        text: 'Filter poliklinik telah dikunci. Data akan tetap menampilkan poliklinik yang dipilih.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            } else {
-                // Unlock filter
-                isFilterLocked = false;
-                lockedPoliValue = '';
-                
-                $icon.removeClass('fa-lock').addClass('fa-unlock');
-                $button.removeClass('btn-success').addClass('btn-outline-primary');
-                $button.attr('title', 'Lock Filter');
-                $card.removeClass('filter-locked');
-                $select.prop('disabled', false);
-                $status.hide();
-                
-                // Remove filter state from localStorage
-                localStorage.removeItem('poliFilterState');
-                
-                // Show notification
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Filter Dibuka',
-                        text: 'Filter poliklinik telah dibuka. Anda dapat mengubah filter kembali.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            }
+            applyPoliFilter(selectedValue);
+            updateStatistics(selectedValue);
         });
 
         // Handle reset filter
         $('#reset-filter').on('click', function() {
-            if (!isFilterLocked) {
-                $('#filter-poli').val('').trigger('change');
-                
-                // Refresh Livewire component langsung
-                const tableComponent = window.livewire.find('reg-periksa-table');
+            $('#filter-poli').val('').trigger('change');
+            
+            const tableElement = document.querySelector('[wire\\:id]');
+            if (tableElement && window.Livewire) {
+                const wireId = tableElement.getAttribute('wire:id');
+                const tableComponent = window.Livewire.find(wireId);
                 if (tableComponent) {
-                    tableComponent.call('refreshData');
+                    tableComponent.call('resetFilters');
                 } else {
-                    // Fallback: emit event untuk refresh
-                    Livewire.emit('refreshDatatable');
-                }
-                
-                // Apply filter dan update statistik
-                setTimeout(() => {
-                    applyPoliFilter('');
-                    updateStatistics('');
-                }, 300);
-                
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Filter Direset',
-                        text: 'Filter poliklinik telah direset ke "Semua Poliklinik".',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    Livewire.emit('resetFilters');
                 }
             } else {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Filter Terkunci',
-                        text: 'Buka kunci filter terlebih dahulu untuk mereset.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
+                Livewire.emit('resetFilters');
+            }
+            
+            setTimeout(() => {
+                applyPoliFilter('');
+                updateStatistics('');
+            }, 300);
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Filter Direset',
+                    text: 'Semua filter telah direset ke nilai default.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
         });
 
         // Function to apply poli filter
         function applyPoliFilter(poliValue) {
-            console.log('applyPoliFilter called with value:', poliValue);
-            
-            // Cari komponen Livewire table dengan cara yang lebih spesifik
             const tableElement = document.querySelector('[wire\\:id]');
             
             if (tableElement && window.Livewire) {
                 const wireId = tableElement.getAttribute('wire:id');
-                console.log('Found table element with wire:id:', wireId);
                 const tableComponent = window.Livewire.find(wireId);
                 
                 if (tableComponent) {
-                    console.log('Livewire component found, applying filter via Livewire:', poliValue);
-                    
-                    // Gunakan method filterByPoliklinik yang sudah ada di komponen
                     tableComponent.call('filterByPoliklinik', poliValue);
                     
-                    // Update statistik dengan filter
                     setTimeout(() => {
                         updateStatistics(poliValue);
-                    }, 500); // Delay untuk memastikan filter sudah diterapkan
+                    }, 500);
                     
                     return;
-                } else {
-                    console.log('Livewire component not found for wireId:', wireId);
                 }
-            } else {
-                console.log('Table element or Livewire not found, tableElement:', !!tableElement, 'Livewire:', !!window.Livewire);
             }
             
             // Fallback: filter manual pada tabel yang sudah ada
-            console.log('Using fallback manual filter:', poliValue);
-            
-            if (poliValue === '') {
+            if (poliValue === '' || poliValue === null || poliValue === undefined) {
                 $('.table tbody tr').show();
-                console.log('Showing all rows (no filter)');
             } else {
-                let visibleCount = 0;
                 $('.table tbody tr').each(function() {
-                    const poliCell = $(this).find('td:nth-child(8)'); // Kolom poliklinik
+                    const poliCell = $(this).find('td:nth-child(8)');
                     const poliText = poliCell.text().trim();
                     
-                    // Cari berdasarkan nama poli atau kode poli
                     if (poliText.toLowerCase().includes(poliValue.toLowerCase()) || 
                         $(this).data('poli-code') === poliValue) {
                         $(this).show();
-                        visibleCount++;
                     } else {
                         $(this).hide();
                     }
                 });
-                console.log(`Manual filter applied. Visible rows: ${visibleCount}`);
             }
             
-            // Update statistik setelah filter manual
             updateStatistics(poliValue);
         }
         
-        // Event listener untuk menangkap respons BPJS saat klik menu aksi hadir/belum
+        // Event listener untuk menangkap respons BPJS
         document.addEventListener('livewire:load', function () {
-            // Tangkap event sebelum request dikirim
-            Livewire.hook('message.sent', (message, component) => {
-                // Cek apakah ini adalah call untuk updateStatusAntreanBPJS
-                if (message.updateQueue && message.updateQueue.some(update => 
-                    update.method === 'updateStatusAntreanBPJS'
-                )) {
-                    const updateCall = message.updateQueue.find(update => 
-                        update.method === 'updateStatusAntreanBPJS'
-                    );
-                    const [noRawat, status] = updateCall.payload.params;
-                    const statusText = status == 1 ? 'Hadir' : 'Tidak Hadir';
-                    
-                    console.group('🏥 BPJS API Request - Status Antrean');
-                    console.log('📋 No Rawat:', noRawat);
-                    console.log('📊 Status:', statusText + ' (' + status + ')');
-                    console.log('⏰ Waktu Request:', new Date().toLocaleString());
-                    console.groupEnd();
-                }
-            });
-            
-            // Tangkap event setelah response diterima
-            Livewire.hook('message.processed', (message, component) => {
-                // Cek apakah ada flash message yang mengindikasikan respons BPJS
-                if (component.serverMemo.data.flashMessages) {
-                    const flashMessages = component.serverMemo.data.flashMessages;
-                    
-                    // Cek untuk success message BPJS
-                    if (flashMessages.success && flashMessages.success.includes('Status antrean BPJS')) {
-                        console.group('✅ BPJS API Response - SUCCESS');
-                        console.log('📝 Message:', flashMessages.success);
-                        console.log('⏰ Waktu Response:', new Date().toLocaleString());
-                        console.log('🎯 Status: Berhasil mengupdate status antrean BPJS');
-                        console.groupEnd();
+            // Event listener untuk menangkap respons detail BPJS
+            Livewire.on('bpjsResponseReceived', (data) => {
+                if (data.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Data berhasil dikirim ke BPJS',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
                     }
-                    
-                    // Cek untuk error message BPJS
-                    if (flashMessages.error && flashMessages.error.includes('BPJS')) {
-                        console.group('❌ BPJS API Response - ERROR');
-                        console.log('📝 Error Message:', flashMessages.error);
-                        console.log('⏰ Waktu Response:', new Date().toLocaleString());
-                        console.log('🚨 Status: Gagal mengupdate status antrean BPJS');
-                        console.groupEnd();
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: data.response_data && data.response_data.error_message ? 
+                                  data.response_data.error_message : 
+                                  'Terjadi kesalahan saat mengirim data ke BPJS.',
+                            confirmButtonText: 'OK'
+                        });
                     }
                 }
             });
             
-            // Event listener khusus untuk klik menu BPJS
-             $(document).on('click', '[wire\\:click*="updateStatusAntreanBPJS"]', function() {
-                 const wireClick = $(this).attr('wire:click');
-                 const match = wireClick.match(/updateStatusAntreanBPJS\('([^']+)',\s*(\d+)\)/);
-                 
-                 if (match) {
-                     const noRawat = match[1];
-                     const status = match[2];
-                     const statusText = status == '1' ? 'Hadir' : 'Tidak Hadir';
-                     const patientName = $(this).closest('tr').find('td:nth-child(3)').text().trim();
-                     
-                     console.group('🔄 BPJS Menu Action Clicked');
-                     console.log('👤 Nama Pasien:', patientName);
-                     console.log('📋 No Rawat:', noRawat);
-                     console.log('📊 Action:', 'Update Status ke ' + statusText);
-                     console.log('⏰ Waktu Klik:', new Date().toLocaleString());
-                     console.log('🔗 Mengirim request ke BPJS API...');
-                     console.groupEnd();
-                 }
-             });
-             
-             // Event listener untuk menangkap klik tombol batal antrean
-             $(document).on('click', '[onclick*="batalAntrean"]', function() {
-                 const onclickAttr = $(this).attr('onclick');
-                 const match = onclickAttr.match(/batalAntrean\('([^']+)',\s*'([^']+)'\)/);
-                 
-                 if (match) {
-                     const noRawat = match[1];
-                     const namaPasien = match[2];
-                     
-                     console.group('🚫 BPJS Batal Antrean Action Clicked');
-                     console.log('👤 Nama Pasien:', namaPasien);
-                     console.log('📋 No Rawat:', noRawat);
-                     console.log('📊 Action:', 'Batal Antrean BPJS');
-                     console.log('⏰ Waktu Klik:', new Date().toLocaleString());
-                     console.log('🔗 Menunggu input alasan pembatalan...');
-                     console.groupEnd();
-                 }
-             });
-             
-             // Event listener untuk menangkap respons detail BPJS
-             Livewire.on('bpjsResponseReceived', (data) => {
-                 if (data.success) {
-                     console.group('🎉 BPJS API Response - DETAIL SUCCESS');
-                     console.log('👤 Nama Pasien:', data.patient_name);
-                     console.log('📋 No Rawat:', data.no_rawat);
-                     console.log('📊 Status Update:', data.status_text);
-                     console.log('⏰ Timestamp:', data.timestamp);
-                     console.log('📤 Request Data:', data.request_data);
-                     console.log('📥 Response Data:', data.response_data);
-                     console.log('✅ Status: SUCCESS - Data berhasil dikirim ke BPJS');
-                     console.groupEnd();
-                 } else {
-                     console.group('💥 BPJS API Response - DETAIL ERROR');
-                     console.log('👤 Nama Pasien:', data.patient_name);
-                     console.log('📋 No Rawat:', data.no_rawat);
-                     console.log('📊 Status Update:', data.status_text);
-                     console.log('⏰ Timestamp:', data.timestamp);
-                     console.log('📤 Request Data:', data.request_data);
-                     console.log('📥 Response Data:', data.response_data);
-                     console.log('❌ Status: ERROR - Gagal mengirim data ke BPJS');
-                     if (data.response_data.error_message) {
-                         console.log('🚨 Error Message:', data.response_data.error_message);
-                     }
-                     console.groupEnd();
-                 }
-             });
-             
-             // Event listener untuk menangkap respons batal antrean BPJS
-             Livewire.on('bpjsBatalAntreanResponse', (data) => {
-                 if (data.success) {
-                     console.group('🎉 BPJS Batal Antrean Response - SUCCESS');
-                     console.log('👤 Nama Pasien:', data.patient_name);
-                     console.log('📋 No Rawat:', data.no_rawat);
-                     console.log('📊 Action:', 'Batal Antrean BPJS');
-                     console.log('💬 Alasan:', data.alasan);
-                     console.log('⏰ Timestamp:', data.timestamp);
-                     console.log('📤 Request Data:', data.request_data);
-                     console.log('📥 Response Data:', data.response_data);
-                     console.log('✅ Status: SUCCESS - Antrean berhasil dibatalkan di BPJS');
-                     console.groupEnd();
-                     
-                     // Show success notification
-                     if (typeof Swal !== 'undefined') {
-                         Swal.fire({
-                             icon: 'success',
-                             title: 'Antrean Dibatalkan',
-                             text: `Antrean BPJS untuk ${data.patient_name} berhasil dibatalkan.`,
-                             timer: 3000,
-                             showConfirmButton: false
-                         });
-                     }
-                 } else {
-                     console.group('💥 BPJS Batal Antrean Response - ERROR');
-                     console.log('👤 Nama Pasien:', data.patient_name);
-                     console.log('📋 No Rawat:', data.no_rawat);
-                     console.log('📊 Action:', 'Batal Antrean BPJS');
-                     console.log('💬 Alasan:', data.alasan);
-                     console.log('⏰ Timestamp:', data.timestamp);
-                     console.log('📤 Request Data:', data.request_data);
-                     console.log('📥 Response Data:', data.response_data);
-                     console.log('❌ Status: ERROR - Gagal membatalkan antrean di BPJS');
-                     if (data.response_data && data.response_data.error_message) {
-                         console.log('🚨 Error Message:', data.response_data.error_message);
-                     }
-                     console.groupEnd();
-                     
-                     // Show error notification
-                     if (typeof Swal !== 'undefined') {
-                         Swal.fire({
-                             icon: 'error',
-                             title: 'Gagal Membatalkan Antrean',
-                             text: data.response_data && data.response_data.error_message ? 
-                                   data.response_data.error_message : 
-                                   'Terjadi kesalahan saat membatalkan antrean BPJS.',
-                             confirmButtonText: 'OK'
-                         });
-                     }
-                 }
-             });
+            // Event listener untuk menangkap respons batal antrean BPJS
+            Livewire.on('bpjsBatalAntreanResponse', (data) => {
+                if (data.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Antrean Dibatalkan',
+                            text: `Antrean BPJS untuk ${data.patient_name} berhasil dibatalkan.`,
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Membatalkan Antrean',
+                            text: data.response_data && data.response_data.error_message ? 
+                                  data.response_data.error_message : 
+                                  'Terjadi kesalahan saat membatalkan antrean BPJS.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                }
+            });
         });
+    });
+
+    // Simplified Filter Lock Functionality
+    let filterLockInitialized = false;
+    
+    function toggleFilterLock() {
+        Livewire.emit('toggleFilterLock');
+    }
+
+    // Listen for filter lock status updates
+    Livewire.on('filterLockUpdated', function(isLocked) {
+        updateFilterLockUI(isLocked);
+    });
+    
+    // Listen for filters loaded event
+    Livewire.on('filters-loaded', function(data) {
+        if (typeof toastr !== 'undefined' && data.message) {
+            toastr.success(data.message);
+        }
+    });
+    
+    // Listen for component mounted event
+    Livewire.on('component-mounted', function(data) {
+        updateFilterLockUI(data.isFilterLocked);
+    });
+    
+    // Listen for filter lock toggle messages
+    Livewire.on('filterLockToggled', function(data) {
+        if (typeof toastr !== 'undefined' && data.message) {
+            if (data.locked) {
+                toastr.success(data.message);
+            } else {
+                toastr.info(data.message);
+            }
+        }
+    });
+    
+    // Listen for filter lock active messages
+    Livewire.on('filterLockActive', function(message) {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning(message);
+        }
+    });
+
+    function updateFilterLockUI(isLocked) {
+        const btn = document.getElementById('filter-lock-btn');
+        const icon = document.getElementById('lock-icon');
+        const text = document.getElementById('lock-text');
+        
+        if (!btn || !icon || !text) {
+            return;
+        }
+        
+        if (isLocked) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-warning');
+            icon.classList.remove('fa-unlock');
+            icon.classList.add('fa-lock');
+            text.textContent = 'Filter Terkunci';
+            btn.title = 'Filter terkunci - Klik untuk membuka';
+        } else {
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-outline-secondary');
+            icon.classList.remove('fa-lock');
+            icon.classList.add('fa-unlock');
+            text.textContent = 'Kunci Filter';
+            btn.title = 'Kunci filter untuk mempertahankan setelah refresh';
+        }
+    }
+    
+    // Initialize filter lock when Livewire is ready
+    function initializeFilterLock() {
+        if (filterLockInitialized) {
+            return;
+        }
+        
+        const checkLivewire = setInterval(() => {
+            const tableElement = document.querySelector('[wire\\:id]');
+            if (window.Livewire && tableElement) {
+                const wireId = tableElement.getAttribute('wire:id');
+                const tableComponent = window.Livewire.find(wireId);
+                if (tableComponent) {
+                    clearInterval(checkLivewire);
+                    
+                    Livewire.emit('initializeComponent');
+                    
+                    setTimeout(() => {
+                        Livewire.emit('getFilterLockStatus');
+                    }, 300);
+                    
+                    filterLockInitialized = true;
+                }
+            }
+        }, 100);
+        
+        setTimeout(() => {
+            if (!filterLockInitialized) {
+                clearInterval(checkLivewire);
+            }
+        }, 5000);
+    }
+
+    // Single initialization point
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            initializeFilterLock();
+        }, 1000);
+    });
+    
+    // Re-initialize when Livewire loads
+    document.addEventListener('livewire:load', function() {
+        filterLockInitialized = false;
+        setTimeout(() => {
+            initializeFilterLock();
+        }, 500);
     });
 </script>
 @stop
