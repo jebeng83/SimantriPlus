@@ -1362,7 +1362,15 @@
                            <div class="col-md-6">
                               <table class="table table-bordered">
                                  <tr>
-                                    <th width="50%">IMT/U</th>
+                                    <th width="50%">Berat Badan</th>
+                                    <td>{{ $detail->berat_badan ?? '-' }} kg</td>
+                                 </tr>
+                                 <tr>
+                                    <th>Tinggi Badan</th>
+                                    <td>{{ $detail->tinggi_badan ?? '-' }} cm</td>
+                                 </tr>
+                                 <tr>
+                                    <th>IMT/U</th>
                                     <td>{{ $detail->imt ?? '-' }}</td>
                                  </tr>
                                  <tr>
