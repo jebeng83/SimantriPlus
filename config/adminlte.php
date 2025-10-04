@@ -346,6 +346,11 @@ return [
                     'icon' => 'fas fa-fw fa-chart-bar',
                 ],
                 [
+                    'text' => 'Dashboard Analisa CKG',
+                    'url'  => '/ilp/dashboard-pws',
+                    'icon' => 'fas fa-fw fa-analytics',
+                ],
+                [
                     'text' => 'Data Siswa Sekolah',
                     'url'  => '/ilp/data-siswa-sekolah',
                     'icon' => 'fas fa-fw fa-graduation-cap',

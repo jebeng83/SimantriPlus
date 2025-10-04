@@ -243,6 +243,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
     Route::prefix('ilp')->name('ilp.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard.data');
+        Route::get('/dashboard-pws', [App\Http\Controllers\ILP\DashboardController::class, 'dashboardPws'])->name('dashboard.pws');
         Route::get('/dashboard-ckg', [App\Http\Controllers\ILP\DashboardCKGController::class, 'index'])->name('dashboard-ckg');
         Route::get('/pendaftaran', [App\Http\Controllers\ILP\PendaftaranController::class, 'index'])->name('pendaftaran');
         Route::get('/pelayanan', [App\Http\Controllers\ILP\PelayananController::class, 'index'])->name('pelayanan');
@@ -308,6 +309,8 @@ Route::post('/pendaftaran-ckg/update-petugas-entry-sekolah', [App\Http\Controlle
 Route::get('/pendaftaran-ckg/check-processing-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'checkProcessingStatus'])->name('ckg.check-processing-status');
 Route::post('/pendaftaran-ckg/set-processing', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'setProcessing'])->name('ckg.set-processing');
 Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'releaseProcessing'])->name('ckg.release-processing');
+        Route::post('/pendaftaran-ckg/update-kd-kel', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateKdKel'])->name('ckg.update-kd-kel');
+        Route::post('/pendaftaran-ckg/update-kode-posyandu', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateKodePosyandu'])->name('ckg.update-kode-posyandu');
         
         // Route untuk ILP Dewasa - dengan penanganan URL yang di-encode
         Route::get('/dewasa/{noRawat}', [App\Http\Controllers\ILP\IlpDewasaController::class, 'index'])

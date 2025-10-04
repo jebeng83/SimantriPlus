@@ -26,6 +26,9 @@ class PendaftaranCKGController extends Controller
         $status = $request->input('status');
         $nama_sekolah = $request->input('nama_sekolah');
         $kelas = $request->input('kelas');
+        // Filter tambahan
+        $kd_kel = $request->input('kelurahan');
+        $kode_posyandu = $request->input('posyandu');
         
         // Query dasar
         $query = DB::table('skrining_pkg')
@@ -33,6 +36,8 @@ class PendaftaranCKGController extends Controller
             ->leftJoin('data_siswa_sekolah', 'skrining_pkg.no_rkm_medis', '=', 'data_siswa_sekolah.no_rkm_medis')
             ->leftJoin('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
             ->leftJoin('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
+            ->leftJoin('kelurahan', 'skrining_pkg.kd_kel', '=', 'kelurahan.kd_kel')
+            ->leftJoin('data_posyandu', 'skrining_pkg.kode_posyandu', '=', 'data_posyandu.kode_posyandu')
             ->select(
                 'skrining_pkg.id_pkg',
                 'skrining_pkg.nik',
@@ -45,9 +50,13 @@ class PendaftaranCKGController extends Controller
                 'skrining_pkg.tanggal_skrining',
                 'skrining_pkg.status',
                 'skrining_pkg.kunjungan_sehat',
+                'skrining_pkg.kd_kel',
+                'skrining_pkg.kode_posyandu',
                 'pasien.no_peserta',
                 'data_sekolah.nama_sekolah',
-                'data_kelas.kelas'
+                'data_kelas.kelas',
+                'kelurahan.nm_kel',
+                'data_posyandu.nama_posyandu'
             );
                      
         // Terapkan filter jika ada
@@ -70,6 +79,14 @@ class PendaftaranCKGController extends Controller
         if ($kelas !== null && $kelas !== '') {
             $query->where('data_kelas.id_kelas', $kelas);
         }
+        // Filter kelurahan
+        if ($kd_kel !== null && $kd_kel !== '') {
+            $query->where('skrining_pkg.kd_kel', $kd_kel);
+        }
+        // Filter posyandu
+        if ($kode_posyandu !== null && $kode_posyandu !== '') {
+            $query->where('skrining_pkg.kode_posyandu', $kode_posyandu);
+        }
         
         // Ambil data
         $data_pendaftaran = $query->orderBy('tanggal_skrining', 'desc')->get();
@@ -83,13 +100,23 @@ class PendaftaranCKGController extends Controller
             ->orderBy('kelas')
             ->get(['id_kelas', 'kelas']);
         
+        // Ambil daftar kelurahan untuk filter
+        $daftar_kelurahan = DB::table('kelurahan')
+            ->orderBy('nm_kel')
+            ->get(['kd_kel', 'nm_kel']);
+        
+        // Ambil daftar posyandu untuk filter
+        $daftar_posyandu = DB::table('data_posyandu')
+            ->orderBy('nama_posyandu')
+            ->get(['kode_posyandu', 'nama_posyandu']);
+        
         // Log hasil query untuk debugging
         Log::info('Jumlah data pendaftaran CKG: ' . count($data_pendaftaran));
         if (count($data_pendaftaran) > 0) {
             Log::info('Data pertama: ', (array) $data_pendaftaran[0]);
         }
 
-        return view('ilp.pendaftaran_ckg', compact('data_pendaftaran', 'daftar_sekolah', 'daftar_kelas'));
+        return view('ilp.pendaftaran_ckg', compact('data_pendaftaran', 'daftar_sekolah', 'daftar_kelas', 'daftar_kelurahan', 'daftar_posyandu', 'kd_kel', 'kode_posyandu'));
     }
 
     /**
@@ -604,6 +631,184 @@ class PendaftaranCKGController extends Controller
         } catch (\Exception $e) {
             Log::error('Error releasing processing status: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan'], 500);
+        }
+    }
+
+    /**
+     * Update kd_kel dari tabel pasien ke tabel skrining_pkg
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateKdKel(Request $request)
+    {
+        try {
+            Log::info('Memulai proses update kd_kel dari tabel pasien ke skrining_pkg');
+            
+            // Ambil data dari skrining_pkg yang belum memiliki kd_kel (NULL, 0, atau kosong)
+            // Catatan: beberapa data tidak memiliki no_rkm_medis, sehingga kita siapkan fallback menggunakan NIK -> pasien.no_ktp
+            $skriningData = DB::table('skrining_pkg')
+                ->where(function($query) {
+                    $query->whereNull('kd_kel')
+                          ->orWhere('kd_kel', 0)
+                          ->orWhere('kd_kel', '');
+                })
+                ->get(['id_pkg', 'no_rkm_medis', 'nik']);
+            
+            $totalData = count($skriningData);
+            $updatedCount = 0;
+            $errorCount = 0;
+            
+            Log::info("Ditemukan {$totalData} record skrining_pkg yang perlu diupdate kd_kel");
+            
+            foreach ($skriningData as $skrining) {
+                try {
+                    $kdKelToSet = null;
+
+                    // 1) Prioritas utama: gunakan no_rkm_medis jika tersedia
+                    if (!empty($skrining->no_rkm_medis)) {
+                        $pasien = DB::table('pasien')
+                            ->where('no_rkm_medis', $skrining->no_rkm_medis)
+                            ->first(['kd_kel']);
+
+                        if ($pasien && !empty($pasien->kd_kel)) {
+                            $kdKelToSet = $pasien->kd_kel;
+                            Log::info("Menemukan kd_kel via no_rkm_medis untuk ID {$skrining->id_pkg}: {$kdKelToSet}");
+                        }
+                    }
+
+                    // 2) Fallback: jika no_rkm_medis tidak ada atau tidak menemukan kd_kel, coba gunakan NIK (skrining_pkg.nik -> pasien.no_ktp)
+                    if ($kdKelToSet === null && !empty($skrining->nik)) {
+                        $pasienByNik = DB::table('pasien')
+                            ->where('no_ktp', $skrining->nik)
+                            ->first(['kd_kel']);
+
+                        if ($pasienByNik && !empty($pasienByNik->kd_kel)) {
+                            $kdKelToSet = $pasienByNik->kd_kel;
+                            Log::info("Menemukan kd_kel via NIK untuk ID {$skrining->id_pkg}: {$kdKelToSet}");
+                        }
+                    }
+
+                    if ($kdKelToSet !== null) {
+                        // Update kd_kel di tabel skrining_pkg
+                        DB::table('skrining_pkg')
+                            ->where('id_pkg', $skrining->id_pkg)
+                            ->update(['kd_kel' => $kdKelToSet]);
+                        
+                        $updatedCount++;
+                        Log::info("Updated skrining_pkg ID {$skrining->id_pkg} dengan kd_kel: {$kdKelToSet}");
+                    } else {
+                        Log::warning("Tidak ditemukan kd_kel untuk skrining_pkg ID {$skrining->id_pkg} (no_rkm_medis: " . ($skrining->no_rkm_medis ?? '-') . ", nik: " . ($skrining->nik ?? '-') . ")");
+                        $errorCount++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error updating skrining_pkg ID {$skrining->id_pkg}: " . $e->getMessage());
+                    $errorCount++;
+                }
+            }
+            
+            Log::info("Proses update kd_kel selesai. Updated: {$updatedCount}, Error: {$errorCount}, Total: {$totalData}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Update kd_kel berhasil! {$updatedCount} record diupdate dari {$totalData} record yang diperiksa.",
+                'data' => [
+                    'total_checked' => $totalData,
+                    'updated_count' => $updatedCount,
+                    'error_count' => $errorCount
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error dalam proses update kd_kel: ' . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Terjadi kesalahan saat mengupdate kd_kel: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update kode_posyandu dari relasi tabel pasien dan data_posyandu ke tabel skrining_pkg
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateKodePosyandu(Request $request)
+    {
+        try {
+            Log::info('Memulai proses update kode_posyandu dari relasi pasien dan data_posyandu ke skrining_pkg');
+            
+            // Ambil data dari skrining_pkg yang memiliki no_rkm_medis dan belum memiliki kode_posyandu (NULL, 0, atau kosong)
+            $skriningData = DB::table('skrining_pkg')
+                ->whereNotNull('no_rkm_medis')
+                ->where('no_rkm_medis', '!=', '')
+                ->where(function($query) {
+                    $query->whereNull('kode_posyandu')
+                          ->orWhere('kode_posyandu', 0)
+                          ->orWhere('kode_posyandu', '')
+                          ->orWhere('kode_posyandu', '-');
+                })
+                ->get(['id_pkg', 'no_rkm_medis']);
+            
+            $totalData = count($skriningData);
+            $updatedCount = 0;
+            $errorCount = 0;
+            
+            Log::info("Ditemukan {$totalData} record skrining_pkg yang perlu diupdate kode_posyandu");
+            
+            foreach ($skriningData as $skrining) {
+                try {
+                    // Cari kode_posyandu dari relasi pasien -> data_posyandu berdasarkan no_rkm_medis
+                    // Pastikan hanya mengambil data posyandu yang valid (bukan "-" atau kosong)
+                    $posyanduData = DB::table('skrining_pkg as s')
+                        ->join('pasien as p', 's.no_rkm_medis', '=', 'p.no_rkm_medis')
+                        ->join('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+                        ->where('s.id_pkg', $skrining->id_pkg)
+                        ->where('p.data_posyandu', '!=', '-')
+                        ->where('p.data_posyandu', '!=', '')
+                        ->whereNotNull('p.data_posyandu')
+                        ->where('dp.kode_posyandu', '!=', '-')
+                        ->where('dp.kode_posyandu', '!=', '')
+                        ->whereNotNull('dp.kode_posyandu')
+                        ->first(['dp.kode_posyandu', 'dp.nama_posyandu', 'p.data_posyandu']);
+                    
+                    if ($posyanduData && $posyanduData->kode_posyandu && $posyanduData->kode_posyandu !== '-') {
+                        // Update kode_posyandu di tabel skrining_pkg
+                        DB::table('skrining_pkg')
+                            ->where('id_pkg', $skrining->id_pkg)
+                            ->update(['kode_posyandu' => $posyanduData->kode_posyandu]);
+                        
+                        $updatedCount++;
+                        Log::info("Updated skrining_pkg ID {$skrining->id_pkg} dengan kode_posyandu: {$posyanduData->kode_posyandu} dari posyandu: {$posyanduData->nama_posyandu}");
+                    } else {
+                        Log::warning("Data posyandu untuk pasien dengan no_rkm_medis {$skrining->no_rkm_medis} tidak ditemukan atau tidak memiliki kode_posyandu yang valid");
+                        $errorCount++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error updating skrining_pkg ID {$skrining->id_pkg}: " . $e->getMessage());
+                    $errorCount++;
+                }
+            }
+            
+            Log::info("Proses update kode_posyandu selesai. Updated: {$updatedCount}, Error: {$errorCount}, Total: {$totalData}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Update kode_posyandu berhasil! {$updatedCount} record diupdate dari {$totalData} record yang diperiksa.",
+                'data' => [
+                    'total_checked' => $totalData,
+                    'updated_count' => $updatedCount,
+                    'error_count' => $errorCount
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error dalam proses update kode_posyandu: ' . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Terjadi kesalahan saat mengupdate kode_posyandu: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

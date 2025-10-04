@@ -253,6 +253,9 @@
     <!-- Page Specific JS -->
     @yield('js')
 
+    <!-- Stacked Scripts -->
+    @stack('scripts')
+
     <script>
         // Registrasi Service Worker
         if ('serviceWorker' in navigator) {

@@ -118,6 +118,8 @@
 
     {{-- Navigation Handler Script --}}
     <script src="{{ asset('js/navigation-handler.js') }}"></script>
+    {{-- React bundle (built to public/js/app.js via Laravel Mix) --}}
+    <script src="{{ asset('js/app.js') }}"></script>
     @else
     <script src="{{ mix(config('adminlte.laravel_mix_js_path', 'js/app.js')) }}"></script>
     @endif
@@ -149,6 +151,9 @@
 
     {{-- Custom Scripts --}}
     @yield('adminlte_js')
+
+    {{-- React Root --}}
+    <div id="react-root" style="position: fixed; bottom: 16px; right: 16px; z-index: 9999;"></div>
 </body>
 
 </html>

@@ -4,45 +4,45 @@
 
 @section('content_header')
 <div class="container-fluid">
-   <div class="row mb-2">
-      <div class="col-sm-6">
-         <h1 class="m-0">Pendaftaran Pelayanan CKG</h1>
-      </div>
-      <div class="col-sm-6">
-         <ol class="breadcrumb float-sm-right">
-            <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="#">ILP</a></li>
-            <li class="breadcrumb-item active">Pendaftaran CKG</li>
-         </ol>
-      </div>
-   </div>
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1 class="m-0">Pendaftaran Pelayanan CKG</h1>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="#">ILP</a></li>
+                <li class="breadcrumb-item active">Pendaftaran CKG</li>
+            </ol>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Detail CKG Sekolah -->
 <div class="modal fade" id="detailSekolahModal" tabindex="-1" role="dialog" aria-labelledby="detailSekolahModalLabel"
-   aria-hidden="true">
-   <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h5 class="modal-title" id="detailSekolahModalLabel">Detail CKG Sekolah</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-               <span aria-hidden="true">&times;</span>
-            </button>
-         </div>
-         <div class="modal-body">
-            <div id="detail-sekolah-content">
-               <!-- Detail sekolah content will be loaded here -->
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailSekolahModalLabel">Detail CKG Sekolah</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-info" id="btn-kunjungan-sehat-sekolah" style="display: none;">
-               <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
-            </button>
-            <button type="button" class="btn btn-success" id="btn-selesai-sekolah">Selesai</button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-         </div>
-      </div>
-   </div>
+            <div class="modal-body">
+                <div id="detail-sekolah-content">
+                    <!-- Detail sekolah content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" id="btn-kunjungan-sehat-sekolah" style="display: none;">
+                    <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
+                </button>
+                <button type="button" class="btn btn-success" id="btn-selesai-sekolah">Selesai</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
 </div>
 @stop
 
@@ -53,291 +53,334 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
 <div class="container-fluid">
-   <!-- Filter Card -->
-   <div class="card mb-3">
-      <div class="card-header">
-         <h3 class="card-title">Filter Data</h3>
-         <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-               <i class="fas fa-minus"></i>
-            </button>
-         </div>
-      </div>
-      <div class="card-body">
-         <form id="filter-form" method="GET" action="{{ route('ilp.pendaftaran-ckg') }}">
-            <div class="row">
-               <div class="col-md-3">
-                  <div class="form-group">
-                     <label>Tanggal Skrining Awal:</label>
-                     <input type="date" class="form-control" name="tanggal_awal" id="tanggal_awal"
-                        value="{{ request('tanggal_awal') }}">
-                  </div>
-               </div>
-               <div class="col-md-3">
-                  <div class="form-group">
-                     <label>Tanggal Skrining Akhir:</label>
-                     <input type="date" class="form-control" name="tanggal_akhir" id="tanggal_akhir"
-                        value="{{ request('tanggal_akhir') }}">
-                  </div>
-               </div>
-               <div class="col-md-3">
-                  <div class="form-group">
-                     <label>Status:</label>
-                     <select class="form-control" name="status" id="status">
-                        <option value="">Semua Status</option>
-                        <option value="1" {{ request('status')=='1' ? 'selected' : '' }}>Selesai</option>
-                        <option value="0" {{ request('status')=='0' ? 'selected' : '' }}>Menunggu</option>
-                        <option value="2" {{ request('status')=='2' ? 'selected' : '' }}>Usia Sekolah</option>
-                     </select>
-                  </div>
-               </div>
-               <div class="col-md-3">
-                  <div class="form-group">
-                     <label>Nama Sekolah:</label>
-                     <select class="form-control" name="nama_sekolah" id="nama_sekolah">
-                        <option value="">Semua Sekolah</option>
-                        @foreach($daftar_sekolah as $sekolah)
-                        <option value="{{ $sekolah->id_sekolah }}" {{ request('nama_sekolah')==$sekolah->id_sekolah ? 'selected' : '' }}>{{ $sekolah->nama_sekolah }}</option>
-                        @endforeach
-                     </select>
-                  </div>
-               </div>
+    <!-- Filter Card -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Filter Data</h3>
+            <div class="card-tools">
+                <button type="button" class="btn btn-warning btn-sm mr-2" id="btn-update-kel">
+                    <i class="fas fa-sync-alt"></i> Update Kel
+                </button>
+                <button type="button" class="btn btn-info btn-sm mr-2" id="btn-update-posyandu">
+                    <i class="fas fa-home"></i> Update Posyandu
+                </button>
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
             </div>
-            <div class="row">
-               <div class="col-md-3">
-                  <div class="form-group">
-                     <label>Kelas:</label>
-                     <select class="form-control" name="kelas" id="kelas">
-                        <option value="">Semua Kelas</option>
-                        @foreach($daftar_kelas as $kelas_item)
-                        <option value="{{ $kelas_item->id_kelas }}" {{ request('kelas')==$kelas_item->id_kelas ? 'selected' : '' }}>{{ $kelas_item->kelas }}</option>
-                        @endforeach
-                     </select>
-                  </div>
-               </div>
-               <div class="col-md-9">
-                  <div class="form-group">
-                     <label>&nbsp;</label>
-                     <div class="d-flex">
-                        <button type="submit" class="btn btn-primary mr-2">
-                           <i class="fas fa-search"></i> Terapkan Filter
-                        </button>
-                        <a href="{{ route('ilp.pendaftaran-ckg') }}" class="btn btn-default">
-                           <i class="fas fa-sync"></i> Reset
-                        </a>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </form>
-      </div>
-   </div>
-
-   <div class="card">
-      <div class="card-header">
-         <h3 class="card-title">Data Pendaftaran Pelayanan CKG</h3>
-      </div>
-      <div class="card-body">
-         <div class="table-responsive">
-            <table id="tabel-pendaftaran-ckg" class="table table-bordered table-striped table-hover w-100">
-               <thead>
-                  <tr>
-                     <th>No.</th>
-                     <th>NIK</th>
-                     <th>Nama Lengkap</th>
-                     <th>Tanggal Lahir</th>
-                     <th>Umur</th>
-                     <th>Jenis Kelamin</th>
-                     <th>No. Handphone</th>
-                     <th>No. Peserta BPJS</th>
-                     <th>Nama Sekolah</th>
-                     <th>Kelas</th>
-                     <th>Tanggal Skrining</th>
-                     <th>Kunjungan Sehat</th>
-                     <th>Status</th>
-                     <th>Aksi</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  @foreach($data_pendaftaran as $key => $pendaftaran)
-                  <tr>
-                     <td data-label="No.">{{ $key + 1 }}</td>
-                     <td data-label="NIK">{{ $pendaftaran->nik }}</td>
-                     <td data-label="Nama Lengkap">{{ $pendaftaran->nama_lengkap }}</td>
-                     <td data-label="Tanggal Lahir">{{ date('d-m-Y', strtotime($pendaftaran->tanggal_lahir)) }}</td>
-                     <td data-label="Umur">{{ $pendaftaran->umur }} tahun</td>
-                     <td data-label="Jenis Kelamin">{{ $pendaftaran->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}
-                     </td>
-                     <td data-label="No. Handphone">{{ $pendaftaran->no_handphone }}</td>
-                     <td data-label="No. Peserta BPJS">{{ $pendaftaran->no_peserta ?? '-' }}</td>
-                     <td data-label="Nama Sekolah">{{ $pendaftaran->nama_sekolah ?? '-' }}</td>
-                     <td data-label="Kelas">{{ $pendaftaran->kelas ?? '-' }}</td>
-                     <td data-label="Tanggal Skrining">{{ $pendaftaran->tanggal_skrining ? date('d-m-Y',
-                        strtotime($pendaftaran->tanggal_skrining)) : '-' }}</td>
-                     <td data-label="Kunjungan Sehat">
-                        @if(isset($pendaftaran->kunjungan_sehat) && ($pendaftaran->kunjungan_sehat == '1' ||
-                        $pendaftaran->kunjungan_sehat == 1))
-                        <span class="badge badge-success">Sudah</span>
-                        @else
-                        <span class="badge badge-secondary">Belum</span>
-                        @endif
-                     </td>
-                     <td data-label="Status">
-                        <span
-                           class="badge {{ $pendaftaran->status == '1' ? 'badge-success' : ($pendaftaran->status == '0' ? 'badge-warning' : 'badge-secondary') }}">
-                           {{ $pendaftaran->status == '1' ? 'Selesai' : ($pendaftaran->status == '0' ? 'Menunggu' :
-                           'Usia Sekolah') }}
-                        </span>
-                     </td>
-                     <td data-label="Aksi">
-                        <div class="btn-group" role="group">
-                           <button type="button" class="btn btn-info btn-sm detail-btn" data-toggle="modal"
-                              data-target="#detailModal" data-id="{{ $pendaftaran->id_pkg }}">
-                              <i class="fas fa-eye"></i> Detail
-                           </button>
-                           <button type="button" class="btn btn-primary btn-sm detail-sekolah-btn" data-toggle="modal"
-                              data-target="#detailSekolahModal" data-id="{{ $pendaftaran->id_pkg }}">
-                              <i class="fas fa-school"></i> Detail CKG Sekolah
-                           </button>
-                           <button type="button" class="btn btn-success btn-sm set-status-btn"
-                              data-id="{{ $pendaftaran->id_pkg }}" data-status="{{ $pendaftaran->status }}">
-                              <i class="fas fa-tasks"></i> Set Status
-                           </button>
-                           <button type="button" class="btn btn-warning btn-sm kunjungan-sehat-btn"
-                              data-id="{{ $pendaftaran->id_pkg }}" data-nokartu="{{ $pendaftaran->no_peserta ?? '' }}"
-                              data-nama="{{ $pendaftaran->nama_lengkap }}">
-                              <i class="fas fa-heartbeat"></i> Kunjungan Sehat
-                           </button>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" method="GET" action="{{ route('ilp.pendaftaran-ckg') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Tanggal Skrining Awal:</label>
+                            <input type="date" class="form-control" name="tanggal_awal" id="tanggal_awal"
+                                value="{{ request('tanggal_awal') }}">
                         </div>
-                     </td>
-                  </tr>
-                  @endforeach
-               </tbody>
-            </table>
-         </div>
-      </div>
-   </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Tanggal Skrining Akhir:</label>
+                            <input type="date" class="form-control" name="tanggal_akhir" id="tanggal_akhir"
+                                value="{{ request('tanggal_akhir') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Status:</label>
+                            <select class="form-control" name="status" id="status">
+                                <option value="">Semua Status</option>
+                                <option value="1" {{ request('status')=='1' ? 'selected' : '' }}>Selesai</option>
+                                <option value="0" {{ request('status')=='0' ? 'selected' : '' }}>Menunggu</option>
+                                <option value="2" {{ request('status')=='2' ? 'selected' : '' }}>Usia Sekolah</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Nama Sekolah:</label>
+                            <select class="form-control" name="nama_sekolah" id="nama_sekolah">
+                                <option value="">Semua Sekolah</option>
+                                @foreach($daftar_sekolah as $sekolah)
+                                <option value="{{ $sekolah->id_sekolah }}" {{ request('nama_sekolah')==$sekolah->
+                                    id_sekolah ? 'selected' : '' }}>{{ $sekolah->nama_sekolah }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Kelas:</label>
+                            <select class="form-control" name="kelas" id="kelas">
+                                <option value="">Semua Kelas</option>
+                                @foreach($daftar_kelas as $kelas_item)
+                                <option value="{{ $kelas_item->id_kelas }}" {{ request('kelas')==$kelas_item->id_kelas ?
+                                    'selected' : '' }}>{{ $kelas_item->kelas }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Kelurahan:</label>
+                            <select class="form-control" name="kelurahan" id="kelurahan">
+                                <option value="">Semua Kelurahan</option>
+                                @foreach($daftar_kelurahan as $kel)
+                                <option value="{{ $kel->kd_kel }}" {{ (isset($kd_kel) && $kd_kel==$kel->kd_kel) ?
+                                    'selected' : '' }}>{{ $kel->nm_kel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Posyandu:</label>
+                            <select class="form-control" name="posyandu" id="posyandu">
+                                <option value="">Semua Posyandu</option>
+                                @foreach($daftar_posyandu as $pos)
+                                <option value="{{ $pos->kode_posyandu }}" {{ (isset($kode_posyandu) &&
+                                    $kode_posyandu==$pos->kode_posyandu) ? 'selected' : '' }}>{{ $pos->nama_posyandu }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-search"></i> Terapkan Filter
+                                </button>
+                                <a href="{{ route('ilp.pendaftaran-ckg') }}" class="btn btn-default">
+                                    <i class="fas fa-sync"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Data Pendaftaran Pelayanan CKG</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tabel-pendaftaran-ckg" class="table table-bordered table-striped table-hover w-100">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>NIK</th>
+                            <th>Nama Lengkap</th>
+                            <th>Tanggal Lahir</th>
+                            <th>Umur</th>
+                            <th>Jenis Kelamin</th>
+                            <th>No. Handphone</th>
+                            <th>No. Peserta BPJS</th>
+                            <th>Nama Sekolah</th>
+                            <th>Kelas</th>
+                            <th>Kelurahan</th>
+                            <th>Posyandu</th>
+                            <th>Tanggal Skrining</th>
+                            <th>Kunjungan Sehat</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($data_pendaftaran as $key => $pendaftaran)
+                        <tr>
+                            <td data-label="No.">{{ $key + 1 }}</td>
+                            <td data-label="NIK">{{ $pendaftaran->nik }}</td>
+                            <td data-label="Nama Lengkap">{{ $pendaftaran->nama_lengkap }}</td>
+                            <td data-label="Tanggal Lahir">{{ date('d-m-Y', strtotime($pendaftaran->tanggal_lahir)) }}
+                            </td>
+                            <td data-label="Umur">{{ $pendaftaran->umur }} tahun</td>
+                            <td data-label="Jenis Kelamin">{{ $pendaftaran->jenis_kelamin == 'L' ? 'Laki-laki' :
+                                'Perempuan' }}
+                            </td>
+                            <td data-label="No. Handphone">{{ $pendaftaran->no_handphone }}</td>
+                            <td data-label="No. Peserta BPJS">{{ $pendaftaran->no_peserta ?? '-' }}</td>
+                            <td data-label="Nama Sekolah">{{ $pendaftaran->nama_sekolah ?? '-' }}</td>
+                            <td data-label="Kelas">{{ $pendaftaran->kelas ?? '-' }}</td>
+                            <td data-label="Kelurahan">{{ $pendaftaran->nm_kel ?? '-' }}</td>
+                            <td data-label="Posyandu">{{ $pendaftaran->nama_posyandu ?? '-' }}</td>
+                            <td data-label="Tanggal Skrining">{{ $pendaftaran->tanggal_skrining ? date('d-m-Y',
+                                strtotime($pendaftaran->tanggal_skrining)) : '-' }}</td>
+                            <td data-label="Kunjungan Sehat">
+                                @if(isset($pendaftaran->kunjungan_sehat) && ($pendaftaran->kunjungan_sehat == '1' ||
+                                $pendaftaran->kunjungan_sehat == 1))
+                                <span class="badge badge-success">Sudah</span>
+                                @else
+                                <span class="badge badge-secondary">Belum</span>
+                                @endif
+                            </td>
+                            <td data-label="Status">
+                                <span
+                                    class="badge {{ $pendaftaran->status == '1' ? 'badge-success' : ($pendaftaran->status == '0' ? 'badge-warning' : 'badge-secondary') }}">
+                                    {{ $pendaftaran->status == '1' ? 'Selesai' : ($pendaftaran->status == '0' ?
+                                    'Menunggu' :
+                                    'Usia Sekolah') }}
+                                </span>
+                            </td>
+                            <td data-label="Aksi">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-info btn-sm detail-btn" data-toggle="modal"
+                                        data-target="#detailModal" data-id="{{ $pendaftaran->id_pkg }}">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm detail-sekolah-btn"
+                                        data-toggle="modal" data-target="#detailSekolahModal"
+                                        data-id="{{ $pendaftaran->id_pkg }}">
+                                        <i class="fas fa-school"></i> Detail CKG Sekolah
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm set-status-btn"
+                                        data-id="{{ $pendaftaran->id_pkg }}" data-status="{{ $pendaftaran->status }}">
+                                        <i class="fas fa-tasks"></i> Set Status
+                                    </button>
+                                    <button type="button" class="btn btn-warning btn-sm kunjungan-sehat-btn"
+                                        data-id="{{ $pendaftaran->id_pkg }}"
+                                        data-nokartu="{{ $pendaftaran->no_peserta ?? '' }}"
+                                        data-nama="{{ $pendaftaran->nama_lengkap }}">
+                                        <i class="fas fa-heartbeat"></i> Kunjungan Sehat
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Detail -->
 <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel"
-   aria-hidden="true">
-   <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h5 class="modal-title" id="detailModalLabel">Detail Pendaftaran CKG</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-               <span aria-hidden="true">&times;</span>
-            </button>
-         </div>
-         <div class="modal-body">
-            <div id="detail-content">
-               <!-- Detail content will be loaded here -->
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalLabel">Detail Pendaftaran CKG</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-info" id="btn-kunjungan-sehat" style="display: none;">
-               <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
-            </button>
-            <button type="button" class="btn btn-success" id="btn-selesai">Selesai</button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-         </div>
-      </div>
-   </div>
+            <div class="modal-body">
+                <div id="detail-content">
+                    <!-- Detail content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" id="btn-kunjungan-sehat" style="display: none;">
+                    <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
+                </button>
+                <button type="button" class="btn btn-success" id="btn-selesai">Selesai</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Set Status -->
 <div class="modal fade" id="setStatusModal" tabindex="-1" role="dialog" aria-labelledby="setStatusModalLabel"
-   aria-hidden="true">
-   <div class="modal-dialog" role="document">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h5 class="modal-title" id="setStatusModalLabel">Set Status Pendaftaran</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-               <span aria-hidden="true">&times;</span>
-            </button>
-         </div>
-         <div class="modal-body">
-            <form id="set-status-form">
-               <input type="hidden" id="pendaftaran-id" name="id">
-               <div class="form-group">
-                  <label>Pilih Status:</label>
-                  <div class="form-check">
-                     <input class="form-check-input" type="radio" name="status_option" id="status0" value="0">
-                     <label class="form-check-label" for="status0">
-                        <span class="badge badge-warning">Menunggu</span>
-                     </label>
-                  </div>
-                  <div class="form-check mt-2">
-                     <input class="form-check-input" type="radio" name="status_option" id="status1" value="1">
-                     <label class="form-check-label" for="status1">
-                        <span class="badge badge-success">Selesai</span>
-                     </label>
-                  </div>
-                  <div class="form-check mt-2">
-                     <input class="form-check-input" type="radio" name="status_option" id="status2" value="2">
-                     <label class="form-check-label" for="status2">
-                        <span class="badge badge-secondary">Usia Sekolah</span>
-                     </label>
-                  </div>
-               </div>
-            </form>
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary" id="submit-status">Simpan</button>
-         </div>
-      </div>
-   </div>
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="setStatusModalLabel">Set Status Pendaftaran</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="set-status-form">
+                    <input type="hidden" id="pendaftaran-id" name="id">
+                    <div class="form-group">
+                        <label>Pilih Status:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status_option" id="status0" value="0">
+                            <label class="form-check-label" for="status0">
+                                <span class="badge badge-warning">Menunggu</span>
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="status_option" id="status1" value="1">
+                            <label class="form-check-label" for="status1">
+                                <span class="badge badge-success">Selesai</span>
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="status_option" id="status2" value="2">
+                            <label class="form-check-label" for="status2">
+                                <span class="badge badge-secondary">Usia Sekolah</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="submit-status">Simpan</button>
+            </div>
+        </div>
+    </div>
 </div>
 @stop
 
 @section('plugins.Sweetalert2', true)
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
+<link rel="stylesheet"
+    href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <style>
-   .modal-backdrop {
-      opacity: 0.5 !important;
-   }
+    .modal-backdrop {
+        opacity: 0.5 !important;
+    }
 
-   .badge {
-      font-size: 100%;
-   }
+    .badge {
+        font-size: 100%;
+    }
 
-   /* Styling untuk button group */
-   .btn-group .btn {
-      margin-right: 2px;
-   }
+    /* Styling untuk button group */
+    .btn-group .btn {
+        margin-right: 2px;
+    }
 
-   .btn-group .btn:last-child {
-      margin-right: 0;
-   }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
 
-   /* Responsive button group */
-   @media (max-width: 768px) {
-      .btn-group {
-         display: flex;
-         flex-direction: column;
-      }
+    /* Responsive button group */
+    @media (max-width: 768px) {
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+        }
 
-      .btn-group .btn {
-         margin-bottom: 2px;
-         margin-right: 0;
-      }
+        .btn-group .btn {
+            margin-bottom: 2px;
+            margin-right: 0;
+        }
 
-      .btn-group .btn:last-child {
-         margin-bottom: 0;
-      }
-   }
+        .btn-group .btn:last-child {
+            margin-bottom: 0;
+        }
+    }
 </style>
 @stop
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
-   // Pastikan jQuery dan Bootstrap sudah dimuat sebelum kode ini dijalankan
+    // Pastikan jQuery dan Bootstrap sudah dimuat sebelum kode ini dijalankan
    if (typeof $ === 'undefined') {
       console.error('jQuery tidak ditemukan!');
    } else {
@@ -1802,6 +1845,182 @@
                             console.error('Error completing data:', xhr);
                             
                             let errorMessage = 'Terjadi kesalahan saat menyelesaikan data';
+                            
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.status === 422) {
+                                errorMessage = 'Data tidak valid. Silakan periksa kembali.';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+                            }
+                            
+                            Swal.fire({
+                                title: 'Error!',
+                                text: errorMessage,
+                                icon: 'error'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle tombol Update Posyandu
+        $('#btn-update-posyandu').on('click', function() {
+            console.log('Update Posyandu button clicked');
+            
+            // Konfirmasi sebelum melakukan update
+            Swal.fire({
+                title: 'Konfirmasi Update Kode Posyandu',
+                text: 'Apakah Anda yakin ingin mengupdate kode_posyandu dari tabel data_posyandu ke skrining_pkg? Proses ini akan mencari semua record skrining_pkg yang belum memiliki kode_posyandu dan mengupdate dengan data dari tabel pasien dan data_posyandu.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Update!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang mengupdate kode_posyandu, mohon tunggu...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Kirim request AJAX
+                    $.ajax({
+                        url: '{{ route("ilp.ckg.update-kode-posyandu") }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            console.log('Update kode_posyandu response:', response);
+                            
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    html: `
+                                        <div class="text-left">
+                                            <p><strong>${response.message}</strong></p>
+                                            <hr>
+                                            <p><i class="fas fa-check-circle text-success"></i> Total record diperiksa: <strong>${response.data.total_checked}</strong></p>
+                                            <p><i class="fas fa-sync-alt text-primary"></i> Record berhasil diupdate: <strong>${response.data.updated_count}</strong></p>
+                                            <p><i class="fas fa-exclamation-triangle text-warning"></i> Record dengan error: <strong>${response.data.error_count}</strong></p>
+                                        </div>
+                                    `,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    // Refresh halaman untuk melihat perubahan
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: response.message || 'Terjadi kesalahan saat mengupdate kode_posyandu',
+                                    icon: 'error'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error('Error updating kode_posyandu:', xhr);
+                            
+                            let errorMessage = 'Terjadi kesalahan saat mengupdate kode_posyandu';
+                            
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            } else if (xhr.status === 422) {
+                                errorMessage = 'Data tidak valid. Silakan periksa kembali.';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+                            }
+                            
+                            Swal.fire({
+                                title: 'Error!',
+                                text: errorMessage,
+                                icon: 'error'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle tombol Update Kel
+        $('#btn-update-kel').on('click', function() {
+            console.log('Update Kel button clicked');
+            
+            // Konfirmasi sebelum melakukan update
+            Swal.fire({
+                title: 'Konfirmasi Update Kd_Kel',
+                text: 'Apakah Anda yakin ingin mengupdate kd_kel dari tabel pasien ke skrining_pkg? Proses ini akan mencari semua record skrining_pkg yang belum memiliki kd_kel dan mengupdate dengan data dari tabel pasien.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Update!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang mengupdate kd_kel, mohon tunggu...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Kirim request AJAX
+                    $.ajax({
+                        url: '{{ route("ilp.ckg.update-kd-kel") }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            console.log('Update kd_kel response:', response);
+                            
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    html: `
+                                        <div class="text-left">
+                                            <p><strong>${response.message}</strong></p>
+                                            <hr>
+                                            <p><i class="fas fa-check-circle text-success"></i> Total record diperiksa: <strong>${response.data.total_checked}</strong></p>
+                                            <p><i class="fas fa-sync-alt text-primary"></i> Record berhasil diupdate: <strong>${response.data.updated_count}</strong></p>
+                                            <p><i class="fas fa-exclamation-triangle text-warning"></i> Record dengan error: <strong>${response.data.error_count}</strong></p>
+                                        </div>
+                                    `,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    // Refresh halaman untuk melihat perubahan
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: response.message || 'Terjadi kesalahan saat mengupdate kd_kel',
+                                    icon: 'error'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error('Error updating kd_kel:', xhr);
+                            
+                            let errorMessage = 'Terjadi kesalahan saat mengupdate kd_kel';
                             
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
