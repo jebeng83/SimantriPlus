@@ -244,6 +244,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard.data');
         Route::get('/dashboard-pws', [App\Http\Controllers\ILP\DashboardController::class, 'dashboardPws'])->name('dashboard.pws');
+        Route::get('/dashboard-pws/analisis', [App\Http\Controllers\ILP\DashboardController::class, 'getAnalisisPkgAjax'])->name('dashboard.pws.analisis');
         Route::get('/dashboard-ckg', [App\Http\Controllers\ILP\DashboardCKGController::class, 'index'])->name('dashboard-ckg');
         Route::get('/pendaftaran', [App\Http\Controllers\ILP\PendaftaranController::class, 'index'])->name('pendaftaran');
         Route::get('/pelayanan', [App\Http\Controllers\ILP\PelayananController::class, 'index'])->name('pelayanan');

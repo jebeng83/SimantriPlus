@@ -170,19 +170,25 @@ class DashboardController extends Controller
      */
     private function getDaftarPosyandu($desa = null)
     {
-        $query = DB::table('pasien')
-            ->leftJoin('kelurahan', 'pasien.kd_kel', '=', 'kelurahan.kd_kel')
-            ->whereNotNull('pasien.data_posyandu')
-            ->where('pasien.data_posyandu', '!=', '')
-            ->where('pasien.data_posyandu', '!=', '-');
-            
+        // Ambil daftar posyandu dari skrining_pkg menggunakan kode_posyandu
+        $query = DB::table('skrining_pkg as sp')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-')
+            ->whereNotNull('dp.nama_posyandu')
+            ->where('dp.nama_posyandu', '!=', '')
+            ->where('dp.nama_posyandu', '!=', '-');
+
         // Filter berdasarkan desa jika ada
+        // Gunakan desa dari tabel data_posyandu agar pemetaan Posyandu ↔ Desa konsisten
         if ($desa) {
-            $query->where('kelurahan.nm_kel', $desa);
+            $query->where('dp.desa', $desa);
         }
-        
+
         return $query->distinct()
-            ->pluck('pasien.data_posyandu')
+            ->pluck('dp.nama_posyandu')
             ->toArray();
     }
     
@@ -193,15 +199,14 @@ class DashboardController extends Controller
      */
     private function getDaftarDesa()
     {
-        return DB::table('pasien')
-            ->whereNotNull('pasien.kd_kel')
-            ->where('pasien.kd_kel', '!=', '')
-            ->join('kelurahan', 'pasien.kd_kel', '=', 'kelurahan.kd_kel')
-            ->whereNotNull('kelurahan.nm_kel')
-            ->where('kelurahan.nm_kel', '!=', '')
-            ->where('kelurahan.nm_kel', '!=', '-')
+        // Ambil daftar desa dari tabel data_posyandu agar konsisten dengan filter posyandu
+        return DB::table('data_posyandu')
+            ->whereNotNull('desa')
+            ->where('desa', '!=', '')
+            ->where('desa', '!=', '-')
             ->distinct()
-            ->pluck('kelurahan.nm_kel')
+            ->orderBy('desa', 'asc')
+            ->pluck('desa')
             ->toArray();
     }
     
@@ -694,7 +699,7 @@ class DashboardController extends Controller
       *
       * @return \Illuminate\Contracts\Support\Renderable
       */
-     public function dashboardPws(Request $request)
+    public function dashboardPws(Request $request)
     {
         // Ambil filter posyandu jika ada
         $posyandu_filter = $request->input('posyandu');
@@ -702,12 +707,29 @@ class DashboardController extends Controller
         // Ambil filter desa jika ada
         $desa_filter = $request->input('desa');
         
-        // Ambil filter periode (default: bulan)
-        $periode_filter = $request->input('periode', 'bulan');
+        // Ambil filter periode dari UI (bulan_ini, 3_bulan, 6_bulan, tahun_ini)
+        $periode_filter = $request->input('periode', 'bulan_ini');
         
-        // Ambil filter tanggal
-        $tanggal_awal = $request->input('tanggal_awal', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $tanggal_akhir = $request->input('tanggal_akhir', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        // Tentukan rentang tanggal berdasarkan periode yang dipilih
+        switch ($periode_filter) {
+            case '3_bulan':
+                $tanggal_awal = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+            case '6_bulan':
+                $tanggal_awal = Carbon::now()->subMonths(5)->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+            case 'tahun_ini':
+                $tanggal_awal = Carbon::now()->startOfYear()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfYear()->format('Y-m-d');
+                break;
+            case 'bulan_ini':
+            default:
+                $tanggal_awal = Carbon::now()->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+        }
         
         // Ambil daftar desa/kelurahan dari database
         $daftar_desa = $this->getDaftarDesa();
@@ -755,16 +777,164 @@ class DashboardController extends Controller
     }
 
     /**
+     * AJAX: Ambil Analisis per Posyandu dengan pagination
+     * Params: desa, posyandu, periode, page, per_page
+     */
+    public function getAnalisisPkgAjax(Request $request)
+    {
+        $posyandu_filter = $request->input('posyandu');
+        $desa_filter = $request->input('desa');
+        $periode_filter = $request->input('periode', 'bulan_ini');
+        $perPage = (int) $request->input('per_page', 10);
+        $page = (int) $request->input('page', 1);
+
+        // Rentang tanggal sesuai periode
+        switch ($periode_filter) {
+            case '3_bulan':
+                $tanggal_awal = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+            case '6_bulan':
+                $tanggal_awal = Carbon::now()->subMonths(5)->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+            case 'tahun_ini':
+                $tanggal_awal = Carbon::now()->startOfYear()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfYear()->format('Y-m-d');
+                break;
+            case 'bulan_ini':
+            default:
+                $tanggal_awal = Carbon::now()->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+        }
+
+        // Query dengan agregasi dan groupBy
+        $query = DB::table('skrining_pkg as sp')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->leftJoin('skrining_siswa_sd as ssd', 'ssd.id_pkg', '=', 'sp.id_pkg')
+            ->select(
+                'dp.nama_posyandu',
+                'dp.desa as desa',
+                DB::raw('COUNT(sp.id_pkg) as total_skrining'),
+                DB::raw('COUNT(CASE WHEN sp.jenis_kelamin = "L" THEN 1 END) as laki_laki'),
+                DB::raw('COUNT(CASE WHEN sp.jenis_kelamin = "P" THEN 1 END) as perempuan'),
+                // Risiko Tinggi: klinis tinggi ATAU kombinasi riwayat kuat
+                DB::raw('COUNT(CASE 
+                    WHEN (
+                        (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                        OR (sp.gds >= 200 OR sp.gdp >= 126)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                        OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                            OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                            OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                    ) THEN 1 END) as risiko_tinggi'),
+                // Risiko Sedang: klinis sedang ATAU riwayat tunggal, tetapi bukan risiko tinggi
+                DB::raw('COUNT(CASE 
+                    WHEN (
+                        (
+                            (sp.tekanan_sistolik BETWEEN 120 AND 139)
+                            OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 30)
+                            OR sp.status_merokok = "Ya"
+                            OR sp.riwayat_hipertensi = "Ya"
+                            OR sp.riwayat_diabetes = "Ya"
+                        )
+                        AND NOT (
+                            (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                            OR (sp.gds >= 200 OR sp.gdp >= 126)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                            OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                                OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                                OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                        )
+                    ) THEN 1 END) as risiko_sedang'),
+                // Risiko Rendah: bukan tinggi dan bukan sedang
+                DB::raw('COUNT(CASE 
+                    WHEN NOT (
+                        (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                        OR (sp.gds >= 200 OR sp.gdp >= 126)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                        OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                            OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                            OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                        OR (
+                            (sp.tekanan_sistolik BETWEEN 120 AND 139)
+                            OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 30)
+                            OR sp.status_merokok = "Ya"
+                            OR sp.riwayat_hipertensi = "Ya"
+                            OR sp.riwayat_diabetes = "Ya"
+                        )
+                    ) THEN 1 END) as risiko_rendah'),
+                // Definisi klinis tambahan per posyandu
+                DB::raw('COUNT(CASE WHEN COALESCE(sp.tekanan_sistolik, ssd.sistole) >= 140 THEN 1 END) as td_ge_140'),
+                DB::raw('COUNT(CASE WHEN COALESCE(sp.gds, ssd.hasil_gds) >= 200 THEN 1 END) as gds_ge_200'),
+                DB::raw('COUNT(CASE WHEN sp.gdp >= 126 THEN 1 END) as gdp_ge_126'),
+                DB::raw('COUNT(CASE WHEN (
+                    (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                    OR (ssd.imt >= 30)
+                ) THEN 1 END) as bmi_ge_30')
+            )
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
+
+        if ($posyandu_filter) {
+            $query->where('dp.nama_posyandu', $posyandu_filter);
+        }
+        if ($desa_filter) {
+            $query->where('dp.desa', $desa_filter);
+        }
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+
+        $query->groupBy('dp.nama_posyandu', 'dp.desa');
+        // Urutkan berdasarkan total skrining desc agar lebih informatif
+        $query->orderByDesc(DB::raw('COUNT(sp.id_pkg)'));
+
+        // Manual pagination (karena agregasi GROUP BY)
+        $all = $query->get();
+        $total = $all->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $lastPage));
+        $items = $all->slice(($page - 1) * $perPage, $perPage)->values();
+
+        // Tambahkan persen risiko tinggi untuk tiap item
+        $items = $items->map(function($item){
+            $total = (int) ($item->total_skrining ?? 0);
+            $tinggi = (int) ($item->risiko_tinggi ?? 0);
+            $item->persen_tinggi = $total > 0 ? round(($tinggi / $total) * 100, 1) : 0;
+            return $item;
+        });
+
+        return response()->json([
+            'data' => $items,
+            'meta' => [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => $lastPage,
+            ],
+        ]);
+    }
+
+    /**
      * Analisis data PKG berdasarkan posyandu
      */
     private function getAnalisisPkg($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 'dp.nama_posyandu',
-                'dp.desa',
+                'dp.desa as desa',
                 DB::raw('COUNT(sp.id_pkg) as total_skrining'),
                 DB::raw('COUNT(CASE WHEN sp.jenis_kelamin = "L" THEN 1 END) as laki_laki'),
                 DB::raw('COUNT(CASE WHEN sp.jenis_kelamin = "P" THEN 1 END) as perempuan'),
@@ -774,34 +944,63 @@ class DashboardController extends Controller
                 DB::raw('COUNT(CASE WHEN sp.riwayat_hipertensi = "Ya" THEN 1 END) as hipertensi'),
                 DB::raw('COUNT(CASE WHEN sp.riwayat_diabetes = "Ya" THEN 1 END) as diabetes'),
                 DB::raw('COUNT(CASE WHEN sp.status_merokok = "Ya" THEN 1 END) as merokok'),
-                // Risk level calculations
+                // Risk level calculations seragam: gabungan klinis + riwayat + usia
                 DB::raw('COUNT(CASE 
-                    WHEN (sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya") 
-                         OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
-                         OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya")
-                    THEN 1 END) as risiko_tinggi'),
+                    WHEN (
+                        (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                        OR (sp.gds >= 200 OR sp.gdp >= 126)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                        OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                            OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                            OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                    ) THEN 1 END) as risiko_tinggi'),
                 DB::raw('COUNT(CASE 
-                    WHEN (sp.riwayat_hipertensi = "Ya" OR sp.riwayat_diabetes = "Ya" OR sp.status_merokok = "Ya")
-                         AND NOT ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya") 
-                                  OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
-                                  OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
-                    THEN 1 END) as risiko_sedang'),
+                    WHEN (
+                        (
+                            (sp.tekanan_sistolik BETWEEN 120 AND 139)
+                            OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 30)
+                            OR sp.status_merokok = "Ya"
+                            OR sp.riwayat_hipertensi = "Ya"
+                            OR sp.riwayat_diabetes = "Ya"
+                        )
+                        AND NOT (
+                            (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                            OR (sp.gds >= 200 OR sp.gdp >= 126)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                            OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                                OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                                OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                        )
+                    ) THEN 1 END) as risiko_sedang'),
                 DB::raw('COUNT(CASE 
-                    WHEN sp.riwayat_hipertensi != "Ya" 
-                         AND sp.riwayat_diabetes != "Ya" 
-                         AND sp.status_merokok != "Ya"
-                    THEN 1 END) as risiko_rendah')
+                    WHEN NOT (
+                        (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                        OR (sp.gds >= 200 OR sp.gdp >= 126)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                        OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                            OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                            OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                        OR (
+                            (sp.tekanan_sistolik BETWEEN 120 AND 139)
+                            OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
+                            OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 30)
+                            OR sp.status_merokok = "Ya"
+                            OR sp.riwayat_hipertensi = "Ya"
+                            OR sp.riwayat_diabetes = "Ya"
+                        )
+                    ) THEN 1 END) as risiko_rendah')
             )
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
-        // Filter berdasarkan desa jika ada
+        // Filter berdasarkan desa jika ada (konsisten: dp.desa atau k.nm_kel)
         if ($desa) {
             $query->where('dp.desa', $desa);
         }
@@ -824,8 +1023,8 @@ class DashboardController extends Controller
     private function getFaktorRisikoPkg($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('COUNT(CASE WHEN sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90 THEN 1 END) as hipertensi_terdeteksi'),
                 DB::raw('COUNT(CASE WHEN sp.gds >= 200 OR sp.gdp >= 126 THEN 1 END) as diabetes_terdeteksi'),
@@ -837,18 +1036,21 @@ class DashboardController extends Controller
                 DB::raw('COUNT(CASE WHEN sp.kolesterol_lab > 200 THEN 1 END) as kolesterol_tinggi'),
                 DB::raw('COUNT(sp.id_pkg) as total_skrining')
             )
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
-        // Filter berdasarkan desa jika ada
+        // Filter berdasarkan desa jika ada (konsisten dengan pemetaan di data_posyandu)
         if ($desa) {
-            $query->where('dp.desa', $desa);
+            $query->where(function($q) use ($desa) {
+                $q->where('dp.desa', $desa)
+                  ->orWhere('k.nm_kel', $desa);
+            });
         }
         
         // Filter berdasarkan tanggal jika ada
@@ -869,8 +1071,8 @@ class DashboardController extends Controller
     private function getDistribusiDemografi($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('COUNT(CASE WHEN sp.umur BETWEEN 0 AND 17 THEN 1 END) as anak'),
                 DB::raw('COUNT(CASE WHEN sp.umur BETWEEN 18 AND 59 THEN 1 END) as dewasa'),
@@ -881,18 +1083,18 @@ class DashboardController extends Controller
                 DB::raw('COUNT(CASE WHEN sp.status_perkawinan = "Belum Menikah" THEN 1 END) as belum_menikah'),
                 DB::raw('COUNT(sp.id_pkg) as total')
             )
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
         // Filter berdasarkan desa jika ada
         if ($desa) {
-            $query->where('dp.desa', $desa);
+            $query->where('k.nm_kel', $desa);
         }
         
         // Filter berdasarkan tanggal jika ada
@@ -913,8 +1115,8 @@ class DashboardController extends Controller
     private function getStatusKesehatan($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('COUNT(CASE WHEN sp.sedih = "Ya" OR sp.cemas = "Ya" OR sp.khawatir = "Ya" THEN 1 END) as masalah_mental'),
                 DB::raw('COUNT(CASE WHEN sp.karies = "Ya" OR sp.hilang = "Ya" OR sp.goyang = "Ya" THEN 1 END) as masalah_gigi'),
@@ -924,18 +1126,18 @@ class DashboardController extends Controller
                 DB::raw('COUNT(CASE WHEN sp.riwayat_hepatitis = "Ya" OR sp.riwayat_kuning = "Ya" THEN 1 END) as risiko_hepatitis'),
                 DB::raw('COUNT(sp.id_pkg) as total')
             )
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
         // Filter berdasarkan desa jika ada
         if ($desa) {
-            $query->where('dp.desa', $desa);
+            $query->where('k.nm_kel', $desa);
         }
         
         // Filter berdasarkan tanggal jika ada
@@ -956,20 +1158,20 @@ class DashboardController extends Controller
     private function getTrendSkrining($posyandu = null, $desa = null, $periode = 'bulan')
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
         // Filter berdasarkan desa jika ada
         if ($desa) {
-            $query->where('dp.desa', $desa);
+            $query->where('k.nm_kel', $desa);
         }
         
         // Grouping berdasarkan periode
@@ -1006,36 +1208,46 @@ class DashboardController extends Controller
     private function getSummaryPkg($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
     {
         $query = DB::table('skrining_pkg as sp')
-            ->leftJoin('pasien as p', 'sp.no_rkm_medis', '=', 'p.no_rkm_medis')
-            ->leftJoin('data_posyandu as dp', 'p.data_posyandu', '=', 'dp.nama_posyandu')
+            ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('COUNT(sp.id_pkg) as total_skrining'),
+                // Risiko Tinggi seragam: klinis tinggi ATAU kombinasi riwayat kuat
                 DB::raw('COUNT(CASE 
-                    WHEN sp.tekanan_sistolik >= 140 
-                    OR sp.tekanan_diastolik >= 90 
-                    OR sp.gds >= 200 
-                    OR sp.gdp >= 126 
-                    OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
-                    THEN 1 END) as risiko_tinggi'),
+                    WHEN (
+                        (sp.tekanan_sistolik >= 140 OR sp.tekanan_diastolik >= 90)
+                        OR (sp.gds >= 200 OR sp.gdp >= 126)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30)
+                        OR ((sp.riwayat_hipertensi = "Ya" AND sp.riwayat_diabetes = "Ya")
+                            OR (sp.status_merokok = "Ya" AND sp.riwayat_hipertensi = "Ya")
+                            OR (sp.umur >= 60 AND sp.riwayat_diabetes = "Ya"))
+                    ) THEN 1 END) as risiko_tinggi'),
+                // Risiko Sedang kandidat: klinis sedang ATAU riwayat tunggal (akan dikurangi risiko_tinggi)
                 DB::raw('COUNT(CASE 
-                    WHEN (sp.tekanan_sistolik BETWEEN 120 AND 139)
-                    OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
-                    OR sp.status_merokok = "Ya"
-                    OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) BETWEEN 25 AND 29.9)
-                    THEN 1 END) as risiko_sedang_temp')
+                    WHEN (
+                        (sp.tekanan_sistolik BETWEEN 120 AND 139)
+                        OR (sp.tekanan_diastolik BETWEEN 80 AND 89)
+                        OR (sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 30)
+                        OR sp.status_merokok = "Ya"
+                        OR sp.riwayat_hipertensi = "Ya"
+                        OR sp.riwayat_diabetes = "Ya"
+                    ) THEN 1 END) as risiko_sedang_temp')
             )
-            ->whereNotNull('p.data_posyandu')
-            ->where('p.data_posyandu', '!=', '')
-            ->where('p.data_posyandu', '!=', '-');
+            ->whereNotNull('sp.kode_posyandu')
+            ->where('sp.kode_posyandu', '!=', '')
+            ->where('sp.kode_posyandu', '!=', '-');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
-            $query->where('p.data_posyandu', $posyandu);
+            $query->where('dp.nama_posyandu', $posyandu);
         }
         
-        // Filter berdasarkan desa jika ada
+        // Filter berdasarkan desa jika ada (konsisten: dp.desa atau k.nm_kel)
         if ($desa) {
-            $query->where('dp.desa', $desa);
+            $query->where(function($q) use ($desa) {
+                $q->where('dp.desa', $desa)
+                  ->orWhere('k.nm_kel', $desa);
+            });
         }
         
         // Filter berdasarkan tanggal jika ada
@@ -1089,9 +1301,8 @@ class DashboardController extends Controller
         
         // Get factor risk data
         $faktor_risiko = DB::table('skrining_pkg as sp')
-            ->join('pasien as pas', 'sp.no_rkm_medis', '=', 'pas.no_rkm_medis')
-            ->join('data_posyandu as p', 'pas.data_posyandu', '=', 'p.nama_posyandu')
-            ->join('kelurahan as k', 'p.desa', '=', 'k.nm_kel')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('SUM(CASE WHEN sp.riwayat_hipertensi = "Ya" THEN 1 ELSE 0 END) as hipertensi'),
                 DB::raw('SUM(CASE WHEN sp.riwayat_diabetes = "Ya" THEN 1 ELSE 0 END) as diabetes'),
@@ -1104,7 +1315,8 @@ class DashboardController extends Controller
         }
         
         if ($desa_filter && $desa_filter != 'semua') {
-            $faktor_risiko->where('k.nm_kel', $desa_filter);
+            // Filter desa berdasarkan data_posyandu agar sesuai dengan daftar posyandu
+            $faktor_risiko->where('p.desa', $desa_filter);
         }
         
         if ($tanggal_awal) {
@@ -1117,17 +1329,16 @@ class DashboardController extends Controller
         
         $faktor_data = $faktor_risiko->first();
         
-        // Get age distribution
+        // Get age distribution (CKG) berdasarkan Sasaran Usia
         $distribusi_umur = DB::table('skrining_pkg as sp')
-            ->join('pasien as pas', 'sp.no_rkm_medis', '=', 'pas.no_rkm_medis')
-            ->join('data_posyandu as p', 'pas.data_posyandu', '=', 'p.nama_posyandu')
-            ->join('kelurahan as k', 'p.desa', '=', 'k.nm_kel')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
-                DB::raw('SUM(CASE WHEN sp.umur < 30 THEN 1 ELSE 0 END) as umur_20_29'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 30 AND sp.umur < 40 THEN 1 ELSE 0 END) as umur_30_39'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 40 AND sp.umur < 50 THEN 1 ELSE 0 END) as umur_40_49'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 50 AND sp.umur < 60 THEN 1 ELSE 0 END) as umur_50_59'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 60 THEN 1 ELSE 0 END) as umur_60_plus')
+                DB::raw('SUM(CASE WHEN sp.umur < 6 THEN 1 ELSE 0 END) as balita'),
+                DB::raw('SUM(CASE WHEN sp.umur >= 6 AND sp.umur <= 10 THEN 1 ELSE 0 END) as pra_sekolah'),
+                DB::raw('SUM(CASE WHEN sp.umur > 10 AND sp.umur <= 18 THEN 1 ELSE 0 END) as remaja'),
+                DB::raw('SUM(CASE WHEN sp.umur > 18 AND sp.umur <= 59 THEN 1 ELSE 0 END) as dewasa'),
+                DB::raw('SUM(CASE WHEN sp.umur >= 60 THEN 1 ELSE 0 END) as lansia')
             );
             
         if ($posyandu_filter && $posyandu_filter != 'semua') {
@@ -1135,7 +1346,8 @@ class DashboardController extends Controller
         }
         
         if ($desa_filter && $desa_filter != 'semua') {
-            $distribusi_umur->where('k.nm_kel', $desa_filter);
+            // Filter desa berdasarkan data_posyandu agar sesuai dengan daftar posyandu
+            $distribusi_umur->where('p.desa', $desa_filter);
         }
         
         if ($tanggal_awal) {
@@ -1162,11 +1374,11 @@ class DashboardController extends Controller
                 ['faktor' => 'Lansia (≥60 tahun)', 'jumlah' => $faktor_data->lansia ?? 0]
             ],
             'distribusi_umur' => [
-                ['kelompok_umur' => '20-29 tahun', 'jumlah' => $umur_data->umur_20_29 ?? 0],
-                ['kelompok_umur' => '30-39 tahun', 'jumlah' => $umur_data->umur_30_39 ?? 0],
-                ['kelompok_umur' => '40-49 tahun', 'jumlah' => $umur_data->umur_40_49 ?? 0],
-                ['kelompok_umur' => '50-59 tahun', 'jumlah' => $umur_data->umur_50_59 ?? 0],
-                ['kelompok_umur' => '≥60 tahun', 'jumlah' => $umur_data->umur_60_plus ?? 0]
+                ['kelompok_umur' => 'Balita (<6 th)', 'jumlah' => $umur_data->balita ?? 0],
+                ['kelompok_umur' => 'Pra Sekolah (6-10 th)', 'jumlah' => $umur_data->pra_sekolah ?? 0],
+                ['kelompok_umur' => 'Remaja (11-18 th)', 'jumlah' => $umur_data->remaja ?? 0],
+                ['kelompok_umur' => 'Dewasa (19-59 th)', 'jumlah' => $umur_data->dewasa ?? 0],
+                ['kelompok_umur' => 'Lansia (≥60 th)', 'jumlah' => $umur_data->lansia ?? 0]
             ]
         ];
     }
@@ -1189,15 +1401,14 @@ class DashboardController extends Controller
             
             $trend_data[] = [
                  'bulan' => now()->subMonths($i)->format('M Y'),
-                 'total' => $month_summary->total_skrining ?? 0
+                 'total' => $month_summary['total_skrining'] ?? 0
              ];
         }
         
         // Get factor risk data dengan query yang diperbaiki
         $faktor_risiko = DB::table('skrining_pkg as sp')
-            ->join('pasien as pas', 'sp.no_rkm_medis', '=', 'pas.no_rkm_medis')
-            ->join('data_posyandu as p', 'pas.data_posyandu', '=', 'p.nama_posyandu')
-            ->join('kelurahan as k', 'p.desa', '=', 'k.nm_kel')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('SUM(CASE WHEN sp.riwayat_hipertensi = "Ya" THEN 1 ELSE 0 END) as hipertensi'),
                 DB::raw('SUM(CASE WHEN sp.riwayat_diabetes = "Ya" THEN 1 ELSE 0 END) as diabetes'),
@@ -1210,7 +1421,8 @@ class DashboardController extends Controller
         }
         
         if ($desa && $desa != 'semua') {
-            $faktor_risiko->where('k.nm_kel', $desa);
+            // Filter desa berdasarkan data_posyandu agar sesuai dengan daftar posyandu
+            $faktor_risiko->where('p.desa', $desa);
         }
         
         if ($tanggal_awal) {
@@ -1223,17 +1435,16 @@ class DashboardController extends Controller
         
         $faktor_data = $faktor_risiko->first();
         
-        // Get age distribution dengan query yang diperbaiki
+        // Get age distribution (CKG) berdasarkan Sasaran Usia dengan query yang diperbaiki
         $distribusi_umur = DB::table('skrining_pkg as sp')
-            ->join('pasien as pas', 'sp.no_rkm_medis', '=', 'pas.no_rkm_medis')
-            ->join('data_posyandu as p', 'pas.data_posyandu', '=', 'p.nama_posyandu')
-            ->join('kelurahan as k', 'p.desa', '=', 'k.nm_kel')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
-                DB::raw('SUM(CASE WHEN sp.umur < 30 THEN 1 ELSE 0 END) as umur_20_29'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 30 AND sp.umur < 40 THEN 1 ELSE 0 END) as umur_30_39'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 40 AND sp.umur < 50 THEN 1 ELSE 0 END) as umur_40_49'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 50 AND sp.umur < 60 THEN 1 ELSE 0 END) as umur_50_59'),
-                DB::raw('SUM(CASE WHEN sp.umur >= 60 THEN 1 ELSE 0 END) as umur_60_plus')
+                DB::raw('SUM(CASE WHEN sp.umur < 6 THEN 1 ELSE 0 END) as balita'),
+                DB::raw('SUM(CASE WHEN sp.umur >= 6 AND sp.umur <= 10 THEN 1 ELSE 0 END) as pra_sekolah'),
+                DB::raw('SUM(CASE WHEN sp.umur > 10 AND sp.umur <= 18 THEN 1 ELSE 0 END) as remaja'),
+                DB::raw('SUM(CASE WHEN sp.umur > 18 AND sp.umur <= 59 THEN 1 ELSE 0 END) as dewasa'),
+                DB::raw('SUM(CASE WHEN sp.umur >= 60 THEN 1 ELSE 0 END) as lansia')
             );
             
         if ($posyandu && $posyandu != 'semua') {
@@ -1241,7 +1452,8 @@ class DashboardController extends Controller
         }
         
         if ($desa && $desa != 'semua') {
-            $distribusi_umur->where('k.nm_kel', $desa);
+            // Filter desa berdasarkan data_posyandu agar sesuai dengan daftar posyandu
+            $distribusi_umur->where('p.desa', $desa);
         }
         
         if ($tanggal_awal) {
@@ -1257,9 +1469,9 @@ class DashboardController extends Controller
         // Return struktur data yang sama dengan getChartData
          return [
              'distribusi_risiko' => [
-                 'risiko_tinggi' => $summary->risiko_tinggi ?? 0,
-                 'risiko_sedang' => $summary->risiko_sedang ?? 0,
-                 'risiko_rendah' => $summary->risiko_rendah ?? 0
+                 'risiko_tinggi' => $summary['risiko_tinggi'] ?? 0,
+                 'risiko_sedang' => $summary['risiko_sedang'] ?? 0,
+                 'risiko_rendah' => $summary['risiko_rendah'] ?? 0
              ],
             'trend_skrining' => $trend_data,
             'faktor_risiko' => [
@@ -1269,13 +1481,33 @@ class DashboardController extends Controller
                 ['faktor' => 'Lansia (≥60 tahun)', 'jumlah' => $faktor_data->lansia ?? 0]
             ],
             'distribusi_umur' => [
-                ['kelompok_umur' => '20-29 tahun', 'jumlah' => $umur_data->umur_20_29 ?? 0],
-                ['kelompok_umur' => '30-39 tahun', 'jumlah' => $umur_data->umur_30_39 ?? 0],
-                ['kelompok_umur' => '40-49 tahun', 'jumlah' => $umur_data->umur_40_49 ?? 0],
-                ['kelompok_umur' => '50-59 tahun', 'jumlah' => $umur_data->umur_50_59 ?? 0],
-                ['kelompok_umur' => '≥60 tahun', 'jumlah' => $umur_data->umur_60_plus ?? 0]
+                ['kelompok_umur' => 'Balita (<6 th)', 'jumlah' => $umur_data->balita ?? 0],
+                ['kelompok_umur' => 'Pra Sekolah (6-10 th)', 'jumlah' => $umur_data->pra_sekolah ?? 0],
+                ['kelompok_umur' => 'Remaja (11-18 th)', 'jumlah' => $umur_data->remaja ?? 0],
+                ['kelompok_umur' => 'Dewasa (19-59 th)', 'jumlah' => $umur_data->dewasa ?? 0],
+                ['kelompok_umur' => 'Lansia (≥60 th)', 'jumlah' => $umur_data->lansia ?? 0]
             ]
         ];
+    }
+
+    /**
+     * Fungsi utilitas untuk menentukan label Sasaran Usia berdasarkan umur (tahun)
+     */
+    private function sasaranUsia($umur)
+    {
+        if ($umur === null) {
+            return 'Tidak Diketahui';
+        }
+        if ($umur < 6) {
+            return 'Balita';
+        } elseif ($umur <= 10) {
+            return 'Pra Sekolah';
+        } elseif ($umur <= 18) {
+            return 'Remaja';
+        } elseif ($umur <= 59) {
+            return 'Dewasa';
+        }
+        return 'Lansia';
     }
 
     /**
