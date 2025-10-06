@@ -1159,10 +1159,7 @@ class DashboardController extends Controller
     {
         $query = DB::table('skrining_pkg as sp')
             ->leftJoin('data_posyandu as dp', 'sp.kode_posyandu', '=', 'dp.kode_posyandu')
-            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
-            ->whereNotNull('sp.kode_posyandu')
-            ->where('sp.kode_posyandu', '!=', '')
-            ->where('sp.kode_posyandu', '!=', '-');
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel');
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
@@ -1232,10 +1229,9 @@ class DashboardController extends Controller
                         OR sp.riwayat_hipertensi = "Ya"
                         OR sp.riwayat_diabetes = "Ya"
                     ) THEN 1 END) as risiko_sedang_temp')
-            )
-            ->whereNotNull('sp.kode_posyandu')
-            ->where('sp.kode_posyandu', '!=', '')
-            ->where('sp.kode_posyandu', '!=', '-');
+            );
+            // Untuk summary kartu, sertakan seluruh data skrining tanpa mengecualikan kode_posyandu kosong atau tanda '-'
+            // agar total dan distribusi risiko tetap muncul meski belum terpetakan ke posyandu tertentu.
             
         // Filter berdasarkan posyandu jika ada
         if ($posyandu) {
@@ -1301,8 +1297,8 @@ class DashboardController extends Controller
         
         // Get factor risk data
         $faktor_risiko = DB::table('skrining_pkg as sp')
-            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
-            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->leftJoin('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('SUM(CASE WHEN sp.riwayat_hipertensi = "Ya" THEN 1 ELSE 0 END) as hipertensi'),
                 DB::raw('SUM(CASE WHEN sp.riwayat_diabetes = "Ya" THEN 1 ELSE 0 END) as diabetes'),
@@ -1331,8 +1327,8 @@ class DashboardController extends Controller
         
         // Get age distribution (CKG) berdasarkan Sasaran Usia
         $distribusi_umur = DB::table('skrining_pkg as sp')
-            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
-            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->leftJoin('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->leftJoin('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
             ->select(
                 DB::raw('SUM(CASE WHEN sp.umur < 6 THEN 1 ELSE 0 END) as balita'),
                 DB::raw('SUM(CASE WHEN sp.umur >= 6 AND sp.umur <= 10 THEN 1 ELSE 0 END) as pra_sekolah'),

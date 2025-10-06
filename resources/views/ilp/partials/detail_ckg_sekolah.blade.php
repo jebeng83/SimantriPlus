@@ -1362,9 +1362,29 @@
                            <div class="col-md-6">
                               <table class="table table-bordered">
                                  <tr>
+                                    <th>Berat Badan (BB)</th>
+                                    <td>
+                                       @if(!is_null($detail->berat_badan))
+                                          {{ $detail->berat_badan }} kg
+                                       @else
+                                          -
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <th>Tinggi Badan (TB)</th>
+                                    <td>
+                                       @if(!is_null($detail->tinggi_badan))
+                                          {{ $detail->tinggi_badan }} cm
+                                       @else
+                                          -
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
                                     <th width="50%">IMT/U</th>
                                     <td>{{ $detail->imt ?? '-' }}</td>
-                                 </tr>
+                                 </tr                       
                                  <tr>
                                     <th>Tekanan Darah Sistole</th>
                                     <td>{{ $detail->sistole ?? '-' }}</td>

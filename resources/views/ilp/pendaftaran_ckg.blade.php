@@ -450,6 +450,14 @@
                     }
                 });
             });
+
+            // Bersihkan konten modal dan backdrop yang tersisa untuk mencegah layar gelap/hang
+            $('#detail-sekolah-content').empty();
+            $('#detailSekolahModal').removeData('bs.modal');
+            setTimeout(function() {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('padding-right', '');
+            }, 50);
         });
         
         // Event handler untuk tombol "Jadikan Kunjungan Sehat" di modal sekolah
@@ -856,6 +864,24 @@
                     }
                 });
             });
+
+            // Bersihkan konten modal dan backdrop yang tersisa
+            $('#detail-content').empty();
+            $('#detailModal').removeData('bs.modal');
+            setTimeout(function() {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('padding-right', '');
+            }, 50);
+        });
+
+        // Guard umum: pastikan tidak ada backdrop tersisa saat modal mana pun ditutup
+        $(document).on('hidden.bs.modal', '.modal', function () {
+            setTimeout(function() {
+                if ($('.modal.show').length === 0) {
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open').css('padding-right', '');
+                }
+            }, 50);
         });
 
         // Detail CKG Sekolah button click - menggunakan event delegation untuk pagination

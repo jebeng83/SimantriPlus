@@ -238,6 +238,7 @@
                                     <th class="text-white">Risiko Tinggi</th>
                                     <th class="text-white">Risiko Sedang</th>
                                     <th class="text-white">Risiko Rendah</th>
+                                    <th class="text-white">Tidak Terklasifikasi</th>
                                     <th class="text-white">% Risiko Tinggi</th>
                                     <th class="text-white">TD ≥ 140</th>
                                     <th class="text-white">GDS ≥ 200</th>
@@ -248,7 +249,7 @@
                             </thead>
                             <tbody id="analisis-pkg-body">
                                 <tr class="loading-row">
-                                    <td colspan="14" class="text-center">
+                                    <td colspan="15" class="text-center">
                                         Memuat data analisis…
                                     </td>
                                 </tr>
@@ -549,20 +550,29 @@ $(document).ready(function() {
 
     function renderRows(items){
         if (!items || !items.length){
-            $tbody.html('<tr><td colspan="14" class="text-center">Tidak ada data skrining PKG</td></tr>');
+            $tbody.html('<tr><td colspan="15" class="text-center">Tidak ada data skrining PKG</td></tr>');
             return;
         }
         var rows = items.map(function(item){
-            var persen = item.persen_tinggi || 0;
+            var total = Number(item.total_skrining || 0);
+            var tinggi = Number(item.risiko_tinggi || 0);
+            var sedang = Number(item.risiko_sedang || 0);
+            // Opsi (1): risiko rendah sebagai komplemen dari total
+            var rendah = Math.max(0, total - tinggi - sedang);
+            // Opsi (3): tampilkan data tidak terklasifikasi (berdasarkan rendah backend jika definisi ketat)
+            var rendahBackend = Number(item.risiko_rendah || 0);
+            var tidakTerk = Math.max(0, total - (tinggi + sedang + rendahBackend));
+            var persen = total > 0 ? (tinggi / total * 100) : 0;
             return '<tr>'+
                 '<td>'+(item.nama_posyandu || '-')+'</td>'+
                 '<td>'+(item.desa || '-')+'</td>'+
-                '<td>'+numberFormat(item.total_skrining)+'</td>'+
+                '<td>'+numberFormat(total)+'</td>'+
                 '<td>'+numberFormat(item.laki_laki || 0)+'</td>'+
                 '<td>'+numberFormat(item.perempuan || 0)+'</td>'+
-                '<td><span class="badge bg-danger">'+numberFormat(item.risiko_tinggi)+'</span></td>'+
-                '<td><span class="badge bg-warning text-dark">'+numberFormat(item.risiko_sedang)+'</span></td>'+
-                '<td><span class="badge bg-success">'+numberFormat(item.risiko_rendah)+'</span></td>'+
+                '<td><span class="badge bg-danger">'+numberFormat(tinggi)+'</span></td>'+
+                '<td><span class="badge bg-warning text-dark">'+numberFormat(sedang)+'</span></td>'+
+                '<td><span class="badge bg-success">'+numberFormat(rendah)+'</span></td>'+
+                '<td>'+numberFormat(tidakTerk)+'</td>'+
                 '<td>'+persen.toFixed(1)+'%</td>'+
                 '<td><span class="badge bg-danger">'+numberFormat(item.td_ge_140)+'</span></td>'+
                 '<td><span class="badge bg-danger">'+numberFormat(item.gds_ge_200)+'</span></td>'+
@@ -599,13 +609,14 @@ $(document).ready(function() {
             page: page,
             per_page: 10
         };
-        $tbody.html('<tr class="loading-row"><td colspan="14" class="text-center"><div class="skeleton" style="height:16px"></div></td></tr>');
+        $tbody.html('<tr class="loading-row"><td colspan="15" class="text-center"><div class="skeleton" style="height:16px"></div></td></tr>');
+        // Perbaiki nama route agar sesuai dengan definisi di routes/web.php
         $.get('{{ route("ilp.dashboard.pws.analisis") }}', params, function(resp){
             renderRows(resp.data);
             renderPagination(resp.meta);
             analisisLoaded = true;
         }).fail(function(){
-            $tbody.html('<tr><td colspan="14" class="text-center text-danger">Gagal memuat data</td></tr>');
+            $tbody.html('<tr><td colspan="15" class="text-center text-danger">Gagal memuat data</td></tr>');
         });
     }
 
@@ -634,6 +645,9 @@ $(document).ready(function() {
         else nextPage = parseInt(p, 10) || 1;
         fetchAnalisisPkg(nextPage);
     });
+
+    // Muat data analisis segera saat halaman siap (tanpa menunggu scroll)
+    fetchAnalisisPkg(1);
 });
 </script>
 @endsection
