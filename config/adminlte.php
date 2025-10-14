@@ -296,10 +296,27 @@ return [
             'url'         => '/ralan/pasien',
         ],
         [
-            'text'       => 'Ranap',
-            'icon'       => 'fas fa-fw fa-bed',
-            'url'        => '/ranap/pasien',
+            'text'        => 'Ranap',
+            'icon'        => 'fas fa-fw fa-bed',
+            'url'         => '/ranap/pasien',
         ],
+        [
+            'text'    => 'Laporan',
+            'icon'    => 'fas fa-fw fa-file-alt',
+            'submenu' => [
+                [
+                    'text' => 'Laporan Program',
+                    'route'  => 'ranap.laporan.program',
+                    'icon' => 'fas fa-fw fa-file-medical',
+                ],
+                [
+                    'text' => 'Grafik Analisa',
+                    'route'  => 'ranap.laporan.grafik',
+                    'icon' => 'fas fa-fw fa-chart-bar',
+                ],
+            ],
+        ],
+            
         // [
         //     'text'        => 'Master Obat',
         //     'url'         => '/master_obat',
@@ -424,6 +441,11 @@ return [
                 //     'url'  => '/pcare/form-pendaftaran',
                 //     'icon' => 'fas fa-fw fa-plus-circle',
                 // ],
+                [
+                    'text' => 'Status Pendaftaran PCare',
+                    'url'  => '/pcare/status-pendaftaran',
+                    'icon' => 'fas fa-fw fa-chart-bar',
+                ],
                 [
                     'text' => 'Data Pendaftaran',
                     'url'  => '/pcare/data-pendaftaran',

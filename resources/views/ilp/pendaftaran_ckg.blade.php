@@ -374,11 +374,14 @@
             margin-bottom: 0;
         }
     }
+
+    /* Ensure modal body can scroll and not lock page afterwards */
+    .modal { overflow-y: auto; }
 </style>
 @stop
 
 @section('js')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
     // Pastikan jQuery dan Bootstrap sudah dimuat sebelum kode ini dijalankan
    if (typeof $ === 'undefined') {
@@ -396,16 +399,43 @@
    $(document).ready(function() {
         // Cetak log untuk debugging
         console.log('Document ready, initializing event handlers');
+
+        // Helper untuk memastikan halaman bisa di-scroll setelah modal ditutup
+        function restoreScroll() {
+            try {
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css({ paddingRight: '', overflow: 'auto', height: 'auto' });
+                $('html').css({ overflow: 'auto', height: 'auto' });
+                // Pastikan semua modal benar-benar tersembunyi
+                $('.modal').each(function(){
+                    if (!$(this).hasClass('show')) {
+                        $(this).hide();
+                    }
+                });
+            } catch (e) {
+                console.warn('restoreScroll warning:', e);
+            }
+        }
         
-        // Initialize DataTable with state saving
+        // Initialize DataTable with performance-friendly settings
         var table = $('#tabel-pendaftaran-ckg').DataTable({
-            "responsive": false,
-            "lengthChange": true,
-            "autoWidth": false,
-            "scrollX": true,
-            "stateSave": true,
-            "stateDuration": 60 * 60 * 24, // 24 hours
-            "language": {
+            responsive: false,
+            autoWidth: false,
+            scrollX: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24, // 24 hours
+            processing: true,
+            deferRender: true,
+            searchDelay: 350,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            order: [], // disable initial ordering to speed up first paint
+            pagingType: 'simple_numbers',
+            columnDefs: [
+                { targets: [0], orderable: false, searchable: false }, // No.
+                { targets: [14, 15], orderable: false, searchable: false } // Kunjungan Sehat, Aksi
+            ],
+            language: {
                 "emptyTable": "Tidak ada data yang tersedia",
                 "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
                 "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
@@ -454,10 +484,7 @@
             // Bersihkan konten modal dan backdrop yang tersisa untuk mencegah layar gelap/hang
             $('#detail-sekolah-content').empty();
             $('#detailSekolahModal').removeData('bs.modal');
-            setTimeout(function() {
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open').css('padding-right', '');
-            }, 50);
+            setTimeout(function() { restoreScroll(); }, 50);
         });
         
         // Event handler untuk tombol "Jadikan Kunjungan Sehat" di modal sekolah
@@ -543,8 +570,7 @@
                                     text: 'Data berhasil diselesaikan',
                                     icon: 'success'
                                 }).then(() => {
-                                    // Save current page state before reload
-                                    saveCurrentPageState();
+                                    // Reload page; DataTables stateSave will restore table state
                                     location.reload();
                                 });
                             } else {
@@ -581,70 +607,7 @@
         });
         
 
-        
-
-        
-        // Function to save current page state
-        function saveCurrentPageState() {
-            if (table) {
-                var pageInfo = table.page.info();
-                localStorage.setItem('ckg_current_page', pageInfo.page);
-                localStorage.setItem('ckg_page_length', pageInfo.length);
-                localStorage.setItem('ckg_search_value', table.search());
-            }
-        }
-        
-        // Function to restore page state
-        function restorePageState() {
-            var savedPage = localStorage.getItem('ckg_current_page');
-            var savedLength = localStorage.getItem('ckg_page_length');
-            var savedSearch = localStorage.getItem('ckg_search_value');
-            
-            if (savedPage !== null) {
-                table.page(parseInt(savedPage));
-            }
-            if (savedLength !== null) {
-                table.page.len(parseInt(savedLength));
-            }
-            if (savedSearch !== null) {
-                table.search(savedSearch);
-            }
-            table.draw(false);
-        }
-        
-        // Save state when page changes
-        table.on('page.dt', function() {
-            saveCurrentPageState();
-        });
-        
-        // Save state when search changes
-        table.on('search.dt', function() {
-            saveCurrentPageState();
-        });
-        
-        // Save state when page length changes
-        table.on('length.dt', function() {
-            saveCurrentPageState();
-        });
-        
-        // Function to refresh table data without full page reload
-        function refreshTableData() {
-            // Save current state
-            saveCurrentPageState();
-            
-            // Get current page info
-            var pageInfo = table.page.info();
-            var currentPage = pageInfo.page;
-            var searchValue = table.search();
-            
-            // Reload the page but maintain state
-            location.reload();
-        }
-        
-        // Restore page state after page load
-        setTimeout(function() {
-            restorePageState();
-        }, 100);
+        // Remove custom state management; rely on built-in DataTables stateSave for speed and simplicity
         
         // Check processing status on page load
         function checkProcessingStatus() {
@@ -868,20 +831,24 @@
             // Bersihkan konten modal dan backdrop yang tersisa
             $('#detail-content').empty();
             $('#detailModal').removeData('bs.modal');
-            setTimeout(function() {
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open').css('padding-right', '');
-            }, 50);
+            setTimeout(function() { restoreScroll(); }, 50);
         });
 
         // Guard umum: pastikan tidak ada backdrop tersisa saat modal mana pun ditutup
         $(document).on('hidden.bs.modal', '.modal', function () {
             setTimeout(function() {
                 if ($('.modal.show').length === 0) {
-                    $('.modal-backdrop').remove();
-                    $('body').removeClass('modal-open').css('padding-right', '');
+                    restoreScroll();
                 }
             }, 50);
+        });
+
+        // Tambahan: jika terjadi error yang membuat modal tertahan sekalipun tidak terlihat
+        // jalankan fallback restore saat halaman mendapatkan fokus kembali
+        $(window).on('focus', function(){
+            if ($('.modal.show').length === 0 && $('body').hasClass('modal-open')) {
+                restoreScroll();
+            }
         });
 
         // Detail CKG Sekolah button click - menggunakan event delegation untuk pagination

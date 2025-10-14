@@ -1257,11 +1257,11 @@ class DashboardController extends Controller
 
         $result = $query->first();
         
-        $total_skrining = $result->total_skrining ?? 0;
-        $risiko_tinggi = $result->risiko_tinggi ?? 0;
+        $total_skrining = (int) ($result->total_skrining ?? 0);
+        $risiko_tinggi = (int) ($result->risiko_tinggi ?? 0);
         
         // Calculate medium risk excluding those already in high risk
-        $risiko_sedang = max(0, ($result->risiko_sedang_temp ?? 0) - $risiko_tinggi);
+        $risiko_sedang = max(0, (int) ($result->risiko_sedang_temp ?? 0) - $risiko_tinggi);
         
         // Calculate low risk
         $risiko_rendah = max(0, $total_skrining - $risiko_tinggi - $risiko_sedang);
@@ -1397,7 +1397,7 @@ class DashboardController extends Controller
             
             $trend_data[] = [
                  'bulan' => now()->subMonths($i)->format('M Y'),
-                 'total' => $month_summary['total_skrining'] ?? 0
+                 'total' => (int) ($month_summary['total_skrining'] ?? 0)
              ];
         }
         
@@ -1462,6 +1462,52 @@ class DashboardController extends Controller
         
         $umur_data = $distribusi_umur->first();
         
+        // Get gender distribution (CKG) berdasarkan Sasaran Jenis Kelamin dengan query yang diperbaiki
+        $distribusi_jenis_kelamin = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->join('kelurahan as k', 'sp.kd_kel', '=', 'k.kd_kel')
+            ->select(
+                DB::raw('SUM(CASE WHEN sp.jenis_kelamin = "L" THEN 1 ELSE 0 END) as laki_laki'),
+                DB::raw('SUM(CASE WHEN sp.jenis_kelamin = "P" THEN 1 ELSE 0 END) as perempuan')
+            );
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $distribusi_jenis_kelamin->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            // Filter desa berdasarkan data_posyandu agar sesuai dengan daftar posyandu
+            $distribusi_jenis_kelamin->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $distribusi_jenis_kelamin->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $distribusi_jenis_kelamin->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $jenis_kelamin_data = $distribusi_jenis_kelamin->first();
+        
+        // Get PKG visits by village (desa)
+        $kunjungan_per_desa = $this->getKunjunganPerDesa($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
+        // Get PKG visits by posyandu from villages
+        $kunjungan_per_posyandu_desa = $this->getKunjunganPerPosyanduDesa($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
+        // Get smoking analysis data
+        $analisa_rokok = $this->getAnalisaRokok($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
+        // Get BMI distribution data
+        $distribusi_bmi = $this->getDistribusiBMI($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
+        // Get hearing and vision analysis data
+        $analisa_pendengaran_penglihatan = $this->getAnalisaPendengaranPenglihatan($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
+        // Get dental health analysis data
+        $analisa_kesehatan_gigi = $this->getAnalisaKesehatanGigi($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
+        
         // Return struktur data yang sama dengan getChartData
          return [
              'distribusi_risiko' => [
@@ -1471,18 +1517,28 @@ class DashboardController extends Controller
              ],
             'trend_skrining' => $trend_data,
             'faktor_risiko' => [
-                ['faktor' => 'Hipertensi', 'jumlah' => $faktor_data->hipertensi ?? 0],
-                ['faktor' => 'Diabetes', 'jumlah' => $faktor_data->diabetes ?? 0],
-                ['faktor' => 'Merokok', 'jumlah' => $faktor_data->merokok ?? 0],
-                ['faktor' => 'Lansia (≥60 tahun)', 'jumlah' => $faktor_data->lansia ?? 0]
+                ['faktor' => 'Hipertensi', 'jumlah' => (int) ($faktor_data->hipertensi ?? 0)],
+                ['faktor' => 'Diabetes', 'jumlah' => (int) ($faktor_data->diabetes ?? 0)],
+                ['faktor' => 'Merokok', 'jumlah' => (int) ($faktor_data->merokok ?? 0)],
+                ['faktor' => 'Lansia (≥60 tahun)', 'jumlah' => (int) ($faktor_data->lansia ?? 0)]
             ],
             'distribusi_umur' => [
-                ['kelompok_umur' => 'Balita (<6 th)', 'jumlah' => $umur_data->balita ?? 0],
-                ['kelompok_umur' => 'Pra Sekolah (6-10 th)', 'jumlah' => $umur_data->pra_sekolah ?? 0],
-                ['kelompok_umur' => 'Remaja (11-18 th)', 'jumlah' => $umur_data->remaja ?? 0],
-                ['kelompok_umur' => 'Dewasa (19-59 th)', 'jumlah' => $umur_data->dewasa ?? 0],
-                ['kelompok_umur' => 'Lansia (≥60 th)', 'jumlah' => $umur_data->lansia ?? 0]
-            ]
+                ['kelompok_umur' => 'Balita (<6 th)', 'jumlah' => (int) ($umur_data->balita ?? 0)],
+                ['kelompok_umur' => 'Pra Sekolah (6-10 th)', 'jumlah' => (int) ($umur_data->pra_sekolah ?? 0)],
+                ['kelompok_umur' => 'Remaja (11-18 th)', 'jumlah' => (int) ($umur_data->remaja ?? 0)],
+                ['kelompok_umur' => 'Dewasa (19-59 th)', 'jumlah' => (int) ($umur_data->dewasa ?? 0)],
+                ['kelompok_umur' => 'Lansia (≥60 th)', 'jumlah' => (int) ($umur_data->lansia ?? 0)]
+            ],
+            'distribusi_jenis_kelamin' => [
+                ['jenis_kelamin' => 'Laki-laki', 'jumlah' => (int) ($jenis_kelamin_data->laki_laki ?? 0)],
+                ['jenis_kelamin' => 'Perempuan', 'jumlah' => (int) ($jenis_kelamin_data->perempuan ?? 0)]
+            ],
+            'kunjungan_per_desa' => $kunjungan_per_desa,
+            'kunjungan_per_posyandu_desa' => $kunjungan_per_posyandu_desa,
+            'analisa_rokok' => $analisa_rokok,
+            'distribusi_bmi' => $distribusi_bmi,
+            'analisa_pendengaran_penglihatan' => $analisa_pendengaran_penglihatan,
+            'analisa_kesehatan_gigi' => $analisa_kesehatan_gigi
         ];
     }
 
@@ -1504,6 +1560,394 @@ class DashboardController extends Controller
             return 'Dewasa';
         }
         return 'Lansia';
+    }
+
+    /**
+     * Get PKG visits per village (desa)
+     */
+    private function getKunjunganPerDesa($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                'p.desa',
+                DB::raw('COUNT(sp.id_pkg) as total_kunjungan')
+            )
+            ->whereNotNull('p.desa')
+            ->where('p.desa', '!=', '')
+            ->where('p.desa', '!=', '-');
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $result = $query->groupBy('p.desa')
+                       ->orderByDesc('total_kunjungan')
+                       ->limit(10) // Top 10 villages
+                       ->get();
+        
+        return $result->map(function($item) {
+            return [
+                'desa' => $item->desa,
+                'jumlah' => (int) ($item->total_kunjungan ?? 0)
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get PKG visits per posyandu from villages
+     */
+    private function getKunjunganPerPosyanduDesa($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                'p.nama_posyandu',
+                'p.desa',
+                DB::raw('COUNT(sp.id_pkg) as total_kunjungan')
+            )
+            ->whereNotNull('p.nama_posyandu')
+            ->where('p.nama_posyandu', '!=', '')
+            ->where('p.nama_posyandu', '!=', '-')
+            ->whereNotNull('p.desa')
+            ->where('p.desa', '!=', '')
+            ->where('p.desa', '!=', '-');
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $result = $query->groupBy('p.nama_posyandu', 'p.desa')
+                       ->orderByDesc('total_kunjungan')
+                       ->limit(15) // Top 15 posyandu
+                       ->get();
+        
+        return $result->map(function($item) {
+            return [
+                'posyandu' => $item->nama_posyandu,
+                'desa' => $item->desa,
+                'label' => $item->nama_posyandu . ' (' . $item->desa . ')',
+                'jumlah' => (int) ($item->total_kunjungan ?? 0)
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get hearing and vision analysis from skrining_pkg table
+     */
+    private function getAnalisaPendengaranPenglihatan($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                // Hearing analysis
+                DB::raw('SUM(CASE WHEN sp.pendengaran = "Normal" THEN 1 ELSE 0 END) as pendengaran_normal'),
+                DB::raw('SUM(CASE WHEN sp.pendengaran = "Terganggu" THEN 1 ELSE 0 END) as pendengaran_terganggu'),
+                DB::raw('SUM(CASE WHEN sp.pendengaran IS NULL OR sp.pendengaran = "" THEN 1 ELSE 0 END) as pendengaran_tidak_diperiksa'),
+                
+                // Vision analysis
+                DB::raw('SUM(CASE WHEN sp.penglihatan = "Normal" THEN 1 ELSE 0 END) as penglihatan_normal'),
+                DB::raw('SUM(CASE WHEN sp.penglihatan = "Terganggu" THEN 1 ELSE 0 END) as penglihatan_terganggu'),
+                DB::raw('SUM(CASE WHEN sp.penglihatan IS NULL OR sp.penglihatan = "" THEN 1 ELSE 0 END) as penglihatan_tidak_diperiksa'),
+                
+                // Combined issues analysis
+                DB::raw('SUM(CASE WHEN sp.pendengaran = "Terganggu" AND sp.penglihatan = "Terganggu" THEN 1 ELSE 0 END) as gangguan_ganda'),
+                DB::raw('SUM(CASE WHEN (sp.pendengaran = "Terganggu" OR sp.penglihatan = "Terganggu") THEN 1 ELSE 0 END) as ada_gangguan'),
+                DB::raw('SUM(CASE WHEN sp.pendengaran = "Normal" AND sp.penglihatan = "Normal" THEN 1 ELSE 0 END) as kedua_normal'),
+                
+                // Total count for validation
+                DB::raw('COUNT(sp.id_pkg) as total_skrining')
+            );
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $raw_data = $query->first();
+        
+        // Process data into chart-friendly format with integer casting (following memory lessons)
+        return [
+            'pendengaran' => [
+                ['kategori' => 'Normal', 'jumlah' => (int) ($raw_data->pendengaran_normal ?? 0)],
+                ['kategori' => 'Terganggu', 'jumlah' => (int) ($raw_data->pendengaran_terganggu ?? 0)],
+                ['kategori' => 'Tidak Diperiksa', 'jumlah' => (int) ($raw_data->pendengaran_tidak_diperiksa ?? 0)]
+            ],
+            'penglihatan' => [
+                ['kategori' => 'Normal', 'jumlah' => (int) ($raw_data->penglihatan_normal ?? 0)],
+                ['kategori' => 'Terganggu', 'jumlah' => (int) ($raw_data->penglihatan_terganggu ?? 0)],
+                ['kategori' => 'Tidak Diperiksa', 'jumlah' => (int) ($raw_data->penglihatan_tidak_diperiksa ?? 0)]
+            ],
+            'gangguan_gabungan' => [
+                ['kategori' => 'Kedua Normal', 'jumlah' => (int) ($raw_data->kedua_normal ?? 0)],
+                ['kategori' => 'Ada Gangguan', 'jumlah' => (int) ($raw_data->ada_gangguan ?? 0)],
+                ['kategori' => 'Gangguan Ganda', 'jumlah' => (int) ($raw_data->gangguan_ganda ?? 0)]
+            ],
+            'summary' => [
+                'total_gangguan_pendengaran' => (int) ($raw_data->pendengaran_terganggu ?? 0),
+                'total_gangguan_penglihatan' => (int) ($raw_data->penglihatan_terganggu ?? 0),
+                'total_gangguan_ganda' => (int) ($raw_data->gangguan_ganda ?? 0),
+                'total_skrining' => (int) ($raw_data->total_skrining ?? 0)
+            ]
+        ];
+    }
+
+    /**
+     * Get dental health analysis from skrining_pkg table only (without skrining_siswa_sd join)
+     */
+    private function getAnalisaKesehatanGigi($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                // Dental problems from skrining_pkg only
+                DB::raw('SUM(CASE WHEN sp.karies = "Ya" THEN 1 ELSE 0 END) as karies'),
+                DB::raw('SUM(CASE WHEN sp.hilang = "Ya" THEN 1 ELSE 0 END) as hilang'),
+                DB::raw('SUM(CASE WHEN sp.goyang = "Ya" THEN 1 ELSE 0 END) as goyang'),
+                
+                // Multiple problems analysis
+                DB::raw('SUM(CASE WHEN sp.karies = "Ya" AND sp.hilang = "Ya" THEN 1 ELSE 0 END) as karies_dan_hilang'),
+                DB::raw('SUM(CASE WHEN sp.karies = "Ya" AND sp.goyang = "Ya" THEN 1 ELSE 0 END) as karies_dan_goyang'),
+                DB::raw('SUM(CASE WHEN sp.hilang = "Ya" AND sp.goyang = "Ya" THEN 1 ELSE 0 END) as hilang_dan_goyang'),
+                DB::raw('SUM(CASE WHEN sp.karies = "Ya" AND sp.hilang = "Ya" AND sp.goyang = "Ya" THEN 1 ELSE 0 END) as tiga_masalah'),
+                
+                // Healthy teeth (no dental problems)
+                DB::raw('SUM(CASE WHEN (sp.karies != "Ya" OR sp.karies IS NULL) AND (sp.hilang != "Ya" OR sp.hilang IS NULL) AND (sp.goyang != "Ya" OR sp.goyang IS NULL) THEN 1 ELSE 0 END) as gigi_sehat'),
+                
+                // At least one problem
+                DB::raw('SUM(CASE WHEN (sp.karies = "Ya" OR sp.hilang = "Ya" OR sp.goyang = "Ya") THEN 1 ELSE 0 END) as ada_masalah'),
+                
+                // Total count for validation
+                DB::raw('COUNT(sp.id_pkg) as total_skrining')
+            );
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $raw_data = $query->first();
+        
+        // Process data into chart-friendly format with integer casting (following memory lessons)
+        return [
+            'masalah_gigi' => [
+                ['kategori' => 'Karies', 'jumlah' => (int) ($raw_data->karies ?? 0)],
+                ['kategori' => 'Gigi Hilang', 'jumlah' => (int) ($raw_data->hilang ?? 0)],
+                ['kategori' => 'Gigi Goyang', 'jumlah' => (int) ($raw_data->goyang ?? 0)],
+                ['kategori' => 'Gigi Sehat', 'jumlah' => (int) ($raw_data->gigi_sehat ?? 0)]
+            ],
+            'kombinasi_masalah' => [
+                ['kategori' => 'Hanya Karies', 'jumlah' => max(0, (int) ($raw_data->karies ?? 0) - (int) ($raw_data->karies_dan_hilang ?? 0) - (int) ($raw_data->karies_dan_goyang ?? 0) + (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Hanya Hilang', 'jumlah' => max(0, (int) ($raw_data->hilang ?? 0) - (int) ($raw_data->karies_dan_hilang ?? 0) - (int) ($raw_data->hilang_dan_goyang ?? 0) + (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Hanya Goyang', 'jumlah' => max(0, (int) ($raw_data->goyang ?? 0) - (int) ($raw_data->karies_dan_goyang ?? 0) - (int) ($raw_data->hilang_dan_goyang ?? 0) + (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Karies + Hilang', 'jumlah' => max(0, (int) ($raw_data->karies_dan_hilang ?? 0) - (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Karies + Goyang', 'jumlah' => max(0, (int) ($raw_data->karies_dan_goyang ?? 0) - (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Hilang + Goyang', 'jumlah' => max(0, (int) ($raw_data->hilang_dan_goyang ?? 0) - (int) ($raw_data->tiga_masalah ?? 0))],
+                ['kategori' => 'Tiga Masalah', 'jumlah' => (int) ($raw_data->tiga_masalah ?? 0)],
+                ['kategori' => 'Gigi Sehat', 'jumlah' => (int) ($raw_data->gigi_sehat ?? 0)]
+            ],
+            'summary' => [
+                'total_karies' => (int) ($raw_data->karies ?? 0),
+                'total_hilang' => (int) ($raw_data->hilang ?? 0),
+                'total_goyang' => (int) ($raw_data->goyang ?? 0),
+                'total_dengan_masalah' => (int) ($raw_data->ada_masalah ?? 0),
+                'total_gigi_sehat' => (int) ($raw_data->gigi_sehat ?? 0),
+                'total_skrining' => (int) ($raw_data->total_skrining ?? 0)
+            ]
+        ];
+    }
+
+    /**
+     * Get BMI distribution analysis from skrining_pkg table
+     * BMI = berat_badan (kg) / (tinggi_badan (cm) / 100)^2
+     */
+    private function getDistribusiBMI($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                // BMI categories based on WHO standards
+                // Underweight: BMI < 18.5
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) < 18.5 THEN 1 ELSE 0 END) as underweight'),
+                // Normal weight: BMI 18.5-24.9
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 18.5 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) <= 24.9 THEN 1 ELSE 0 END) as normal_weight'),
+                // Overweight: BMI 25-29.9
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 25 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) <= 29.9 THEN 1 ELSE 0 END) as overweight'),
+                // Obese Class I: BMI 30-34.9
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 30 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) <= 34.9 THEN 1 ELSE 0 END) as obese_1'),
+                // Obese Class II: BMI 35-39.9
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 35 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) <= 39.9 THEN 1 ELSE 0 END) as obese_2'),
+                // Obese Class III: BMI >= 40
+                DB::raw('SUM(CASE WHEN sp.berat_badan > 0 AND sp.tinggi_badan > 0 AND (sp.berat_badan / POWER(sp.tinggi_badan/100, 2)) >= 40 THEN 1 ELSE 0 END) as obese_3'),
+                // Invalid/missing data
+                DB::raw('SUM(CASE WHEN sp.berat_badan <= 0 OR sp.tinggi_badan <= 0 OR sp.berat_badan IS NULL OR sp.tinggi_badan IS NULL THEN 1 ELSE 0 END) as data_tidak_valid'),
+                // Total count for validation
+                DB::raw('COUNT(sp.id_pkg) as total_skrining')
+            );
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $raw_data = $query->first();
+        
+        // Process data into chart-friendly format with integer casting (following memory lessons)
+        return [
+            'distribusi_kategori' => [
+                ['kategori' => 'Kurus (< 18.5)', 'jumlah' => (int) ($raw_data->underweight ?? 0), 'color' => '#17a2b8'], // info blue
+                ['kategori' => 'Normal (18.5-24.9)', 'jumlah' => (int) ($raw_data->normal_weight ?? 0), 'color' => '#28a745'], // success green
+                ['kategori' => 'Kelebihan BB (25-29.9)', 'jumlah' => (int) ($raw_data->overweight ?? 0), 'color' => '#ffc107'], // warning yellow
+                ['kategori' => 'Obesitas I (30-34.9)', 'jumlah' => (int) ($raw_data->obese_1 ?? 0), 'color' => '#fd7e14'], // orange
+                ['kategori' => 'Obesitas II (35-39.9)', 'jumlah' => (int) ($raw_data->obese_2 ?? 0), 'color' => '#dc3545'], // danger red
+                ['kategori' => 'Obesitas III (≥ 40)', 'jumlah' => (int) ($raw_data->obese_3 ?? 0), 'color' => '#6f42c1'] // purple
+            ],
+            'summary' => [
+                'total_valid' => (int) ($raw_data->total_skrining ?? 0) - (int) ($raw_data->data_tidak_valid ?? 0),
+                'total_underweight' => (int) ($raw_data->underweight ?? 0),
+                'total_normal' => (int) ($raw_data->normal_weight ?? 0),
+                'total_overweight_obese' => (int) ($raw_data->overweight ?? 0) + (int) ($raw_data->obese_1 ?? 0) + (int) ($raw_data->obese_2 ?? 0) + (int) ($raw_data->obese_3 ?? 0),
+                'total_skrining' => (int) ($raw_data->total_skrining ?? 0),
+                'data_tidak_valid' => (int) ($raw_data->data_tidak_valid ?? 0)
+            ]
+        ];
+    }
+
+    /**
+     * Get smoking analysis data from skrining_pkg table
+     */
+    private function getAnalisaRokok($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select(
+                // Status merokok distribution
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" THEN 1 ELSE 0 END) as perokok_aktif'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Tidak" THEN 1 ELSE 0 END) as tidak_merokok'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Mantan Perokok" THEN 1 ELSE 0 END) as mantan_perokok'),
+                
+                // Paparan asap rokok
+                DB::raw('SUM(CASE WHEN sp.paparan_asap = "Ya" THEN 1 ELSE 0 END) as terpapar_asap'),
+                DB::raw('SUM(CASE WHEN sp.paparan_asap = "Tidak" THEN 1 ELSE 0 END) as tidak_terpapar_asap'),
+                
+                // Durasi merokok (untuk perokok aktif)
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.lama_merokok < 5 THEN 1 ELSE 0 END) as merokok_kurang_5tahun'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.lama_merokok >= 5 AND sp.lama_merokok < 10 THEN 1 ELSE 0 END) as merokok_5_10tahun'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.lama_merokok >= 10 AND sp.lama_merokok < 20 THEN 1 ELSE 0 END) as merokok_10_20tahun'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.lama_merokok >= 20 THEN 1 ELSE 0 END) as merokok_lebih_20tahun'),
+                
+                // Jumlah rokok per hari (untuk perokok aktif)
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.jumlah_rokok < 10 THEN 1 ELSE 0 END) as rokok_kurang_10batang'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.jumlah_rokok >= 10 AND sp.jumlah_rokok < 20 THEN 1 ELSE 0 END) as rokok_10_20batang'),
+                DB::raw('SUM(CASE WHEN sp.status_merokok = "Ya" AND sp.jumlah_rokok >= 20 THEN 1 ELSE 0 END) as rokok_lebih_20batang'),
+                
+                // Total count for validation
+                DB::raw('COUNT(sp.id_pkg) as total_skrining')
+            );
+            
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $raw_data = $query->first();
+        
+        // Process data into chart-friendly format with integer casting (following memory lessons)
+        return [
+            'status_merokok' => [
+                ['kategori' => 'Perokok Aktif', 'jumlah' => (int) ($raw_data->perokok_aktif ?? 0)],
+                ['kategori' => 'Tidak Merokok', 'jumlah' => (int) ($raw_data->tidak_merokok ?? 0)],
+                ['kategori' => 'Mantan Perokok', 'jumlah' => (int) ($raw_data->mantan_perokok ?? 0)]
+            ],
+            'paparan_asap' => [
+                ['kategori' => 'Terpapar Asap', 'jumlah' => (int) ($raw_data->terpapar_asap ?? 0)],
+                ['kategori' => 'Tidak Terpapar', 'jumlah' => (int) ($raw_data->tidak_terpapar_asap ?? 0)]
+            ],
+            'durasi_merokok' => [
+                ['kategori' => '< 5 Tahun', 'jumlah' => (int) ($raw_data->merokok_kurang_5tahun ?? 0)],
+                ['kategori' => '5-10 Tahun', 'jumlah' => (int) ($raw_data->merokok_5_10tahun ?? 0)],
+                ['kategori' => '10-20 Tahun', 'jumlah' => (int) ($raw_data->merokok_10_20tahun ?? 0)],
+                ['kategori' => '≥ 20 Tahun', 'jumlah' => (int) ($raw_data->merokok_lebih_20tahun ?? 0)]
+            ],
+            'konsumsi_harian' => [
+                ['kategori' => '< 10 Batang/Hari', 'jumlah' => (int) ($raw_data->rokok_kurang_10batang ?? 0)],
+                ['kategori' => '10-20 Batang/Hari', 'jumlah' => (int) ($raw_data->rokok_10_20batang ?? 0)],
+                ['kategori' => '≥ 20 Batang/Hari', 'jumlah' => (int) ($raw_data->rokok_lebih_20batang ?? 0)]
+            ],
+            'summary' => [
+                'total_perokok_aktif' => (int) ($raw_data->perokok_aktif ?? 0),
+                'total_terpapar_asap' => (int) ($raw_data->terpapar_asap ?? 0),
+                'total_skrining' => (int) ($raw_data->total_skrining ?? 0)
+            ]
+        ];
     }
 
     /**

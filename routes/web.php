@@ -234,6 +234,34 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/obat', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'getObat'])->name('ranap.obat');
         Route::post('/simpan/resep/{noRawat}', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'postResep'])->name('ranap.simpan.resep');
         Route::delete('/obat/{noResep}/{kdObat}', [App\Http\Controllers\Ranap\PemeriksaanRanapController::class, 'hapusObat']);
+        
+        // Route Laporan
+        Route::prefix('laporan')->group(function () {
+            Route::get('/program', [App\Http\Controllers\Ranap\LaporanController::class, 'laporanProgram'])->name('ranap.laporan.program');
+            Route::get('/grafik', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'index'])->name('ranap.laporan.grafik');
+            
+            // Standalone Demographic Analysis Page
+            Route::get('/demografi-pasien', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'showDemografi'])->name('ranap.laporan.demografi-pasien');
+            
+            // Top 10 Diseases Analysis Page
+            Route::get('/top-penyakit', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'showTopPenyakit'])->name('ranap.laporan.top-penyakit');
+            
+            // API Routes for Grafik Analisa
+            Route::get('/grafik/data', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getAnalyticsData'])->name('ranap.laporan.grafik.data');
+            Route::get('/grafik/export', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'exportData'])->name('ranap.laporan.grafik.export');
+            Route::get('/grafik/stats', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getRealtimeStats'])->name('ranap.laporan.grafik.stats');
+            
+            // Demographic Analysis Routes
+            Route::get('/grafik/demografi', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getDemograficData'])->name('ranap.laporan.grafik.demografi');
+            Route::get('/grafik/demografi/export', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'exportDemograficData'])->name('ranap.laporan.grafik.demografi.export');
+            Route::get('/grafik/kabupaten-db', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getKabupatenFromDb'])->name('ranap.laporan.grafik.kabupaten-db');
+            Route::get('/grafik/kecamatan-all', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getAllKecamatanFromDb'])->name('ranap.laporan.grafik.kecamatan-all');
+            Route::get('/grafik/kelurahan-all', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getAllKelurahanFromDb'])->name('ranap.laporan.grafik.kelurahan-all');
+            
+            // Top Diseases Analysis Routes
+            Route::get('/grafik/top-penyakit', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'getTopPenyakitData'])->name('ranap.laporan.grafik.top-penyakit');
+            Route::get('/grafik/top-penyakit/export', [App\Http\Controllers\Ranap\GrafikAnalisaController::class, 'exportTopPenyakitData'])->name('ranap.laporan.grafik.top-penyakit.export');
+        });
     });
     
     // Route untuk Partograf
@@ -373,6 +401,11 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
         Route::get('/data-pendaftaran', function () {
             return view('Pcare.data-pendaftaran-pcare');
         })->name('pcare.data-pendaftaran');
+        
+        // Halaman status pendaftaran PCare (membandingkan total registrasi vs sukses terkirim)
+        Route::get('/status-pendaftaran', function () {
+            return view('Pcare.status-pendaftaran-pcare');
+        })->name('pcare.status-pendaftaran');
         
         Route::get('/data-peserta-by-nik', function () {
             return view('Pcare.data-peserta-by-nik');

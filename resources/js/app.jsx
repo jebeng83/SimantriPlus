@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import HelloMotion from './components/HelloMotion.jsx';
 import RegisterHeader from './components/RegisterHeader.jsx';
+import PcareStatusHeader from './pages/PcareStatusHeader.jsx';
 
 // Mount React app only if the root element exists
 const rootElement = document.getElementById('react-root');
@@ -23,4 +24,11 @@ if (registerRoot) {
       date={date}
     />
   );
+}
+
+// Mount PCare Status header with motion
+const pcareRoot = document.getElementById('pcare-status-react-root');
+if (pcareRoot) {
+  const root = createRoot(pcareRoot);
+  root.render(<PcareStatusHeader />);
 }

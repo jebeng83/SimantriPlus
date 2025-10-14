@@ -139,6 +139,8 @@ Route::prefix('pcare')->group(function () {
     Route::get('/pendaftaran/detail/{no_rawat}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getDetail']);
     Route::get('/pendaftaran/export/excel', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportExcel']);
     Route::get('/pendaftaran/export/pdf', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportPdf']);
+    // Status pendaftaran PCare dibandingkan dengan data registrasi (reg_periksa)
+    Route::get('/pendaftaran/status', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getStatusRegistrations']);
     
     // API untuk referensi dengan pagination sesuai katalog BPJS
     Route::get('poli/fktp/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoliFktp']);
