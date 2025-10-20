@@ -263,6 +263,7 @@ class PcarePendaftaranController extends Controller
                 ->leftJoin('poliklinik as pl', 'pl.kd_poli', '=', 'r.kd_poli')
                 ->leftJoin('penjab as pj', 'pj.kd_pj', '=', 'r.kd_pj')
                 ->leftJoin('pcare_kunjungan_umum as ku', 'ku.no_rawat', '=', 'r.no_rawat')
+                ->leftJoin('pcare_rujuk_subspesialis as rs', 'rs.no_rawat', '=', 'r.no_rawat')
                 ->leftJoinSub($latestRalan, 'prl', function ($join) {
                     $join->on('prl.no_rawat', '=', 'r.no_rawat');
                 })
@@ -282,6 +283,11 @@ class PcarePendaftaranController extends Controller
                     // Kunjungan PCare
                     DB::raw('COALESCE(ku.noKunjungan, "") as no_kunjungan'),
                     DB::raw('COALESCE(ku.status, "") as status_kunjungan'),
+                    // Rujukan Subspesialis PCare
+                    DB::raw('COALESCE(rs.noKunjungan, "") as no_kunjungan_rujuk'),
+                    DB::raw('COALESCE(rs.nmStatusPulang, "") as nm_status_pulang'),
+                    // Status kunjungan final: Terkirim atau Rujuk Lanjut
+                    DB::raw('CASE WHEN COALESCE(rs.nmStatusPulang, "") <> "" THEN "Rujuk Lanjut" ELSE COALESCE(ku.status, "") END as status_kunjungan_final'),
                     // Pemeriksaan ralan
                     DB::raw('COALESCE(prl.keluhan, "") as keluhan'),
                     DB::raw('COALESCE(prl.tinggi, "") as tinggi'),
@@ -326,11 +332,35 @@ class PcarePendaftaranController extends Controller
             $suksesKunjungan = $rows->filter(function ($r) {
                 return !empty($r->no_kunjungan);
             })->count();
+            $jumlahRujukan = $rows->filter(function ($r) {
+                return !empty($r->nm_status_pulang);
+            })->count();
 
             // Gap perhitungan
             $gapRegVsDaftar = max($total - $sukses, 0);
-            $gapDaftarVsKunjungan = max($sukses - $suksesKunjungan, 0);
-            $gapRegVsKunjungan = max($total - $suksesKunjungan, 0);
+            // Gap Pendaftaran vs Kunjungan = Jumlah Pendaftaran PCare - (Sukses Kunjungan + Jumlah Rujukan)
+            $gapDaftarVsKunjungan = max($sukses - ($suksesKunjungan + $jumlahRujukan), 0);
+            // Gap Registrasi vs Kunjungan = Jumlah Registrasi - (Sukses Kunjungan + Jumlah Rujukan)
+            $gapRegVsKunjungan = max($total - ($suksesKunjungan + $jumlahRujukan), 0);
+
+            // Kepatuhan per Poli: (Kunjungan + Rujukan) / Total Registrasi
+            $kepatuhanPerPoli = $rows->groupBy('kd_poli')->map(function ($items, $kd_poli) {
+                $nm_poli = optional($items->first())->nm_poli ?? $kd_poli;
+                $totalReg = $items->count();
+                $kunjungan = $items->filter(function ($r) { return !empty($r->no_kunjungan); })->count();
+                $rujukan = $items->filter(function ($r) { return !empty($r->nm_status_pulang); })->count();
+                $realisasi = $kunjungan + $rujukan;
+                $kepatuhan = $totalReg > 0 ? round(($realisasi / $totalReg) * 100, 2) : 0;
+                return [
+                    'kd_poli' => $kd_poli,
+                    'nm_poli' => $nm_poli,
+                    'total_registrasi' => $totalReg,
+                    'sukses_kunjungan' => $kunjungan,
+                    'jumlah_rujukan' => $rujukan,
+                    'realisasi' => $realisasi,
+                    'kepatuhan' => $kepatuhan,
+                ];
+            })->values();
 
             return response()->json([
                 'success' => true,
@@ -342,10 +372,12 @@ class PcarePendaftaranController extends Controller
                     'persentase' => $persentase,
                     // tambahan untuk kartu ringkasan
                     'sukses_kunjungan' => $suksesKunjungan,
+                    'jumlah_rujukan' => $jumlahRujukan,
                     'gap_reg_vs_pcare' => $gapRegVsDaftar,
                     'gap_pcare_vs_kunjungan' => $gapDaftarVsKunjungan,
                     'gap_reg_vs_kunjungan' => $gapRegVsKunjungan,
                 ],
+                'kepatuhan_poli' => $kepatuhanPerPoli,
                 'data' => $rows,
             ]);
         } catch (\Exception $e) {

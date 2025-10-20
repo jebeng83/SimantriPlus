@@ -286,7 +286,7 @@ return [
         ],
         [
             'text'        => 'Registrasi',
-            'url'         => '/register',
+            'url'         => '/reg-periksa',
             'icon'        => 'fas fa-fw fa-book',
             'label_color' => 'success',
         ],
@@ -303,18 +303,7 @@ return [
         [
             'text'    => 'Laporan',
             'icon'    => 'fas fa-fw fa-file-alt',
-            'submenu' => [
-                [
-                    'text' => 'Laporan Program',
-                    'route'  => 'ranap.laporan.program',
-                    'icon' => 'fas fa-fw fa-file-medical',
-                ],
-                [
-                    'text' => 'Grafik Analisa',
-                    'route'  => 'ranap.laporan.grafik',
-                    'icon' => 'fas fa-fw fa-chart-bar',
-                ],
-            ],
+            'url'     => '/laporan',
         ],
             
         // [
@@ -326,84 +315,12 @@ return [
         [
             'text'    => 'ILP',
             'icon'    => 'fas fa-fw fa-heartbeat',
-            'submenu' => [
-                [
-                    'text' => 'Dashboard',
-                    'url'  => '/ilp/dashboard',
-                    'icon' => 'fas fa-fw fa-chart-line',
-                ],
-                [
-                    'text' => 'Faktor Resiko',
-                    'url'  => '/ilp/faktor-resiko',
-                    'icon' => 'fas fa-fw fa-flask',
-                ],
-                [
-                    'text' => 'Pendaftaran',
-                    'url'  => '/ilp/pendaftaran',
-                    'icon' => 'fas fa-fw fa-user-plus',
-                ],
-                [
-                    'text' => 'Pelayanan',
-                    'url'  => '/ilp/pelayanan',
-                    'icon' => 'fas fa-fw fa-clipboard-list',
-                ],
-                [
-                    'text' => 'Sasaran CKG',
-                    'url'  => '/ilp/sasaran-ckg',
-                    'icon' => 'fas fa-fw fa-birthday-cake',
-                ],
-                [
-                    'text' => 'Pendaftaran CKG',
-                    'url'  => '/ilp/pendaftaran-ckg',
-                    'icon' => 'fas fa-fw fa-clipboard-check',
-                ],
-                [
-                    'text' => 'Dashboard CKG',
-                    'url'  => '/ilp/dashboard-ckg',
-                    'icon' => 'fas fa-fw fa-chart-bar',
-                ],
-                [
-                    'text' => 'Dashboard Analisa CKG',
-                    'url'  => '/ilp/dashboard-pws',
-                    'icon' => 'fas fa-fw fa-analytics',
-                ],
-                [
-                    'text' => 'Data Siswa Sekolah',
-                    'url'  => '/ilp/data-siswa-sekolah',
-                    'icon' => 'fas fa-fw fa-graduation-cap',
-                ],
-                [
-                    'text' => 'Dashboard Sekolah',
-                    'url'  => '/ilp/dashboard-sekolah',
-                    'icon' => 'fas fa-fw fa-chart-pie',
-                ],
-            ],
+            'url'     => '/ilp',
         ],
         [
             'text'    => 'ePPBGM',
             'icon'    => 'fas fa-fw fa-baby',
-            'submenu' => [
-                [
-                    'text' => 'Data Ibu Hamil',
-                    'url'  => '/anc/data-ibu-hamil',
-                    'icon' => 'fas fa-fw fa-female',
-                ],
-                [
-                    'text' => 'Data Balita Sakit',
-                    'url'  => '/anc/data-balita-sakit',
-                    'icon' => 'fas fa-fw fa-child',
-                ],
-                [
-                    'text' => 'Data Rematri',
-                    'url'  => '/anc/data-rematri',
-                    'icon' => 'fas fa-fw fa-user-friends',
-                ],
-                [
-                    'text' => 'Data Ibu Nifas',
-                    'url'  => '/anc/data-ibu-nifas',
-                    'icon' => 'fas fa-fw fa-baby-carriage',
-                ],
-            ],
+            'url'     => '/eppbgm',
         ],
         [
             'text'        => 'KYC (Verifikasi SSM)',
@@ -414,59 +331,12 @@ return [
         [
             'text'    => 'Antrol BPJS',
             'icon'    => 'fas fa-fw fa-hospital',
-            'submenu' => [
-                [
-                    'text' => 'Pendaftaran Mobile JKN',
-                    'url'  => '/antrol-bpjs/pendaftaran-mobile-jkn',
-                    'icon' => 'fas fa-fw fa-user-plus',
-                ],
-                [
-                    'text' => 'Referensi Poli HFIS BPJS',
-                    'url'  => '/antrol-bpjs/referensi-poli-hfis',
-                    'icon' => 'fas fa-fw fa-clinic-medical',
-                ],
-                [
-                    'text' => 'Referensi Dokter HFIS BPJS',
-                    'url'  => '/antrol-bpjs/referensi-dokter-hfis',
-                    'icon' => 'fas fa-fw fa-user-md',
-                ],
-            ],
+            'url'     => '/antrol-bpjs',
         ],
         [
             'text'    => 'PCare BPJS',
             'icon'    => 'fas fa-fw fa-hospital-alt',
-            'submenu' => [
-                // [
-                //     'text' => 'Pendaftaran',
-                //     'url'  => '/pcare/form-pendaftaran',
-                //     'icon' => 'fas fa-fw fa-plus-circle',
-                // ],
-                [
-                    'text' => 'Status Pendaftaran PCare',
-                    'url'  => '/pcare/status-pendaftaran',
-                    'icon' => 'fas fa-fw fa-chart-bar',
-                ],
-                [
-                    'text' => 'Data Pendaftaran',
-                    'url'  => '/pcare/data-pendaftaran',
-                    'icon' => 'fas fa-fw fa-list',
-                ],
-                [
-                    'text' => 'Referensi Poli PCare',
-                    'url'  => '/pcare/referensi/poli',
-                    'icon' => 'fas fa-fw fa-clinic-medical',
-                ],
-                [
-                    'text' => 'Referensi Dokter PCare',
-                    'url'  => '/pcare/referensi/dokter',
-                    'icon' => 'fas fa-fw fa-user-md',
-                ],
-                [
-                    'text' => 'Cek Data Peserta By NIK',
-                    'url'  => '/pcare/data-peserta-by-nik',
-                    'icon' => 'fas fa-fw fa-id-card',
-                ],
-            ],
+            'url'     => '/pcare',
         ],
         [
             'text'    => 'WhatsApp Manajemen',

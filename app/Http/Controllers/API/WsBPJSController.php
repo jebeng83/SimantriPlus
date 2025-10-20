@@ -95,32 +95,113 @@ class WsBPJSController extends Controller
             // Endpoint untuk referensi poli
             $endpoint = "ref/poli/tanggal/{$tanggal}";
 
-            // Gunakan trait BpjsTraits untuk memanggil API BPJS
-            $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
-            
-            // Pastikan response dalam format yang benar
-            if ($response instanceof \Illuminate\Http\JsonResponse) {
-                $responseData = $response->getData(true);
-                
-                // Konversi format response BPJS ke format yang diharapkan frontend
-                if (isset($responseData['metadata'])) {
-                    // Format response BPJS: { metadata: {...}, response: { list: [...] } }
-                    // Konversi ke format frontend: { metaData: {...}, response: [...] }
-                    $formattedResponse = [
+            // Tambahkan mekanisme retry sederhana untuk mengatasi gangguan sementara
+            $maxAttempts = (int) env('BPJS_REFERENSI_RETRY', 2);
+            $attempt = 0;
+            $lastJsonData = null;
+            while ($attempt < $maxAttempts) {
+                $attempt++;
+                // Debug simulation to verify retry behavior without external BPJS dependency
+                // Use ?debug=timeout or header x-debug=timeout to simulate a timeout on first attempt
+                // Use ?debug=retry-ok to simulate first attempt timeout and success on retry
+                $debug = request()->query('debug') ?? request()->header('x-debug');
+                if ($debug === 'timeout' || $debug === 'retry-ok') {
+                    if ($attempt < $maxAttempts) {
+                        Log::warning('Simulating BPJS referensi-poli timeout', [
+                            'attempt' => $attempt,
+                            'max_attempts' => $maxAttempts,
+                            'tanggal' => $tanggal,
+                        ]);
+                        $lastJsonData = [
+                            'metadata' => [
+                                'code' => 201,
+                                'message' => 'Debug: Gagal terhubung ke server BPJS: cURL error 28: Operation timed out after 30000 milliseconds with 0 bytes received (https://curl.haxx.se/libcurl/c/libcurl-errors.html)'
+                            ],
+                            'response' => [
+                                'list' => []
+                            ]
+                        ];
+                        usleep(300000); // 300ms jeda
+                        continue;
+                    }
+
+                    if ($debug === 'retry-ok') {
+                        Log::info('Simulated BPJS referensi-poli success on retry', [
+                            'attempt' => $attempt,
+                            'tanggal' => $tanggal,
+                        ]);
+                        return response()->json([
+                            'metaData' => [
+                                'code' => 200,
+                                'message' => 'OK'
+                            ],
+                            'response' => [
+                                ['kodepoli' => '001', 'namapoli' => 'POLI UMUM'],
+                                ['kodepoli' => '002', 'namapoli' => 'POLI GIGI & MULUT']
+                            ]
+                        ], 200);
+                    }
+
+                    Log::warning('Simulated BPJS referensi-poli final timeout', [
+                        'attempt' => $attempt,
+                        'tanggal' => $tanggal,
+                    ]);
+                    return response()->json([
                         'metaData' => [
-                            'code' => $responseData['metadata']['code'] == 1 ? 200 : $responseData['metadata']['code'],
-                            'message' => $responseData['metadata']['message']
+                            'code' => 201,
+                            'message' => 'Gagal mengambil referensi poli: cURL error 28: Operation timed out after 30000 milliseconds with 0 bytes received'
                         ],
-                        'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
-                    ];
-                    
-                    return response()->json($formattedResponse, 200);
+                        'response' => []
+                    ], 200);
                 }
-                
-                return response()->json($responseData, $response->getStatusCode());
+                $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
+
+                // Pastikan response dalam format yang benar
+                if ($response instanceof \Illuminate\Http\JsonResponse) {
+                    $responseData = $response->getData(true);
+                    $lastJsonData = $responseData;
+
+                    // Konversi format response BPJS ke format yang diharapkan frontend
+                    if (isset($responseData['metadata'])) {
+                        $normalizedCode = ($responseData['metadata']['code'] == 1) ? 200 : $responseData['metadata']['code'];
+                        $formattedResponse = [
+                            'metaData' => [
+                                'code' => $normalizedCode,
+                                'message' => $responseData['metadata']['message']
+                            ],
+                            'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
+                        ];
+
+                        // Jika sukses, kembalikan segera
+                        if ($normalizedCode === 200) {
+                            return response()->json($formattedResponse, 200);
+                        }
+
+                        // Jangan retry untuk error otentikasi
+                        if (in_array($normalizedCode, [401, 403])) {
+                            return response()->json($formattedResponse, 200);
+                        }
+
+                        // Untuk error selain itu, coba lagi jika masih ada kesempatan
+                        if ($attempt < $maxAttempts) {
+                            usleep(300000); // 300ms jeda antar percobaan
+                            continue;
+                        }
+
+                        // Upaya terakhir: kembalikan hasil
+                        return response()->json($formattedResponse, 200);
+                    }
+
+                    // Jika format tidak memiliki metadata, kembalikan apa adanya
+                    return response()->json($responseData, $response->getStatusCode());
+                } else {
+                    // Jika bukan JsonResponse, kembalikan langsung (kemungkinan respons mentah dari trait)
+                    return $response;
+                }
             }
-            
-            return $response;
+
+            // Jika loop selesai tanpa pengembalian (harusnya tidak terjadi), kembalikan respons terakhir
+            return response()->json($lastJsonData ?? ['metaData' => ['code' => 500, 'message' => 'Tidak ada respons dari BPJS']], 200);
             
         } catch (\Exception $e) {
             Log::error('Error saat mengambil referensi poli BPJS', [
@@ -196,32 +277,114 @@ class WsBPJSController extends Controller
             // Endpoint untuk referensi dokter
             $endpoint = "ref/dokter/kodepoli/{$kodePoli}/tanggal/{$tanggal}";
 
-            // Gunakan trait BpjsTraits untuk memanggil API BPJS
-            $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
-            
-            // Pastikan response dalam format yang benar
-            if ($response instanceof \Illuminate\Http\JsonResponse) {
-                $responseData = $response->getData(true);
-                
-                // Konversi format response BPJS ke format yang diharapkan frontend
-                if (isset($responseData['metadata'])) {
-                    // Format response BPJS: { metadata: {...}, response: { list: [...] } }
-                    // Konversi ke format frontend: { metaData: {...}, response: [...] }
-                    $formattedResponse = [
+            // Tambahkan mekanisme retry sederhana untuk mengatasi gangguan sementara
+            $maxAttempts = (int) env('BPJS_REFERENSI_RETRY', 2);
+            $attempt = 0;
+            $lastJsonData = null;
+            while ($attempt < $maxAttempts) {
+                $attempt++;
+                // Debug simulation to verify retry behavior without external BPJS dependency
+                $debug = request()->query('debug') ?? request()->header('x-debug');
+                if ($debug === 'timeout' || $debug === 'retry-ok') {
+                    if ($attempt < $maxAttempts) {
+                        Log::warning('Simulating BPJS referensi-dokter timeout', [
+                            'attempt' => $attempt,
+                            'max_attempts' => $maxAttempts,
+                            'tanggal' => $tanggal,
+                            'kodePoli' => $kodePoli,
+                        ]);
+                        $lastJsonData = [
+                            'metadata' => [
+                                'code' => 201,
+                                'message' => 'Debug: Gagal terhubung ke server BPJS: cURL error 28: Operation timed out after 30000 milliseconds with 0 bytes received (https://curl.haxx.se/libcurl/c/libcurl-errors.html)'
+                            ],
+                            'response' => [
+                                'list' => []
+                            ]
+                        ];
+                        usleep(300000);
+                        continue;
+                    }
+
+                    if ($debug === 'retry-ok') {
+                        Log::info('Simulated BPJS referensi-dokter success on retry', [
+                            'attempt' => $attempt,
+                            'tanggal' => $tanggal,
+                            'kodePoli' => $kodePoli,
+                        ]);
+                        return response()->json([
+                            'metaData' => [
+                                'code' => 200,
+                                'message' => 'OK'
+                            ],
+                            'response' => [
+                                ['namadokter' => 'Dr. Contoh A', 'kodedokter' => 700, 'jampraktek' => '07:00-12:00', 'kapasitas' => 100],
+                                ['namadokter' => 'Dr. Contoh B', 'kodedokter' => 854, 'jampraktek' => '12:00-16:00', 'kapasitas' => 60]
+                            ]
+                        ], 200);
+                    }
+
+                    Log::warning('Simulated BPJS referensi-dokter final timeout', [
+                        'attempt' => $attempt,
+                        'tanggal' => $tanggal,
+                        'kodePoli' => $kodePoli,
+                    ]);
+                    return response()->json([
                         'metaData' => [
-                            'code' => $responseData['metadata']['code'] == 1 ? 200 : $responseData['metadata']['code'],
-                            'message' => $responseData['metadata']['message']
+                            'code' => 201,
+                            'message' => 'Gagal mengambil referensi dokter: cURL error 28: Operation timed out after 30000 milliseconds with 0 bytes received'
                         ],
-                        'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
-                    ];
-                    
-                    return response()->json($formattedResponse, 200);
+                        'response' => []
+                    ], 200);
                 }
-                
-                return response()->json($responseData, $response->getStatusCode());
+                $response = $this->requestGetBpjs($endpoint, 'mobilejkn');
+
+                // Pastikan response dalam format yang benar
+                if ($response instanceof \Illuminate\Http\JsonResponse) {
+                    $responseData = $response->getData(true);
+                    $lastJsonData = $responseData;
+
+                    // Konversi format response BPJS ke format yang diharapkan frontend
+                    if (isset($responseData['metadata'])) {
+                        $normalizedCode = ($responseData['metadata']['code'] == 1) ? 200 : $responseData['metadata']['code'];
+                        $formattedResponse = [
+                            'metaData' => [
+                                'code' => $normalizedCode,
+                                'message' => $responseData['metadata']['message']
+                            ],
+                            'response' => isset($responseData['response']['list']) ? $responseData['response']['list'] : []
+                        ];
+
+                        // Jika sukses, kembalikan segera
+                        if ($normalizedCode === 200) {
+                            return response()->json($formattedResponse, 200);
+                        }
+
+                        // Jangan retry untuk error otentikasi
+                        if (in_array($normalizedCode, [401, 403])) {
+                            return response()->json($formattedResponse, 200);
+                        }
+
+                        // Untuk error selain itu, coba lagi jika masih ada kesempatan
+                        if ($attempt < $maxAttempts) {
+                            usleep(300000); // 300ms jeda antar percobaan
+                            continue;
+                        }
+
+                        // Upaya terakhir: kembalikan hasil
+                        return response()->json($formattedResponse, 200);
+                    }
+
+                    // Jika format tidak memiliki metadata, kembalikan apa adanya
+                    return response()->json($responseData, $response->getStatusCode());
+                } else {
+                    // Jika bukan JsonResponse, kembalikan langsung
+                    return $response;
+                }
             }
-            
-            return $response;
+
+            // Jika loop selesai tanpa pengembalian, kembalikan respons terakhir
+            return response()->json($lastJsonData ?? ['metaData' => ['code' => 500, 'message' => 'Tidak ada respons dari BPJS']], 200);
             
         } catch (\Exception $e) {
             Log::error('Error saat mengambil referensi dokter BPJS', [

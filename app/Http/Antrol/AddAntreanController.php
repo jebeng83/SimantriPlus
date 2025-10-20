@@ -159,14 +159,14 @@ class AddAntreanController extends Controller
 
             // Kirim data ke BPJS Mobile JKN
             $endpoint = "/antrean/add";
-            $apiUrl = env('MOBILEJKN_API_URL');
-            
-            if (!$apiUrl) {
-                Log::error('Konfigurasi MOBILEJKN_API_URL tidak ditemukan');
+            // Validasi konfigurasi base URL yang digunakan oleh BpjsTraits
+            $baseUrl = env('BPJS_MOBILEJKN_BASE_URL');
+            if (!$baseUrl) {
+                Log::error('Konfigurasi BPJS_MOBILEJKN_BASE_URL tidak ditemukan');
                 return response()->json([
                     'metadata' => [
                         'code' => 500,
-                        'message' => 'Konfigurasi API URL tidak ditemukan'
+                        'message' => 'Konfigurasi BPJS_MOBILEJKN_BASE_URL tidak ditemukan'
                     ]
                 ], 500);
             }

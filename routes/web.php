@@ -117,6 +117,10 @@ Route::prefix('mobile-jkn')->name('mobile-jkn.ref.')->group(function () {
 
 // Antrol BPJS Routes (tanpa autentikasi)
 Route::prefix('antrol-bpjs')->name('antrol-bpjs.')->group(function () {
+    // Antrol BPJS Home (cards menu)
+    Route::get('/', function () { return view('mobile-jkn.home'); })->name('index');
+    
+    // Sub-feature pages
     Route::get('/pendaftaran-mobile-jkn', [App\Http\Controllers\MobileJknController::class, 'index'])->name('pendaftaran-mobile-jkn');
     Route::get('/referensi-poli-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiPoliHfis'])->name('referensi-poli-hfis');
     Route::get('/referensi-dokter-hfis', [App\Http\Controllers\MobileJknController::class, 'refrensiDokterHfis'])->name('referensi-dokter-hfis');
@@ -128,6 +132,8 @@ Route::middleware(['web', 'loginauth'])->group(function () {
     
     // PCare Routes
     Route::prefix('pcare')->group(function () {
+        // Index PCare
+        Route::get('/', function() { return view('Pcare.index'); })->name('pcare.index');
         // Referensi Dokter
         Route::get('/ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'index'])->name('pcare.ref.dokter');
         Route::get('/api/ref/dokter/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter'])->name('pcare.api.ref.dokter');
@@ -175,6 +181,8 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/create/{no_rkm_medis}', [App\Http\Controllers\RegPeriksaController::class, 'create'])->name('regperiksa.create');
         Route::post('/store', [App\Http\Controllers\RegPeriksaController::class, 'store'])->name('regperiksa.store');
         Route::get('/generate-noreg/{kd_dokter}/{tgl_registrasi}', [App\Http\Controllers\RegPeriksaController::class, 'generateNoReg'])->name('regperiksa.generate-noreg');
+        // Endpoint generate norawat untuk kebutuhan UI registrasi
+Route::get('/generate-norawat/{tgl_registrasi}', [App\Http\Controllers\RegPeriksaController::class, 'generateNoRawatApi'])->name('regperiksa.generate-norawat');
     });
     
     // Route untuk diagnostik
@@ -222,6 +230,11 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::put('/rujuk-internal/update/{noRawat}', [App\Http\Controllers\Ralan\PemeriksaanRalanController::class, 'updateRujukanInternal'])->name('ralan.rujuk-internal.update');
         Route::post('/panggil-pasien', [App\Http\Controllers\Ralan\PasienRalanController::class, 'panggilPasien'])->name('ralan.panggil-pasien');
     });
+    
+    // Route Menu Laporan
+    Route::get('/laporan', function () {
+        return view('laporan.index');
+    })->name('laporan.index');
     
     // Route Menu Ranap
     Route::prefix('ranap')->group(function () {
@@ -367,6 +380,53 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
     Route::get('/refresh-csrf', function() {
         return csrf_token();
     });
+
+    // Halaman React Registrasi Pasien
+    Route::get('/reg-periksa', function () {
+        return view('reg_periksa.index');
+    })->name('regperiksa.index');
+
+    // API: List Penjab (Cara Bayar)
+    Route::get('/api/penjab', function() {
+        $rows = DB::table('penjab')
+            ->select(DB::raw('kd_pj as id'), DB::raw('png_jawab as text'))
+            ->orderBy('png_jawab')
+            ->get();
+        return response()->json($rows);
+    })->name('api.penjab');
+
+    // API: Data Registrasi Hari Ini
+    Route::get('/api/regperiksa/today', function(Illuminate\Http\Request $request) {
+        $date = $request->query('date', date('Y-m-d'));
+        $kdPoli = $request->query('kd_poli');
+
+        $query = DB::table('reg_periksa')
+            ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+            ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
+            ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
+            ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
+            ->select(
+                'reg_periksa.no_reg',
+                'reg_periksa.no_rawat',
+                'pasien.nm_pasien',
+                'poliklinik.nm_poli',
+                'poliklinik.kd_poli',
+                'dokter.nm_dokter',
+                'penjab.png_jawab',
+                'reg_periksa.jam_reg',
+                'reg_periksa.stts'
+            )
+            ->where('reg_periksa.tgl_registrasi', '=', $date)
+            ->orderBy('reg_periksa.no_reg', 'asc');
+
+        if (!empty($kdPoli)) {
+            $query->where('reg_periksa.kd_poli', '=', $kdPoli);
+        }
+
+        $rows = $query->get();
+
+        return response()->json(['data' => $rows]);
+    })->name('api.regperiksa.today');
     
     // Route untuk Livewire generateNoReg
     Route::post('/livewire/generate-noreg', function(Illuminate\Http\Request $request) {
@@ -557,3 +617,13 @@ Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () 
 // if (app()->environment('local')) {
 //     require __DIR__.'/test-auth-error.php';
 // }
+
+// ILP Menu index route
+Route::get('/ilp', function () {
+    return view('ilp.index');
+})->name('ilp.index');
+
+// ePPBGM Menu index route
+Route::get('/eppbgm', function () {
+    return view('eppbgm.index');
+})->name('eppbgm.index');

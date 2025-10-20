@@ -9,9 +9,11 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Traits\PcareTrait;
 
 class MobileJknController extends Controller
 {
+    use PcareTrait;
     /**
      * Menampilkan halaman pendaftaran Mobile JKN
      */
@@ -118,14 +120,52 @@ class MobileJknController extends Controller
             }
             
             Log::info('Mencari data peserta dengan nomor kartu: ' . $nomorKartu);
-            
-            // Cari data pasien di database lokal berdasarkan nomor kartu BPJS
+
+            // 1) Coba ambil dari BPJS terlebih dahulu menggunakan PcareTrait
+            try {
+                $pcareResult = $this->requestPcare('peserta/' . $nomorKartu);
+
+                if (isset($pcareResult['metaData']['code']) && intval($pcareResult['metaData']['code']) === 200) {
+                    $resp = $pcareResult['response'] ?? [];
+                    // Beberapa layanan meletakkan data langsung di response, lainnya di response.peserta
+                    $peserta = isset($resp['peserta']) ? $resp['peserta'] : $resp;
+
+                    return response()->json([
+                        'response' => [
+                            'noKartu' => $peserta['noKartu'] ?? $nomorKartu,
+                            // NIK dari nik atau noKTP (sesuai katalog), fallback kosong
+                            'nik' => $peserta['nik'] ?? ($peserta['noKTP'] ?? ''),
+                            'nama' => $peserta['nama'] ?? '',
+                            'jenisKelamin' => $peserta['sex'] ?? ($peserta['jenisKelamin'] ?? ''),
+                            'tglLahir' => $peserta['tglLahir'] ?? '',
+                            'noHP' => $peserta['noHP'] ?? '-',
+                            'alamat' => $peserta['alamat'] ?? '',
+                            // Status/jenis peserta: dukung dua variasi kunci
+                            'statusPeserta' => ($peserta['statusPeserta']['keterangan'] ?? ($peserta['ketAktif'] ?? 'TIDAK DIKETAHUI')),
+                            'jenisPeserta' => ($peserta['jenisPeserta']['keterangan'] ?? ($peserta['jnsPeserta']['nama'] ?? 'TIDAK DIKETAHUI')),
+                            // Faskes: dukung provUmum.nmProvider atau kdProviderPst.nmProvider
+                            'faskes' => ($peserta['provUmum']['nmProvider'] ?? ($peserta['kdProviderPst']['nmProvider'] ?? 'TIDAK DIKETAHUI'))
+                        ],
+                        'metadata' => [
+                            'message' => 'Ok',
+                            'code' => 200
+                        ]
+                    ]);
+                }
+
+                Log::warning('BPJS PCare getPeserta tidak berhasil atau tidak mengembalikan kode 200', [
+                    'meta' => $pcareResult['metaData'] ?? null
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error memanggil PCare peserta: ' . $e->getMessage());
+            }
+
+            // 2) Fallback: jika BPJS tidak berhasil, cari di database lokal
             $pasien = DB::table('pasien')
                 ->where('no_peserta', $nomorKartu)
                 ->first();
-            
+
             if ($pasien) {
-                // Jika pasien ditemukan di database lokal
                 $dataPeserta = [
                     'noKartu' => $pasien->no_peserta,
                     'nik' => $pasien->no_ktp,
@@ -137,9 +177,10 @@ class MobileJknController extends Controller
                     'noRm' => $pasien->no_rkm_medis,
                     'statusPeserta' => 'AKTIF',
                     'jenisPeserta' => $pasien->pekerjaan ?: 'TIDAK DIKETAHUI',
+                    // Faskes lokal bisa disesuaikan; gunakan default jika tidak tersedia
                     'faskes' => 'PKM KERJO'
                 ];
-                
+
                 return response()->json([
                     'response' => $dataPeserta,
                     'metadata' => [
@@ -147,95 +188,15 @@ class MobileJknController extends Controller
                         'code' => 200
                     ]
                 ]);
-            } else {
-                // Jika pasien tidak ditemukan di database lokal,
-                // Gunakan WsFKTPController untuk mendapatkan token
-                $fktpController = new \App\Http\Controllers\API\WsFKTPController();
-                
-                // Buat request baru untuk otentikasi
-                $authRequest = new Request();
-                $authRequest->headers->set('x-username', env('BPJS_ANTREAN_USERNAME'));
-                $authRequest->headers->set('x-password', env('BPJS_ANTREAN_PASSWORD'));
-                
-                // Dapatkan token menggunakan getToken method dari WsFKTPController
-                $tokenResponse = $fktpController->getToken($authRequest);
-                $tokenData = json_decode($tokenResponse->getContent(), true);
-                
-                if (!isset($tokenData['response']['token']) || empty($tokenData['response']['token'])) {
-                    Log::error('Gagal mendapatkan token BPJS');
-                    return response()->json([
-                        'metadata' => [
-                            'code' => 500,
-                            'message' => 'Gagal mendapatkan token otentikasi BPJS'
-                        ]
-                    ], 500);
-                }
-                
-                $token = $tokenData['response']['token'];
-                
-                // Gunakan HTTP client untuk memanggil API BPJS untuk mendapatkan data peserta
-                try {
-                    $apiUrl = env('BPJS_PCARE_BASE_URL') . '/peserta/' . $nomorKartu;
-                    $conId = env('BPJS_PCARE_CONS_ID');
-                    $secretKey = env('BPJS_PCARE_CONS_PWD');
-                    $userKey = env('BPJS_PCARE_USER_KEY');
-                    
-                    $timestamp = time();
-                    $signature = base64_encode(hash_hmac('sha256', $conId . '&' . $timestamp, $secretKey, true));
-                    
-                    $response = Http::withHeaders([
-                        'X-cons-id' => $conId,
-                        'X-timestamp' => $timestamp,
-                        'X-signature' => $signature,
-                        'X-authorization' => 'Basic ' . base64_encode($token . ':' . env('BPJS_ANTREAN_PASSWORD')),
-                        'user_key' => $userKey
-                    ])->get($apiUrl);
-                    
-                    if ($response->successful()) {
-                        $bpjsData = $response->json();
-                        
-                        if (isset($bpjsData['response']['peserta'])) {
-                            $peserta = $bpjsData['response']['peserta'];
-                            
-                            return response()->json([
-                                'response' => [
-                                    'noKartu' => $peserta['noKartu'] ?? $nomorKartu,
-                                    'nik' => $peserta['nik'] ?? '',
-                                    'nama' => $peserta['nama'] ?? '',
-                                    'jenisKelamin' => $peserta['sex'] ?? '',
-                                    'tglLahir' => $peserta['tglLahir'] ?? '',
-                                    'noHP' => $peserta['noHP'] ?? '-',
-                                    'alamat' => $peserta['alamat'] ?? '',
-                                    'statusPeserta' => $peserta['statusPeserta']['keterangan'] ?? 'TIDAK DIKETAHUI',
-                                    'jenisPeserta' => $peserta['jenisPeserta']['keterangan'] ?? 'TIDAK DIKETAHUI',
-                                    'faskes' => $peserta['provUmum']['nmProvider'] ?? 'TIDAK DIKETAHUI'
-                                ],
-                                'metadata' => [
-                                    'message' => 'Ok',
-                                    'code' => 200
-                                ]
-                            ]);
-                        }
-                    }
-                    
-                    // Jika gagal mendapatkan data dari BPJS
-                    Log::warning('Gagal mendapatkan data peserta dari API BPJS', [
-                        'response' => $response->body(),
-                        'status' => $response->status()
-                    ]);
-                    
-                } catch (\Exception $e) {
-                    Log::error('Error saat menghubungi API BPJS: ' . $e->getMessage());
-                }
-                
-                // Jika tidak berhasil mendapatkan data dari API BPJS
-                return response()->json([
-                    'metadata' => [
-                        'code' => 404,
-                        'message' => 'Data peserta tidak ditemukan'
-                    ]
-                ], 404);
             }
+
+            // 3) Jika keduanya gagal
+            return response()->json([
+                'metadata' => [
+                    'code' => 404,
+                    'message' => 'Data peserta tidak ditemukan'
+                ]
+            ], 404);
         } catch (\Exception $e) {
             Log::error('Error mendapatkan data peserta: ' . $e->getMessage());
             return response()->json([
@@ -315,8 +276,9 @@ class MobileJknController extends Controller
                         ->where('no_peserta', $nomorKartu)
                         ->limit(1);
                 })
-                ->where('booking_registrasi.tanggal', '>=', date('Y-m-d'))
-                ->orderBy('booking_registrasi.tanggal', 'asc')
+                ->where('booking_registrasi.tanggal_periksa', '>=', date('Y-m-d'))
+                ->where('booking_registrasi.status', 'Belum')
+                ->orderBy('booking_registrasi.tanggal_periksa', 'asc')
                 ->first();
             
             if (!$antrean) {
@@ -331,7 +293,7 @@ class MobileJknController extends Controller
             // Jika ada, gunakan getSisaAntrean dari WsFKTPController untuk mendapatkan data dari BPJS
             if ($antrean->kd_poli_pcare) {
                 $kodePoli = $antrean->kd_poli_pcare;
-                $tanggalPeriksa = $antrean->tanggal;
+                $tanggalPeriksa = $antrean->tanggal_periksa;
                 
                 $sisaAntreanRequest = new Request();
                 $sisaAntreanRequest->headers->set('x-token', $token);
@@ -362,8 +324,9 @@ class MobileJknController extends Controller
                     'keterangan' => 'Data lokal, tidak terhubung dengan BPJS',
                     'namadokter' => $antrean->nm_dokter,
                     'kodedokter' => $antrean->kd_dokter,
-                    'jampraktek' => $antrean->jam_praktek ?? '08:00-16:00',
-                    'waktuperiksa' => date('Y-m-d H:i:s', strtotime($antrean->tanggal . ' ' . $antrean->jam_praktek ?? '08:00:00'))
+                    // Gunakan jam_booking jika tersedia, fallback ke default
+                    'jampraktek' => $antrean->jam_booking ?? '08:00-16:00',
+                    'waktuperiksa' => date('Y-m-d H:i:s', strtotime(($antrean->tanggal_periksa ?? date('Y-m-d')) . ' ' . ($antrean->jam_booking ?? '08:00:00')))
                 ],
                 'metadata' => [
                     'message' => 'Ok',
@@ -495,11 +458,12 @@ class MobileJknController extends Controller
                 (isset($responseData['metadata']['code']) && $responseData['metadata']['code'] == 200) ||
                 !str_contains(strtolower($responseData['metadata']['message'] ?? ''), 'tidak ditemukan')
             ) {
+                // Ubah menjadi pembaruan status agar jejak audit tetap ada
                 DB::table('booking_registrasi')
                     ->where('no_rkm_medis', $pasien->no_rkm_medis)
                     ->where('tanggal_periksa', $request->tanggalperiksa)
                     ->where('kd_poli', $antrean->kd_poli)
-                    ->delete();
+                    ->update(['status' => 'Batal']);
                 
                 // Jika response bukan sukses, ubah response untuk menunjukkan sukses lokal
                 if (isset($responseData['metadata']['code']) && $responseData['metadata']['code'] != 200) {
@@ -639,6 +603,11 @@ class MobileJknController extends Controller
             // Tambahkan header yang diperlukan ke request
             $newRequest->headers->set('x-token', $token);
             $newRequest->headers->set('x-username', env('BPJS_ANTREAN_USERNAME'));
+
+            // Jika ada parameter debug pada request awal, teruskan sebagai header x-debug
+            if ($request->has('debug')) {
+                $newRequest->headers->set('x-debug', (string)$request->input('debug'));
+            }
             
             // Pastikan beberapa data wajib sudah ada dalam format yang benar
             if (!isset($requestData['keluhan']) || empty($requestData['keluhan'])) {

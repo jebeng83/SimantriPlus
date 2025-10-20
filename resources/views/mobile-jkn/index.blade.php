@@ -16,6 +16,15 @@
       </div>
    </div>
 </div>
+<!-- Layout cetak tiket antrean (60mm x 30mm) -->
+<div id="print-ticket" aria-hidden="true" style="display:none;">
+   <div class="ticket-print-wrapper">
+      <div class="ticket-print-title">Tiket Antrean</div>
+      <div class="ticket-print-line">Poli: <span id="print-poli"></span></div>
+      <div class="ticket-print-line">Tanggal: <span id="print-tanggal"></span></div>
+      <div class="ticket-print-number">No: <span id="print-nomor"></span></div>
+   </div>
+</div>
 @stop
 
 @section('content')
@@ -108,14 +117,6 @@
                                  <div class="row">
                                     <div class="col-md-6">
                                        <div class="mobile-form-group">
-                                          <label for="kodepoli"><i class="fas fa-hospital"></i> Pilih Poli</label>
-                                          <select class="form-control mobile-select" id="kodepoli" name="kodepoli">
-                                             <option value="">-- Pilih Poli --</option>
-                                          </select>
-                                       </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                       <div class="mobile-form-group">
                                           <label for="tanggalperiksa"><i class="fas fa-calendar-alt"></i> Tanggal
                                              Kunjungan</label>
                                           <div class="input-group date" id="tanggal-picker" data-target-input="nearest">
@@ -127,6 +128,14 @@
                                                 <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                                              </div>
                                           </div>
+                                       </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                       <div class="mobile-form-group">
+                                          <label for="kodepoli"><i class="fas fa-hospital"></i> Pilih Poli</label>
+                                          <select class="form-control mobile-select" id="kodepoli" name="kodepoli">
+                                             <option value="">-- Pilih Poli --</option>
+                                          </select>
                                        </div>
                                     </div>
                                  </div>
@@ -229,6 +238,9 @@
 
                <div class="row mt-4">
                   <div class="col-md-12 text-center">
+                     <button type="button" class="btn btn-secondary btn-lg mobile-btn-lg mr-2" id="btn-cetak">
+                        <i class="fas fa-print"></i> Cetak Antrean
+                     </button>
                      <button type="button" class="btn btn-danger btn-lg mobile-btn-lg" id="btn-batalkan">
                         <i class="fas fa-times"></i> Batalkan Antrean
                      </button>
@@ -671,6 +683,58 @@
          border-radius: 0;
       }
    }
+   
+   /* Print styles for 6 x 3 cm ticket */
+   @media print {
+      @page {
+         size: 60mm 30mm;
+         margin: 0;
+      }
+      body * {
+         visibility: hidden !important;
+      }
+      #print-ticket, #print-ticket * {
+         visibility: visible !important;
+      }
+      #print-ticket {
+         position: absolute;
+         left: 0;
+         top: 0;
+         width: 60mm;
+         height: 30mm;
+         display: block !important;
+         padding: 2mm;
+         background: #fff;
+         color: #000;
+         font-family: Arial, sans-serif;
+      }
+      #print-ticket .ticket-print-wrapper {
+         width: 100%;
+         height: 100%;
+         display: flex;
+         flex-direction: column;
+         justify-content: center;
+         align-items: center;
+      }
+      #print-ticket .ticket-print-title {
+         font-weight: bold;
+         font-size: 12pt;
+         margin-bottom: 2mm;
+         text-align: center;
+      }
+      #print-ticket .ticket-print-line {
+         font-size: 10pt;
+         line-height: 1.2;
+         width: 100%;
+         text-align: left;
+      }
+      #print-ticket .ticket-print-number {
+         font-size: 18pt;
+         font-weight: bold;
+         margin-top: 2mm;
+         text-align: center;
+      }
+   }
 </style>
 @stop
 
@@ -993,6 +1057,9 @@
          // Update nilai input dengan format yang benar
          $('#nomorkartu').val(nomorKartu);
 
+         // Nonaktifkan tombol saat proses cek
+         $('#btn-cek-peserta').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
          $.ajax({
             url: '{{ route("mobile-jkn.get-peserta") }}',
             type: 'GET',
@@ -1011,15 +1078,47 @@
             },
             success: function(response) {
                Swal.close();
-               if (response.metadata && response.metadata.code === 200) {
-                  const data = response.response;
-                  $('#nik').val(data.nik);
-                  $('#nama').val(data.nama);
-                  $('#nohp').val(data.noHP || '');
-                  $('#faskes').val(data.faskes);
+               // Normalisasi struktur respons: dukung metadata/metaData dan response/data/body
+               let res = response;
+               try {
+                  if (typeof res === 'string') {
+                     res = JSON.parse(res);
+                  }
+               } catch (e) {
+                  console.warn('Tidak dapat parse respons peserta:', e);
+               }
+
+               const metadata = res.metaData || res.metadata || {};
+               const isOk = metadata && (metadata.code === 200 || metadata.code === 1);
+
+               if (isOk) {
+                  let data = res.response || res.data || {};
+                  // Jika data berada di body (beberapa gateway mengemas di body)
+                  if ((!data || $.isEmptyObject(data)) && res.body) {
+                     try {
+                        const bodyJson = JSON.parse(res.body);
+                        data = bodyJson.response || bodyJson.data || bodyJson.peserta || bodyJson;
+                     } catch (e) {
+                        console.warn('Gagal parse body respons peserta:', e);
+                     }
+                  }
+
+                  // Mapping aman berbagai kemungkinan key
+                  const nik = data.nik || (data.peserta && data.peserta.nik) || data.noKTP || (data.peserta && data.peserta.noKTP) || '';
+                  const nama = data.nama || (data.peserta && data.peserta.nama) || '';
+                  const noHP = data.noHP || data.hp || data.nohp || (data.peserta && data.peserta.noHP) || '';
+                  const faskes = data.faskes 
+                                 || (data.provUmum && data.provUmum.nmProvider) 
+                                 || (data.kdProviderPst && data.kdProviderPst.nmProvider) 
+                                 || '';
+
+                  $('#nik').val(nik);
+                  $('#nama').val(nama);
+                  $('#nohp').val(noHP);
+                  $('#faskes').val(faskes);
                   $('#detail-peserta').show();
                } else {
-                  const message = response.metadata ? response.metadata.message : 'Terjadi kesalahan saat memeriksa data peserta';
+                  const message = metadata && metadata.message ? metadata.message : 'Terjadi kesalahan saat memeriksa data peserta';
                   Swal.fire({
                      title: 'Gagal',
                      text: message,
@@ -1029,14 +1128,36 @@
             },
             error: function(xhr) {
                Swal.close();
+               let message = 'Terjadi kesalahan saat memeriksa data peserta';
+               if (xhr.responseJSON) {
+                  const meta = xhr.responseJSON.metaData || xhr.responseJSON.metadata;
+                  if (meta && meta.message) message = meta.message;
+               }
                Swal.fire({
                   title: 'Gagal',
-                  text: 'Terjadi kesalahan saat memeriksa data peserta',
+                  text: message,
                   icon: 'error'
                });
+            },
+            complete: function() {
+               // Aktifkan kembali tombol cek
+               $('#btn-cek-peserta').prop('disabled', false).html('<i class="fas fa-search"></i>');
             }
          });
       }
+
+      // Tambahkan event Enter/blur untuk mempercepat pengisian data peserta
+      $('#nomorkartu').on('keyup', function(e) {
+         if (e.key === 'Enter') {
+            checkPeserta();
+         }
+      }).on('blur', function() {
+         // Otomatis cek jika panjang nomor valid
+         const val = $(this).val();
+         if (val && val.length >= 11) {
+            checkPeserta();
+         }
+      });
 
       // Fungsi untuk mendaftar antrean baru
       function daftarAntrean() {
@@ -1126,23 +1247,81 @@
                   // Tampilkan modal detail antrean
                   $('#modal-detail-antrean').modal('show');
                } else if (response.metadata && response.metadata.code === 201) {
-                  // Kode 201 - Kuota penuh
-                  const message = response.metadata.message || "Kuota antrean sudah penuh";
-                  
-                  Swal.fire({
-                     title: 'Kuota Penuh',
-                     html: '<div class="text-left">' +
-                           '<p><strong>Mohon maaf,</strong> ' + message + '</p>' +
-                           '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
-                           '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
-                           '<ul>' +
-                           '<li>Coba tanggal kunjungan besok atau lusa</li>' +
-                           '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
-                           '</ul>' +
-                           '</div>',
-                     icon: 'warning',
-                     confirmButtonText: 'Mengerti'
-                  });
+                  // Kode 201 - bisa karena kuota penuh, belum skrining kesehatan, atau gangguan koneksi ke BPJS FKTP
+                  const message = response.metadata.message || "Terjadi kesalahan";
+                  const msgLower = (message || '').toLowerCase();
+
+                  if (msgLower.includes('skrining kesehatan')) {
+                     Swal.fire({
+                        title: 'Skrining Kesehatan Diperlukan',
+                        html: '<div class="text-left">' +
+                              '<p><strong>Anda belum melakukan Skrining Kesehatan.</strong></p>' +
+                              '<p>' + message + '</p>' +
+                              '<p class="mt-3 mb-1"><strong>Tindak Lanjut:</strong></p>' +
+                              '<ul>' +
+                              '<li>Lakukan skrining via tautan resmi BPJS: <a href="https://webskrining.bpjs-kesehatan.go.id/skrining" target="_blank" rel="noopener">webskrining.bpjs-kesehatan.go.id/skrining</a></li>' +
+                              '<li>Buka menu <strong>Skrining Kesehatan</strong> di aplikasi Mobile JKN</li>' +
+                              '<li>Lakukan skrining sesuai petunjuk, kemudian coba daftar antrean kembali</li>' +
+                              '</ul>' +
+                              '</div>',
+                        icon: 'info',
+                        confirmButtonText: 'Mengerti'
+                     });
+                  } else if (
+                     msgLower.includes('curl error 28') ||
+                     msgLower.includes('operation timed out') ||
+                     msgLower.includes('timed out') ||
+                     msgLower.includes('timeout') ||
+                     msgLower.includes('could not resolve host') ||
+                     msgLower.includes('failed to connect') ||
+                     msgLower.includes('connection')
+                  ) {
+                     Swal.fire({
+                        title: 'Gangguan Koneksi BPJS FKTP',
+                        html: '<div class="text-left">' +
+                              '<p><strong>Mohon maaf,</strong> terjadi gangguan koneksi saat menghubungi server BPJS FKTP.</p>' +
+                              '<p>' + message + '</p>' +
+                              '<p class="mt-3 mb-1"><strong>Coba:</strong></p>' +
+                              '<ul>' +
+                              '<li>Coba lagi beberapa menit lagi</li>' +
+                              '<li>Pastikan koneksi internet stabil</li>' +
+                              '<li>Jika masalah berlanjut, hubungi petugas pendaftaran</li>' +
+                              '</ul>' +
+                              '</div>',
+                        icon: 'warning',
+                        confirmButtonText: 'Mengerti'
+                     });
+                  } else if (msgLower.includes('poli tidak tersedia') || msgLower.includes('poli tutup') || msgLower.includes('jadwal tidak tersedia') || msgLower.includes('ref/poli')) {
+                     Swal.fire({
+                        title: 'Pendaftaran Poli Tidak Tersedia',
+                        html: '<div class="text-left">' +
+                              '<p><strong>Mohon maaf,</strong> pendaftaran untuk poli yang dipilih tidak tersedia saat ini.</p>' +
+                              '<p>' + message + '</p>' +
+                              '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                              '<ul>' +
+                              '<li>Pilih poli lain atau tanggal yang berbeda</li>' +
+                              '<li>Periksa kembali jadwal dokter</li>' +
+                              '</ul>' +
+                              '</div>',
+                        icon: 'info',
+                        confirmButtonText: 'Mengerti'
+                     });
+                  } else {
+                     Swal.fire({
+                        title: 'Kuota Penuh',
+                        html: '<div class="text-left">' +
+                              '<p><strong>Mohon maaf,</strong> ' + message + '</p>' +
+                              '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                              '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                              '<ul>' +
+                              '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                              '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                              '</ul>' +
+                              '</div>',
+                        icon: 'warning',
+                        confirmButtonText: 'Mengerti'
+                     });
+                  }
                } else if (response.metadata && response.metadata.code === 202) {
                   // Kode 202 - Pasien sudah terdaftar
                   const message = response.metadata.message || "Anda sudah terdaftar di antrean pada tanggal tersebut";
@@ -1201,20 +1380,78 @@
                         
                         // Cek apakah respons adalah error kuota penuh (201)
                         if (responseBody.metadata.code === 201) {
-                           Swal.fire({
-                              title: 'Kuota Penuh',
-                              html: '<div class="text-left">' +
-                                    '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
-                                    '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
-                                    '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
-                                    '<ul>' +
-                                    '<li>Coba tanggal kunjungan besok atau lusa</li>' +
-                                    '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
-                                    '</ul>' +
-                                    '</div>',
-                              icon: 'warning',
-                              confirmButtonText: 'Mengerti'
-                           });
+                           const msgLower = (errorMsg || '').toLowerCase();
+                           if (msgLower.includes('skrining kesehatan')) {
+                              Swal.fire({
+                                 title: 'Skrining Kesehatan Diperlukan',
+                                 html: '<div class="text-left">' +
+                                       '<p><strong>Anda belum melakukan Skrining Kesehatan.</strong></p>' +
+                                       '<p>' + errorMsg + '</p>' +
+                                       '<p class="mt-3 mb-1"><strong>Tindak Lanjut:</strong></p>' +
+                                       '<ul>' +
+                                       '<li>Lakukan skrining via tautan resmi BPJS: <a href="https://webskrining.bpjs-kesehatan.go.id/skrining" target="_blank" rel="noopener">webskrining.bpjs-kesehatan.go.id/skrining</a></li>' +
+                                       '<li>Buka menu <strong>Skrining Kesehatan</strong> di aplikasi Mobile JKN</li>' +
+                                       '<li>Lakukan skrining sesuai petunjuk, kemudian coba daftar antrean kembali</li>' +
+                                       '</ul>' +
+                                       '</div>',
+                                 icon: 'info',
+                                 confirmButtonText: 'Mengerti'
+                              });
+                           } else if (
+                              msgLower.includes('curl error 28') ||
+                              msgLower.includes('operation timed out') ||
+                              msgLower.includes('timed out') ||
+                              msgLower.includes('timeout') ||
+                              msgLower.includes('could not resolve host') ||
+                              msgLower.includes('failed to connect') ||
+                              msgLower.includes('connection')
+                           ) {
+                              Swal.fire({
+                                 title: 'Gangguan Koneksi BPJS FKTP',
+                                 html: '<div class="text-left">' +
+                                       '<p><strong>Mohon maaf,</strong> terjadi gangguan koneksi saat menghubungi server BPJS FKTP.</p>' +
+                                       '<p>' + errorMsg + '</p>' +
+                                       '<p class="mt-3 mb-1"><strong>Coba:</strong></p>' +
+                                       '<ul>' +
+                                       '<li>Coba lagi beberapa menit lagi</li>' +
+                                       '<li>Pastikan koneksi internet stabil</li>' +
+                                       '<li>Jika masalah berlanjut, hubungi petugas pendaftaran</li>' +
+                                       '</ul>' +
+                                       '</div>',
+                                 icon: 'warning',
+                                 confirmButtonText: 'Mengerti'
+                              });
+                           } else if (msgLower.includes('poli tidak tersedia') || msgLower.includes('poli tutup') || msgLower.includes('jadwal tidak tersedia') || msgLower.includes('ref/poli')) {
+                              Swal.fire({
+                                 title: 'Pendaftaran Poli Tidak Tersedia',
+                                 html: '<div class="text-left">' +
+                                       '<p><strong>Mohon maaf,</strong> pendaftaran untuk poli yang dipilih tidak tersedia saat ini.</p>' +
+                                       '<p>' + errorMsg + '</p>' +
+                                       '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                       '<ul>' +
+                                       '<li>Pilih poli lain atau tanggal yang berbeda</li>' +
+                                       '<li>Periksa kembali jadwal dokter</li>' +
+                                       '</ul>' +
+                                       '</div>',
+                                 icon: 'info',
+                                 confirmButtonText: 'Mengerti'
+                              });
+                           } else {
+                              Swal.fire({
+                                 title: 'Kuota Penuh',
+                                 html: '<div class="text-left">' +
+                                       '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
+                                       '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                                       '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                       '<ul>' +
+                                       '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                                       '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                                       '</ul>' +
+                                       '</div>',
+                                 icon: 'warning',
+                                 confirmButtonText: 'Mengerti'
+                              });
+                           }
                            return;
                         }
                         
@@ -1248,20 +1485,78 @@
                               
                               // Cek apakah respons adalah error kuota penuh (201)
                               if (bodyContent.metadata.code === 201) {
-                                 Swal.fire({
-                                    title: 'Kuota Penuh',
-                                    html: '<div class="text-left">' +
-                                          '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
-                                          '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
-                                          '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
-                                          '<ul>' +
-                                          '<li>Coba tanggal kunjungan besok atau lusa</li>' +
-                                          '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
-                                          '</ul>' +
-                                          '</div>',
-                                    icon: 'warning',
-                                    confirmButtonText: 'Mengerti'
-                                 });
+                                 const msgLower = (errorMsg || '').toLowerCase();
+                                 if (msgLower.includes('skrining kesehatan')) {
+                                    Swal.fire({
+                                       title: 'Skrining Kesehatan Diperlukan',
+                                       html: '<div class="text-left">' +
+                                             '<p><strong>Anda belum melakukan Skrining Kesehatan.</strong></p>' +
+                                             '<p>' + errorMsg + '</p>' +
+                                             '<p class="mt-3 mb-1"><strong>Tindak Lanjut:</strong></p>' +
+                                             '<ul>' +
+                                             '<li>Lakukan skrining via tautan resmi BPJS: <a href="https://webskrining.bpjs-kesehatan.go.id/skrining" target="_blank" rel="noopener">webskrining.bpjs-kesehatan.go.id/skrining</a></li>' +
+                                             '<li>Buka menu <strong>Skrining Kesehatan</strong> di aplikasi Mobile JKN</li>' +
+                                             '<li>Lakukan skrining sesuai petunjuk, kemudian coba daftar antrean kembali</li>' +
+                                             '</ul>' +
+                                             '</div>',
+                                       icon: 'info',
+                                       confirmButtonText: 'Mengerti'
+                                    });
+                                 } else if (
+                                    msgLower.includes('curl error 28') ||
+                                    msgLower.includes('operation timed out') ||
+                                    msgLower.includes('timed out') ||
+                                    msgLower.includes('timeout') ||
+                                    msgLower.includes('could not resolve host') ||
+                                    msgLower.includes('failed to connect') ||
+                                    msgLower.includes('connection')
+                                 ) {
+                                    Swal.fire({
+                                       title: 'Gangguan Koneksi BPJS FKTP',
+                                       html: '<div class="text-left">' +
+                                             '<p><strong>Mohon maaf,</strong> terjadi gangguan koneksi saat menghubungi server BPJS FKTP.</p>' +
+                                             '<p>' + errorMsg + '</p>' +
+                                             '<p class="mt-3 mb-1"><strong>Coba:</strong></p>' +
+                                             '<ul>' +
+                                             '<li>Coba lagi beberapa menit lagi</li>' +
+                                             '<li>Pastikan koneksi internet stabil</li>' +
+                                             '<li>Jika masalah berlanjut, hubungi petugas pendaftaran</li>' +
+                                             '</ul>' +
+                                             '</div>',
+                                       icon: 'warning',
+                                       confirmButtonText: 'Mengerti'
+                                    });
+                                 } else if (msgLower.includes('poli tidak tersedia') || msgLower.includes('poli tutup') || msgLower.includes('jadwal tidak tersedia') || msgLower.includes('ref/poli')) {
+                                    Swal.fire({
+                                       title: 'Pendaftaran Poli Tidak Tersedia',
+                                       html: '<div class="text-left">' +
+                                             '<p><strong>Mohon maaf,</strong> pendaftaran untuk poli yang dipilih tidak tersedia saat ini.</p>' +
+                                             '<p>' + errorMsg + '</p>' +
+                                             '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                             '<ul>' +
+                                             '<li>Pilih poli lain atau tanggal yang berbeda</li>' +
+                                             '<li>Periksa kembali jadwal dokter</li>' +
+                                             '</ul>' +
+                                             '</div>',
+                                       icon: 'info',
+                                       confirmButtonText: 'Mengerti'
+                                    });
+                                 } else {
+                                    Swal.fire({
+                                       title: 'Kuota Penuh',
+                                       html: '<div class="text-left">' +
+                                             '<p><strong>Mohon maaf,</strong> ' + errorMsg + '</p>' +
+                                             '<p>Silakan pilih tanggal kunjungan lain atau poli lain yang masih tersedia.</p>' +
+                                             '<p class="mt-3 mb-1"><strong>Saran:</strong></p>' +
+                                             '<ul>' +
+                                             '<li>Coba tanggal kunjungan besok atau lusa</li>' +
+                                             '<li>Hubungi petugas pendaftaran untuk bantuan lebih lanjut</li>' +
+                                             '</ul>' +
+                                             '</div>',
+                                       icon: 'warning',
+                                       confirmButtonText: 'Mengerti'
+                                    });
+                                 }
                                  return;
                               }
                            }
@@ -1444,6 +1739,22 @@
                });
             }
          });
+      });
+
+      // Event klik tombol cetak antrean
+      $('#btn-cetak').on('click', function() {
+         // Ambil data dari detail modal
+         const nomorAntrean = ($('#nomor-antrean').text() || '').trim();
+         const poli = ($('#detail-poli').text() || '').trim();
+         const tanggal = ($('#detail-tanggal').text() || '').trim();
+
+         // Isi layout cetak
+         $('#print-nomor').text(nomorAntrean || '-');
+         $('#print-poli').text(poli || '-');
+         $('#print-tanggal').text(tanggal || '-');
+
+         // Cetak
+         window.print();
       });
    });
 </script>

@@ -367,3 +367,131 @@ Route::get('/dokter', function () {
 
 // Route untuk pemeriksaan
 Route::post('/pemeriksaan/save', [PemeriksaanController::class, 'save']);
+
+// Status CKG tahun berjalan berdasarkan no_rkm_medis
+Route::get('/ckg/status/{no_rkm_medis}', function (Request $request, $no_rkm_medis) {
+    try {
+        $year = $request->query('year');
+        $yearInt = $year ? (int)$year : (int)date('Y');
+
+        if (empty($no_rkm_medis)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No. Rekam Medis diperlukan'
+            ], 400);
+        }
+
+        // Hitung jumlah entri skrining tahun ini
+        $count = DB::table('skrining_pkg')
+            ->where('no_rkm_medis', $no_rkm_medis)
+            ->whereYear('tanggal_skrining', $yearInt)
+            ->count();
+
+        // Ambil entri terbaru tahun ini
+        $latest = DB::table('skrining_pkg')
+            ->select('id_pkg', 'tanggal_skrining', 'status', 'kunjungan_sehat')
+            ->where('no_rkm_medis', $no_rkm_medis)
+            ->whereYear('tanggal_skrining', $yearInt)
+            ->orderBy('tanggal_skrining', 'desc')
+            ->first();
+
+        $statusText = null;
+        if ($latest) {
+            $st = (string)($latest->status ?? '');
+            $statusText = $st === '1' ? 'Selesai' : ($st === '2' ? 'Sedang Diproses' : 'Belum Selesai');
+        }
+
+        return response()->json([
+            'success' => true,
+            'year' => $yearInt,
+            'has_skrining' => $count > 0,
+            'count' => $count,
+            'latest' => $latest,
+            'status_text' => $statusText
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error get CKG status: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// Cek Status SRK (Skrining Riwayat Kesehatan) via Mobile JKN
+Route::get('/bpjs/srk-status', function (Request $request) {
+    try {
+        $nomorkartu = preg_replace('/[^0-9]/', '', (string)$request->query('nomorkartu', ''));
+        $nik = preg_replace('/[^0-9]/', '', (string)$request->query('nik', ''));
+
+        if (!$nomorkartu && !$nik) {
+            return response()->json([
+                'success' => false,
+                'message' => 'nomorkartu atau nik diperlukan'
+            ], 400);
+        }
+
+        // Ambil pasien dari DB
+        $pasien = DB::table('pasien')
+            ->where(function($q) use ($nomorkartu, $nik) {
+                if ($nomorkartu) $q->orWhere('no_peserta', $nomorkartu);
+                if ($nik) $q->orWhere('no_ktp', $nik);
+            })
+            ->first();
+
+        if (!$pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan'
+            ], 404);
+        }
+
+        $today = date('Y-m-d');
+        // Payload minimal untuk cek SRK; tidak ditujukan menambah antrean sungguhan
+        $payload = [
+            'nomorkartu' => $pasien->no_peserta ?? $nomorkartu,
+            'nik' => $pasien->no_ktp ?? $nik,
+            'nohp' => $pasien->no_tlp ?? '081000000000',
+            'kodepoli' => 'INT',
+            'namapoli' => 'Poli Internal',
+            'norm' => $pasien->no_rkm_medis,
+            'tanggalperiksa' => $today,
+            'kodedokter' => 999999,
+            'namadokter' => 'Dokter SRK Check',
+            'jampraktek' => '00:01-00:02',
+            'nomorantrean' => '000',
+            'angkaantrean' => 0,
+            'keterangan' => 'SRK check only'
+        ];
+
+        // Panggil WsBPJSController@tambahAntrean
+        $controller = new \App\Http\Controllers\API\WsBPJSController();
+        $req = new Request($payload);
+        $resp = $controller->tambahAntrean($req);
+
+        $json = $resp instanceof \Illuminate\Http\JsonResponse ? json_decode($resp->getContent(), true) : (is_string($resp) ? json_decode($resp, true) : (array)$resp);
+        $meta = $json['metadata'] ?? $json['metaData'] ?? null;
+        $code = $meta['code'] ?? null;
+        $message = $meta['message'] ?? '';
+
+        $belum = false;
+        $lowerMsg = is_string($message) ? strtolower($message) : '';
+        // Tentukan Belum SRK hanya jika pesan dari BPJS mengandung kata "skrining"
+        if ($lowerMsg && (strpos($lowerMsg, 'skrining') !== false)) {
+            $belum = true;
+        }
+
+        return response()->json([
+            'success' => true,
+            'srk_status' => $belum ? 'Belum SRK' : 'Sudah SRK',
+            'metadata' => $meta,
+            'url' => rtrim(env('BPJS_MOBILEJKN_BASE_URL', ''), '/') . '/antrean/add'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error cek SRK status: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+    }
+});

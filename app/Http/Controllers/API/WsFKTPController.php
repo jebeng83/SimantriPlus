@@ -279,7 +279,8 @@ class WsFKTPController extends Controller
                     ]);
 
                     // Jika response berisi JSON, kembalikan sebagaimana adanya
-                    if ($response->headers()->has('Content-Type') && strpos($response->header('Content-Type'), 'application/json') !== false) {
+                    $contentType = (string) $response->header('Content-Type');
+                    if (stripos($contentType, 'application/json') !== false) {
                         $errorData = $response->json();
                         return response()->json((array)$errorData, $response->status());
                     }
@@ -482,7 +483,8 @@ class WsFKTPController extends Controller
                     $errorMessage = 'Gagal registrasi pasien baru';
                     
                     // Jika respons berisi JSON
-                    if ($response->headers()->has('Content-Type') && strpos($response->header('Content-Type'), 'application/json') !== false) {
+                    $contentType = (string) $response->header('Content-Type');
+                    if (stripos($contentType, 'application/json') !== false) {
                         $errorData = (array)$response->json();
                         
                         // Cek berbagai format respons error yang mungkin
@@ -628,6 +630,29 @@ class WsFKTPController extends Controller
                 ], 200);
             }
 
+            // Opsi DEBUG: simulasi balasan code 201 untuk pengujian UI
+            // Gunakan query ?debug=timeout atau ?debug=skrining, atau header x-debug
+            $debugSimulate = $request->header('x-debug') ?? $request->query('debug');
+            if (!empty($debugSimulate)) {
+                if (strtolower($debugSimulate) === 'timeout') {
+                    // Simulasikan gangguan koneksi (cURL error 28)
+                    return response()->json([
+                        'metadata' => [
+                            'code' => 201,
+                            'message' => 'Gagal terhubung ke server BPJS FKTP: cURL error 28: Operation timed out after 30000 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html)'
+                        ]
+                    ], 200);
+                } elseif (strtolower($debugSimulate) === 'skrining') {
+                    // Simulasikan skrining kesehatan diperlukan
+                    return response()->json([
+                        'metadata' => [
+                            'code' => 201,
+                            'message' => 'Skrining Kesehatan diperlukan sebelum pendaftaran. Silakan lakukan skrining melalui Mobile JKN atau petugas pendaftaran.'
+                        ]
+                    ], 200);
+                }
+            }
+
             // Cari data pasien berdasarkan no_kartu atau NIK
             $pasien = DB::table('pasien')
                 ->where('no_peserta', $request->nomorkartu)
@@ -746,69 +771,122 @@ class WsFKTPController extends Controller
 
                     // Otomatis menambahkan antrean ke BPJS setelah berhasil mengambil antrean
                     try {
-                        // Siapkan data untuk tambah antrean
-                        // Ambil nama dokter dari mapping atau dari tabel dokter
-                        $namaDokter = '';
-                        if ($dokterMapping && isset($dokterMapping->nm_dokter_pcare)) {
-                            $namaDokter = $dokterMapping->nm_dokter_pcare;
+                        // Gating menggunakan env MOBILEJKN_ADD_ANTRIAN
+                        $shouldAddAntrean = strtolower(env('MOBILEJKN_ADD_ANTRIAN', 'yes')) === 'yes';
+                        if (!$shouldAddAntrean) {
+                            Log::info('MOBILEJKN_ADD_ANTRIAN is disabled. Skipping auto tambahAntrean.', [
+                                'nomorantrean' => $finalResponse['response']['nomorantrean'] ?? null,
+                                'norm' => $data['norm'] ?? null,
+                                'kodepoli' => $data['kodepoli'] ?? null,
+                                'tanggalperiksa' => $data['tanggalperiksa'] ?? null
+                            ]);
                         } else {
-                            // Jika tidak ada di mapping, ambil dari tabel dokter
-                            $dokterData = DB::table('dokter')
-                                ->where('kd_dokter', $data['kodedokter'])
-                                ->first();
-                            $namaDokter = ($dokterData && isset($dokterData->nm_dokter)) ? $dokterData->nm_dokter : 'Dokter';
-                        }
-                        
-                        $tambahAntreanData = [
-                            'nomorkartu' => $data['nomorkartu'],
-                            'nik' => $data['nik'],
-                            'nohp' => $data['nohp'],
-                            'kodepoli' => $data['kodepoli'],
-                            'namapoli' => $poliMapping->nm_poli_pcare,
-                            'norm' => $data['norm'],
-                            'tanggalperiksa' => $data['tanggalperiksa'],
-                            'kodedokter' => $data['kodedokter'],
-                            'namadokter' => $namaDokter,
-                            'jampraktek' => $data['jampraktek'],
-                            'nomorantrean' => $finalResponse['response']['nomorantrean'],
-                            'angkaantrean' => $finalResponse['response']['angkaantrean'],
-                            'keterangan' => $data['keluhan'] ?? ''
-                        ];
-
-                        // Panggil WsBPJSController untuk menambah antrean
-                        $bpjsController = new \App\Http\Controllers\API\WsBPJSController();
-                        $tambahRequest = new Request($tambahAntreanData);
-                        
-                        Log::info('Menambahkan antrean ke BPJS setelah berhasil mengambil antrean', [
-                            'data' => $tambahAntreanData
-                        ]);
-                        
-                        $tambahResponse = $bpjsController->tambahAntrean($tambahRequest);
-                        $tambahResponseData = json_decode($tambahResponse->getContent(), true);
-                        
-                        // Log raw response untuk debugging
-                        Log::info('Raw response dari tambahAntrean BPJS', [
-                            'raw_response' => $tambahResponseData,
-                            'response_type' => gettype($tambahResponseData),
-                            'has_metadata' => isset($tambahResponseData['metadata']),
-                            'has_metaData' => isset($tambahResponseData['metaData'])
-                        ]);
-                        
-                        // Handle both 'metadata' and 'metaData' formats from BPJS response
-                        $metaData = $tambahResponseData['metadata'] ?? $tambahResponseData['metaData'] ?? null;
-                        
-                        if (isset($metaData['code']) && $metaData['code'] == 200) {
-                            Log::info('Berhasil menambahkan antrean ke BPJS', [
+                            // Siapkan data untuk tambah antrean
+                            // Ambil nama dokter dari mapping atau dari tabel dokter
+                            $namaDokter = '';
+                            if ($dokterMapping && isset($dokterMapping->nm_dokter_pcare)) {
+                                $namaDokter = $dokterMapping->nm_dokter_pcare;
+                            } else {
+                                // Jika tidak ada di mapping, ambil dari tabel dokter
+                                $dokterData = DB::table('dokter')
+                                    ->where('kd_dokter', $data['kodedokter'])
+                                    ->first();
+                                $namaDokter = ($dokterData && isset($dokterData->nm_dokter)) ? $dokterData->nm_dokter : 'Dokter';
+                            }
+                            
+                            $tambahAntreanData = [
+                                'nomorkartu' => $data['nomorkartu'],
+                                'nik' => $data['nik'],
+                                'nohp' => $data['nohp'],
+                                'kodepoli' => $data['kodepoli'],
+                                'namapoli' => $poliMapping->nm_poli_pcare,
+                                'norm' => $data['norm'],
+                                'tanggalperiksa' => $data['tanggalperiksa'],
+                                'kodedokter' => $data['kodedokter'],
+                                'namadokter' => $namaDokter,
+                                'jampraktek' => $data['jampraktek'],
                                 'nomorantrean' => $finalResponse['response']['nomorantrean'],
-                                'response_code' => $metaData['code'],
-                                'response_message' => $metaData['message'] ?? 'Ok'
+                                'angkaantrean' => $finalResponse['response']['angkaantrean'],
+                                'keterangan' => $data['keluhan'] ?? ''
+                            ];
+
+                            // Panggil WsBPJSController untuk menambah antrean
+                            $bpjsController = new \App\Http\Controllers\API\WsBPJSController();
+                            $tambahRequest = new Request($tambahAntreanData);
+                            
+                            Log::info('Menambahkan antrean ke BPJS setelah berhasil mengambil antrean', [
+                                'data' => $tambahAntreanData
                             ]);
-                        } else {
-                            Log::warning('Gagal menambahkan antrean ke BPJS', [
-                                'response' => $tambahResponseData,
-                                'expected_format' => 'metadata atau metaData dengan code 200',
-                                'actual_metadata' => $metaData
+                            
+                            $tambahResponse = $bpjsController->tambahAntrean($tambahRequest);
+                            $tambahResponseData = json_decode($tambahResponse->getContent(), true);
+                            
+                            // Log raw response untuk debugging
+                            Log::info('Raw response dari tambahAntrean BPJS', [
+                                'raw_response' => $tambahResponseData,
+                                'response_type' => gettype($tambahResponseData),
+                                'has_metadata' => isset($tambahResponseData['metadata']),
+                                'has_metaData' => isset($tambahResponseData['metaData'])
                             ]);
+                            
+                            // Handle both 'metadata' and 'metaData' formats from BPJS response
+                            $metaData = $tambahResponseData['metadata'] ?? $tambahResponseData['metaData'] ?? null;
+                            
+                            if (isset($metaData['code']) && $metaData['code'] == 200) {
+                                Log::info('Berhasil menambahkan antrean ke BPJS', [
+                                    'nomorantrean' => $finalResponse['response']['nomorantrean'],
+                                    'response_code' => $metaData['code'],
+                                    'response_message' => $metaData['message'] ?? 'Ok'
+                                ]);
+                            } else {
+                                // Jika gagal menambahkan antrean (contoh: belum skrining kesehatan), lakukan rollback pembatalan antrean yang sudah diambil
+                                $failMessage = $metaData['message'] ?? 'Gagal menambahkan antrean ke BPJS';
+                                Log::warning('Gagal menambahkan antrean ke BPJS, melakukan rollback batal antrean', [
+                                    'response' => $tambahResponseData,
+                                    'expected_format' => 'metadata atau metaData dengan code 200',
+                                    'actual_metadata' => $metaData,
+                                    'rollback_reason' => $failMessage
+                                ]);
+
+                                try {
+                                    // Siapkan request untuk pembatalan antrean (rollback)
+                                    $rollbackData = [
+                                        'nomorkartu' => $data['nomorkartu'],
+                                        'kodepoli' => $poliMapping->kd_poli_pcare,
+                                        'tanggalperiksa' => $data['tanggalperiksa'],
+                                        'keterangan' => 'Rollback otomatis: ' . $failMessage
+                                    ];
+
+                                    $rollbackRequest = new \Illuminate\Http\Request($rollbackData);
+                                    // Set header token dan username yang sama
+                                    $rollbackRequest->headers->set('x-token', $token);
+                                    $rollbackRequest->headers->set('x-username', $username);
+
+                                    Log::info('Melakukan rollback pembatalan antrean ke BPJS FKTP', [
+                                        'rollbackData' => $rollbackData
+                                    ]);
+
+                                    $rollbackResponse = $this->batalAntrean($rollbackRequest);
+                                    $rollbackResponseData = json_decode($rollbackResponse->getContent(), true);
+
+                                    Log::info('Hasil rollback batal antrean', [
+                                        'metadata' => $rollbackResponseData['metadata'] ?? ($rollbackResponseData['metaData'] ?? null)
+                                    ]);
+                                } catch (\Exception $re) {
+                                    Log::error('Gagal melakukan rollback batal antrean', [
+                                        'message' => $re->getMessage(),
+                                        'trace' => $re->getTraceAsString()
+                                    ]);
+                                }
+
+                                // Propagasi kegagalan ke client agar frontend tidak menampilkan sukses
+                                return response()->json([
+                                    'metadata' => [
+                                        'code' => 201,
+                                        'message' => $failMessage
+                                    ]
+                                ], 200);
+                            }
                         }
                         
                     } catch (\Exception $e) {
@@ -829,7 +907,8 @@ class WsFKTPController extends Controller
                     ]);
 
                     // Jika response berisi JSON, kembalikan sebagaimana adanya
-                    if ($response->headers()->has('Content-Type') && strpos($response->header('Content-Type'), 'application/json') !== false) {
+                    $contentType = (string) $response->header('Content-Type');
+                    if (stripos($contentType, 'application/json') !== false) {
                         $errorData = (array)$response->json();
                         
                         // Format ulang respons sesuai standar
@@ -1102,7 +1181,8 @@ class WsFKTPController extends Controller
 
                     // Jika response berisi JSON, ekstrak pesan error
                     $errorMessage = 'Gagal mendapatkan status antrean';
-                    if ($response->headers()->has('Content-Type') && strpos($response->header('Content-Type'), 'application/json') !== false) {
+                    $contentType = (string) $response->header('Content-Type');
+                    if (stripos($contentType, 'application/json') !== false) {
                         $errorData = (array)$response->json();
                         if (isset($errorData['metadata']['message'])) {
                             $errorMessage = $errorData['metadata']['message'];
@@ -1320,7 +1400,8 @@ class WsFKTPController extends Controller
 
                     // Jika response berisi JSON, ekstrak pesan error
                     $errorMessage = 'Gagal membatalkan antrean';
-                    if ($response->headers()->has('Content-Type') && strpos($response->header('Content-Type'), 'application/json') !== false) {
+                    $contentType = (string) $response->header('Content-Type');
+                    if (stripos($contentType, 'application/json') !== false) {
                         $errorData = (array)$response->json();
                         if (isset($errorData['metadata']['message'])) {
                             $errorMessage = $errorData['metadata']['message'];

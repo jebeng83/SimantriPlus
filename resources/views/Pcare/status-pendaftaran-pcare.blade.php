@@ -16,10 +16,13 @@
 <div class="row">
   <div class="col-md-12">
     <div class="card card-primary card-outline">
-      <div class="card-header">
-        <h3 class="card-title">Perbandingan Total Registrasi vs Sukses Terkirim ke PCare</h3>
+      <div class="card-header d-flex align-items-center">
+        <button type="button" id="toggle-summary" class="btn btn-sm btn-outline-secondary mr-2" aria-label="Toggle Ringkasan">
+          <i class="fas fa-minus"></i>
+        </button>
+        <h3 class="card-title mb-0">Perbandingan Total Registrasi vs Sukses Terkirim ke PCare</h3>
       </div>
-      <div class="card-body">
+      <div class="card-body" id="summary-card-body">
         <!-- Filter -->
         <form id="filter-form" class="form-inline mb-3">
           <div class="form-group mr-2">
@@ -86,6 +89,17 @@
             <div class="col-md-2">
               <div class="card shadow-sm border-0">
                 <div class="card-body d-flex align-items-center">
+                  <div class="mr-3 rounded d-flex align-items-center justify-content-center" style="width:42px;height:42px;background:#3b82f6;color:#fff"><i class="fas fa-route"></i></div>
+                  <div>
+                    <div class="text-muted small">Jumlah Rujukan</div>
+                    <div class="h5 mb-0 font-weight-bold" id="sum-rujukan">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="card shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
                   <div class="mr-3 rounded d-flex align-items-center justify-content-center" style="width:42px;height:42px;background:#f59e0b;color:#fff"><i class="fas fa-arrows-alt-h"></i></div>
                   <div>
                     <div class="text-muted small">Gap Reg vs Pendaftaran</div>
@@ -130,6 +144,33 @@
 
         <!-- React mount (jika build React aktif, akan override fallback di atas) -->
         <div id="pcare-status-react-root" class="mb-3"></div>
+
+        <!-- Kepatuhan Bridging per Poli -->
+        <div class="card card-secondary card-outline mb-3" id="card-kepatuhan-poli">
+          <div class="card-header d-flex align-items-center">
+            <button type="button" id="toggle-kepatuhan" class="btn btn-sm btn-outline-secondary mr-2" aria-label="Toggle Kepatuhan per Poli">
+              <i class="fas fa-plus"></i>
+            </button>
+            <h3 class="card-title mb-0">Presentase Kepatuhan Bridging PCare per Poli</h3>
+          </div>
+          <div class="card-body" id="kepatuhan-body" style="display:none">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped w-100" id="tabel-kepatuhan-poli">
+                <thead>
+                  <tr>
+                    <th>Poli</th>
+                    <th class="text-right">Total Registrasi</th>
+                    <th class="text-right">Sukses Kunjungan</th>
+                    <th class="text-right">Jumlah Rujukan</th>
+                    <th class="text-right">Realisasi (Kunjungan + Rujukan)</th>
+                    <th class="text-right">Kepatuhan</th>
+                  </tr>
+                </thead>
+                <tbody id="kepatuhan-poli-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
         <!-- Tabel Data -->
         <div class="table-responsive">
@@ -184,6 +225,10 @@
   #tabel-status-pcare tbody tr:hover { background: #f9fafb; }
   .dataTables_wrapper .dataTables_filter input { border-radius: 6px; }
   .dataTables_wrapper .dataTables_length select { border-radius: 6px; }
+  /* Kepatuhan badge colors */
+  .badge-kepatuhan-high { background-color:#22c55e; color:#fff; }
+  .badge-kepatuhan-mid { background-color:#f59e0b; color:#fff; }
+  .badge-kepatuhan-low { background-color:#ef4444; color:#fff; }
 </style>
 @stop
 
@@ -237,8 +282,19 @@
             return '<span class="badge badge-status-belum">Belum</span>';
           }
         },
-        { data: 'no_kunjungan', name: 'no_kunjungan', width: '15%' },
-        { data: 'status_kunjungan', name: 'status_kunjungan', width: '10%' },
+        { data: null, name: 'no_kunjungan', width: '18%', render: function(data, type, row){
+            const kunj = row.no_kunjungan || '-';
+            const rujuk = row.no_kunjungan_rujuk ? `<div class="text-muted small">Rujukan: ${row.no_kunjungan_rujuk}</div>` : '';
+            // Hapus badge Rujuk Lanjut di kolom No Kunjungan agar tidak double dengan Status Kunjungan
+            return `${kunj}${rujuk}`;
+          }
+        },
+        { data: 'status_kunjungan_final', name: 'status_kunjungan_final', width: '12%', render: function(data){
+            if (data === 'Rujuk Lanjut') return '<span class="badge badge-info">Rujuk Lanjut</span>';
+            if (data === 'Terkirim') return '<span class="badge badge-status-terkirim">Terkirim</span>';
+            return data || '-';
+          }
+        },
         { data: 'keluhan', name: 'keluhan', width: '20%' },
         { data: 'tinggi', name: 'tinggi', width: '7%', className: 'text-right' },
         { data: 'berat', name: 'berat', width: '7%', className: 'text-right' },
@@ -277,6 +333,7 @@
           $('#sum-total').text(s.total || 0);
           $('#sum-terkirim').text(s.terkirim || 0);
           $('#sum-kunjungan').text(s.sukses_kunjungan || 0);
+          $('#sum-rujukan').text(s.jumlah_rujukan || 0);
           $('#sum-gap-reg-pcare').text(s.gap_reg_vs_pcare || 0);
           $('#sum-gap-pcare-kunjungan').text(s.gap_pcare_vs_kunjungan || 0);
           $('#sum-gap-reg-kunjungan').text(s.gap_reg_vs_kunjungan || 0);
@@ -292,11 +349,32 @@
               batal: s.batal || 0,
               persentase: s.persentase || 0,
               sukses_kunjungan: s.sukses_kunjungan || 0,
+              jumlah_rujukan: s.jumlah_rujukan || 0,
               gap_reg_vs_pcare: s.gap_reg_vs_pcare || 0,
               gap_pcare_vs_kunjungan: s.gap_pcare_vs_kunjungan || 0,
               gap_reg_vs_kunjungan: s.gap_reg_vs_kunjungan || 0,
             });
           }
+
+          // Render Kepatuhan per Poli
+          const kp = resp.kepatuhan_poli || [];
+          const body = $('#kepatuhan-poli-body');
+          body.empty();
+          kp.sort((a,b) => (b.kepatuhan - a.kepatuhan));
+          kp.forEach((item) => {
+            const pct = typeof item.kepatuhan === 'number' ? item.kepatuhan : 0;
+            const cls = pct >= 90 ? 'badge-kepatuhan-high' : (pct >= 60 ? 'badge-kepatuhan-mid' : 'badge-kepatuhan-low');
+            body.append(`
+              <tr>
+                <td>${item.nm_poli} (${item.kd_poli})</td>
+                <td class="text-right">${item.total_registrasi}</td>
+                <td class="text-right">${item.sukses_kunjungan}</td>
+                <td class="text-right">${item.jumlah_rujukan}</td>
+                <td class="text-right">${item.realisasi}</td>
+                <td class="text-right"><span class="badge ${cls}">${pct}%</span></td>
+              </tr>
+            `);
+          });
 
           // Reload table data
           table.clear();
@@ -322,6 +400,32 @@
       $('#end_date').val(today);
       $('#status').val('');
       loadData();
+    });
+
+    // Toggle Kepatuhan per Poli (default tertutup)
+    $('#toggle-kepatuhan').on('click', function(){
+      const body = $('#kepatuhan-body');
+      const icon = $(this).find('i');
+      body.slideToggle(150, function(){
+        if (body.is(':visible')) {
+          icon.removeClass('fa-plus').addClass('fa-minus');
+        } else {
+          icon.removeClass('fa-minus').addClass('fa-plus');
+        }
+      });
+    });
+
+    // Toggle Ringkasan Utama (filter + cards + progress)
+    $('#toggle-summary').on('click', function(){
+      const body = $('#summary-card-body');
+      const icon = $(this).find('i');
+      body.slideToggle(150, function(){
+        if (body.is(':visible')) {
+          icon.removeClass('fa-plus').addClass('fa-minus');
+        } else {
+          icon.removeClass('fa-minus').addClass('fa-plus');
+        }
+      });
     });
   });
 </script>

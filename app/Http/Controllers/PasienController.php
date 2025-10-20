@@ -278,6 +278,7 @@ class PasienController extends Controller
             $registrasiHariIni = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
+                // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                 ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
                 ->where('reg_periksa.tgl_registrasi', $today)
                 ->select(
@@ -313,6 +314,7 @@ class PasienController extends Controller
                 $registrasiTerakhir = DB::table('reg_periksa')
                     ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                     ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
+                    // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                     ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
                     ->select(
                         'reg_periksa.no_rawat',
@@ -363,25 +365,57 @@ class PasienController extends Controller
                             'no_tlp',
                             'alamat'
                         )
+                        // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                         ->where('no_rkm_medis', $no_rkm_medis)
                         ->first();
                 }
             }
             
             if (!$pasien) {
-                Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan dengan no_rkm_medis: ' . ($no_rkm_medis ?? 'unknown'));
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Data pasien tidak ditemukan',
-                    'data' => null
-                ], 404);
+                // Fallback pencarian: coba LIKE dan hilangkan semua spasi (termasuk NBSP) untuk mengatasi inkonsistensi penyimpanan RM
+                $rmNoSpaces = preg_replace('/\s+/', '', $no_rkm_medis);
+                $pasien = DB::table('pasien')
+                    ->select(
+                        DB::raw("'' as no_rawat"),
+                        'no_rkm_medis',
+                        'nm_pasien',
+                        'no_ktp',
+                        'jk',
+                        'tmp_lahir',
+                        'tgl_lahir',
+                        'no_peserta',
+                        DB::raw("'' as kd_pj"),
+                        DB::raw("'' as png_jawab"),
+                        'no_tlp',
+                        'alamat'
+                    )
+                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$rmNoSpaces])
+                    ->first();
+
+                if (!$pasien) {
+                    Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan (setelah fallback) dengan no_rkm_medis: ' . ($no_rkm_medis ?? 'unknown'));
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Data pasien tidak ditemukan',
+                        'data' => null
+                    ], 404);
+                } else {
+                    Log::info('PasienController - getDetailByRekamMedis: Fallback matching menemukan pasien', [
+                        'requested_rm' => $no_rkm_medis,
+                        'matched_rm' => $pasien->no_rkm_medis,
+                    ]);
+                }
             }
             
-            // Verifikasi ulang nomor rekam medis untuk memastikan kecocokan data
-            if ($pasien->no_rkm_medis !== $no_rkm_medis) {
-                Log::error('PasienController - getDetailByRekamMedis: Ketidakcocokan data', [
+            // Verifikasi ulang nomor rekam medis untuk memastikan kecocokan data (normalisasi spasi/NBSP)
+            $requestedNorm = preg_replace('/\s+/', '', $no_rkm_medis);
+            $returnedNorm = preg_replace('/\s+/', '', str_replace(chr(160), '', $pasien->no_rkm_medis ?? ''));
+            if ($returnedNorm !== $requestedNorm) {
+                Log::error('PasienController - getDetailByRekamMedis: Ketidakcocokan data (normalized mismatch)', [
                     'requested_rm' => $no_rkm_medis ?? 'unknown',
+                    'requested_norm' => $requestedNorm,
                     'returned_rm' => $pasien->no_rkm_medis,
+                    'returned_norm' => $returnedNorm,
                     'timestamp' => now()->format('Y-m-d H:i:s.u')
                 ]);
                 
@@ -390,6 +424,13 @@ class PasienController extends Controller
                     'message' => 'Ketidakcocokan data pasien terdeteksi',
                     'data' => null
                 ], 409);
+            }
+            // Jika hanya beda spasi/NBSP, lanjutkan dengan mencatat informasi
+            if ($pasien->no_rkm_medis !== $no_rkm_medis) {
+                Log::info('PasienController - getDetailByRekamMedis: Raw RM mismatch namun sama setelah normalisasi, melanjutkan.', [
+                    'requested_rm' => $no_rkm_medis ?? 'unknown',
+                    'returned_rm' => $pasien->no_rkm_medis,
+                ]);
             }
             
             // Hitung umur

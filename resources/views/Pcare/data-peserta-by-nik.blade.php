@@ -7,11 +7,31 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @stop
 
+@section('adminlte_css')
+<style>
+  /* Modern card styling */
+  .modern-card .card-header { position: relative; border-bottom: none; }
+  .modern-card .card-header::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6); border-radius: 6px 6px 0 0;
+  }
+  .modern-card .card-title { font-weight: 600; color: #1f2937; }
+  .modern-card .card-body { padding-top: 1rem; }
+
+  /* Modern table styling */
+  .table-modern td { padding: 0.55rem 0.75rem; vertical-align: middle; }
+  .table-modern tr td:first-child { width: 40%; color: #475569; font-weight: 600; background-color: #f8fafc; }
+
+  /* Helper text */
+  .form-text { font-size: 12px; color: #64748b; }
+</style>
+@stop
+
 @section('content')
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card modern-card shadow-sm border-0 rounded">
                 <div class="card-header">
                     <h3 class="card-title">Pencarian Data Peserta BPJS Berdasarkan NIK</h3>
                 </div>
@@ -22,14 +42,14 @@
                             <div class="col-md-8">
                                 <div class="form-group">
                                     <label for="nik">NIK Peserta:</label>
-                                    <input type="text" class="form-control" id="nik" name="nik" placeholder="Masukkan NIK Peserta" maxlength="16" required>
+                                    <input type="text" class="form-control form-control-lg rounded-pill shadow-sm" id="nik" name="nik" placeholder="Masukkan NIK Peserta" maxlength="16" required>
                                     <small class="form-text text-muted">Masukkan 16 digit NIK peserta BPJS</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
-                                    <button type="submit" class="btn btn-primary btn-block" id="btnCari">
+                                    <button type="submit" class="btn btn-primary btn-lg px-4 rounded-pill w-100" id="btnCari">
                                         <i class="fas fa-search"></i> Cari Data
                                     </button>
                                 </div>
@@ -246,6 +266,7 @@ function searchPeserta(nik) {
     });
 }
 
+// JS badge injection for Jenis Peserta & Status
 function displayPesertaData(data) {
     console.log('=== DISPLAY PESERTA DATA FUNCTION CALLED ===');
     console.log('Data received:', data);
@@ -263,10 +284,22 @@ function displayPesertaData(data) {
     $('#noHP').text(data.noHP || '-');
     $('#golDarah').text(data.golDarah || '-');
     
-    // Fill membership data
-    $('#jnsPeserta').text(data.jnsPeserta ? `${data.jnsPeserta.nama} (${data.jnsPeserta.kode})` : '-');
+    // Fill membership data with badges
+    const jenisLabel = data.jnsPeserta ? `${data.jnsPeserta.nama} (${data.jnsPeserta.kode})` : '-';
+    let jenisClass = 'badge badge-secondary';
+    if (data.jnsPeserta && /PBI/i.test(data.jnsPeserta.nama)) jenisClass = 'badge badge-info';
+    else if (data.jnsPeserta && /NON\s*PBI/i.test(data.jnsPeserta.nama)) jenisClass = 'badge badge-primary';
+    else if (data.jnsPeserta && /PEGAWAI|PNS|TNI|POLRI/i.test(data.jnsPeserta.nama)) jenisClass = 'badge badge-warning';
+    $('#jnsPeserta').html(`<span class="${jenisClass}">${jenisLabel}</span>`);
+
     $('#jnsKelas').text(data.jnsKelas ? `${data.jnsKelas.nama} (${data.jnsKelas.kode})` : '-');
-    $('#ketAktif').text(data.ketAktif || '-');
+
+    const statusRaw = data.ketAktif || '-';
+    let statusClass = 'badge badge-secondary';
+    if (/AKTIF|ACTIVE/i.test(statusRaw)) statusClass = 'badge badge-success';
+    else if (/TIDAK|NON\s*AKTIF|INACTIVE/i.test(statusRaw)) statusClass = 'badge badge-danger';
+    else if (/BLOK|SUSPEN|BLOKIR/i.test(statusRaw)) statusClass = 'badge badge-warning';
+    $('#ketAktif').html(`<span class="${statusClass}">${statusRaw}</span>`);
     $('#tglMulaiAktif').text(data.tglMulaiAktif || '-');
     $('#tglAkhirBerlaku').text(data.tglAkhirBerlaku || '-');
     

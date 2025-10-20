@@ -39,7 +39,8 @@ class RegPeriksaController extends Controller
 
             if (!$pasien) {
                 Log::error('Pasien tidak ditemukan: ' . $no_rkm_medis);
-                return redirect()->back()->with('error', 'Data pasien tidak ditemukan');
+                session()->flash('error', 'Data pasien tidak ditemukan');
+                return redirect('/reg-periksa');
             }
             
             // Ambil data dokter
@@ -66,7 +67,8 @@ class RegPeriksaController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error pada create registrasi: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect('/reg-periksa');
         }
     }
 
@@ -111,7 +113,7 @@ class RegPeriksaController extends Controller
         
         try {
             // Cek apakah request berupa JSON atau form-data
-            $input = $request->json()->all();
+            $input = $request->isJson() ? ($request->json()->all() ?? []) : $request->all();
             if (empty($input)) {
                 $input = $request->all();
             }
@@ -164,183 +166,48 @@ class RegPeriksaController extends Controller
             try {
                 // Cek struktur tabel untuk debug
                 $tableColumns = DB::getSchemaBuilder()->getColumnListing('reg_periksa');
-                \Log::info('Struktur kolom tabel reg_periksa:', $tableColumns);
+                Log::info('Struktur kolom tabel reg_periksa:', $tableColumns);
                 
                 DB::table('reg_periksa')->insert($data);
                 
                 // Log query yang dieksekusi
-                \Log::info('Query yang dieksekusi:', DB::getQueryLog());
+                Log::info('Query yang dieksekusi:', DB::getQueryLog());
                 
                 DB::commit();
                 
-                \Log::info('Registrasi berhasil disimpan untuk no_rawat: ' . $no_rawat);
+                Log::info('Registrasi berhasil disimpan untuk no_rawat: ' . $no_rawat);
                 
                 // Update nomor registrasi di cache/database
                 // Kita sekaligus menambahkan catatan untuk sinkronisasi nomor registrasi
                 try {
-                    $this->updateLastRegNumber($input['kd_dokter'], $tgl_registrasi, $input['no_reg'], $input['kd_poli']);
+                    $this->updateLastRegNumber($input['kd_dokter'], $tgl_registrasi, $input['no_reg'], $input['kd_poli'] ?? null);
+                    $this->logNoReg($input['kd_dokter'], $tgl_registrasi, $input['no_reg'], 'store', $input['kd_poli'] ?? null);
                 } catch (\Exception $e) {
-                    \Log::warning('Gagal update cache nomor registrasi: ' . $e->getMessage());
+                    Log::warning('Gagal memperbarui catatan nomor registrasi: ' . $e->getMessage());
                 }
-                
-                // Verifikasi data tersimpan
-                $savedRecord = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
-                if ($savedRecord) {
-                    \Log::info('Verifikasi data tersimpan berhasil: ' . json_encode($savedRecord));
-                    
-                    // Kirim data ke BPJS Antrean jika pasien BPJS
-                    $kd_pj = $savedRecord->kd_pj;
-                    $bpjsCodes = ['A14', 'A15', 'BPJ']; // A14 = PBI, A15 = NON PBI, BPJ = BPJS
-                    
-                    // Siapkan data BPJS untuk dikirimkan di respons
-                    $bpjsData = [];
-                    $sendToBpjs = false;
-                    
-                    if (in_array($kd_pj, $bpjsCodes) || strpos(strtolower($kd_pj), 'bpjs') !== false) {
-                        $sendToBpjs = true;
-                        
-                        // 1. Ambil data mapping poliklinik
-                        $poliMapping = DB::table('maping_poliklinik_pcare')
-                            ->where('kd_poli_rs', $savedRecord->kd_poli)
-                            ->first();
-                            
-                        if (!$poliMapping) {
-                            // Jika mapping tidak ada, gunakan data poliklinik lokal
-                            $poli = DB::table('poliklinik')
-                                ->where('kd_poli', $savedRecord->kd_poli)
-                                ->first();
-                                
-                            $bpjsData['kodepoli_bpjs'] = $savedRecord->kd_poli;
-                            $bpjsData['namapoli_bpjs'] = $poli ? $poli->nm_poli : '';
-                        } else {
-                            $bpjsData['kodepoli_bpjs'] = $poliMapping->kd_poli_pcare;
-                            $bpjsData['namapoli_bpjs'] = $poliMapping->nm_poli_pcare;
-                        }
-                        
-                        // 2. Ambil data mapping dokter
-                        $dokterMapping = DB::table('maping_dokter_pcare')
-                            ->where('kd_dokter', $savedRecord->kd_dokter)
-                            ->first();
-                            
-                        if (!$dokterMapping) {
-                            // Jika mapping tidak ada, gunakan data dokter lokal
-                            $dokter = DB::table('dokter')
-                                ->where('kd_dokter', $savedRecord->kd_dokter)
-                                ->first();
-                                
-                            $bpjsData['kodedokter_bpjs'] = 0; // Default jika tidak ada mapping
-                            $bpjsData['namadokter_bpjs'] = $dokter ? $dokter->nm_dokter : '';
-                        } else {
-                            $bpjsData['kodedokter_bpjs'] = (int)$dokterMapping->kd_dokter_pcare;
-                            $bpjsData['namadokter_bpjs'] = $dokterMapping->nm_dokter_pcare;
-                        }
-                        
-                        // 3. Ambil data jadwal
-                        $today = date('l', strtotime($savedRecord->tgl_registrasi));
-                        $hariIndonesia = $this->translateDay($today);
-                        
-                        $jadwal = DB::table('jadwal')
-                            ->where('kd_dokter', $savedRecord->kd_dokter)
-                            ->where('kd_poli', $savedRecord->kd_poli)
-                            ->where('hari_kerja', $hariIndonesia)
-                            ->first();
-                            
-                        if ($jadwal) {
-                            $bpjsData['jampraktek'] = substr($jadwal->jam_mulai, 0, 5) . "-" . substr($jadwal->jam_selesai, 0, 5);
-                        } else {
-                            $bpjsData['jampraktek'] = "-";
-                        }
-                        
-                        // Coba kirim data antrian ke BPJS di background
-                        try {
-                            // Cek apakah data sudah pernah dikirim ke BPJS
-                            $cekLogAntrianBPJS = null;
-                            if (Schema::hasTable('antrean_bpjs_log')) {
-                                $cekLogAntrianBPJS = DB::table('antrean_bpjs_log')
-                                    ->where('no_rawat', $no_rawat)
-                                    ->where('status', 'Berhasil')
-                                    ->first();
-                            }
-                            
-                            if ($cekLogAntrianBPJS) {
-                                \Log::info('Data antrian BPJS sudah pernah dikirim dan berhasil. Tidak perlu dikirim ulang dari fungsi kirimAntreanBPJS.', [
-                                    'no_rawat' => $no_rawat,
-                                    'waktu_kirim' => $cekLogAntrianBPJS->created_at
-                                ]);
-                            } else {
-                                $this->kirimAntreanBPJS($savedRecord);
-                                \Log::info('Pengiriman antrian BPJS dilakukan di background');
-                            }
-                        } catch (\Exception $bpjsError) {
-                            \Log::error('Gagal mengirim data antrian ke BPJS: ' . $bpjsError->getMessage());
-                        }
-                    }
-                    
-                    // Respons sukses dengan data tambahan untuk BPJS jika diperlukan
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Registrasi berhasil disimpan',
-                        'no_rawat' => $no_rawat,
-                        'no_reg' => $savedRecord->no_reg,
-                        'bpjs_patient' => $sendToBpjs,
-                        'kodepoli_bpjs' => $bpjsData['kodepoli_bpjs'] ?? '',
-                        'namapoli_bpjs' => $bpjsData['namapoli_bpjs'] ?? '',
-                        'kodedokter_bpjs' => $bpjsData['kodedokter_bpjs'] ?? 0,
-                        'namadokter_bpjs' => $bpjsData['namadokter_bpjs'] ?? '',
-                        'jampraktek' => $bpjsData['jampraktek'] ?? '-'
-                    ]);
-                } else {
-                    \Log::error('Verifikasi data tersimpan gagal, record tidak ditemukan');
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Gagal memverifikasi data yang disimpan'
-                    ], 500);
-                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registrasi berhasil disimpan',
+                    'no_rawat' => $no_rawat,
+                    'no_reg' => $input['no_reg']
+                ], 200);
             } catch (\Exception $e) {
-                // Rollback transaksi jika terjadi error
                 DB::rollBack();
-                
-                \Log::error('Error saat menyimpan registrasi: ' . $e->getMessage());
+                Log::error('Gagal menyimpan registrasi: ' . $e->getMessage());
                 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal menyimpan registrasi: ' . $e->getMessage()
+                    'message' => 'Terjadi kesalahan saat menyimpan registrasi: ' . $e->getMessage()
                 ], 500);
             }
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation error:', $e->errors());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal: ' . implode(', ', $e->errors())
-            ], 422);
         } catch (\Exception $e) {
-            DB::rollback();
-            \Log::error('Error menyimpan registrasi: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            \Log::error('Query yang dieksekusi:', DB::getQueryLog());
-            
+            Log::error('Kesalahan umum pada store registrasi: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
-    }
-    
-    /**
-     * Update nomor registrasi terakhir untuk dokter dan tanggal tertentu
-     */
-    private function updateLastRegNumber($kd_dokter, $tgl_registrasi, $no_reg, $kd_poli = null)
-    {
-        \Log::info("Menyimpan nomor registrasi terakhir: $no_reg untuk dokter: $kd_dokter tanggal: $tgl_registrasi" . ($kd_poli ? " poli: $kd_poli" : ""));
-        
-        // Menyimpan ke cache atau pencatatan lain jika diperlukan di masa depan
-        $cacheKey = $kd_poli 
-            ? "last_reg_number_{$kd_dokter}_{$kd_poli}_{$tgl_registrasi}" 
-            : "last_reg_number_{$kd_dokter}_{$tgl_registrasi}";
-        \Cache::put($cacheKey, $no_reg, now()->addDay());
-        
-        return true;
     }
 
     /**
@@ -349,7 +216,7 @@ class RegPeriksaController extends Controller
     public function generateNoReg($kd_dokter = null, $tgl_registrasi = null)
     {
         try {
-            \Log::info('Memulai generateNoReg');
+            Log::info('Memulai generateNoReg');
             // Ambil dari request jika tidak disediakan
             if (!$kd_dokter) {
                 $kd_dokter = request()->input('kd_dokter');
@@ -360,53 +227,30 @@ class RegPeriksaController extends Controller
             
             $kd_poli = request()->input('kd_poli');
             
-            \Log::info("Generating nomor registrasi untuk dokter: $kd_dokter, tanggal: $tgl_registrasi" . 
+            Log::info("Generating nomor registrasi untuk dokter: $kd_dokter, tanggal: $tgl_registrasi" . 
                 ($kd_poli ? ", poli: $kd_poli" : ""));
             
             // Lock untuk mencegah race condition saat generate nomor
             $lockKey = "lock_no_reg_{$kd_dokter}_{$tgl_registrasi}" . ($kd_poli ? "_{$kd_poli}" : "");
-            $isLocked = \Cache::add($lockKey, true, 30); // Lock selama 30 detik maksimal
+            $isLocked = Cache::add($lockKey, true, 30); // Lock selama 30 detik maksimal
             
             if (!$isLocked) {
-                \Log::warning("Menunggu lock untuk generate nomor registrasi");
+                Log::warning("Menunggu lock untuk generate nomor registrasi");
                 // Tunggu sampai 3 detik untuk mendapatkan lock
                 $startTime = microtime(true);
                 while (!$isLocked && microtime(true) - $startTime < 3) {
                     usleep(100000); // Tunggu 100ms
-                    $isLocked = \Cache::add($lockKey, true, 30);
+                    $isLocked = Cache::add($lockKey, true, 30);
                 }
             }
             
             try {
                 $maxRegNum = 0;
                 
-                // 1. Cek di history_noreg jika ada (ini biasanya yang paling update)
+                // 1. Lewati history_noreg untuk perhitungan no_reg; gunakan reg_periksa sebagai sumber kebenaran
+                //    (Tetap jaga kompatibilitas, tetapi tidak mempengaruhi $maxRegNum)
                 if (Schema::hasTable('history_noreg')) {
-                    $historyQuery = DB::table('history_noreg')
-                        ->where('tgl_registrasi', $tgl_registrasi)
-                        ->where('kd_dokter', $kd_dokter);
-                        
-                    if ($kd_poli) {
-                        $historyQuery->where(function ($query) use ($kd_poli) {
-                            $query->where('kd_poli', $kd_poli)
-                                  ->orWhereNull('kd_poli'); // Untuk kompatibilitas dengan data lama
-                        });
-                    }
-                    
-                    $historyRegs = $historyQuery->orderBy('created_at', 'desc')
-                        ->limit(100) // Batasi jumlah data yang diambil
-                        ->get(['no_reg']);
-                    
-                    foreach ($historyRegs as $reg) {
-                        $regNum = intval(ltrim($reg->no_reg, '0'));
-                        if ($regNum > $maxRegNum) {
-                            $maxRegNum = $regNum;
-                        }
-                    }
-                    
-                    if ($maxRegNum > 0) {
-                        \Log::info("Max reg number dari history_noreg: $maxRegNum");
-                    }
+                    Log::info('Lewati history_noreg untuk perhitungan no_reg; sumber utama adalah reg_periksa');
                 }
                 
                 // 2. Cek di reg_periksa
@@ -416,7 +260,7 @@ class RegPeriksaController extends Controller
                     
                 if ($kd_poli) {
                     $regPeriksaQuery->where('kd_poli', $kd_poli);
-                    \Log::info("Filter tambahan dengan poli: $kd_poli");
+                    Log::info("Filter tambahan dengan poli: $kd_poli");
                 }
                     
                 $regPeriksaData = $regPeriksaQuery->get(['no_reg']);
@@ -428,37 +272,27 @@ class RegPeriksaController extends Controller
                 }
                 
                 if (count($regPeriksaData) > 0) {
-                    \Log::info("Max reg number dari reg_periksa: $maxRegNum");
+                    Log::info("Max reg number dari reg_periksa: $maxRegNum");
                 }
                 
-                // 3. Cek di booking_registrasi jika ada
+                // 3. Abaikan booking_registrasi untuk perhitungan maksimum; hanya catat untuk debug
                 if (Schema::hasTable('booking_registrasi')) {
                     $bookingQuery = DB::table('booking_registrasi')
                         ->where('tanggal_periksa', $tgl_registrasi)
                         ->where('kd_dokter', $kd_dokter);
-                        
                     if ($kd_poli) {
                         $bookingQuery->where('kd_poli', $kd_poli);
                     }
-                    
-                    $bookingData = $bookingQuery->get(['no_reg']);
-                    
-                    foreach ($bookingData as $item) {
-                        $regNum = intval(ltrim($item->no_reg, '0'));
-                        if ($regNum > $maxRegNum) {
-                            $maxRegNum = $regNum;
-                        }
-                    }
-                    
-                    if (count($bookingData) > 0) {
-                        \Log::info("Max reg number termasuk booking_registrasi: $maxRegNum");
+                    $bookingCount = $bookingQuery->count();
+                    if ($bookingCount > 0) {
+                        Log::info("Ada {$bookingCount} booking untuk kombinasi ini; tidak dipakai untuk menentukan no_reg");
                     }
                 }
                 
                 // 4. Tentukan nomor berikutnya
                 $nextRegNum = $maxRegNum + 1;
                 $no_reg = str_pad($nextRegNum, 3, '0', STR_PAD_LEFT);
-                \Log::info("Nomor registrasi berikutnya: $no_reg");
+                Log::info("Nomor registrasi berikutnya: $no_reg");
                 
                 // 5. Verifikasi nomor registrasi tidak duplikat
                 $attempts = 0;
@@ -496,7 +330,7 @@ class RegPeriksaController extends Controller
                                 $attempts++;
                                 $nextRegNum++;
                                 $no_reg = str_pad($nextRegNum, 3, '0', STR_PAD_LEFT);
-                                \Log::info("Nomor registrasi konflik dengan booking, mencoba: $no_reg");
+                                Log::info("Nomor registrasi konflik dengan booking, mencoba: $no_reg");
                             }
                         } else {
                             $isUnique = true;
@@ -505,19 +339,19 @@ class RegPeriksaController extends Controller
                         $attempts++;
                         $nextRegNum++;
                         $no_reg = str_pad($nextRegNum, 3, '0', STR_PAD_LEFT);
-                        \Log::info("Nomor registrasi konflik dengan reg_periksa, mencoba: $no_reg");
+                        Log::info("Nomor registrasi konflik dengan reg_periksa, mencoba: $no_reg");
                     }
                 }
                 
                 if (!$isUnique) {
-                    \Log::warning("Gagal mendapatkan nomor registrasi unik setelah 10 percobaan. Menggunakan: $no_reg");
+                    Log::warning("Gagal mendapatkan nomor registrasi unik setelah 10 percobaan. Menggunakan: $no_reg");
                 }
                 
                 // 6. Update last reg number dan simpan dalam history
                 $this->updateLastRegNumber($kd_dokter, $tgl_registrasi, $no_reg, $kd_poli);
                 $this->logNoReg($kd_dokter, $tgl_registrasi, $no_reg, 'normal', $kd_poli);
                 
-                \Log::info("Nomor registrasi final: $no_reg");
+                Log::info("Nomor registrasi final: $no_reg");
                 
                 return response()->json([
                     'success' => true,
@@ -527,13 +361,13 @@ class RegPeriksaController extends Controller
             } finally {
                 // Lepaskan lock setelah selesai
                 if ($isLocked) {
-                    \Cache::forget($lockKey);
-                    \Log::info("Lock untuk generate nomor registrasi dilepaskan");
+                    Cache::forget($lockKey);
+                    Log::info("Lock untuk generate nomor registrasi dilepaskan");
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("Error dalam generateNoReg: " . $e->getMessage());
-            \Log::error("Stack trace: " . $e->getTraceAsString());
+            Log::error("Error dalam generateNoReg: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
@@ -551,7 +385,7 @@ class RegPeriksaController extends Controller
             // Cek apakah tabel history_noreg ada
             $hasTable = Schema::hasTable('history_noreg');
             if (!$hasTable) {
-                \Log::info('Tabel history_noreg tidak ada, mencoba membuat tabel');
+                Log::info('Tabel history_noreg tidak ada, mencoba membuat tabel');
                 Schema::create('history_noreg', function ($table) {
                     $table->id();
                     $table->string('kd_dokter', 20);
@@ -562,14 +396,14 @@ class RegPeriksaController extends Controller
                     $table->timestamp('created_at')->useCurrent();
                     $table->string('created_by', 50)->nullable();
                 });
-                \Log::info('Tabel history_noreg berhasil dibuat');
+                Log::info('Tabel history_noreg berhasil dibuat');
             } else {
                 // Cek apakah kolom kd_poli sudah ada
                 if (!Schema::hasColumn('history_noreg', 'kd_poli')) {
                     Schema::table('history_noreg', function ($table) {
                         $table->string('kd_poli', 20)->nullable()->after('no_reg');
                     });
-                    \Log::info('Kolom kd_poli berhasil ditambahkan ke tabel history_noreg');
+                    Log::info('Kolom kd_poli berhasil ditambahkan ke tabel history_noreg');
                 }
             }
             
@@ -588,9 +422,9 @@ class RegPeriksaController extends Controller
             
             DB::table('history_noreg')->insert($data);
             
-            \Log::info('Berhasil logging nomor registrasi ke history_noreg: ' . $no_reg . ($kd_poli ? " untuk poli: $kd_poli" : ""));
+            Log::info('Berhasil logging nomor registrasi ke history_noreg: ' . $no_reg . ($kd_poli ? " untuk poli: $kd_poli" : ""));
         } catch (\Exception $e) {
-            \Log::warning('Gagal logging nomor registrasi ke history_noreg: ' . $e->getMessage());
+            Log::warning('Gagal logging nomor registrasi ke history_noreg: ' . $e->getMessage());
         }
     }
 
@@ -692,7 +526,7 @@ class RegPeriksaController extends Controller
             $tgl_registrasi = request()->input('tgl_registrasi', date('Y-m-d'));
             $kd_poli = request()->input('kd_poli');
             
-            \Log::info("Menguji nomor registrasi untuk dokter: $kd_dokter, tanggal: $tgl_registrasi" . 
+            Log::info("Menguji nomor registrasi untuk dokter: $kd_dokter, tanggal: $tgl_registrasi" . 
                 ($kd_poli ? ", poli: $kd_poli" : ""));
             
             // 1. Dapatkan semua nomor registrasi untuk dokter dan tanggal ini
@@ -702,7 +536,7 @@ class RegPeriksaController extends Controller
                 
             if ($kd_poli) {
                 $existingRegsQuery->where('kd_poli', $kd_poli);
-                \Log::info("Filter tambahan dengan poli: $kd_poli");
+                Log::info("Filter tambahan dengan poli: $kd_poli");
             }
                 
             $existingRegs = $existingRegsQuery
@@ -710,7 +544,7 @@ class RegPeriksaController extends Controller
                 ->select('no_reg', 'no_rawat', 'kd_dokter', 'tgl_registrasi', 'kd_poli')
                 ->get();
             
-            \Log::info("Registrasi yang ada: " . count($existingRegs));
+            Log::info("Registrasi yang ada: " . count($existingRegs));
             
             // 2. Hitung nomor registrasi yang seharusnya digunakan selanjutnya
             $maxReg = 0;
@@ -740,11 +574,11 @@ class RegPeriksaController extends Controller
                     }
                 }
                 
-                \Log::info("Termasuk dari booking, nomor registrasi maksimum: $maxReg");
+                Log::info("Termasuk dari booking, nomor registrasi maksimum: $maxReg");
             }
             
             $nextReg = str_pad($maxReg + 1, 3, '0', STR_PAD_LEFT);
-            \Log::info("Nomor registrasi berikutnya seharusnya: $nextReg");
+            Log::info("Nomor registrasi berikutnya seharusnya: $nextReg");
             
             // 3. Cek lognya di history_noreg jika ada
             $historyLogsQuery = DB::table('history_noreg')
@@ -765,7 +599,7 @@ class RegPeriksaController extends Controller
                     ->limit(10)
                     ->get();
                     
-                \Log::info("Jumlah log history: " . count($historyLogs));
+                Log::info("Jumlah log history: " . count($historyLogs));
             }
             
             // 4. Bikin baru jika diminta
@@ -784,7 +618,7 @@ class RegPeriksaController extends Controller
                 
                 if (isset($responseData['success']) && $responseData['success']) {
                     $no_reg = $responseData['no_reg'];
-                    \Log::info("Berhasil membuat nomor registrasi baru: $no_reg");
+                    Log::info("Berhasil membuat nomor registrasi baru: $no_reg");
                     
                     // Generate nomor rawat menggunakan metode yang sudah dibuat
                     $no_rawat = $this->generateNoRawat($tgl_registrasi);
@@ -815,9 +649,9 @@ class RegPeriksaController extends Controller
                     // Insert data
                     DB::table('reg_periksa')->insert($data);
                     $newRecord = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
-                    \Log::info("Record registrasi baru berhasil dibuat dengan no_rawat: $no_rawat");
+                    Log::info("Record registrasi baru berhasil dibuat dengan no_rawat: $no_rawat");
                 } else {
-                    \Log::error("Gagal membuat nomor registrasi: " . ($responseData['message'] ?? 'Tidak ada pesan error'));
+                    Log::error("Gagal membuat nomor registrasi: " . ($responseData['message'] ?? 'Tidak ada pesan error'));
                 }
             }
             
@@ -834,8 +668,8 @@ class RegPeriksaController extends Controller
                 'timestamp' => now()->format('Y-m-d H:i:s')
             ]);
         } catch (\Exception $e) {
-            \Log::error("Error dalam testDokterNoReg: " . $e->getMessage());
-            \Log::error("Stack trace: " . $e->getTraceAsString());
+            Log::error("Error dalam testDokterNoReg: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             
             return response()->json([
                 'error' => $e->getMessage(),
@@ -860,7 +694,7 @@ class RegPeriksaController extends Controller
     private function kirimAntreanBPJS($data)
     {
         try {
-            \Log::info('Mulai proses kirim antrian BPJS untuk no_rawat: ' . $data->no_rawat, [
+            Log::info('Mulai proses kirim antrian BPJS untuk no_rawat: ' . $data->no_rawat, [
                 'no_rkm_medis' => $data->no_rkm_medis,
                 'kd_poli' => $data->kd_poli,
                 'kd_dokter' => $data->kd_dokter
@@ -876,7 +710,7 @@ class RegPeriksaController extends Controller
             }
             
             if ($cekLogAntrianBPJS) {
-                \Log::info('Data antrian BPJS sudah pernah dikirim dan berhasil. Tidak perlu dikirim ulang dari fungsi kirimAntreanBPJS.', [
+                Log::info('Data antrian BPJS sudah pernah dikirim dan berhasil. Tidak perlu dikirim ulang dari fungsi kirimAntreanBPJS.', [
                     'no_rawat' => $data->no_rawat,
                     'waktu_kirim' => $cekLogAntrianBPJS->created_at
                 ]);
@@ -889,7 +723,7 @@ class RegPeriksaController extends Controller
                 ->first();
             
             if (!$pasien) {
-                \Log::error('Data pasien tidak ditemukan', ['no_rkm_medis' => $data->no_rkm_medis]);
+                Log::error('Data pasien tidak ditemukan', ['no_rkm_medis' => $data->no_rkm_medis]);
                 throw new \Exception('Data pasien tidak ditemukan');
             }
             
@@ -899,7 +733,7 @@ class RegPeriksaController extends Controller
                 ->first();
             
             if (!$poli) {
-                \Log::error('Data poliklinik tidak ditemukan', ['kd_poli' => $data->kd_poli]);
+                Log::error('Data poliklinik tidak ditemukan', ['kd_poli' => $data->kd_poli]);
                 throw new \Exception('Data poliklinik tidak ditemukan');
             }
             
@@ -909,7 +743,7 @@ class RegPeriksaController extends Controller
                 ->first();
             
             if (!$poliMapping) {
-                \Log::warning('Mapping poliklinik ke BPJS tidak ditemukan', ['kd_poli_rs' => $data->kd_poli]);
+                Log::warning('Mapping poliklinik ke BPJS tidak ditemukan', ['kd_poli_rs' => $data->kd_poli]);
                 $poliMapping = (object)[
                     'kd_poli_pcare' => $data->kd_poli, // Fallback ke kode poli RS
                     'nm_poli_pcare' => $poli->nm_poli // Fallback ke nama poli RS
@@ -922,7 +756,7 @@ class RegPeriksaController extends Controller
                 ->first();
             
             if (!$dokter) {
-                \Log::error('Data dokter tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
+                Log::error('Data dokter tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
                 throw new \Exception('Data dokter tidak ditemukan');
             }
             
@@ -932,7 +766,7 @@ class RegPeriksaController extends Controller
                 ->first();
             
             if (!$dokterMapping) {
-                \Log::warning('Mapping dokter ke BPJS tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
+                Log::warning('Mapping dokter ke BPJS tidak ditemukan', ['kd_dokter' => $data->kd_dokter]);
                 $dokterMapping = (object)[
                     'kd_dokter_pcare' => 0, // Default jika tidak ada mapping
                     'nm_dokter_pcare' => $dokter->nm_dokter
@@ -953,7 +787,7 @@ class RegPeriksaController extends Controller
             if ($jadwal) {
                 $jamPraktek = substr($jadwal->jam_mulai, 0, 5) . "-" . substr($jadwal->jam_selesai, 0, 5);
             } else {
-                \Log::warning('Jadwal dokter tidak ditemukan, menggunakan default', [
+                Log::warning('Jadwal dokter tidak ditemukan, menggunakan default', [
                     'kd_dokter' => $data->kd_dokter,
                     'kd_poli' => $data->kd_poli,
                     'hari' => $hariIndonesia
@@ -977,7 +811,7 @@ class RegPeriksaController extends Controller
                 "keterangan" => "Peserta harap 30 menit lebih awal guna pencatatan administrasi."
             ];
             
-            \Log::info('Data Antrean BPJS yang akan dikirim', $dataAntrean);
+            Log::info('Data Antrean BPJS yang akan dikirim', $dataAntrean);
             
             try {
                 // 6. Gunakan AddAntreanController untuk kirim data ke BPJS
@@ -990,7 +824,7 @@ class RegPeriksaController extends Controller
                 // Panggil method add di AddAntreanController
                 $response = $antreanController->add($request);
                 
-                \Log::info('Respons dari AddAntreanController', [
+                Log::info('Respons dari AddAntreanController', [
                     'status' => $response->getStatusCode(),
                     'content' => json_decode($response->getContent(), true)
                 ]);
@@ -1004,7 +838,7 @@ class RegPeriksaController extends Controller
                 if ($metaData && isset($metaData['code'])) {
                     
                     if ($metaData['code'] == 200) {
-                        \Log::info('Pengiriman antrian BPJS berhasil', [
+                        Log::info('Pengiriman antrian BPJS berhasil', [
                             'response_code' => $metaData['code'],
                             'message' => $metaData['message']
                         ]);
@@ -1019,12 +853,12 @@ class RegPeriksaController extends Controller
                                 'created_at' => now()
                             ]);
                         } catch (\Exception $logErr) {
-                            \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                            Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
                         }
                         
                         return true;
                     } else {
-                        \Log::warning('Respons BPJS tidak berhasil', [
+                        Log::warning('Respons BPJS tidak berhasil', [
                             'response_code' => $metaData['code'],
                             'message' => $metaData['message']
                         ]);
@@ -1039,17 +873,17 @@ class RegPeriksaController extends Controller
                                 'created_at' => now()
                             ]);
                         } catch (\Exception $logErr) {
-                            \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                            Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
                         }
                     }
                 } else {
-                    \Log::warning('Format respons BPJS tidak sesuai', ['response' => $responseContent]);
+                    Log::warning('Format respons BPJS tidak sesuai', ['response' => $responseContent]);
                 }
                 
-                \Log::info('Proses pengiriman antrian BPJS selesai', ['no_rawat' => $data->no_rawat]);
+                Log::info('Proses pengiriman antrian BPJS selesai', ['no_rawat' => $data->no_rawat]);
                 return false;
             } catch (\Exception $apiError) {
-                \Log::error('Error saat API call BPJS: ' . $apiError->getMessage(), [
+                Log::error('Error saat API call BPJS: ' . $apiError->getMessage(), [
                     'no_rawat' => $data->no_rawat,
                     'trace' => $apiError->getTraceAsString()
                 ]);
@@ -1064,13 +898,13 @@ class RegPeriksaController extends Controller
                         'created_at' => now()
                     ]);
                 } catch (\Exception $logErr) {
-                    \Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
+                    Log::warning('Gagal menyimpan log antrean BPJS', ['error' => $logErr->getMessage()]);
                 }
                 
                 return false;
             }
         } catch (\Exception $e) {
-            \Log::error('Error kirim antrian BPJS: ' . $e->getMessage(), [
+            Log::error('Error kirim antrian BPJS: ' . $e->getMessage(), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'no_rawat' => $data->no_rawat ?? null
@@ -1086,7 +920,7 @@ class RegPeriksaController extends Controller
                     'created_at' => now()
                 ]);
             } catch (\Exception $logErr) {
-                \Log::warning('Gagal menyimpan log error antrean BPJS', ['error' => $logErr->getMessage()]);
+                Log::warning('Gagal menyimpan log error antrean BPJS', ['error' => $logErr->getMessage()]);
             }
             
             return false;
@@ -1109,5 +943,16 @@ class RegPeriksaController extends Controller
         ];
         
         return $days[$day] ?? $day;
+    }
+    
+    // Endpoint publik untuk preview/generate No Rawat
+    public function generateNoRawatApi($tgl_registrasi)
+    {
+        try {
+            $no_rawat = $this->generateNoRawat($tgl_registrasi);
+            return response()->json(['success' => true, 'no_rawat' => $no_rawat]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

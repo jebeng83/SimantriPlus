@@ -9,6 +9,7 @@ export default function PcareStatusHeader() {
     batal: 0,
     persentase: 0,
     sukses_kunjungan: 0,
+    jumlah_rujukan: 0,
     gap_reg_vs_pcare: 0,
     gap_pcare_vs_kunjungan: 0,
     gap_reg_vs_kunjungan: 0,
@@ -53,11 +54,12 @@ export default function PcareStatusHeader() {
         <div className="col-md-3"><Card icon="fas fa-times-circle" label="Batal Pendaftaran" value={summary.batal} color="#ef4444" /></div>
       </div>
 
-      {/* Baris 2: Gap */}
+      {/* Baris 2: Rujukan & Gap */}
       <div className="row">
-        <div className="col-md-4"><Card icon="fas fa-arrows-alt-h" label="Gap Reg vs Pendaftaran" value={summary.gap_reg_vs_pcare} color="#f59e0b" /></div>
-        <div className="col-md-4"><Card icon="fas fa-exchange-alt" label="Gap Pendaftaran vs Kunjungan" value={summary.gap_pcare_vs_kunjungan} color="#f97316" /></div>
-        <div className="col-md-4"><Card icon="fas fa-balance-scale" label="Gap Total Reg vs Kunjungan" value={summary.gap_reg_vs_kunjungan} color="#fb7185" /></div>
+        <div className="col-md-3"><Card icon="fas fa-route" label="Jumlah Rujukan" value={summary.jumlah_rujukan} color="#3b82f6" /></div>
+        <div className="col-md-3"><Card icon="fas fa-arrows-alt-h" label="Gap Reg vs Pendaftaran" value={summary.gap_reg_vs_pcare} color="#f59e0b" /></div>
+        <div className="col-md-3"><Card icon="fas fa-exchange-alt" label="Gap Pendaftaran vs Kunjungan" value={summary.gap_pcare_vs_kunjungan} color="#f97316" /></div>
+        <div className="col-md-3"><Card icon="fas fa-balance-scale" label="Gap Total Reg vs Kunjungan" value={summary.gap_reg_vs_kunjungan} color="#fb7185" /></div>
       </div>
 
       {/* Progress persentase pendaftaran sukses dari total */}
