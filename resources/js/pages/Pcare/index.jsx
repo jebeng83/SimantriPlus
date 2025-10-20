@@ -263,29 +263,17 @@ export default function PcareMenu() {
             variants={cardVariants}
             whileHover={{ y: -3, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="group relative block w-full min-h-[110px] overflow-hidden rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm hover:shadow-md transition-colors hover:border-slate-300"
+            className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:shadow-md min-h-[110px]"
           >
-            {/* Accent gradient bar */}
-            <div className={`absolute inset-x-0 top-0 h-1 z-10 rounded-t-xl bg-gradient-to-r ${item.gradient}`} />
-
-            {/* Icon */}
-            <div className={`relative z-10 inline-flex items-center justify-center rounded-md bg-gradient-to-br ${item.gradient} text-white shadow`} style={{ width: 36, height: 36 }}>
+            <div className={`flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br ${item.gradient} text-white shadow`} >
               {item.icon}
             </div>
-
-            {/* Texts */}
-            <div className="mt-2 relative z-10">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">{item.title}</h3>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M9 5l7 7-7 7" />
-                </svg>
+            <div className="mt-2">
+              <div className="text-slate-800 font-semibold leading-tight">
+                {item.title} <span className="text-slate-400">›</span>
               </div>
-              <p className="mt-1 text-[11px] text-slate-500">{item.desc}</p>
+              <div className="text-slate-500 text-xs">{item.desc}</div>
             </div>
-
-            {/* Soft hover glow behind content */}
-            <div className={`pointer-events-none absolute inset-0 z-0 rounded-xl opacity-0 group-hover:opacity-10 transition duration-300 bg-gradient-to-r ${item.gradient} blur-sm`} aria-hidden="true" />
           </motion.a>
         ))}
       </motion.div>

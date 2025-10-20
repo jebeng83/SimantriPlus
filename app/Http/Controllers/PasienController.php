@@ -33,6 +33,20 @@ class PasienController extends Controller
         ]);
     }
 
+    // Tambah: Halaman membuat pasien baru
+    public function create()
+    {
+        try {
+            // Tidak perlu preload data karena Livewire FormPendaftaran akan mengambil sendiri
+            return view('pasien.create');
+        } catch (\Exception $e) {
+            Log::error('PasienController - create: Gagal menampilkan form tambah pasien', [
+                'error' => $e->getMessage()
+            ]);
+            // Fallback: kembali ke index dengan pesan error
+            return Redirect::to('/data-pasien')->with('error', 'Gagal membuka halaman tambah pasien: ' . $e->getMessage());
+        }
+    }
     public function edit($no_rkm_medis)
     {
         // Memastikan query langsung ke database tanpa cache
@@ -150,6 +164,23 @@ class PasienController extends Controller
             'no_kk' => 'required',
             'pekerjaan' => 'nullable',
             'kd_pj' => 'required|exists:penjab,kd_pj',
+            // tambahan field opsional
+            'jk' => 'nullable|in:L,P',
+            'tmp_lahir' => 'nullable|string',
+            'nm_ibu' => 'nullable|string',
+            'gol_darah' => 'nullable|in:A,B,AB,O,Tidak diketahui',
+            'agama' => 'nullable|string',
+            'pnd' => 'nullable|string',
+            'keluarga' => 'nullable|string',
+            'namakeluarga' => 'nullable|string',
+            'kd_prop' => 'nullable|string',
+            'kd_kab' => 'nullable|string',
+            'kd_kec' => 'nullable|string',
+            'kd_kel' => 'nullable|string',
+            'alamatpj' => 'nullable|string',
+            'kelurahanpj' => 'nullable|string',
+            'kecamatanpj' => 'nullable|string',
+            'kabupatenpj' => 'nullable|string',
         ], [
             'nm_pasien.required' => 'Nama Pasien tidak boleh kosong',
             'no_ktp.required' => 'No. KTP/SIM tidak boleh kosong',
@@ -184,11 +215,27 @@ class PasienController extends Controller
                 ->update([
                     'nm_pasien' => $request->nm_pasien,
                     'no_ktp' => $request->no_ktp,
+                    'jk' => $request->jk,
+                    'tmp_lahir' => $request->tmp_lahir,
+                    'nm_ibu' => $request->nm_ibu,
+                    'gol_darah' => $request->gol_darah,
+                    'agama' => $request->agama,
+                    'pnd' => $request->pnd,
+                    'keluarga' => $request->keluarga,
+                    'namakeluarga' => $request->namakeluarga,
                     'no_peserta' => $request->no_peserta,
                     'no_tlp' => $request->no_tlp,
                     'tgl_lahir' => $tgl_lahir_formatted,
                     'umur' => $umur_calculated,
                     'alamat' => $request->alamat,
+                    'kd_prop' => $request->kd_prop,
+                    'kd_kab' => $request->kd_kab,
+                    'kd_kec' => $request->kd_kec,
+                    'kd_kel' => $request->kd_kel,
+                    'alamatpj' => $request->alamatpj,
+                    'kelurahanpj' => $request->kelurahanpj,
+                    'kecamatanpj' => $request->kecamatanpj,
+                    'kabupatenpj' => $request->kabupatenpj,
                     'stts_nikah' => $request->stts_nikah,
                     'status' => $request->status,
                     'data_posyandu' => $request->data_posyandu,

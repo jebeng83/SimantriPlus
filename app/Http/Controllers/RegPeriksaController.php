@@ -955,4 +955,27 @@ class RegPeriksaController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Perbarui cache terkait nomor registrasi terakhir agar komponen lain mendeteksi data baru
+     */
+    private function updateLastRegNumber($kd_dokter, $tgl_registrasi, $no_reg, $kd_poli = null)
+    {
+        try {
+            $numeric = intval(ltrim((string) $no_reg, '0'));
+
+            if ($kd_poli) {
+                Cache::put("last_registration_{$kd_poli}_{$kd_dokter}_{$tgl_registrasi}", now()->timestamp, 3600);
+                Cache::put("global_max_reg_{$kd_dokter}_{$kd_poli}_{$tgl_registrasi}", $numeric, now()->addDay());
+                Cache::forget("pasien_ralan_{$kd_poli}_{$kd_dokter}_{$tgl_registrasi}");
+            } else {
+                Cache::put("last_registration_{$kd_dokter}_{$tgl_registrasi}", now()->timestamp, 3600);
+                Cache::put("global_max_reg_{$kd_dokter}_{$tgl_registrasi}", $numeric, now()->addDay());
+            }
+
+            Log::info("updateLastRegNumber: cache diperbarui untuk dokter={$kd_dokter}" . ($kd_poli ? ", poli={$kd_poli}" : "") . " tanggal={$tgl_registrasi} no_reg={$no_reg} (numeric={$numeric})");
+        } catch (\Exception $e) {
+            Log::warning('updateLastRegNumber gagal: ' . $e->getMessage());
+        }
+    }
 }

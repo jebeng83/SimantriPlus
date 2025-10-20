@@ -5,7 +5,7 @@ namespace App\Http\Controllers\ILP;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class FaktorResikoController extends Controller
 {
@@ -329,7 +329,7 @@ class FaktorResikoController extends Controller
     public function getPosyandu(Request $request)
     {
         // Debug informasi
-        \Log::info('Request getPosyandu diterima', [
+        Log::info('Request getPosyandu diterima', [
             'desa' => $request->input('desa'),
             'user_agent' => $request->header('User-Agent')
         ]);
@@ -337,7 +337,7 @@ class FaktorResikoController extends Controller
         $desa = $request->input('desa');
         
         $query = DB::table('data_posyandu')
-            ->select('nama_posyandu')
+            ->select('nama_posyandu', 'desa')
             ->distinct();
             
         if ($desa) {
@@ -346,11 +346,11 @@ class FaktorResikoController extends Controller
         
         $posyandu = $query->orderBy('nama_posyandu', 'asc')->get();
         
-        \Log::info('Response getPosyandu', [
+        Log::info('Response getPosyandu', [
             'count' => count($posyandu),
             'data' => $posyandu
         ]);
         
         return response()->json($posyandu);
     }
-} 
+}

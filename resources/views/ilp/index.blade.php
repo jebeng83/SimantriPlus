@@ -3,21 +3,7 @@
 @section('title', 'Menu ILP')
 
 @section('css')
-    <!-- Tailwind CSS CDN for styling the ILP cards -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            850: '#2b3340'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    @vite('resources/css/app.css')
     <style>
         /* Sembunyikan HelloMotion global agar tidak mengganggu tampilan ILP */
         #react-root { display: none !important; }

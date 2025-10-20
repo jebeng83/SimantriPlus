@@ -1640,8 +1640,9 @@
                dataType: 'json',
                success: function(response) {
                    $('#provinsi').empty().append('<option value="">- Pilih Provinsi -</option>');
-                   if (response.data && response.data.length > 0) {
-                       $.each(response.data, function(i, item) {
+                   var dataArr = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                   if (dataArr.length > 0) {
+                       $.each(dataArr, function(i, item) {
                            $('#provinsi').append($('<option>', {
                                value: parseInt(item.kd_prop),
                                text: item.nm_prop
@@ -1665,8 +1666,9 @@
                    dataType: 'json',
                    success: function(response) {
                        $('#kabupaten').empty().append('<option value="">- Pilih Kabupaten -</option>');
-                       if (response.data && response.data.length > 0) {
-                           $.each(response.data, function(i, item) {
+                       var dataArr = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                       if (dataArr.length > 0) {
+                           $.each(dataArr, function(i, item) {
                                $('#kabupaten').append($('<option>', {
                                    value: parseInt(item.kd_kab),
                                    text: item.nm_kab
@@ -1698,8 +1700,9 @@
                    dataType: 'json',
                    success: function(response) {
                        $('#kecamatan').empty().append('<option value="">- Pilih Kecamatan -</option>');
-                       if (response.data && response.data.length > 0) {
-                           $.each(response.data, function(i, item) {
+                       var dataArr = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                       if (dataArr.length > 0) {
+                           $.each(dataArr, function(i, item) {
                                $('#kecamatan').append($('<option>', {
                                    value: parseInt(item.kd_kec),
                                    text: item.nm_kec
@@ -1731,8 +1734,9 @@
                    dataType: 'json',
                    success: function(response) {
                        $('#desa').empty().append('<option value="">- Pilih Desa/Kelurahan -</option>');
-                       if (response.data && response.data.length > 0) {
-                           $.each(response.data, function(i, item) {
+                       var dataArr = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+                       if (dataArr.length > 0) {
+                           $.each(dataArr, function(i, item) {
                                $('#desa').append($('<option>', {
                                    value: parseInt(item.kd_kel),
                                    text: item.nm_kel
@@ -1773,8 +1777,9 @@
                        dataType: 'json',
                        success: function(res) {
                            $('#provinsi').empty().append('<option value="">- Pilih Provinsi -</option>');
-                           if (res.data && res.data.length > 0) {
-                               $.each(res.data, function(i, item) {
+                           var dataArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                           if (dataArr.length > 0) {
+                               $.each(dataArr, function(i, item) {
                                    $('#provinsi').append($('<option>', {
                                        value: parseInt(item.kd_prop),
                                        text: item.nm_prop
@@ -1791,8 +1796,9 @@
                                    dataType: 'json',
                                    success: function(res) {
                                        $('#kabupaten').empty().append('<option value="">- Pilih Kabupaten -</option>');
-                                       if (res.data && res.data.length > 0) {
-                                           $.each(res.data, function(i, item) {
+                                       var dataKabArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                       if (dataKabArr.length > 0) {
+                                           $.each(dataKabArr, function(i, item) {
                                                $('#kabupaten').append($('<option>', {
                                                    value: parseInt(item.kd_kab),
                                                    text: item.nm_kab
@@ -1809,8 +1815,9 @@
                                                dataType: 'json',
                                                success: function(res) {
                                                    $('#kecamatan').empty().append('<option value="">- Pilih Kecamatan -</option>');
-                                                   if (res.data && res.data.length > 0) {
-                                                       $.each(res.data, function(i, item) {
+                                                   var dataKecArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                                   if (dataKecArr.length > 0) {
+                                                       $.each(dataKecArr, function(i, item) {
                                                            $('#kecamatan').append($('<option>', {
                                                                value: parseInt(item.kd_kec),
                                                                text: item.nm_kec
@@ -1827,8 +1834,9 @@
                                                            dataType: 'json',
                                                            success: function(res) {
                                                                $('#desa').empty().append('<option value="">- Pilih Desa/Kelurahan -</option>');
-                                                               if (res.data && res.data.length > 0) {
-                                                                   $.each(res.data, function(i, item) {
+                                                               var dataKelArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                                               if (dataKelArr.length > 0) {
+                                                                   $.each(dataKelArr, function(i, item) {
                                                                        $('#desa').append($('<option>', {
                                                                            value: parseInt(item.kd_kel),
                                                                            text: item.nm_kel
@@ -1870,8 +1878,9 @@
                dataType: 'json',
                success: function(res) {
                    $('#provinsi').empty().append('<option value="">- Pilih Provinsi -</option>');
-                   if (res.data && res.data.length > 0) {
-                       $.each(res.data, function(i, item) {
+                   var dataArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                   if (dataArr.length > 0) {
+                       $.each(dataArr, function(i, item) {
                            $('#provinsi').append($('<option>', {
                                value: parseInt(item.kd_prop),
                                text: item.nm_prop
@@ -1889,8 +1898,9 @@
                                dataType: 'json',
                                success: function(res) {
                                    $('#kabupaten').empty().append('<option value="">- Pilih Kabupaten -</option>');
-                                   if (res.data && res.data.length > 0) {
-                                       $.each(res.data, function(i, item) {
+                                   var dataKabArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                   if (dataKabArr.length > 0) {
+                                       $.each(dataKabArr, function(i, item) {
                                            $('#kabupaten').append($('<option>', {
                                                value: parseInt(item.kd_kab),
                                                text: item.nm_kab
@@ -1908,8 +1918,9 @@
                                                dataType: 'json',
                                                success: function(res) {
                                                    $('#kecamatan').empty().append('<option value="">- Pilih Kecamatan -</option>');
-                                                   if (res.data && res.data.length > 0) {
-                                                       $.each(res.data, function(i, item) {
+                                                   var dataKecArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                                   if (dataKecArr.length > 0) {
+                                                       $.each(dataKecArr, function(i, item) {
                                                            $('#kecamatan').append($('<option>', {
                                                                value: parseInt(item.kd_kec),
                                                                text: item.nm_kec
@@ -1927,8 +1938,9 @@
                                                                dataType: 'json',
                                                                success: function(res) {
                                                                    $('#desa').empty().append('<option value="">- Pilih Desa/Kelurahan -</option>');
-                                                                   if (res.data && res.data.length > 0) {
-                                                                       $.each(res.data, function(i, item) {
+                                                                   var dataKelArr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+                                                                   if (dataKelArr.length > 0) {
+                                                                       $.each(dataKelArr, function(i, item) {
                                                                            $('#desa').append($('<option>', {
                                                                                value: parseInt(item.kd_kel),
                                                                                text: item.nm_kel

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
 
 // CSRF token for Laravel POST
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -133,8 +134,8 @@ const Card = ({ title, children, className = '', headerRight = null }) => (
     layout
   >
     {title && (
-      <div className="px-4 py-3 border-b border-slate-200/80 flex items-center justify-between">
-        <h3 className="text-slate-800 font-semibold text-base">{title}</h3>
+      <div className="px-4 py-2 border-b border-slate-200/80 bg-sky-50 rounded-t-2xl flex items-center justify-between">
+        <h5 className="text-slate-800 font-semibold text-[14px]">{title}</h5>
         {headerRight && <div className="ml-2">{headerRight}</div>}
       </div>
     )}
@@ -203,6 +204,7 @@ const PatientSearchRegister = ({
   setPatientInfo,
   patientInfo,
   notify,
+  refreshBpjs,
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -214,6 +216,7 @@ const PatientSearchRegister = ({
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ p_jawab: 'PASIEN', almt_pj: '-', hubunganpj: 'DIRI SENDIRI', biaya_reg: 0 });
   const [skriningModal, setSkriningModal] = useState({ open: false, message: '' });
+  const keluargaOptions = ['AYAH','IBU','ISTRI','SUAMI','SAUDARA','ANAK','DIRI SENDIRI','LAIN-LAIN'].map((v)=>({ value: v, label: v }));
 
   const openSkriningModal = (message) => {
     setSkriningModal({ open: true, message: message || 'Anda belum melakukan skrining kesehatan. Mohon untuk melakukan skrining kesehatan terlebih dahulu pada menu Skrining Kesehatan.' });
@@ -308,7 +311,7 @@ const PatientSearchRegister = ({
     if (patientInfo) {
       setForm((prev) => ({
         ...prev,
-        p_jawab: patientInfo.namakeluarga ?? prev.p_jawab,
+        p_jawab: patientInfo.keluarga ?? prev.p_jawab,
         hubunganpj: patientInfo.keluarga ?? prev.hubunganpj,
         almt_pj: (patientInfo.alamatpj ?? patientInfo.alamat ?? prev.almt_pj),
       }));
@@ -387,13 +390,15 @@ const PatientSearchRegister = ({
     setSelectedPoli('');
     setSelectedDokter('');
     setSelectedPenjab('');
+    // juga refresh kartu BPJS (PCare)
+    refreshBpjs?.();
   };
 
   // Tombol reset untuk menyiapkan registrasi berikutnya
   const newBtn = (
     <button
       onClick={() => clearForm()}
-      className="px-2 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"
+      className={`px-4 py-2 rounded-lg text-sm font-medium ${saving || isGeneratingNoReg ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
       disabled={saving || isGeneratingNoReg}
     >
       Baru
@@ -536,7 +541,7 @@ const PatientSearchRegister = ({
 
   const handleSubmit = async () => {
     if (!canRegister) {
-      notify?.({ type: 'info', title: 'Lengkapi data', description: 'Pilih pasien, poli, dokter, cara bayar, dan generate NoReg.' });
+      notify?.({ type: 'info', title: 'Lengkapi data', description: 'Pilih pasien, poli, dokter, dan cara bayar. NoReg akan dibuat otomatis saat pasien dipilih.' });
       return;
     }
     setSaving(true);
@@ -589,12 +594,28 @@ const PatientSearchRegister = ({
       <Card title="Pencarian Pasien & Form Registrasi">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <Input
-              label="Cari pasien (Nama / RM / NIK / No BPJS)"
-              placeholder="contoh: Siti / 12345 / 3301xxxx"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Input
+                  label="Cari pasien (Nama / RM / NIK / No BPJS)"
+                  placeholder="contoh: Siti / 12345 / 3301xxxx"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <label className="block">
+                <span className="text-xs font-medium text-slate-600 invisible">Spacer</span>
+                <button
+                  type="button"
+                  onClick={() => window.open('/data-pasien/create', '_blank', 'noopener,noreferrer')}
+                  className="mt-1 px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs whitespace-nowrap"
+                  aria-label="Buka halaman pasien baru"
+                  title="Pasien Baru"
+                >
+                  Pasien Baru
+                </button>
+              </label>
+            </div>
             <div className="mt-3">
               {loading ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -626,7 +647,7 @@ const PatientSearchRegister = ({
                           // Prefill dari tabel pasien: penanggung jawab, alamat PJ, hubungan PJ, dan kd_pj jika tersedia
                           setForm((prev) => ({
                             ...prev,
-                            p_jawab: r.namakeluarga ?? prev.p_jawab,
+                            p_jawab: r.keluarga ?? prev.p_jawab,
                             hubunganpj: r.keluarga ?? prev.hubunganpj,
                             almt_pj: r.alamatpj ?? prev.almt_pj,
                           }));
@@ -639,49 +660,44 @@ const PatientSearchRegister = ({
                     );
                   })}
                 </ul>
-              ) : (
-                <div className="text-xs text-slate-500">Masukkan minimal 2 karakter untuk mencari.</div>
-              )}
+              ) : null}
             </div>
-            {/* Card Informasi Pasien dipindahkan ke sisi kiri, dalam Card Pencarian & Form Registrasi */}
-            <div className="mt-4">
-              <PatientInfoCard patientInfo={patientInfo} />
-            </div>
+            {/* Card Informasi Pasien akan diposisikan pada baris khusus di bawah agar sejajar dengan Form Registrasi */}
           </div>
-          <div className="space-y-3">
+          <div>
             {/* Filter yang dipindahkan ke card registrasi */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Select label="Poliklinik" options={poliklinikOptions} value={selectedPoli} onChange={setSelectedPoli} />
               <Select label="Dokter" options={dokterOptions} value={selectedDokter} onChange={setSelectedDokter} />
               <Select label="Cara Bayar" options={penjabOptions} value={selectedPenjab} onChange={setSelectedPenjab} />
             </div>
-
-            {/* Menampilkan data pasien terpilih pada form */}
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="No. RM (auto)" value={patientInfo?.no_rkm_medis ?? selectedPatient?.id ?? ''} readOnly />
-              <Input label="Nama Pasien (auto)" value={patientInfo?.nm_pasien ?? selectedPatient?.text ?? ''} readOnly />
-            </div>
-
-            {/* Form Registrasi */}
-            <Card title="Form Registrasi" headerRight={newBtn}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input label="No. Registrasi" value={noReg} readOnly />
-                <Input label="Tanggal" type="date" value={date} onChange={(e) => { /* handled outside */ }} readOnly />
-                <Input label="No. Rawat (preview)" value={noRawatPreview} readOnly />
+          </div>
+        </div>
+        {/* Baris khusus untuk menyelaraskan Card Informasi Pasien dan Card Form Registrasi */}
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <div className="h-full">
+            <PatientInfoCard patientInfo={patientInfo} notify={notify} setPatientInfo={setPatientInfo} />
+          </div>
+          <div className="h-full">
+            <Card title={`Form Registrasi — ${date ? new Date(date).toLocaleDateString('id-ID') : ''}`} className="h-full">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className="md:col-span-3">
+                  <Input label="No. RM" value={selectedPatient?.id || patientInfo?.no_rkm_medis || ''} readOnly />
+                </div>
+                <div className="md:col-span-3">
+                  <Input label="No. Registrasi" value={noReg} readOnly />
+                </div>
+                <div className="md:col-span-6">
+                  <Input label="No. Rawat (preview)" value={noRawatPreview} readOnly />
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                <Input label="Penanggung Jawab" value={form.p_jawab} onChange={(e) => setForm({ ...form, p_jawab: e.target.value })} />
+                <Input label="Penanggung Jawab" value={form.p_jawab || patientInfo?.keluarga || ''} onChange={(e) => setForm({ ...form, p_jawab: e.target.value })} />
                 <Input label="Alamat PJ" value={form.almt_pj} onChange={(e) => setForm({ ...form, almt_pj: e.target.value })} />
-                <Input label="Hubungan PJ" value={form.hubunganpj} onChange={(e) => setForm({ ...form, hubunganpj: e.target.value })} />
+                <Select label="Hubungan PJ" options={keluargaOptions} value={form.hubunganpj || patientInfo?.keluarga || ''} onChange={(val) => setForm({ ...form, hubunganpj: val })} />
               </div>
               <div className="mt-3 flex items-center justify-between">
-                <button
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${isGeneratingNoReg ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
-                  onClick={handleGenerateNoReg}
-                  disabled={isGeneratingNoReg || !canGenerate}
-                >
-                  {isGeneratingNoReg ? 'Membuat NoReg...' : 'Generate NoReg'}
-                </button>
+                {newBtn}
                 <button
                   className={`px-4 py-2 rounded-lg text-sm font-semibold ${saving || !canRegister ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
                   onClick={handleSubmit}
@@ -723,7 +739,7 @@ const PatientSearchRegister = ({
 };
 
 // BPJS status via PCare
-const BPJSStatusCard = ({ patientInfo }) => {
+const BPJSStatusCard = ({ patientInfo, refreshKey }) => {
   const [mode, setMode] = useState('nik');
   const [value, setValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -735,6 +751,19 @@ const BPJSStatusCard = ({ patientInfo }) => {
   const [srkMeta, setSrkMeta] = useState(null);
   const [srkUrl, setSrkUrl] = useState('');
 
+  // reset state saat tombol Baru ditekan
+  useEffect(() => {
+    setMode('nik');
+    setValue('');
+    setLoading(false);
+    setData(null);
+    setSource('');
+    setSrkLoading(false);
+    setSrkStatus(null);
+    setSrkMeta(null);
+    setSrkUrl('');
+  }, [refreshKey]);
+
   useEffect(() => {
     if (patientInfo?.no_ktp) {
       setMode('nik');
@@ -744,7 +773,6 @@ const BPJSStatusCard = ({ patientInfo }) => {
       setValue(String(patientInfo.no_peserta).trim());
     }
   }, [patientInfo]);
-
   const fetchData = async () => {
     if (!value) return;
     // Validasi sebelum call
@@ -982,8 +1010,49 @@ const CKGStatusCard = ({ patientInfo }) => {
 };
 
 // Patient info card
-const PatientInfoCard = ({ patientInfo }) => {
+const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [penjabOptions, setPenjabOptions] = useState([]);
+  const [posyanduOptions, setPosyanduOptions] = useState([]);
+  const [posyanduAll, setPosyanduAll] = useState([]);
+  const [propinsiOptions, setPropinsiOptions] = useState([]);
+  const [kabupatenOptions, setKabupatenOptions] = useState([]);
+  const [kecamatanOptions, setKecamatanOptions] = useState([]);
+  const [kelurahanOptions, setKelurahanOptions] = useState([]);
+  const [copyAlamatPJ, setCopyAlamatPJ] = useState(true);
+  const [form, setForm] = useState({
+    nm_pasien: '',
+    no_ktp: '',
+    no_kk: '',
+    tgl_lahir: '',
+    jk: '',
+    tmp_lahir: '',
+    nm_ibu: '',
+    gol_darah: '',
+    agama: '',
+    pnd: '',
+    keluarga: '',
+    namakeluarga: '',
+    status: '',
+    stts_nikah: '',
+    pekerjaan: '',
+    kd_pj: '',
+    no_peserta: '',
+    no_tlp: '',
+    alamat: '',
+    kd_prop: '',
+    kd_kab: '',
+    kd_kec: '',
+    kd_kel: '',
+    alamatpj: '',
+    kelurahanpj: '',
+    kecamatanpj: '',
+    kabupatenpj: '',
+    data_posyandu: '',
+  });
   const toggleBtn = (
     <button
       onClick={() => setCollapsed((v) => !v)}
@@ -993,36 +1062,314 @@ const PatientInfoCard = ({ patientInfo }) => {
     </button>
   );
 
+  const statusOptions = [
+    'Kepala Keluarga','Suami','Istri','Anak','Menantu','Orang tua','Mertua','Pembantu','Famili Lain','Lainnya'
+  ].map((v) => ({ value: v, label: v }));
+  const nikahOptions = [
+    'MENIKAH','BELUM MENIKAH','JANDA','DUDHA','JOMBLO'
+  ].map((v) => ({ value: v, label: v }));
+  const pekerjaanOptions = [
+    'Belum/Tidak Bekerja','Pelajar','Mahasiswa','Ibu Rumah Tangga','TNI','POLRI','ASN (Kantor Pemerintah)','Pegawai Swasta','Wiraswasta/Pekerja Mandiri','Pensiunan','Pejabat Negara / Pejabat Daerah','Pengusaha','Dokter','Bidan','Perawat','Apoteker','Psikolog','Tenaga Kesehatan Lainnya','Dosen','Guru','Peneliti','Pengacara','Notaris','Hakim/Jaksa/Tenaga Peradilan Lainnya','Akuntan','Insinyur','Arsitek','Konsultan','Wartawan','Pedagang','Petani / Pekebun','PETANI/PEKEBUN','Nelayan / Perikanan','Peternak','Tokoh Agama','Juru Masak','Pelaut','Sopir','Pilot','Masinis','Atlet','Pekerja Seni','Penjahit / Perancang Busana','Karyawan kantor / Pegawai Administratif','Teknisi / Mekanik','Pekerja Pabrik / Buruh','Pekerja Konstruksi','Pekerja Pertukangan','Pekerja Migran','Lainnya'
+  ].map((v) => ({ value: v, label: v }));
+  const jkOptions = ['L','P'].map((v)=>({ value: v, label: v==='L' ? 'Laki-laki' : 'Perempuan' }));
+  const golDarahOptions = ['A','B','AB','O','Tidak diketahui'].map((v)=>({ value: v, label: v }));
+  const agamaOptions = ['Islam','Kristen','Katholik','Hindu','Buddha','Konghucu','Lainnya'].map((v)=>({ value: v, label: v }));
+  const pndOptions = ['Tidak sekolah','SD','SMP','SMA','D1','D2','D3','S1','S2','S3'].map((v)=>({ value: v, label: v }));
+  const keluargaOptions = ['AYAH','IBU','ISTRI','SUAMI','SAUDARA','ANAK','DIRI SENDIRI','LAIN-LAIN'].map((v)=>({ value: v, label: v }));
+
+  const openEditModal = async () => {
+    if (!patientInfo) return;
+    setEditOpen(true);
+    setLoadingEdit(true);
+    try {
+      const r = await fetch(`/pasien/${enc(patientInfo.no_rkm_medis)}`);
+      const d = await r.json();
+      setForm({
+        nm_pasien: d?.nm_pasien || '',
+        no_ktp: d?.no_ktp || '',
+        no_kk: d?.no_kk || '',
+        tgl_lahir: String(d?.tgl_lahir || '').split(' ')[0],
+        jk: d?.jk || '',
+        tmp_lahir: d?.tmp_lahir || '',
+        nm_ibu: d?.nm_ibu || '',
+        gol_darah: d?.gol_darah || '',
+        agama: d?.agama || '',
+        pnd: d?.pnd || '',
+        keluarga: d?.keluarga || '',
+        namakeluarga: d?.namakeluarga || '',
+        status: d?.status || '',
+        stts_nikah: d?.stts_nikah || '',
+        pekerjaan: d?.pekerjaan || '',
+        kd_pj: d?.kd_pj || '',
+        no_peserta: d?.no_peserta || '',
+        no_tlp: d?.no_tlp || '',
+        alamat: d?.alamat || '',
+        kd_prop: d?.kd_prop || '',
+        kd_kab: d?.kd_kab || '',
+        kd_kec: d?.kd_kec || '',
+        kd_kel: d?.kd_kel || '',
+        alamatpj: d?.alamatpj || '',
+        kelurahanpj: d?.kelurahanpj || '',
+        kecamatanpj: d?.kecamatanpj || '',
+        kabupatenpj: d?.kabupatenpj || '',
+        data_posyandu: d?.data_posyandu || '',
+      });
+      const pj = await fetch('/api/penjab').then((x) => x.json());
+      setPenjabOptions(Array.isArray(pj) ? pj : []);
+      const pos = await fetch('/api/data-posyandu').then((x) => x.json());
+      setPosyanduAll(Array.isArray(pos) ? pos : []);
+
+      // preload wilayah options based on existing codes
+      const prop = await fetch('/propinsi').then((x) => x.json()).catch(() => []);
+      const propArr = Array.isArray(prop) ? prop : (Array.isArray(prop?.data) ? prop.data : []);
+      setPropinsiOptions(propArr.map((p) => ({ value: p.kd_prop, label: p.nm_prop })));
+      if (d?.kd_prop) {
+        const kab = await fetch(`/kabupaten?kd_prop=${encodeURIComponent(d.kd_prop)}`).then((x) => x.json()).catch(() => []);
+        const kabArr = Array.isArray(kab) ? kab : (Array.isArray(kab?.data) ? kab.data : []);
+        setKabupatenOptions(kabArr.map((k) => ({ value: k.kd_kab, label: k.nm_kab })));
+      } else {
+        setKabupatenOptions([]);
+      }
+      if (d?.kd_kab) {
+        const kec = await fetch(`/kecamatan?kd_kab=${encodeURIComponent(d.kd_kab)}`).then((x) => x.json()).catch(() => []);
+        const kecArr = Array.isArray(kec) ? kec : (Array.isArray(kec?.data) ? kec.data : []);
+        setKecamatanOptions(kecArr.map((k) => ({ value: k.kd_kec, label: k.nm_kec })));
+      } else {
+        setKecamatanOptions([]);
+      }
+      if (d?.kd_kec) {
+        const kel = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(d.kd_kec)}`).then((x) => x.json()).catch(() => []);
+        const kelArr = Array.isArray(kel) ? kel : (Array.isArray(kel?.data) ? kel.data : []);
+        setKelurahanOptions(kelArr.map((k) => ({ value: k.kd_kel, label: k.nm_kel })));
+      } else {
+        setKelurahanOptions([]);
+      }
+
+      // filter posyandu by kelurahan name when available
+      const nmKelLabel = Array.isArray(kelurahanOptions) ? kelurahanOptions.find((o) => String(o.value) === String(d?.kd_kel))?.label : undefined;
+      const posOpts = (Array.isArray(pos) ? pos : [])
+        .filter((p) => {
+          const desa = String(p?.desa ?? '').trim();
+          const nmKel = String(nmKelLabel ?? '').trim();
+          return !nmKel || (desa && desa.toLowerCase() === nmKel.toLowerCase());
+        })
+        .map((p) => ({ value: p.nama_posyandu, label: p.nama_posyandu }));
+      setPosyanduOptions(posOpts);
+    } catch (e) {
+      console.error('openEditModal error', e);
+      notify && notify({ type: 'error', title: 'Gagal memuat data pasien', description: e?.message || 'Terjadi kesalahan saat memuat data.' });
+      setEditOpen(false);
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  // Dependent wilayah loaders when user changes selection
+  useEffect(() => {
+    if (!editOpen) return;
+    // Load kabupaten when propinsi changes
+    if (!form.kd_prop) {
+      setKabupatenOptions([]);
+      setKecamatanOptions([]);
+      setKelurahanOptions([]);
+      return;
+    }
+    fetch(`/kabupaten?kd_prop=${encodeURIComponent(form.kd_prop)}`)
+      .then((r) => r.json())
+      .then((kab) => setKabupatenOptions((Array.isArray(kab) ? kab : (Array.isArray(kab?.data) ? kab.data : [])).map((k) => ({ value: k.kd_kab, label: k.nm_kab }))))
+      .catch(() => setKabupatenOptions([]));
+  }, [form.kd_prop, editOpen]);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    // Load kecamatan when kabupaten changes
+    if (!form.kd_kab) { setKecamatanOptions([]); setKelurahanOptions([]); return; }
+    fetch(`/kecamatan?kd_kab=${encodeURIComponent(form.kd_kab)}`)
+      .then((r) => r.json())
+      .then((kec) => setKecamatanOptions((Array.isArray(kec) ? kec : (Array.isArray(kec?.data) ? kec.data : [])).map((k) => ({ value: k.kd_kec, label: k.nm_kec }))))
+      .catch(() => setKecamatanOptions([]));
+  }, [form.kd_kab, editOpen]);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    // Load kelurahan when kecamatan changes
+    if (!form.kd_kec) { setKelurahanOptions([]); return; }
+    fetch(`/kelurahan?kd_kec=${encodeURIComponent(form.kd_kec)}`)
+      .then((r) => r.json())
+      .then((kel) => setKelurahanOptions(Array.isArray(kel) ? kel.map((k) => ({ value: k.kd_kel, label: k.nm_kel })) : []))
+      .catch(() => setKelurahanOptions([]));
+  }, [form.kd_kec, editOpen]);
+
+  // Filter posyandu by selected kelurahan (desa)
+  useEffect(() => {
+    const nmKelLabel = kelurahanOptions.find((o) => String(o.value) === String(form.kd_kel))?.label;
+    const opts = (posyanduAll || [])
+      .filter((p) => {
+        const desa = String(p?.desa ?? '').trim();
+        const nmKel = String(nmKelLabel ?? '').trim();
+        return !nmKel || (desa && desa.toLowerCase() === nmKel.toLowerCase());
+      })
+      .map((p) => ({ value: p.nama_posyandu, label: p.nama_posyandu }));
+    setPosyanduOptions(opts);
+  }, [posyanduAll, kelurahanOptions, form.kd_kel]);
+
+  // Auto-sync PJ fields with patient's fields while checkbox is checked
+  useEffect(() => {
+    if (!copyAlamatPJ) return;
+    const kabLabel = kabupatenOptions.find((o) => String(o.value) === String(form.kd_kab))?.label || '';
+    const kecLabel = kecamatanOptions.find((o) => String(o.value) === String(form.kd_kec))?.label || '';
+    const kelLabel = kelurahanOptions.find((o) => String(o.value) === String(form.kd_kel))?.label || '';
+    setForm((s) => ({
+      ...s,
+      alamatpj: s.alamat || '',
+      kabupatenpj: kabLabel,
+      kecamatanpj: kecLabel,
+      kelurahanpj: kelLabel,
+    }));
+  }, [copyAlamatPJ, form.alamat, form.kd_kab, form.kd_kec, form.kd_kel, kabupatenOptions, kecamatanOptions, kelurahanOptions]);
+
+  const submitEdit = async () => {
+    if (!patientInfo) return;
+    const rm = String(patientInfo?.no_rkm_medis ?? '').trim();
+    if (!rm) {
+      notify && notify({ type: 'error', title: 'No. RM tidak tersedia', description: 'Tidak dapat menyimpan, No. Rekam Medis kosong atau tidak valid.' });
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const fd = new FormData();
+      Object.entries(form || {}).forEach(([k, v]) => fd.append(k, v ?? ''));
+      fd.append('_method', 'PUT');
+      fd.append('_token', csrfToken);
+
+      const resp = await fetch(`/data-pasien/${enc(rm)}`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: fd,
+      });
+      if (!resp.ok) {
+        let msg = 'Gagal menyimpan data pasien';
+        try { const j = await resp.json(); msg = j?.message || msg; } catch {}
+        notify && notify({ type: 'error', title: 'Simpan gagal', description: msg });
+        return;
+      }
+      const refreshed = await fetch(`/api/pasien/detail/${enc(rm)}`).then((x) => x.json());
+      if (refreshed?.data) {
+        setPatientInfo && setPatientInfo(refreshed.data);
+      }
+      notify && notify({ type: 'success', title: 'Data pasien diperbarui', description: 'Perubahan tersimpan.' });
+      setEditOpen(false);
+    } catch (e) {
+      console.error('submitEdit error', e);
+      notify && notify({ type: 'error', title: 'Error', description: e?.message || 'Gagal mengirim data.' });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   return (
     <Card title="Informasi Pasien" headerRight={toggleBtn}>
       {collapsed ? null : (
         !patientInfo ? (
           <div className="text-xs text-slate-500">Belum ada pasien dipilih.</div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="text-slate-600">No RM:</div>
-            <div className="font-medium text-slate-800">{patientInfo.no_rkm_medis}</div>
-            <div className="text-slate-600">Nama:</div>
-            <div className="font-medium text-slate-800">{patientInfo.nm_pasien}</div>
-            <div className="text-slate-600">NIK:</div>
-            <div className="font-medium text-slate-800">{patientInfo.no_ktp || '-'}</div>
-            <div className="text-slate-600">JK:</div>
-            <div className="font-medium text-slate-800">{patientInfo.jk}</div>
-            <div className="text-slate-600">Tgl Lahir:</div>
-            <div className="font-medium text-slate-800">{patientInfo.tgl_lahir}</div>
-            <div className="text-slate-600">No BPJS:</div>
-            <div className="font-medium text-slate-800">{patientInfo.no_peserta || '-'}</div>
-            <div className="text-slate-600">Telp:</div>
-            <div className="font-medium text-slate-800">{patientInfo.no_tlp || '-'}</div>
-            <div className="text-slate-600">Alamat:</div>
-            <div className="font-medium text-slate-800">{patientInfo.alamat || '-'}</div>
-            <div className="text-slate-600">Cara Bayar:</div>
-            <div className="font-medium text-slate-800">{patientInfo.png_jawab || '-'}</div>
-            <div className="text-slate-600">Umur:</div>
-            <div className="font-medium text-slate-800">{patientInfo.umur || '-'}</div>
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-slate-600">No RM:</div>
+              <div className="font-medium text-slate-800">{patientInfo.no_rkm_medis}</div>
+              <div className="text-slate-600">Nama:</div>
+              <div className="font-medium text-slate-800">{patientInfo.nm_pasien}</div>
+              <div className="text-slate-600">NIK:</div>
+              <div className="font-medium text-slate-800">{patientInfo.no_ktp || '-'}</div>
+              <div className="text-slate-600">JK:</div>
+              <div className="font-medium text-slate-800">{patientInfo.jk}</div>
+              <div className="text-slate-600">Tgl Lahir:</div>
+              <div className="font-medium text-slate-800">{patientInfo.tgl_lahir}</div>
+              <div className="text-slate-600">No BPJS:</div>
+              <div className="font-medium text-slate-800">{patientInfo.no_peserta || '-'}</div>
+              <div className="text-slate-600">Telp:</div>
+              <div className="font-medium text-slate-800">{patientInfo.no_tlp || '-'}</div>
+              <div className="text-slate-600">Alamat:</div>
+              <div className="font-medium text-slate-800">{patientInfo.alamat || '-'}</div>
+              <div className="text-slate-600">Cara Bayar:</div>
+              <div className="font-medium text-slate-800">{patientInfo.png_jawab || '-'}</div>
+              <div className="text-slate-600">Umur:</div>
+              <div className="font-medium text-slate-800">{patientInfo.umur || '-'}</div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <button onClick={openEditModal} className="px-3 py-2 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs">Ubah Data</button>
+            </div>
+          </>
         )
       )}
+      {editOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
+          <div className="absolute inset-0 bg-black/40 z-[99998]" onClick={() => setEditOpen(false)}></div>
+          <div className="relative z-[99999] bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl border border-slate-200 w-full max-w-2xl p-4 mx-4 md:mx-0 max-h-[85vh] overflow-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div className="text-base font-semibold text-slate-800">Ubah Data Pasien</div>
+              <button className="px-2 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600" onClick={() => setEditOpen(false)}>Tutup</button>
+            </div>
+            {loadingEdit ? (
+              <div className="p-4 text-sm text-slate-600 flex items-center gap-2"><span className="inline-block h-4 w-4 border-2 border-slate-300 border-t-sky-500 rounded-full animate-spin"></span> Memuat data...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
+                <Input label="Nama" value={form.nm_pasien} onChange={(e) => setForm((s) => ({ ...s, nm_pasien: e.target.value }))} />
+                <Input label="NIK" value={form.no_ktp} onChange={(e) => setForm((s) => ({ ...s, no_ktp: e.target.value }))} />
+                <Input label="No. KK" value={form.no_kk} onChange={(e) => setForm((s) => ({ ...s, no_kk: e.target.value }))} />
+                <Select label="JK" options={jkOptions} value={form.jk} onChange={(val) => setForm((s) => ({ ...s, jk: val }))} />
+                <Input label="Tempat Lahir" value={form.tmp_lahir} onChange={(e) => setForm((s) => ({ ...s, tmp_lahir: e.target.value }))} />
+                <Input label="Tgl Lahir" type="date" value={form.tgl_lahir} onChange={(e) => setForm((s) => ({ ...s, tgl_lahir: e.target.value }))} />
+                <Select label="Gol. Darah" options={golDarahOptions} value={form.gol_darah} onChange={(val) => setForm((s) => ({ ...s, gol_darah: val }))} />
+                <Select label="Agama" options={agamaOptions} value={form.agama} onChange={(val) => setForm((s) => ({ ...s, agama: val }))} />
+                <Input label="Nama Ibu" value={form.nm_ibu} onChange={(e) => setForm((s) => ({ ...s, nm_ibu: e.target.value }))} />
+                <Select label="Pendidikan" options={pndOptions} value={form.pnd} onChange={(val) => setForm((s) => ({ ...s, pnd: val }))} />
+                <Select label="Keluarga" options={keluargaOptions} value={form.keluarga} onChange={(val) => setForm((s) => ({ ...s, keluarga: val }))} />
+                <Input label="Nama Keluarga" value={form.namakeluarga} onChange={(e) => setForm((s) => ({ ...s, namakeluarga: e.target.value }))} />
+                <Select label="Status" options={statusOptions} value={form.status} onChange={(val) => setForm((s) => ({ ...s, status: val }))} />
+                <Select label="Status Nikah" options={nikahOptions} value={form.stts_nikah} onChange={(val) => setForm((s) => ({ ...s, stts_nikah: val }))} />
+                <Select label="Pekerjaan" options={pekerjaanOptions} value={form.pekerjaan} onChange={(val) => setForm((s) => ({ ...s, pekerjaan: val }))} />
+                <Select label="Penjab" options={penjabOptions} value={form.kd_pj} onChange={(val) => setForm((s) => ({ ...s, kd_pj: val }))} />
+                <Input label="No. Peserta BPJS" value={form.no_peserta} onChange={(e) => setForm((s) => ({ ...s, no_peserta: e.target.value }))} />
+                <Input label="Telp" value={form.no_tlp} onChange={(e) => setForm((s) => ({ ...s, no_tlp: e.target.value }))} />
+                <label className="block md:col-span-2">
+                  <span className="text-xs font-medium text-slate-600">Alamat</span>
+                  <textarea className="mt-1 w-full rounded-xl border border-slate-300/80 bg-white/95 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 shadow-inner transition-all duration-200" rows={3} value={form.alamat} onChange={(e) => setForm((s) => ({ ...s, alamat: e.target.value }))}></textarea>
+                </label>
+                <Select label="Propinsi" options={propinsiOptions} value={form.kd_prop} onChange={(val) => setForm((s) => ({ ...s, kd_prop: val, kd_kab: '', kd_kec: '', kd_kel: '' }))} />
+                <Select label="Kabupaten" options={kabupatenOptions} value={form.kd_kab} onChange={(val) => setForm((s) => ({ ...s, kd_kab: val, kd_kec: '', kd_kel: '' }))} />
+                <Select label="Kecamatan" options={kecamatanOptions} value={form.kd_kec} onChange={(val) => setForm((s) => ({ ...s, kd_kec: val, kd_kel: '' }))} />
+                <Select label="Kelurahan" options={kelurahanOptions} value={form.kd_kel} onChange={(val) => setForm((s) => ({ ...s, kd_kel: val }))} />
+                <label className="block md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600">Alamat Penanggung Jawab</span>
+                    <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={copyAlamatPJ}
+                        onChange={(e) => setCopyAlamatPJ(e.target.checked)}
+                      />
+                      <span>Samakan dengan Alamat pasien</span>
+                    </label>
+                  </div>
+                  <textarea className="mt-1 w-full rounded-xl border border-slate-300/80 bg-white/95 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 shadow-inner transition-all duration-200" rows={2} value={form.alamatpj} onChange={(e) => setForm((s) => ({ ...s, alamatpj: e.target.value }))}></textarea>
+                </label>
+                <Input label="Kelurahan PJ" value={form.kelurahanpj} onChange={(e) => setForm((s) => ({ ...s, kelurahanpj: e.target.value }))} />
+                <Input label="Kecamatan PJ" value={form.kecamatanpj} onChange={(e) => setForm((s) => ({ ...s, kecamatanpj: e.target.value }))} />
+                <Input label="Kabupaten PJ" value={form.kabupatenpj} onChange={(e) => setForm((s) => ({ ...s, kabupatenpj: e.target.value }))} />
+                <Select label="Posyandu" options={posyanduOptions} value={form.data_posyandu} onChange={(val) => setForm((s) => ({ ...s, data_posyandu: val }))} />
+              </div>
+            )}
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <button className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs" onClick={() => setEditOpen(false)} disabled={savingEdit}>Batal</button>
+              <button className={`px-3 py-2 rounded-lg text-xs ${savingEdit ? 'bg-sky-200 text-slate-600' : 'bg-sky-600 hover:bg-sky-700 text-white'}`} onClick={submitEdit} disabled={savingEdit}>
+                {savingEdit ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+       )}
     </Card>
   );
 };
@@ -1101,8 +1448,89 @@ const TodayRegistrationTable = ({ date, kdPoli }) => {
   );
 };
 
+// Mini cards untuk statistik hari ini (di bawah Registrasi Pasien)
+const StatBadge = ({ label, value, color = 'bg-indigo-50 border-indigo-200 text-indigo-700' }) => (
+  <motion.div
+    className={`rounded-xl border ${color} p-3 flex items-center justify-between shadow-sm`}
+    initial={{ opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+  >
+    <div className="text-xs font-medium truncate pr-2">{label}</div>
+    <div className="text-lg font-bold tabular-nums">{value}</div>
+  </motion.div>
+);
+
+const TodayStatsCards = ({ date, kdPoli = '' }) => {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ckgCount, setCkgCount] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    // Ringkasan harian selalu mengambil semua poli (abaikan filter kdPoli)
+    api.todayRegs(date, '')
+      .then((resp) => {
+        if (!mounted) return;
+        const data = resp?.data || [];
+        setRows(data);
+        setCkgCount(Number(resp?.ckg_count ?? 0));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, [date]);
+
+  const { total, kl2, kl3, kl4, kl5, pasienBPJS, pasienUmum } = useMemo(() => {
+    const total = rows.length;
+    let kl2 = 0, kl3 = 0, kl4 = 0, kl5 = 0;
+    let pasienBPJS = 0, pasienUmum = 0;
+    rows.forEach((r) => {
+      const kdPoli = String(r?.kd_poli || '').toUpperCase();
+      if (kdPoli === 'K2') kl2 += 1;
+      else if (kdPoli === 'K3') kl3 += 1;
+      else if (kdPoli === 'K4') kl4 += 1;
+      else if (kdPoli === 'K5') kl5 += 1;
+
+      const kdPj = String(r?.kd_pj || '').toUpperCase();
+      const isBPJS = kdPj === 'BPJ' || kdPj === 'PBI';
+      const isExcluded = kdPj === 'BPJ' || kdPj === 'PBI' || kdPj === 'NON';
+      if (isBPJS) pasienBPJS += 1;
+      else if (!isExcluded) pasienUmum += 1;
+    });
+    return { total, kl2, kl3, kl4, kl5, pasienBPJS, pasienUmum };
+  }, [rows]);
+
+  return (
+    <Card className="">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <StatBadge label="Total Registrasi Hari Ini" value={loading ? '…' : total} color="bg-amber-50 border-amber-200 text-amber-800" />
+        <StatBadge label="Klaster 2" value={loading ? '…' : kl2} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 3" value={loading ? '…' : kl3} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 4" value={loading ? '…' : kl4} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 5" value={loading ? '…' : kl5} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Pasien BPJS" value={loading ? '…' : pasienBPJS} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
+        <StatBadge label="Pasien Umum" value={loading ? '…' : pasienUmum} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
+        <StatBadge label="Sudah CKG" value={loading ? '…' : ckgCount} color="bg-indigo-50 border-indigo-200 text-indigo-800" />
+      </div>
+    </Card>
+  );
+};
+
 export default function RegPeriksaPage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const getTodayLocalISO = () => {
+    try {
+      return new Date().toLocaleDateString('en-CA');
+    } catch (e) {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
+    }
+  };
+  const today = getTodayLocalISO();
   const [date, setDate] = useState(today);
   const [poliklinik, setPoliklinikState] = useState({ options: [], value: '' });
   const [dokter, setDokterState] = useState({ options: [], value: '' });
@@ -1116,6 +1544,10 @@ export default function RegPeriksaPage() {
       setToasts((s) => s.filter((t) => t.id !== id));
     }, 4000);
   };
+
+  // tombol Baru perlu me-refresh kartu BPJS
+  const [bpjsRefreshKey, setBpjsRefreshKey] = useState(0);
+  const triggerBpjsRefresh = () => setBpjsRefreshKey((k) => k + 1);
 
   useEffect(() => {
     api.poliklinik().then((r) => setPoliklinikState((s) => ({ ...s, options: r || [] })));
@@ -1156,6 +1588,8 @@ export default function RegPeriksaPage() {
           Menu Registrasi Pasien
         </motion.h1> */}
         <div className="grid grid-cols-1 gap-4">
+          {/* Registrasi Pasien - Ringkasan Hari Ini (dipindahkan ke atas) */}
+          <TodayStatsCards date={date} kdPoli={poliklinik.value} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
@@ -1174,13 +1608,15 @@ export default function RegPeriksaPage() {
                 setPatientInfo={setPatientInfo}
                 patientInfo={patientInfo}
                 notify={notify}
+                refreshBpjs={triggerBpjsRefresh}
               />
             </div>
             <div className="space-y-4">
               <CKGStatusCard patientInfo={patientInfo} />
-          <BPJSStatusCard patientInfo={patientInfo} />
+          <BPJSStatusCard patientInfo={patientInfo} refreshKey={bpjsRefreshKey} />
             </div>
           </div>
+
           <TodayRegistrationTable date={date} kdPoli={poliklinik.value} />
         </div>
       </div>

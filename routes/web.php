@@ -166,6 +166,10 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::put('/{no_rkm_medis}', [App\Http\Controllers\PasienController::class, 'update'])->name('pasien.update');
         Route::get('/export', [App\Http\Controllers\PasienController::class, 'export'])->name('pasien.export');
         Route::get('/cetak', [App\Http\Controllers\PasienController::class, 'cetak'])->name('pasien.cetak');
+        // Tambahkan route show agar GET /data-pasien/{no_rkm_medis} tidak 405
+        Route::get('/{no_rkm_medis}', [App\Http\Controllers\PasienController::class, 'show'])
+            ->where('no_rkm_medis', '[0-9\\.]+')
+            ->name('pasien.show.inprefix');
     });
     
     // Route untuk detail pasien (diluar prefix data-pasien agar tidak bentrok)
@@ -408,11 +412,13 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
             ->select(
                 'reg_periksa.no_reg',
                 'reg_periksa.no_rawat',
+                'pasien.no_rkm_medis',
                 'pasien.nm_pasien',
                 'poliklinik.nm_poli',
                 'poliklinik.kd_poli',
                 'dokter.nm_dokter',
                 'penjab.png_jawab',
+                'reg_periksa.kd_pj',
                 'reg_periksa.jam_reg',
                 'reg_periksa.stts'
             )
@@ -425,7 +431,17 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
 
         $rows = $query->get();
 
-        return response()->json(['data' => $rows]);
+        // Hitung jumlah pasien yang sudah CKG berdasarkan no_rkm_medis yang muncul di tabel skrining_pkg
+        $nrms = $rows->pluck('no_rkm_medis')->filter()->unique()->values();
+        $ckgCount = 0;
+        if ($nrms->count() > 0) {
+            $ckgCount = DB::table('skrining_pkg')
+                ->whereIn('no_rkm_medis', $nrms)
+                ->distinct()
+                ->count('no_rkm_medis');
+        }
+
+        return response()->json(['data' => $rows, 'ckg_count' => $ckgCount]);
     })->name('api.regperiksa.today');
     
     // Route untuk Livewire generateNoReg

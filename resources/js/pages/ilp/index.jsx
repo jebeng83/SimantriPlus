@@ -145,15 +145,22 @@ const cardVariants = {
 
 export default function IlpMenu() {
   return (
-    <div className="w-full">
+    <div className="relative w-full min-h-[calc(100vh-140px)]">
+      {/* Decorative background */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-gradient-to-br from-fuchsia-300 via-pink-300 to-orange-300 opacity-30 blur-3xl" />
+        <div className="absolute -bottom-28 -right-28 w-[28rem] h-[28rem] rounded-full bg-gradient-to-tr from-sky-300 via-cyan-300 to-emerald-300 opacity-30 blur-[100px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[45rem] h-40 bg-gradient-to-r from-indigo-200 via-violet-200 to-pink-200 opacity-40 blur-2xl rounded-full" />
+      </div>
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Menu ILP</h1>
-          <p className="text-sm text-slate-500">Akses cepat ke fitur utama ILP</p>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 via-sky-600 to-emerald-600 bg-clip-text text-transparent">Menu ILP</h1>
+          <p className="text-sm text-slate-600">Akses cepat ke fitur utama ILP</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-slate-100 to-slate-200 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm border border-slate-200/60">
             v1.0
           </span>
         </div>
@@ -171,34 +178,19 @@ export default function IlpMenu() {
             href={item.href}
             key={item.key}
             variants={cardVariants}
-            whileHover={{ y: -4, scale: 1.02 }}
+            whileHover={{ y: -3, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="group relative block w-full min-h-[120px] overflow-hidden rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm hover:shadow-md backdrop-blur-sm transition-colors hover:border-slate-300"
+            className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:shadow-md min-h-[120px]"
           >
-            {/* Accent gradient bar */}
-            <div className={`absolute inset-x-0 top-0 h-1 z-10 rounded-t-xl bg-gradient-to-r ${item.gradient}`} />
-
-            {/* Icon */}
-            <div className={`relative z-10 inline-flex items-center justify-center rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-md`} style={{ width: 42, height: 42 }}>
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-md`}>
               {item.icon}
             </div>
-
-            {/* Texts */}
-            <div className="mt-3 relative z-10">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">{item.title}</h3>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M9 5l7 7-7 7" />
-                </svg>
+            <div className="mt-3">
+              <div className="text-slate-800 font-semibold leading-tight">
+                {item.title} <span className="text-slate-400">›</span>
               </div>
-              <p className="mt-1 text-xs text-slate-500">{item.desc}</p>
+              <div className="text-slate-500 text-sm">{item.desc}</div>
             </div>
-
-            {/* Subtle hover glow (di belakang konten) */}
-            <div
-              className={`pointer-events-none absolute inset-0 z-0 rounded-xl opacity-0 group-hover:opacity-20 transition duration-300 bg-gradient-to-r ${item.gradient} blur-md`}
-              aria-hidden="true"
-            />
           </motion.a>
         ))}
       </motion.div>
