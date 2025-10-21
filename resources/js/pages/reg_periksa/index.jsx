@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 
@@ -75,6 +75,7 @@ const api = {
     return { success: false, message: 'Invalid JSON response', raw: text };
   }),
   storeReg: (payload) => fetch('/regperiksa/store', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
+  deleteReg: (no_rawat) => fetch('/regperiksa/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify({ no_rawat }) }).then((r) => r.json()),
   // Tambah: kirim antrean ke BPJS (Mobile JKN)
   bpjsAddAntrean: (data) =>
     fetch('/api/antrean/add', {
@@ -121,6 +122,13 @@ const api = {
     const qs = params.toString();
     return fetch(`/api/bpjs/srk-status${qs ? `?${qs}` : ''}`).then((r) => r.json());
   },
+  // Antri Pendaftaran (tabel antripendaftaran_nomor)
+  antriNext: (date) => fetch(`/api/antripendaftaran/next?date=${encodeURIComponent(date)}`).then((r) => r.json()),
+  antriStats: (date) => fetch(`/api/antripendaftaran/stats?date=${encodeURIComponent(date)}`).then((r) => r.json()),
+  antriCall: (payload) => fetch('/api/antripendaftaran/call', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
+  antriRecall: (payload) => fetch('/api/antripendaftaran/recall', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
+  // Setting Rumah Sakit (untuk header label)
+  hospitalInfo: () => fetch('/api/setting/hospital-info').then((r) => r.json()),
 };
 
 // UI helpers
@@ -205,6 +213,7 @@ const PatientSearchRegister = ({
   patientInfo,
   notify,
   refreshBpjs,
+  bpjsRefreshKey,
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -592,7 +601,7 @@ const PatientSearchRegister = ({
   return (
     <>
       <Card title="Pencarian Pasien & Form Registrasi">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -603,18 +612,15 @@ const PatientSearchRegister = ({
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <label className="block">
-                <span className="text-xs font-medium text-slate-600 invisible">Spacer</span>
-                <button
-                  type="button"
-                  onClick={() => window.open('/data-pasien/create', '_blank', 'noopener,noreferrer')}
-                  className="mt-1 px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs whitespace-nowrap"
-                  aria-label="Buka halaman pasien baru"
-                  title="Pasien Baru"
-                >
-                  Pasien Baru
-                </button>
-              </label>
+              <button
+                type="button"
+                onClick={() => window.open('/data-pasien/create', '_blank', 'noopener,noreferrer')}
+                className="px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs whitespace-nowrap"
+                aria-label="Buka halaman pasien baru"
+                title="Pasien Baru"
+              >
+                Pasien Baru
+              </button>
             </div>
             <div className="mt-3">
               {loading ? (
@@ -665,18 +671,28 @@ const PatientSearchRegister = ({
             {/* Card Informasi Pasien akan diposisikan pada baris khusus di bawah agar sejajar dengan Form Registrasi */}
           </div>
           <div>
-            {/* Filter yang dipindahkan ke card registrasi */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Filter kolom tengah: Poliklinik dan Cara Bayar sejajar, Dokter di bawah */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               <Select label="Poliklinik" options={poliklinikOptions} value={selectedPoli} onChange={setSelectedPoli} />
-              <Select label="Dokter" options={dokterOptions} value={selectedDokter} onChange={setSelectedDokter} />
               <Select label="Cara Bayar" options={penjabOptions} value={selectedPenjab} onChange={setSelectedPenjab} />
+              <div className="md:col-span-2">
+                <Select label="Dokter" options={dokterOptions} value={selectedDokter} onChange={setSelectedDokter} />
+              </div>
             </div>
           </div>
+          <div>
+            <QueueRegisterCard date={date} notify={notify} />
+          </div>
         </div>
-        {/* Baris khusus untuk menyelaraskan Card Informasi Pasien dan Card Form Registrasi */}
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <div className="h-full">
+        {/* Baris khusus untuk menyelaraskan tiga card: Informasi Pasien, Informasi Status BPJS (PCare), dan Form Registrasi */}
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <div className="h-full space-y-4">
             <PatientInfoCard patientInfo={patientInfo} notify={notify} setPatientInfo={setPatientInfo} />
+            {/* CKG dipindah ke dalam card, di bawah Informasi Pasien */}
+            <CKGStatusCard patientInfo={patientInfo} />
+          </div>
+          <div className="h-full">
+            <BPJSStatusCard patientInfo={patientInfo} refreshKey={bpjsRefreshKey} />
           </div>
           <div className="h-full">
             <Card title={`Form Registrasi — ${date ? new Date(date).toLocaleDateString('id-ID') : ''}`} className="h-full">
@@ -1375,9 +1391,13 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
 };
 
 // Today registration table
-const TodayRegistrationTable = ({ date, kdPoli }) => {
+const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Cetak label modal state
+  const [labelOpen, setLabelOpen] = useState(false);
+  const [labelData, setLabelData] = useState(null);
+  const labelRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -1393,10 +1413,114 @@ const TodayRegistrationTable = ({ date, kdPoli }) => {
 
   useEffect(() => {
     load();
-  }, [date, kdPoli]);
+  }, [date, kdPoli, refreshKey]);
+
+  // Format tanggal lahir ke format Indonesia: DD MMMM YYYY
+  const formatDateInd = (iso) => {
+    try {
+      if (!iso) return '';
+      const s = String(iso).slice(0, 10);
+      const [y, m, d] = s.split('-');
+      const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const mm = Math.max(1, Math.min(12, parseInt(m || '1', 10)));
+      return `${d} ${bulan[mm - 1]} ${y}`;
+    } catch (e) {
+      return String(iso || '');
+    }
+  };
+
+  const handleDelete = async (row) => {
+    const ok = window.confirm(`Yakin hapus registrasi?\nNo.Reg: ${row.no_reg}\nNo.Rawat: ${row.no_rawat}\nPasien: ${row.nm_pasien}`);
+    if (!ok) return;
+    try {
+      const res = await api.deleteReg(row.no_rawat);
+      if (res?.success) {
+        await load();
+      } else {
+        alert(res?.message || 'Gagal menghapus registrasi');
+      }
+    } catch (e) {
+      alert(e?.message || 'Terjadi kesalahan saat menghapus');
+    }
+  };
+
+  const openLabelForRow = async (r) => {
+    const baseData = {
+      fasilitas1: '',
+      fasilitas2: '',
+      fasilitas3: '',
+      nama: r?.nm_pasien || '',
+      rm: r?.no_rkm_medis || r?.no_rm || r?.norm || '',
+      tgl_lahir: '',
+      alamat: '',
+      poli: r?.nm_poli ? `${r.nm_poli}` : '',
+      dokter: r?.nm_dokter || '',
+      tanggal: date || new Date().toLocaleDateString('en-CA'),
+    };
+    // Prefill header dari Setting
+    try {
+      const info = await api.hospitalInfo();
+      if (info && typeof info === 'object') {
+        const name = String(info.name ?? info.nama_instansi ?? '').trim();
+        const addr = String(info.address ?? info.alamat_instansi ?? '').trim();
+        const kab = String(info.kabupaten ?? '').trim();
+        const prop = String(info.propinsi ?? '').trim();
+        const phone = String(info.phone ?? info.kontak ?? '').trim();
+        baseData.fasilitas1 = name ? name.toUpperCase() : '';
+        baseData.fasilitas2 = [addr, kab, prop].filter(Boolean).join(', ');
+        baseData.fasilitas3 = phone ? `Telp: ${phone}` : '';
+      }
+    } catch (e) {
+      // abaikan error setting
+    }
+    // Detail pasien
+    try {
+      const rm = baseData.rm;
+      if (rm) {
+        const detailRes = await api.pasienDetail(rm);
+        const d = detailRes?.data ?? detailRes; // API bisa mengembalikan {status, data} atau objek langsung
+        if (d && typeof d === 'object') {
+          baseData.tgl_lahir = d?.tgl_lahir || baseData.tgl_lahir;
+          baseData.alamat = [d?.alamat, d?.kabupaten, d?.kecamatan, d?.kelurahan].filter(Boolean).join(', ') || baseData.alamat;
+          baseData.rm = d?.no_rkm_medis || baseData.rm;
+          baseData.nama = d?.nm_pasien || baseData.nama;
+        }
+      }
+    } catch (e) {}
+    setLabelData(baseData);
+    setLabelOpen(true);
+  };
+
+  const printLabel = () => {
+    const el = labelRef.current;
+    if (!el) return;
+    const content = el.outerHTML;
+    const css = `
+      <style>
+        @page { size: 6cm 4cm; margin: 0; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; }
+      </style>
+    `;
+    const html = `<!doctype html><html><head><meta charset=\"utf-8\"><title>Cetak Label</title>${css}</head><body>${content}</body></html>`;
+    const w = window.open('', 'PRINT', 'width=800,height=600');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); setLabelOpen(false); }, 150);
+  };
+
+  // Auto-print ketika modal label dibuka
+  useEffect(() => {
+    if (!labelOpen) return;
+    const t = setTimeout(() => {
+      try { printLabel(); } catch (e) {}
+    }, 250);
+    return () => clearTimeout(t);
+  }, [labelOpen]);
 
   return (
-    <Card title={`Registrasi Hari Ini (${date})`}>
+    <Card title={`Registrasi Hari Ini (${date})`} headerRight={<div className="text-[11px] text-slate-500">Klik nama pasien untuk cetak label</div>}>
       {loading ? (
         <div className="text-sm text-slate-500">Memuat data...</div>
       ) : (
@@ -1412,12 +1536,13 @@ const TodayRegistrationTable = ({ date, kdPoli }) => {
                 <th className="text-left px-3 py-2">Cara Bayar</th>
                 <th className="text-left px-3 py-2">Jam</th>
                 <th className="text-left px-3 py-2">Status</th>
+                <th className="text-left px-3 py-2">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-4 text-center text-slate-500">
+                  <td colSpan={9} className="px-3 py-4 text-center text-slate-500">
                     Tidak ada data
                   </td>
                 </tr>
@@ -1426,12 +1551,19 @@ const TodayRegistrationTable = ({ date, kdPoli }) => {
                   <tr key={r.no_rawat} className="hover:bg-slate-50">
                     <td className="px-3 py-2 font-mono">{r.no_reg}</td>
                     <td className="px-3 py-2 font-mono">{r.no_rawat}</td>
-                    <td className="px-3 py-2">{r.nm_pasien}</td>
+                    <td className="px-3 py-2">
+                      <button className="text-sky-700 hover:underline" onClick={() => openLabelForRow(r)} title="Cetak Label 6x4">
+                        {r.nm_pasien}
+                      </button>
+                    </td>
                     <td className="px-3 py-2">{r.nm_poli} ({r.kd_poli})</td>
                     <td className="px-3 py-2">{r.nm_dokter}</td>
                     <td className="px-3 py-2">{r.png_jawab}</td>
                     <td className="px-3 py-2">{r.jam_reg}</td>
                     <td className="px-3 py-2">{r.stts}</td>
+                    <td className="px-3 py-2">
+                      <button className="px-2 py-1 rounded-md text-xs bg-red-600 hover:bg-red-700 text-white" title="Hapus registrasi" onClick={() => handleDelete(r)}>Hapus</button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -1444,20 +1576,86 @@ const TodayRegistrationTable = ({ date, kdPoli }) => {
           Refresh
         </button>
       </div>
+
+      {labelOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setLabelOpen(false)}></div>
+          <div className="relative bg-white rounded-xl shadow-lg w-[min(92vw,740px)]">
+            <div className="px-4 py-2 border-b border-slate-200 flex items-center justify-between">
+              <div className="font-semibold text-sm">Cetak Label (6 x 4 cm)</div>
+              <div className="flex items-center gap-2">
+                <button className="px-2 py-1 rounded-md text-xs bg-slate-100 hover:bg-slate-200 text-slate-700" onClick={() => setLabelOpen(false)}>Tutup</button>
+                <button className="px-2 py-1 rounded-md text-xs bg-indigo-600 hover:bg-indigo-700 text-white" onClick={printLabel}>Cetak</button>
+              </div>
+            </div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block mb-2">
+                  <span className="text-xs text-slate-600">Header 1</span>
+                  <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.fasilitas1 || ''} onChange={(e)=>setLabelData((d)=>({ ...d, fasilitas1: e.target.value }))} />
+                </label>
+                <label className="block mb-2">
+                  <span className="text-xs text-slate-600">Header 2</span>
+                  <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.fasilitas2 || ''} onChange={(e)=>setLabelData((d)=>({ ...d, fasilitas2: e.target.value }))} />
+                </label>
+                <label className="block mb-2">
+                  <span className="text-xs text-slate-600">Header 3</span>
+                  <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.fasilitas3 || ''} onChange={(e)=>setLabelData((d)=>({ ...d, fasilitas3: e.target.value }))} />
+                </label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <label className="block">
+                    <span className="text-xs text-slate-600">Tanggal</span>
+                    <input type="date" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.tanggal || ''} onChange={(e)=>setLabelData((d)=>({ ...d, tanggal: e.target.value }))} />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-slate-600">Poli</span>
+                    <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.poli || ''} onChange={(e)=>setLabelData((d)=>({ ...d, poli: e.target.value }))} />
+                  </label>
+                  <label className="block col-span-2">
+                    <span className="text-xs text-slate-600">Dokter</span>
+                    <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm" value={labelData?.dokter || ''} onChange={(e)=>setLabelData((d)=>({ ...d, dokter: e.target.value }))} />
+                  </label>
+                </div>
+              </div>
+              <div className="flex items-start justify-center">
+                <div ref={labelRef} id="printable-label" className="print:shadow-none" style={{ width: '6cm', height: '4cm', padding: '6px', border: '2px solid #0ea5b7', background: 'white' }}>
+                  <div style={{ textAlign: 'center', fontWeight: 600, fontSize: '12px', lineHeight: '12px', marginBottom: '0px' }}>{labelData?.fasilitas1}</div>
+                  <div style={{ textAlign: 'center', fontSize: '11px', lineHeight: '11px', marginBottom: '0px' }}>{labelData?.fasilitas2}</div>
+                  <div style={{ textAlign: 'center', fontSize: '11px', lineHeight: '11px', marginBottom: '0px' }}>{labelData?.fasilitas3}</div>
+                  <div style={{ borderTop: '1px solid #0ea5b7', margin: '3px 0 3px' }}></div>
+                  <div style={{ marginTop: '4px', padding: '4px' }}>
+                    <div style={{ fontSize: '8px', display:'flex' }}><span style={{width:'75px', display:'inline-block'}}>Nama</span><span style={{flex:1, minWidth:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>: {labelData?.nama}</span></div>
+                    <div style={{ fontSize: '8px' }}><span style={{width:'75px', display:'inline-block'}}>No.RM</span><span>: {labelData?.rm}</span></div>
+                    <div style={{ fontSize: '8px' }}><span style={{width:'75px', display:'inline-block'}}>Tgl.Lahir</span><span>: {formatDateInd(labelData?.tgl_lahir)}</span></div>
+                    <div style={{ fontSize: '8px' }}><span style={{width:'75px', display:'inline-block'}}>Alamat</span><span>: {labelData?.alamat}</span></div>
+                    <div style={{ fontSize: '8px' }}><span style={{width:'75px', display:'inline-block'}}>Poli Dituju</span><span>: {labelData?.poli}</span></div>
+                    <div style={{ fontSize: '8px' }}><span style={{width:'75px', display:'inline-block'}}>Dokter</span><span>: {labelData?.dokter}</span></div>
+                    <div style={{ fontSize: '5px' }}><span style={{width:'75px', display:'inline-block'}}>Tanggal</span><span>: {labelData?.tanggal}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>, document.body)}
     </Card>
   );
 };
 
 // Mini cards untuk statistik hari ini (di bawah Registrasi Pasien)
-const StatBadge = ({ label, value, color = 'bg-indigo-50 border-indigo-200 text-indigo-700' }) => (
+const StatBadge = ({ label, value, loading = false, color = 'bg-indigo-50 border-indigo-200 text-indigo-700' }) => (
   <motion.div
-    className={`rounded-xl border ${color} p-3 flex items-center justify-between shadow-sm`}
+    className={`rounded-lg border ${color} p-3 flex items-center justify-between shadow-sm w-full`}
     initial={{ opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+    title={label}
   >
-    <div className="text-xs font-medium truncate pr-2">{label}</div>
-    <div className="text-lg font-bold tabular-nums">{value}</div>
+    <div className="text-xs font-medium pr-2 truncate">{label}</div>
+    {loading ? (
+      <div className="h-5 w-8 bg-slate-200 rounded animate-pulse" aria-label="loading"></div>
+    ) : (
+      <div className="text-xl font-bold tabular-nums">{value}</div>
+    )}
   </motion.div>
 );
 
@@ -1506,16 +1704,143 @@ const TodayStatsCards = ({ date, kdPoli = '' }) => {
 
   return (
     <Card className="">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <StatBadge label="Total Registrasi Hari Ini" value={loading ? '…' : total} color="bg-amber-50 border-amber-200 text-amber-800" />
-        <StatBadge label="Klaster 2" value={loading ? '…' : kl2} color="bg-sky-50 border-sky-200 text-sky-800" />
-        <StatBadge label="Klaster 3" value={loading ? '…' : kl3} color="bg-sky-50 border-sky-200 text-sky-800" />
-        <StatBadge label="Klaster 4" value={loading ? '…' : kl4} color="bg-sky-50 border-sky-200 text-sky-800" />
-        <StatBadge label="Klaster 5" value={loading ? '…' : kl5} color="bg-sky-50 border-sky-200 text-sky-800" />
-        <StatBadge label="Pasien BPJS" value={loading ? '…' : pasienBPJS} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
-        <StatBadge label="Pasien Umum" value={loading ? '…' : pasienUmum} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
-        <StatBadge label="Sudah CKG" value={loading ? '…' : ckgCount} color="bg-indigo-50 border-indigo-200 text-indigo-800" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+        <StatBadge label="Total Registrasi Hari Ini" value={total} loading={loading} color="bg-amber-50 border-amber-200 text-amber-800" />
+        <StatBadge label="Klaster 2" value={kl2} loading={loading} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 3" value={kl3} loading={loading} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 4" value={kl4} loading={loading} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Klaster 5" value={kl5} loading={loading} color="bg-sky-50 border-sky-200 text-sky-800" />
+        <StatBadge label="Pasien BPJS" value={pasienBPJS} loading={loading} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
+        <StatBadge label="Pasien Umum" value={pasienUmum} loading={loading} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
+        <StatBadge label="Sudah CKG" value={ckgCount} loading={loading} color="bg-indigo-50 border-indigo-200 text-indigo-800" />
       </div>
+    </Card>
+  );
+};
+
+// Card Antrian Pendaftaran (samping kanan mini cards)
+const QueueRegisterCard = ({ date, notify }) => {
+  const [nextNumber, setNextNumber] = useState('');
+  const [remaining, setRemaining] = useState(0);
+  const [loket, setLoket] = useState('LOKET 1');
+  const [loading, setLoading] = useState(false);
+  const [calling, setCalling] = useState(false);
+  const [lastCalledNumber, setLastCalledNumber] = useState('');
+  const [recalling, setRecalling] = useState(false);
+
+  const playBell = () => {
+    try {
+      const audio = new Audio('/audio/bell.mp3');
+      audio.play();
+    } catch (e) {
+      // ignore autoplay errors
+    }
+  };
+
+  const loadNext = async () => {
+    try {
+      setLoading(true);
+      const res = await api.antriNext(date);
+      const nomor = res?.nomor ?? res?.next ?? res?.data?.nomor ?? '';
+      const sisa = Number(res?.sisa ?? res?.remaining ?? res?.data?.sisa ?? 0);
+      setNextNumber(String(nomor || ''));
+      setRemaining(Number.isFinite(sisa) ? sisa : 0);
+    } catch (e) {
+      console.error('Gagal memuat antrian berikutnya:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (date) loadNext();
+  }, [date]);
+
+  const panggil = async () => {
+    try {
+      setCalling(true);
+      const res = await api.antriCall({ date, loket });
+      const nomorDipanggil = res?.nomor ?? nextNumber;
+      if (res?.success) {
+        setLastCalledNumber(String(nomorDipanggil || ''));
+        notify?.({ type: 'success', title: 'Panggilan antrian', description: `Nomor ${nomorDipanggil} dipanggil (${loket}).` });
+        playBell();
+      } else if (!nomorDipanggil) {
+        notify?.({ type: 'error', title: 'Antrian habis', description: 'Tidak ada nomor antrian tersisa.' });
+      } else {
+        notify?.({ type: 'error', title: 'Gagal memanggil', description: res?.message || 'Terjadi kesalahan.' });
+      }
+      await loadNext();
+    } catch (e) {
+      console.error('Gagal memanggil antrian:', e);
+      notify?.({ type: 'error', title: 'Kesalahan jaringan', description: 'Gagal memanggil antrian.' });
+    } finally {
+      setCalling(false);
+    }
+  };
+
+  const panggilUlang = async () => {
+    if (!lastCalledNumber) {
+      notify?.({ type: 'warning', title: 'Tidak ada nomor terakhir', description: 'Belum ada nomor yang dipanggil.' });
+      return;
+    }
+    try {
+      setRecalling(true);
+      let res = await api.antriRecall({ date, loket, nomor: lastCalledNumber });
+      if (!res?.success) {
+        // Fallback jika endpoint recall belum tersedia
+        res = await api.antriCall({ date, loket, nomor: lastCalledNumber, recall: true, repeat: true });
+      }
+      if (res?.success) {
+        notify?.({ type: 'success', title: 'Panggil ulang', description: `Nomor ${lastCalledNumber} dipanggil ulang (${loket}).` });
+        playBell();
+      } else {
+        notify?.({ type: 'error', title: 'Gagal panggil ulang', description: res?.message || 'Terjadi kesalahan.' });
+      }
+    } catch (e) {
+      console.error('Gagal panggil ulang antrian:', e);
+      notify?.({ type: 'error', title: 'Kesalahan jaringan', description: 'Gagal panggil ulang antrian.' });
+    } finally {
+      setRecalling(false);
+    }
+  };
+
+  return (
+    <Card >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 items-end">
+        <div className="rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-800 p-3">
+          <div className="text-xs font-medium">Nomor Berikutnya</div>
+          <div className="text-xl font-bold mt-1 tabular-nums">{loading ? '…' : (nextNumber || '-')}</div>
+        </div>
+        <div className="rounded-lg border bg-amber-50 border-amber-200 text-amber-800 p-3">
+          <div className="text-xs font-medium">Sisa Antrian</div>
+          <div className="text-xl font-bold mt-1 tabular-nums">{loading ? '…' : remaining}</div>
+        </div>
+        <div className="flex flex-col md:flex-row items-end gap-2">
+          <div className="flex-1">
+            <Select label="Loket" options={["LOKET 1","LOKET 2","LOKET 3"].map((v)=>({ value: v, label: v }))} value={loket} onChange={setLoket} />
+          </div>
+          <button
+            className={`w-full md:w-auto px-3 py-2 rounded-md text-xs font-semibold ${calling ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+            onClick={panggil}
+            disabled={calling}
+          >
+            {calling ? 'Memanggil…' : 'Panggil'}
+          </button>
+          <button
+            className={`w-full md:w-auto px-3 py-2 rounded-md text-xs font-semibold ${(!lastCalledNumber || recalling) ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-amber-600 text-white hover:bg-amber-700'}`}
+            onClick={panggilUlang}
+            disabled={!lastCalledNumber || recalling}
+            title={lastCalledNumber ? `Panggil ulang nomor ${lastCalledNumber}` : 'Belum ada nomor dipanggil'}
+          >
+            {recalling ? 'Memanggil ulang…' : 'Panggil Ulang'}
+          </button>
+        </div>
+      </div>
+      {!!lastCalledNumber && (
+        <div className="mt-2 text-xs text-slate-600">Terakhir dipanggil: <span className="font-semibold">{lastCalledNumber}</span></div>
+      )}
+      <div className="mt-2 text-[10px] text-slate-500">Sumber: antripendaftaran_nomor (status=0 = belum dipanggil).</div>
     </Card>
   );
 };
@@ -1547,6 +1872,7 @@ export default function RegPeriksaPage() {
 
   // tombol Baru perlu me-refresh kartu BPJS
   const [bpjsRefreshKey, setBpjsRefreshKey] = useState(0);
+  const [regRefreshKey, setRegRefreshKey] = useState(0);
   const triggerBpjsRefresh = () => setBpjsRefreshKey((k) => k + 1);
 
   useEffect(() => {
@@ -1588,36 +1914,33 @@ export default function RegPeriksaPage() {
           Menu Registrasi Pasien
         </motion.h1> */}
         <div className="grid grid-cols-1 gap-4">
-          {/* Registrasi Pasien - Ringkasan Hari Ini (dipindahkan ke atas) */}
-          <TodayStatsCards date={date} kdPoli={poliklinik.value} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
-              <PatientSearchRegister
-                date={date}
-                // opsi dan nilai untuk filter yang dipindahkan
-                poliklinikOptions={poliklinik.options}
-                selectedPoli={poliklinik.value}
-                setSelectedPoli={setPoliklinik}
-                dokterOptions={dokter.options}
-                selectedDokter={dokter.value}
-                setSelectedDokter={setDokter}
-                penjabOptions={penjab.options}
-                selectedPenjab={penjab.value}
-                setSelectedPenjab={setPenjab}
-                setPatientInfo={setPatientInfo}
-                patientInfo={patientInfo}
-                notify={notify}
-                refreshBpjs={triggerBpjsRefresh}
-              />
-            </div>
-            <div className="space-y-4">
-              <CKGStatusCard patientInfo={patientInfo} />
-          <BPJSStatusCard patientInfo={patientInfo} refreshKey={bpjsRefreshKey} />
-            </div>
+          {/* Registrasi Pasien - Ringkasan Hari Ini + Antrian Pendaftaran */}
+          <div className="grid grid-cols-1 gap-4">
+            <TodayStatsCards date={date} kdPoli={poliklinik.value} />
           </div>
 
-          <TodayRegistrationTable date={date} kdPoli={poliklinik.value} />
+          {/* Pencarian Pasien & Form Registrasi (full width) */}
+          <PatientSearchRegister
+            date={date}
+            // opsi dan nilai untuk filter yang dipindahkan
+            poliklinikOptions={poliklinik.options}
+            selectedPoli={poliklinik.value}
+            setSelectedPoli={setPoliklinik}
+            dokterOptions={dokter.options}
+            selectedDokter={dokter.value}
+            setSelectedDokter={setDokter}
+            penjabOptions={penjab.options}
+            selectedPenjab={penjab.value}
+            setSelectedPenjab={setPenjab}
+            setPatientInfo={setPatientInfo}
+            patientInfo={patientInfo}
+            notify={notify}
+            refreshBpjs={triggerBpjsRefresh}
+            bpjsRefreshKey={bpjsRefreshKey}
+            onRegistered={() => setRegRefreshKey((k) => k + 1)}
+          />
+
+          <TodayRegistrationTable date={date} kdPoli={poliklinik.value} refreshKey={regRefreshKey} />
         </div>
       </div>
     </div>

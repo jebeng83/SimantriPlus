@@ -17,6 +17,7 @@ use App\Http\Antrol\PanggilAntreanController;
 use App\Http\Controllers\PasienController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\AntriPendaftaranController;
 
 /*
 |--------------------------------------------------------------------------
@@ -494,4 +495,11 @@ Route::get('/bpjs/srk-status', function (Request $request) {
             'message' => 'Terjadi kesalahan: ' . $e->getMessage()
         ], 500);
     }
+});
+
+Route::prefix('antripendaftaran')->group(function () {
+    Route::get('/next', [AntriPendaftaranController::class, 'next']);
+    Route::get('/stats', [AntriPendaftaranController::class, 'stats']);
+    Route::post('/call', [AntriPendaftaranController::class, 'call']);
+    Route::post('/recall', [AntriPendaftaranController::class, 'recall']);
 });

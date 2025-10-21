@@ -187,6 +187,7 @@ Route::middleware(['web', 'loginauth'])->group(function () {
         Route::get('/generate-noreg/{kd_dokter}/{tgl_registrasi}', [App\Http\Controllers\RegPeriksaController::class, 'generateNoReg'])->name('regperiksa.generate-noreg');
         // Endpoint generate norawat untuk kebutuhan UI registrasi
 Route::get('/generate-norawat/{tgl_registrasi}', [App\Http\Controllers\RegPeriksaController::class, 'generateNoRawatApi'])->name('regperiksa.generate-norawat');
+        Route::post('/delete', [App\Http\Controllers\RegPeriksaController::class, 'delete'])->name('regperiksa.delete');
     });
     
     // Route untuk diagnostik
@@ -423,7 +424,8 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
                 'reg_periksa.stts'
             )
             ->where('reg_periksa.tgl_registrasi', '=', $date)
-            ->orderBy('reg_periksa.no_reg', 'asc');
+            ->orderBy('reg_periksa.no_reg', 'desc')
+            ->orderBy('reg_periksa.jam_reg', 'desc');
 
         if (!empty($kdPoli)) {
             $query->where('reg_periksa.kd_poli', '=', $kdPoli);
@@ -443,6 +445,17 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
 
         return response()->json(['data' => $rows, 'ckg_count' => $ckgCount]);
     })->name('api.regperiksa.today');
+    
+    // API: Setting Hospital Info untuk header label
+    Route::get('/api/setting/hospital-info', function() {
+        try {
+            $info = App\Models\Setting::getHospitalInfo();
+            return response()->json($info ?? []);
+        } catch (\Throwable $e) {
+            Log::error('API setting hospital-info error: ' . $e->getMessage());
+            return response()->json(['error' => true, 'message' => 'Gagal mengambil setting rumah sakit'], 500);
+        }
+    })->name('api.setting.hospital-info');
     
     // Route untuk Livewire generateNoReg
     Route::post('/livewire/generate-noreg', function(Illuminate\Http\Request $request) {

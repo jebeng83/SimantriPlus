@@ -22,7 +22,7 @@ class Setting extends Model
         'aktifkan',
         'kode_ppk',
         'kode_ppkinhealth',
-        'kode_ppkemkemkes',
+        'kode_ppkkemenkes',
         'wallpaper',
         'logo'
     ];

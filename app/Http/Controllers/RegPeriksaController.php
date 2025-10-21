@@ -978,4 +978,29 @@ class RegPeriksaController extends Controller
             Log::warning('updateLastRegNumber gagal: ' . $e->getMessage());
         }
     }
+
+    // Hapus data registrasi berdasarkan no_rawat
+    public function delete(Request $request)
+    {
+        try {
+            $input = $request->isJson() ? ($request->json()->all() ?? []) : $request->all();
+            $no_rawat = $input['no_rawat'] ?? null;
+
+            if (!$no_rawat) {
+                return response()->json(['success' => false, 'message' => 'no_rawat wajib'], 422);
+            }
+
+            $row = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
+            if (!$row) {
+                return response()->json(['success' => false, 'message' => 'Data registrasi tidak ditemukan'], 404);
+            }
+
+            DB::table('reg_periksa')->where('no_rawat', $no_rawat)->delete();
+
+            return response()->json(['success' => true, 'message' => 'Registrasi berhasil dihapus']);
+        } catch (\Throwable $e) {
+            Log::error('Gagal menghapus registrasi: ' . $e->getMessage(), ['no_rawat' => $request->input('no_rawat')]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }
