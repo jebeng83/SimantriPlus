@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  class="light-style layout-menu-fixed"
+  dir="ltr"
+  data-theme="theme-default"
+  data-assets-path="assets/"
+  data-template="horizontal-menu-template"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+
+    <title>Antrian</title>
+
+    <meta name="description" content="" />
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="assets/img/favicon/favicon.ico"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="assets/vendor/fonts/fontawesome.css" />
+    <!-- Core CSS -->
+    <link
+      rel="stylesheet"
+      href="assets/css/rtl/core.css"
+      class="template-customizer-core-css"
+    />
+    <link
+      rel="stylesheet"
+      href="assets/vendor/css/rtl/theme-default.css"
+      class="template-customizer-theme-css"
+    />
+    <!-- Vendors CSS -->
+    <link
+      rel="stylesheet"
+      href="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css"
+    />
+    <link
+      rel="stylesheet"
+      href="assets/vendor/libs/typeahead-js/typeahead.css"
+    />
+    
+    <!-- Custom CSS -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #000;
+        font-family: 'Public Sans', sans-serif;
+      }
+      
+      .main-container {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .header {
+        background-color: #fff;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid #00a885;
+      }
+      
+      .logo-container {
+        display: flex;
+        align-items: center;
+      }
+      
+      .logo-container img {
+        height: 40px;
+        margin-right: 10px;
+      }
+      
+      .logo-text {
+        font-size: 28px;
+        font-weight: 700;
+        color: #00a885;
+      }
+      
+      .clock {
+        font-size: 24px;
+        font-weight: 600;
+        color: #444;
+      }
+      
+      .content {
+        flex: 1;
+        background-color: #009478;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .main-display {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 15px;
+        gap: 15px;
+      }
+      
+      .antrian-display {
+        background-color: #007a63;
+        border-radius: 5px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        color: white;
+      }
+      
+      .loket-header {
+        font-size: 40px;
+        font-weight: 700;
+        text-align: center;
+        color: #c4ff00;
+        margin-bottom: 10px;
+      }
+      
+      .antrian-label {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 15px;
+      }
+      
+      .antrian-number {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000;
+        border-radius: 5px;
+        padding: 20px;
+      }
+      
+      .antrian-number span {
+        font-size: 220px;
+        font-weight: 800;
+        color: #c4ff00;
+      }
+      
+      .video-container {
+        border-radius: 5px;
+        overflow: hidden;
+        background-color: #000;
+      }
+      
+      .video-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .footer {
+        background-color: #007a63;
+        padding: 15px;
+        color: white;
+      }
+      
+      .loket-list {
+        display: flex;
+        justify-content: space-between;
+        border-top: 2px solid #00a885;
+        border-bottom: 2px solid #00a885;
+        padding: 10px 0;
+      }
+      
+      .loket-item {
+        text-align: center;
+        flex: 1;
+        border-right: 2px solid #00a885;
+        padding: 0 10px;
+      }
+      
+      .loket-item:last-child {
+        border-right: none;
+      }
+      
+      .loket-name {
+        font-size: 24px;
+        color: #c4ff00;
+        font-weight: 600;
+      }
+      
+      .loket-number {
+        font-size: 32px;
+        color: #c4ff00;
+        font-weight: 700;
+      }
+      
+      .announcement {
+        padding: 10px 0;
+        background-color: #000;
+        margin-top: 15px;
+      }
+      
+      .announcement marquee {
+        font-size: 24px;
+        font-weight: 600;
+        color: #c4ff00;
+      }
+      
+      #nomor {
+        display: none;
+      }
+      
+      #datapoli {
+        display: none;
+      }
+    </style>
+
+    <!-- Helpers -->
+    <script src="assets/vendor/js/helpers.js"></script>
+    <script src="assets/vendor/js/jquery.js"></script>
+  </head>
+
+  <body>
+    <div class="main-container">
+      <div class="header">
+        <div class="logo-container">
+          <span class="logo-text" id="namars">UPT PUSKESMAS KERJO</span>
+        </div>
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+      
+      <div class="content">
+        <div class="main-display">
+          <div class="antrian-display">
+            <div class="loket-header" id="current-loket">LOKET 4</div>
+            <div class="antrian-number">
+              <span id="current-number">D-001</span>
+            </div>
+          </div>
+          
+          <div class="video-container">
+            <video id="myVideo" playsinline autoplay muted></video>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="loket-list" id="loket-list">
+            <div class="loket-item">
+              <div class="loket-name">Loket 1</div>
+              <div class="loket-number">---</div>
+            </div>
+            <div class="loket-item">
+              <div class="loket-name">Loket 2</div>
+              <div class="loket-number">B-002</div>
+            </div>
+            <div class="loket-item">
+              <div class="loket-name">Loket 3</div>
+              <div class="loket-number">C-001</div>
+            </div>
+            <div class="loket-item">
+              <div class="loket-name">Loket 4</div>
+              <div class="loket-number">D-001</div>
+            </div>
+          </div>
+          
+          <div class="announcement">
+            <marquee id="text">PERHATIAN: Pendaftaran Poli tutup jam 11:00 WIB. Terima kasih.</marquee>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hidden elements for compatibility with existing JS -->
+      <div id="nomor"></div>
+      <div id="datapoli"></div>
+    </div>
+
+    <audio id="myAudio" src="assets/notifbell.mp3" preload="auto"></audio>
+
+    <!-- Core JS -->
+    <script src="assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="assets/responsivevoice.js?key=WfWmvaX0"></script>
+    <script>
+    // Initialize responsiveVoice with API key
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof responsiveVoice !== 'undefined') {
+        // Initialize with key
+        responsiveVoice.init("WfWmvaX0");
+        // Warm up
+        responsiveVoice.speak("", "Indonesian Female", { volume: 0 });
+        console.log("ResponsiveVoice initialized");
+      }
+      
+      // Fungsi untuk menghilangkan awalan huruf (A-, B-, C-, D-) dari nomor antrian
+      function formatAntrianNumber(text) {
+        if (!text) return "";
+        return text.replace(/^[A-Z]-/g, '');
+      }
+      
+      // Format semua nomor antrian yang sudah ada pada halaman
+      $('#current-number').text(formatAntrianNumber($('#current-number').text()));
+      
+      $('.loket-item').each(function() {
+        const numberElement = $(this).find('.loket-number');
+        numberElement.text(formatAntrianNumber(numberElement.text()));
+      });
+      
+      // Hook untuk memastikan semua nomor antrian baru yang masuk juga diformat
+      const originalHtml = $.fn.html;
+      $.fn.html = function() {
+        const result = originalHtml.apply(this, arguments);
+        if (arguments.length > 0 && this.hasClass('loket-number')) {
+          const formattedText = formatAntrianNumber(this.text());
+          originalHtml.call(this, formattedText);
+        }
+        return result;
+      };
+    });
+    </script>
+    <script src="app/antrian.js"></script>
+    <script src="assets/vendor/js/theme.js"></script>
+  </body>
+</html>

@@ -54,9 +54,10 @@ class AntriPendaftaranController extends Controller
             ->where('status', '0')
             ->count();
 
+        // Hitung yang sedang dipanggil sesuai skema display (status=2)
         $dipanggil = DB::table('antripendaftaran_nomor')
             ->whereDate('jam', $date)
-            ->where('status', '1')
+            ->where('status', '2')
             ->count();
 
         return response()->json([
@@ -65,6 +66,31 @@ class AntriPendaftaranController extends Controller
             'total' => $total,
             'sisa' => $sisa,
             'dipanggil' => $dipanggil,
+        ]);
+    }
+
+    /**
+     * GET /api/antripendaftaran/current
+     * Ambil nomor yang sedang dipanggil (status=2). Mengembalikan nomor terakhir berdasarkan waktu.
+     */
+    public function current(Request $request): JsonResponse
+    {
+        $date = $request->query('date', now()->toDateString());
+
+        // Ambil nomor terakhir dengan status=2 (dipanggil)
+        $row = DB::table('antripendaftaran_nomor')
+            ->select('nomor', 'loket', 'jam', 'status')
+            ->whereDate('jam', $date)
+            ->where('status', '2')
+            ->orderBy('jam', 'desc')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'nomor' => $row->nomor ?? null,
+            'loket' => $row->loket ?? null,
+            'status' => $row->status ?? null,
         ]);
     }
 
@@ -108,7 +134,7 @@ class AntriPendaftaranController extends Controller
             ]);
         }
 
-        // Normal call: ambil nomor berikutnya jika tidak diberikan, lalu ubah status ke 1
+        // Normal call: ambil nomor berikutnya jika tidak diberikan, lalu ubah status ke 2 (sedang dipanggil)
         if (!$nomor) {
             $row = DB::table('antripendaftaran_nomor')
                 ->select('nomor')
@@ -131,9 +157,8 @@ class AntriPendaftaranController extends Controller
             ->whereDate('jam', $date)
             ->where('nomor', $nomor)
             ->update([
-                'status' => '1',
+                'status' => '2',
                 'loket' => $loket,
-                'updated_at' => now(),
             ]);
 
         if ($updated === 0) {
@@ -157,7 +182,7 @@ class AntriPendaftaranController extends Controller
     /**
      * POST /api/antripendaftaran/recall
      * Panggil ulang nomor terakhir yang sudah dipanggil.
-     * Tidak mengubah status pada tabel (tetap 1), hanya memicu mekanisme panggilan ulang.
+     * Mengubah status menjadi 2 agar display memutar ulang audio.
      * Body: { date: YYYY-MM-DD, loket: string, nomor: string }
      */
     public function recall(Request $request): JsonResponse
@@ -174,8 +199,18 @@ class AntriPendaftaranController extends Controller
             ]);
         }
 
-        // Di sini bisa ditambahkan broadcast event/notifikasi jika diperlukan
-        // Contoh: event(new \App\Events\RecallAntriPendaftaran($date, $nomor, $loket));
+        // Set ulang ke status=2 untuk nomor ini agar display memutar kembali
+        $updated = DB::table('antripendaftaran_nomor')
+            ->whereDate('jam', $date)
+            ->where('nomor', $nomor)
+            ->update([
+                'status' => '2',
+                'loket' => $loket,
+            ]);
+
+        if ($updated === 0) {
+            Log::warning('Recall antrian: tidak ada baris yang diupdate', ['date' => $date, 'nomor' => $nomor]);
+        }
 
         return response()->json([
             'success' => true,
@@ -183,7 +218,7 @@ class AntriPendaftaranController extends Controller
             'nomor' => $nomor,
             'loket' => $loket,
             'recall' => true,
-            'message' => 'Recall triggered (no DB status change)',
+            'message' => 'Recall succeeded (status set to 2)'
         ]);
     }
 }

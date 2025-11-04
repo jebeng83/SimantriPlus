@@ -43,14 +43,27 @@
          align-items: center;
       }
 
-      .bg-gradient {
+      /* Pastikan kontainer React/fallback selalu berada di tengah layar dan cukup ruang */
+      #login-premium-react-root {
+         position: relative;
+         min-height: 100vh;
+         width: 100%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         padding: 16px;
+      }
+
+      .bg-wallpaper {
          position: absolute;
          top: 0;
          left: 0;
          right: 0;
          bottom: 0;
-         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-         clip-path: polygon(0 0, 100% 0, 100% 65%, 0 100%);
+         background-image: url('{{ $wallpaperUrl }}');
+         background-size: cover;
+         background-position: center center;
+         background-repeat: no-repeat;
          z-index: -1;
       }
 
@@ -76,27 +89,27 @@
 
       .login-container {
          width: 100%;
-         max-width: 420px;
-         padding: 40px;
+         max-width: 460px;
+         /* sebelumnya 420px */
+         padding: 32px 24px;
+         /* sebelumnya 40px */
          background-color: var(--card-bg);
-         border-radius: 16px;
-         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+         border-radius: 18px;
+         /* sebelumnya 16px */
+         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+         /* perkuat shadow agar jelas di wallpaper */
          z-index: 10;
          position: relative;
-         backdrop-filter: blur(10px);
-         border: 1px solid rgba(255, 255, 255, 0.2);
-         overflow: hidden;
+         backdrop-filter: saturate(140%) blur(8px);
+         /* kurangi blur agar teks tidak tampak pudar */
+         border: 1px solid rgba(31, 41, 55, 0.12);
+         /* ring lebih halus */
+         overflow: visible;
+         /* hindari cropping efek dekorasi */
       }
 
       .login-container::before {
-         content: "";
-         position: absolute;
-         top: -50%;
-         left: -50%;
-         width: 200%;
-         height: 200%;
-         background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-         z-index: -1;
+         content: none;
       }
 
       .login-header {
@@ -147,7 +160,8 @@
          width: 100%;
          padding: 14px 15px 14px 45px;
          border: 1px solid var(--input-border);
-         border-radius: 8px;
+         border-radius: 10px;
+         /* sedikit lebih bulat agar konsisten */
          background-color: var(--input-bg);
          color: var(--text-dark);
          font-size: 14px;
@@ -259,103 +273,58 @@
 
       @media (max-width: 576px) {
          .login-container {
-            max-width: 90%;
-            padding: 30px 20px;
+            max-width: 92%;
+            /* beri sedikit ruang lebih pada layar kecil */
+            padding: 28px 18px;
+            /* sesuaikan padding agar kompak */
          }
       }
    </style>
+   @if(app()->environment('local', 'development'))
+        @viteReactRefresh
+    @endif
+   @vite('resources/css/app.css')
+   <script type="module">
+      // Fallback preamble: ensure React dev runtime does not crash if the Vite React Refresh preamble is not injected
+      // This must be placed BEFORE app.jsx so that dynamic imports do not throw
+      if (!window.__vite_plugin_react_preamble_installed__) {
+         window.__vite_plugin_react_preamble_installed__ = true;
+         // Provide no-op refresh hooks so plugin runtime is satisfied in non-dev environments
+         window.$RefreshReg$ = () => {};
+         window.$RefreshSig$ = () => (type) => type;
+      }
+   </script>
+   @vite('resources/js/app.jsx')
 </head>
 
 <body>
-   <div class="bg-gradient"></div>
-   <div class="bg-pattern"></div>
+   <div class="bg-wallpaper"></div>
 
-   <div class="login-container">
-      <div class="logo">
-         <img src="{{ asset(config('adminlte.logo_img')) }}" alt="Simantri PLUS">
-      </div>
-
-      <div class="login-header">
-         <h1>Selamat Datang</h1>
-         <p>Silakan masuk untuk melanjutkan</p>
-      </div>
-
-      @error('message')
-      <div class="alert">
-         {{ $message }}
-      </div>
-      @enderror
-
-      <form action="{{ route('customlogin') }}" method="post">
-         @csrf
-         <input type="hidden" name="_token" value="{{ csrf_token() }}">
-
-         <div class="form-group">
-            <label for="username">ID Khanza</label>
-            <div class="input-group">
-               <div class="input-group-prepend">
-                  <i class="fas fa-user-md"></i>
-               </div>
-               <input type="text" id="username" name="username"
-                  class="form-control @error('username') is-invalid @enderror" value="{{ old('username') }}"
-                  placeholder="Masukkan ID Khanza" autofocus>
-               @error('username')
-               <span class="invalid-feedback">
-                  {{ $message }}
-               </span>
-               @enderror
-            </div>
-         </div>
-
-         <div class="form-group">
-            <label for="password">Kata Sandi</label>
-            <div class="input-group">
-               <div class="input-group-prepend">
-                  <i class="fas fa-lock"></i>
-               </div>
-               <input type="password" id="password" name="password"
-                  class="form-control @error('password') is-invalid @enderror" placeholder="Masukkan kata sandi">
-               @error('password')
-               <span class="invalid-feedback">
-                  {{ $message }}
-               </span>
-               @enderror
-            </div>
-         </div>
-
-         <div class="form-group">
-            <label for="poli">Pilih Poliklinik</label>
-            <div class="input-group">
-               <div class="input-group-prepend">
-                  <i class="fas fa-hospital"></i>
-               </div>
-               <select id="poli" name="poli" class="form-control custom-select">
-                  @foreach($poli as $p)
-                  <option value="{{ $p->kd_poli }}">{{ $p->nm_poli }}</option>
-                  @endforeach
-               </select>
-            </div>
-         </div>
-
-         <button type="submit" class="btn btn-primary">
-            <i class="fas fa-sign-in-alt btn-icon"></i>
-            Masuk
-         </button>
-
-         <div class="login-notes">
-            <h4>Catatan Penting:</h4>
-            <ol>
-               <li>Login menggunakan ID masing-masing</li>
-               <li>Pilih POLIKLINIK pilihan Anda</li>
-               <li>Sesi login akan berakhir dalam 30 menit jika tidak ada aktivitas</li>
-            </ol>
-         </div>
-      </form>
-
-      <div class="login-footer">
-         &copy; {{ date('Y') }} Simantri PLUS - Semua Hak Dilindungi
-      </div>
+   <div id="login-premium-react-root" data-action-url="{{ route('customlogin') }}" data-csrf-token="{{ csrf_token() }}"
+      data-logo-url="{{ $logoUrl }}" data-poli='@json($poli)' data-error-message="{{ $errors->first('message') }}"
+      data-old-username="{{ old('username') }}" data-old-poli="{{ old('poli') }}"
+      data-error-username="{{ $errors->first('username') }}" data-error-password="{{ $errors->first('password') }}"
+      data-error-poli="{{ $errors->first('poli') }}">
    </div>
+
+   
+
+   <noscript>
+      <style>
+         .noscript-box {
+            max-width: 480px;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Poppins', sans-serif;
+            color: #111827
+         }
+      </style>
+      <div class="noscript-box">JavaScript dinonaktifkan atau gagal dimuat. Silakan aktifkan JavaScript untuk
+         menggunakan halaman login.</div>
+   </noscript>
 </body>
 
 </html>

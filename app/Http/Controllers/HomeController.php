@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-use Session;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class HomeController extends Controller
 {
@@ -84,31 +83,51 @@ class HomeController extends Controller
 
     private function getPoliklinik($kd_poli)
     {
-        $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
-        if ($poli) {
-            return $poli->nm_poli;
+        try {
+            $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
+            if ($poli) {
+                return $poli->nm_poli;
+            }
+            return 'Poliklinik tidak ditemukan';
+        } catch (\Exception $e) {
+            Log::error('Error getPoliklinik: ' . $e->getMessage());
+            return 'Poliklinik tidak ditemukan';
         }
-        return 'Poliklinik tidak ditemukan';
     }
     
     private function getDokter($kd_dokter)
     {
-        $dokter = DB::table('pegawai')->where('nik', $kd_dokter)->first();
-        if ($dokter) {
-            return $dokter->nama;
+        try {
+            $dokter = DB::table('pegawai')->where('nik', $kd_dokter)->first();
+            if ($dokter) {
+                return $dokter->nama;
+            }
+            return 'Dokter tidak ditemukan';
+        } catch (\Exception $e) {
+            Log::error('Error getDokter: ' . $e->getMessage());
+            return 'Dokter tidak ditemukan';
         }
-        return 'Dokter tidak ditemukan';
     }
     
     public function statistikKunjungan($kd_dokter)
     {
-        $data = DB::table('reg_periksa')
-                    ->where('kd_dokter', $kd_dokter)
-                    ->where('tgl_registrasi', 'like', date('Y').'-%')
-                    ->selectRaw("MONTHNAME (tgl_registrasi) as bulan, COUNT(DISTINCT  no_rawat) as jumlah")
-                    ->groupByRaw("MONTH(tgl_registrasi)")
-                    ->get();
-        return $data;
+        try {
+            $query = DB::table('reg_periksa')
+                ->where('tgl_registrasi', 'like', date('Y') . '-%')
+                ->selectRaw('MONTHNAME(tgl_registrasi) as bulan, COUNT(DISTINCT no_rawat) as jumlah')
+                // Group by both MONTH and MONTHNAME to satisfy ONLY_FULL_GROUP_BY
+                ->groupByRaw('MONTH(tgl_registrasi), MONTHNAME(tgl_registrasi)')
+                ->orderByRaw('MONTH(tgl_registrasi)');
+
+            if (!empty($kd_dokter)) {
+                $query->where('kd_dokter', $kd_dokter);
+            }
+
+            return $query->get();
+        } catch (\Exception $e) {
+            Log::error('Error statistikKunjungan: ' . $e->getMessage());
+            return collect([]);
+        }
     }
 
     public function logout()

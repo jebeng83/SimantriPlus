@@ -100,8 +100,8 @@ return [
 
     'layout_topnav' => null,
     'layout_boxed' => null,
-    'layout_fixed_sidebar' => null,
-    'layout_fixed_navbar' => null,
+    'layout_fixed_sidebar' => true,
+    'layout_fixed_navbar' => true,
     'layout_fixed_footer' => null,
     'layout_dark_mode' => null,
 
@@ -247,17 +247,17 @@ return [
             'icon'        => 'fas fa-fw fa-tags',
             'topnav_right' => true,
         ],
-        // [
-        //     'text'        => 'Award 2025',
-        //     'url'         => '/kerjo-award',
-        //     'icon'        => 'fas fa-fw fa-book',
-        //     'topnav_right' => true,
-        // ],
         [
-            'type'         => 'navbar-search',
-            'text'         => 'search',
+            'text'        => 'Display',
+            'url'         => '/antrian-display',
+            'icon'        => 'fas fa-fw fa-book',
             'topnav_right' => true,
         ],
+        // [
+        //     'type'         => 'navbar-search',
+        //     'text'         => 'search',
+        //     'topnav_right' => true,
+        // ],
         [
             'type'         => 'fullscreen-widget',
             'topnav_right' => true,
@@ -299,6 +299,12 @@ return [
             'text'        => 'Ranap',
             'icon'        => 'fas fa-fw fa-bed',
             'url'         => '/ranap/pasien',
+        ],
+        [
+            'text'        => 'Farmasi',
+            'url'         => '/farmasi',
+            'icon'        => 'fas fa-fw fa-pills',
+            'label_color' => 'success',
         ],
         [
             'text'    => 'Laporan',
@@ -354,11 +360,16 @@ return [
                 ],
             ],
         ],
+        // [
+        //     'text'        => 'Keluar',
+        //     'url'         => '/logout',
+        //     'icon'        => 'fas fa-fw fa-sign-out-alt',
+        //     'label_color' => 'success',
+        // ],
         [
-            'text'        => 'Keluar',
-            'url'         => '/logout',
-            'icon'        => 'fas fa-fw fa-sign-out-alt',
-            'label_color' => 'success',
+            'text'    => 'UKM',
+            'icon'    => 'fas fa-fw fa-users',
+            'url'     => '/matrik-kegiatan-ukm',
         ],
     ],
 

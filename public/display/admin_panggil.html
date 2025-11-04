@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Panggil Antrian</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #00a885;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #00a885;
+            outline: none;
+        }
+        .btn {
+            background-color: #00a885;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background-color: #008a6f;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .current-queue {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .queue-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00a885;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin - Panggil Antrian</h1>
+        
+        <div class="current-queue">
+            <h3>Antrian Saat Ini</h3>
+            <div class="queue-number" id="current-display">-</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="nomor">Nomor Antrian:</label>
+            <input type="number" id="nomor" placeholder="Masukkan nomor antrian" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label for="loket">Pilih Loket:</label>
+            <select id="loket">
+                <option value="LOKET 1">LOKET 1</option>
+                <option value="LOKET 2">LOKET 2</option>
+                <option value="LOKET 3">LOKET 3</option>
+                <option value="LOKET 4">LOKET 4</option>
+            </select>
+        </div>
+        
+        <button class="btn" onclick="panggilNomor()">Panggil Nomor</button>
+        <button class="btn" onclick="panggilOtomatis()">Panggil Otomatis</button>
+        <button class="btn btn-danger" onclick="selesaiNomor()">Selesai Layani</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+    
+    <script src="app/assets/vendor/js/jquery.js"></script>
+    <script>
+        // Load current queue on page load
+        $(document).ready(function() {
+            loadCurrentQueue();
+            // Refresh every 3 seconds
+            setInterval(loadCurrentQueue, 3000);
+        });
+        
+        function loadCurrentQueue() {
+            $.ajax({
+                url: 'app/antrian.php?p=panggil',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    if (data && data.length > 0 && data[0].nomor !== '0') {
+                        $('#current-display').text(data[0].nomor + ' - ' + data[0].loket);
+                    } else {
+                        $('#current-display').text('Tidak ada antrian');
+                    }
+                },
+                error: function() {
+                    $('#current-display').text('Error loading data');
+                }
+            });
+        }
+        
+        function panggilNomor() {
+            const nomor = $('#nomor').val();
+            const loket = $('#loket').val();
+            
+            if (!nomor) {
+                showResult('error', 'Nomor antrian harus diisi!');
+                return;
+            }
+            
+            $.ajax({
+                url: 'app/antrian.php?p=panggil_dengan_loket&nomor=' + nomor + '&loket=' + loket,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showResult('success', response.message);
+                        $('#nomor').val('');
+                        loadCurrentQueue();
+                    } else {
+                        showResult('error', response.message);
+                    }
+                },
+                error: function() {
+                    showResult('error', 'Terjadi kesalahan saat memanggil nomor');
+                }
+            });
+        }
+        
+        function panggilOtomatis() {
+            const loket = $('#loket').val();
+            
+            $.ajax({
+                url: 'app/antrian.php?p=panggil_sekarang&loket=' + loket,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showResult('success', response.message);
+                        loadCurrentQueue();
+                    } else {
+                        showResult('error', response.message);
+                    }
+                },
+                error: function() {
+                    showResult('error', 'Terjadi kesalahan saat memanggil nomor otomatis');
+                }
+            });
+        }
+        
+        function selesaiNomor() {
+            const nomor = $('#nomor').val();
+            
+            if (!nomor) {
+                showResult('error', 'Nomor antrian harus diisi!');
+                return;
+            }
+            
+            $.ajax({
+                url: 'app/antrian.php?p=selesai&nomor=' + nomor,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        showResult('success', response.message);
+                        $('#nomor').val('');
+                        loadCurrentQueue();
+                    } else {
+                        showResult('error', response.message);
+                    }
+                },
+                error: function() {
+                    showResult('error', 'Terjadi kesalahan saat menyelesaikan nomor');
+                }
+            });
+        }
+        
+        function showResult(type, message) {
+            const resultDiv = $('#result');
+            resultDiv.removeClass('success error');
+            resultDiv.addClass(type);
+            resultDiv.text(message);
+            resultDiv.show();
+            
+            // Hide after 5 seconds
+            setTimeout(function() {
+                resultDiv.hide();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

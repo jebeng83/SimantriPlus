@@ -159,20 +159,239 @@
             <h5 class="card-title"><i class="fas fa-stethoscope mr-2"></i> Hasil Skrining Kesehatan</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionSkrining">
+            <div class="accordion" id="detail_sekolah_accordionSkrining">
                
+               <!-- Hasil Pemeriksaan Gejala Cemas -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_sekolah_headingGejalaCemasBaru">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_sekolah_collapseGejalaCemasBaru" aria-expanded="false" aria-controls="detail_sekolah_collapseGejalaCemasBaru">
+                           Hasil Pemeriksaan Gejala Cemas
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_sekolah_collapseGejalaCemasBaru" class="collapse" aria-labelledby="detail_sekolah_headingGejalaCemasBaru"
+                     data-parent="#detail_sekolah_accordionSkrining">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <table class="table table-bordered">
+                                 <tr>
+                                    <th width="5%" class="text-center">No</th>
+                                    <th width="70%">Pertanyaan</th>
+                                    <th width="25%" class="text-center">Jawaban</th>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">1</td>
+                                    <td>Dalam 2 minggu terakhir, saya sering merasa khawatir atau tidak tenang, tegang, deg-degan dan gelisah terutama terhadap hal-hal negatif atau yang belum tentu terjadi.</td>
+                                    <td class="text-center">
+                                       @if(($detail->khawatir ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->khawatir ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">2</td>
+                                    <td>Dalam 2 minggu terakhir, Saya berpikir berlebihan dan tidak bisa mengendalikan diri, terutama terhadap hal-hal negatif atau yang belum tentu terjadi.</td>
+                                    <td class="text-center">
+                                       @if(($detail->berpikir_berlebihan ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->berpikir_berlebihan ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">3</td>
+                                    <td>Dalam 2 minggu terakhir, Saya sulit tidur dan berkonsentrasi terutama saat memikirkan hal-hal negatif yang belum tentu terjadi.</td>
+                                    <td class="text-center">
+                                       @if(($detail->sulit_tidur ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->sulit_tidur ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Hasil Pemeriksaan Gejala Depresi -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_sekolah_headingGejalaDepresiBaru">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_sekolah_collapseGejalaDepresiBaru" aria-expanded="false" aria-controls="detail_sekolah_collapseGejalaDepresiBaru">
+                           Hasil Pemeriksaan Gejala Depresi
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_sekolah_collapseGejalaDepresiBaru" class="collapse" aria-labelledby="detail_sekolah_headingGejalaDepresiBaru"
+                     data-parent="#detail_sekolah_accordionSkrining">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <table class="table table-bordered">
+                                 <tr>
+                                    <th width="5%" class="text-center">No</th>
+                                    <th width="70%">Pertanyaan</th>
+                                    <th width="25%" class="text-center">Jawaban</th>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">1</td>
+                                    <td>Dalam 2 minggu terakhir, saya sering merasa sedih atau tertekan padahal tidak ada penyebab yang jelas.</td>
+                                    <td class="text-center">
+                                       @if(($detail->sedih ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->sedih ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">2</td>
+                                    <td>Dalam 2 minggu terakhir, saya tidak tertarik lagi dengan kegiatan atau hal-hal yang biasanya saya suka.</td>
+                                    <td class="text-center">
+                                       @if(($detail->tidak_tertarik ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->tidak_tertarik ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td class="text-center">3</td>
+                                    <td>Dalam 2 minggu terakhir, saya merasa sering capek, sulit tidur, dan sulit fokus saat belajar atau melakukan kegiatan.</td>
+                                    <td class="text-center">
+                                       @if(($detail->capok ?? null) === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif(($detail->capok ?? null) === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Hasil Pemeriksaan Kesehatan -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_sekolah_headingHasilPemeriksaanKesehatan">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_sekolah_collapseHasilPemeriksaanKesehatan" aria-expanded="false" aria-controls="detail_sekolah_collapseHasilPemeriksaanKesehatan">
+                           Hasil Pemeriksaan Kesehatan
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_sekolah_collapseHasilPemeriksaanKesehatan" class="collapse" aria-labelledby="detail_sekolah_headingHasilPemeriksaanKesehatan"
+                     data-parent="#detail_sekolah_accordionSkrining">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-12">
+                              <table class="table table-bordered">
+                                 <tr>
+                                    <th width="40%">Jenis Pemeriksaan</th>
+                                    <th width="60%" class="text-center">Hasil</th>
+                                 </tr>
+                                 <tr>
+                                    <td>Hemoglobin</td>
+                                    <td class="text-center">
+                                       @php($hb = $detail->pemeriksaan_hb ?? null)
+                                       @if(is_numeric($hb))
+                                          <span class="badge badge-info">{{ $hb }} g/dL</span>
+                                       @elseif(!empty($hb))
+                                          <span class="badge badge-info">{{ $hb }}</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td>Hepatitis B</td>
+                                    <td class="text-center">
+                                       @php($hepB = $detail->hepatitis_b ?? null)
+                                       @if(($hepB === 'Ya') || ($hepB === 'Reaktif'))
+                                          <span class="badge badge-danger">{{ $hepB }}</span>
+                                       @elseif(($hepB === 'Tidak') || ($hepB === 'Non-Reaktif'))
+                                          <span class="badge badge-success">{{ $hepB }}</span>
+                                       @elseif(!empty($hepB))
+                                          <span class="badge badge-info">{{ $hepB }}</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td>Hepatitis C</td>
+                                    <td class="text-center">
+                                       @php($hepC = $detail->hepatitis_c ?? null)
+                                       @if(($hepC === 'Ya') || ($hepC === 'Reaktif'))
+                                          <span class="badge badge-danger">{{ $hepC }}</span>
+                                       @elseif(($hepC === 'Tidak') || ($hepC === 'Non-Reaktif'))
+                                          <span class="badge badge-success">{{ $hepC }}</span>
+                                       @elseif(!empty($hepC))
+                                          <span class="badge badge-info">{{ $hepC }}</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td>Riwayat HPV (Vaksin HPV9)</td>
+                                    <td class="text-center">
+                                       @php($hpv = $detail->riwayat_hpv_9 ?? null)
+                                       @if($hpv === 'Ya')
+                                          <span class="badge badge-warning">Ya</span>
+                                       @elseif($hpv === 'Tidak')
+                                          <span class="badge badge-success">Tidak</span>
+                                       @elseif(!empty($hpv))
+                                          <span class="badge badge-info">{{ $hpv }}</span>
+                                       @else
+                                          <span class="badge badge-secondary">-</span>
+                                       @endif
+                                    </td>
+                                 </tr>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
                <!-- Kuesioner Gula Darah (Anak Sekolah) -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKuesionerGulaDarah">
+                  <div class="card-header" id="detail_sekolah_headingKuesionerGulaDarah">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                           data-target="#collapseKuesionerGulaDarah" aria-expanded="true" aria-controls="collapseKuesionerGulaDarah">
+                           data-target="#detail_sekolah_collapseKuesionerGulaDarah" aria-expanded="true" aria-controls="detail_sekolah_collapseKuesionerGulaDarah">
                            Kuesioner Gula Darah (Anak Sekolah)
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKuesionerGulaDarah" class="collapse show" aria-labelledby="headingKuesionerGulaDarah"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseKuesionerGulaDarah" class="collapse show" aria-labelledby="detail_sekolah_headingKuesionerGulaDarah"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -269,16 +488,16 @@
                
                <!-- Gejala Cemas -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingGejalaCemas">
+                  <div class="card-header" id="detail_sekolah_headingGejalaCemas">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseGejalaCemas" aria-expanded="false" aria-controls="collapseGejalaCemas">
+                           data-target="#detail_sekolah_collapseGejalaCemas" aria-expanded="false" aria-controls="detail_sekolah_collapseGejalaCemas">
                            Gejala Cemas
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseGejalaCemas" class="collapse" aria-labelledby="headingGejalaCemas"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseGejalaCemas" class="collapse" aria-labelledby="detail_sekolah_headingGejalaCemas"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -336,16 +555,16 @@
                
                <!-- Gejala Depresi -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingGejalaDepresi">
+                  <div class="card-header" id="detail_sekolah_headingGejalaDepresi">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseGejalaDepresi" aria-expanded="false" aria-controls="collapseGejalaDepresi">
+                           data-target="#detail_sekolah_collapseGejalaDepresi" aria-expanded="false" aria-controls="detail_sekolah_collapseGejalaDepresi">
                            Gejala Depresi
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseGejalaDepresi" class="collapse" aria-labelledby="headingGejalaDepresi"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseGejalaDepresi" class="collapse" aria-labelledby="detail_sekolah_headingGejalaDepresi"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -403,16 +622,16 @@
                
                <!-- Kesehatan Reproduksi Putri -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKesehatanReproduksiPutri">
+                  <div class="card-header" id="detail_sekolah_headingKesehatanReproduksiPutri">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseKesehatanReproduksiPutri" aria-expanded="false" aria-controls="collapseKesehatanReproduksiPutri">
+                           data-target="#detail_sekolah_collapseKesehatanReproduksiPutri" aria-expanded="false" aria-controls="detail_sekolah_collapseKesehatanReproduksiPutri">
                            Kesehatan Reproduksi Putri
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKesehatanReproduksiPutri" class="collapse" aria-labelledby="headingKesehatanReproduksiPutri"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseKesehatanReproduksiPutri" class="collapse" aria-labelledby="detail_sekolah_headingKesehatanReproduksiPutri"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -481,16 +700,16 @@
                
                <!-- Kesehatan Reproduksi Putra -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKesehatanReproduksiPutra">
+                  <div class="card-header" id="detail_sekolah_headingKesehatanReproduksiPutra">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseKesehatanReproduksiPutra" aria-expanded="false" aria-controls="collapseKesehatanReproduksiPutra">
+                           data-target="#detail_sekolah_collapseKesehatanReproduksiPutra" aria-expanded="false" aria-controls="detail_sekolah_collapseKesehatanReproduksiPutra">
                            Kesehatan Reproduksi Putra
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKesehatanReproduksiPutra" class="collapse" aria-labelledby="headingKesehatanReproduksiPutra"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseKesehatanReproduksiPutra" class="collapse" aria-labelledby="detail_sekolah_headingKesehatanReproduksiPutra"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -548,16 +767,16 @@
                
                <!-- Faktor Risiko Malaria -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingFaktorRisikoMalaria">
+                  <div class="card-header" id="detail_sekolah_headingFaktorRisikoMalaria">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseFaktorRisikoMalaria" aria-expanded="false" aria-controls="collapseFaktorRisikoMalaria">
+                           data-target="#detail_sekolah_collapseFaktorRisikoMalaria" aria-expanded="false" aria-controls="detail_sekolah_collapseFaktorRisikoMalaria">
                            Faktor Risiko Malaria
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseFaktorRisikoMalaria" class="collapse" aria-labelledby="headingFaktorRisikoMalaria"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseFaktorRisikoMalaria" class="collapse" aria-labelledby="detail_sekolah_headingFaktorRisikoMalaria"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -615,16 +834,16 @@
                
                <!-- Tingkat Aktivitas Fisik -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTingkatAktivitasFisik">
+                  <div class="card-header" id="detail_sekolah_headingTingkatAktivitasFisik">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTingkatAktivitasFisik" aria-expanded="false" aria-controls="collapseTingkatAktivitasFisik">
+                           data-target="#detail_sekolah_collapseTingkatAktivitasFisik" aria-expanded="false" aria-controls="detail_sekolah_collapseTingkatAktivitasFisik">
                            Tingkat Aktivitas Fisik
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTingkatAktivitasFisik" class="collapse" aria-labelledby="headingTingkatAktivitasFisik"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseTingkatAktivitasFisik" class="collapse" aria-labelledby="detail_sekolah_headingTingkatAktivitasFisik"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -675,16 +894,16 @@
                
                <!-- Kelayakan Tes Kebugaran -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKelayakanTesKebugaran">
+                  <div class="card-header" id="detail_sekolah_headingKelayakanTesKebugaran">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseKelayakanTesKebugaran" aria-expanded="false" aria-controls="collapseKelayakanTesKebugaran">
+                           data-target="#detail_sekolah_collapseKelayakanTesKebugaran" aria-expanded="false" aria-controls="detail_sekolah_collapseKelayakanTesKebugaran">
                            Kelayakan Tes Kebugaran
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKelayakanTesKebugaran" class="collapse" aria-labelledby="headingKelayakanTesKebugaran"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseKelayakanTesKebugaran" class="collapse" aria-labelledby="detail_sekolah_headingKelayakanTesKebugaran"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="alert alert-info" role="alert">
                            <i class="fas fa-info-circle"></i> <strong>Petunjuk:</strong> Jawab pertanyaan berikut sesuai dengan kondisi siswa/siswi terkait skrining kebugaran (Kelas 4-6).
@@ -758,16 +977,16 @@
                
                <!-- Penyakit Tropis Terabaikan -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingPenyakitTropisTerabaikan">
+                  <div class="card-header" id="detail_sekolah_headingPenyakitTropisTerabaikan">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapsePenyakitTropisTerabaikan" aria-expanded="false" aria-controls="collapsePenyakitTropisTerabaikan">
+                           data-target="#detail_sekolah_collapsePenyakitTropisTerabaikan" aria-expanded="false" aria-controls="detail_sekolah_collapsePenyakitTropisTerabaikan">
                            Penyakit Tropis Terabaikan
                         </button>
                      </h2>
                   </div>
-                  <div id="collapsePenyakitTropisTerabaikan" class="collapse" aria-labelledby="headingPenyakitTropisTerabaikan"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapsePenyakitTropisTerabaikan" class="collapse" aria-labelledby="detail_sekolah_headingPenyakitTropisTerabaikan"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -812,16 +1031,16 @@
                
                <!-- Perilaku Merokok - Anak Sekolah -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingPerilakuMerokok">
+                  <div class="card-header" id="detail_sekolah_headingPerilakuMerokok">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapsePerilakuMerokok" aria-expanded="false" aria-controls="collapsePerilakuMerokok">
+                           data-target="#detail_sekolah_collapsePerilakuMerokok" aria-expanded="false" aria-controls="detail_sekolah_collapsePerilakuMerokok">
                            Perilaku Merokok - Anak Sekolah
                         </button>
                      </h2>
                   </div>
-                  <div id="collapsePerilakuMerokok" class="collapse" aria-labelledby="headingPerilakuMerokok"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapsePerilakuMerokok" class="collapse" aria-labelledby="detail_sekolah_headingPerilakuMerokok"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -903,16 +1122,16 @@
                
                <!-- Talasemia -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTalasemia">
+                  <div class="card-header" id="detail_sekolah_headingTalasemia">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTalasemia" aria-expanded="false" aria-controls="collapseTalasemia">
+                           data-target="#detail_sekolah_collapseTalasemia" aria-expanded="false" aria-controls="detail_sekolah_collapseTalasemia">
                            Talasemia
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTalasemia" class="collapse" aria-labelledby="headingTalasemia"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseTalasemia" class="collapse" aria-labelledby="detail_sekolah_headingTalasemia"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -957,16 +1176,16 @@
                
                <!-- Riwayat Imunisasi Rutin -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingRiwayatImunisasi">
+                  <div class="card-header" id="detail_sekolah_headingRiwayatImunisasi">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseRiwayatImunisasi" aria-expanded="false" aria-controls="collapseRiwayatImunisasi">
+                           data-target="#detail_sekolah_collapseRiwayatImunisasi" aria-expanded="false" aria-controls="detail_sekolah_collapseRiwayatImunisasi">
                            Riwayat Imunisasi Rutin
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseRiwayatImunisasi" class="collapse" aria-labelledby="headingRiwayatImunisasi"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseRiwayatImunisasi" class="collapse" aria-labelledby="detail_sekolah_headingRiwayatImunisasi"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -1154,16 +1373,16 @@
                
                <!-- Faktor Risiko Hepatitis -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingFaktorRisikoHepatitis">
+                  <div class="card-header" id="detail_sekolah_headingFaktorRisikoHepatitis">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseFaktorRisikoHepatitis" aria-expanded="false" aria-controls="collapseFaktorRisikoHepatitis">
+                           data-target="#detail_sekolah_collapseFaktorRisikoHepatitis" aria-expanded="false" aria-controls="detail_sekolah_collapseFaktorRisikoHepatitis">
                            Faktor Risiko Hepatitis
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseFaktorRisikoHepatitis" class="collapse" aria-labelledby="headingFaktorRisikoHepatitis"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseFaktorRisikoHepatitis" class="collapse" aria-labelledby="detail_sekolah_headingFaktorRisikoHepatitis"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -1234,16 +1453,16 @@
                
                <!-- Skrining Tuberkulosis Anak -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingSkriningTBC">
+                  <div class="card-header" id="detail_sekolah_headingSkriningTBC">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseSkriningTBC" aria-expanded="false" aria-controls="collapseSkriningTBC">
+                           data-target="#detail_sekolah_collapseSkriningTBC" aria-expanded="false" aria-controls="detail_sekolah_collapseSkriningTBC">
                            Skrining Tuberkulosis Anak (Kelas 1-8)
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseSkriningTBC" class="collapse" aria-labelledby="headingSkriningTBC"
-                     data-parent="#accordionSkrining">
+                  <div id="detail_sekolah_collapseSkriningTBC" class="collapse" aria-labelledby="detail_sekolah_headingSkriningTBC"
+                     data-parent="#detail_sekolah_accordionSkrining">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -1343,20 +1562,20 @@
             <h5 class="card-title"><i class="fas fa-user-md mr-2"></i> Hasil Pemeriksaan Kesehatan</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionPemeriksaan">
+            <div class="accordion" id="detail_sekolah_accordionPemeriksaan">
                
                <!-- Hasil Pemeriksaan Kesehatan -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingHasilPemeriksaan">
+                  <div class="card-header" id="detail_sekolah_headingHasilPemeriksaan">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseHasilPemeriksaan" aria-expanded="false" aria-controls="collapseHasilPemeriksaan">
+                           data-target="#detail_sekolah_collapseHasilPemeriksaan" aria-expanded="false" aria-controls="detail_sekolah_collapseHasilPemeriksaan">
                            Hasil Pemeriksaan Kesehatan
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseHasilPemeriksaan" class="collapse" aria-labelledby="headingHasilPemeriksaan"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_sekolah_collapseHasilPemeriksaan" class="collapse" aria-labelledby="detail_sekolah_headingHasilPemeriksaan"
+                     data-parent="#detail_sekolah_accordionPemeriksaan">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-6">
@@ -1418,16 +1637,16 @@
                
                <!-- Skrining Telinga dan Mata -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingSkriningTelingaMata">
+                  <div class="card-header" id="detail_sekolah_headingSkriningTelingaMata">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseSkriningTelingaMata" aria-expanded="false" aria-controls="collapseSkriningTelingaMata">
+                           data-target="#detail_sekolah_collapseSkriningTelingaMata" aria-expanded="false" aria-controls="detail_sekolah_collapseSkriningTelingaMata">
                            Skrining Telinga dan Mata
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseSkriningTelingaMata" class="collapse" aria-labelledby="headingSkriningTelingaMata"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_sekolah_collapseSkriningTelingaMata" class="collapse" aria-labelledby="detail_sekolah_headingSkriningTelingaMata"
+                     data-parent="#detail_sekolah_accordionPemeriksaan">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-6">
@@ -1491,16 +1710,16 @@
                
                <!-- Hasil Pemeriksaan Kebugaran -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingHasilKebugaran">
+                  <div class="card-header" id="detail_sekolah_headingHasilKebugaran">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseHasilKebugaran" aria-expanded="false" aria-controls="collapseHasilKebugaran">
+                           data-target="#detail_sekolah_collapseHasilKebugaran" aria-expanded="false" aria-controls="detail_sekolah_collapseHasilKebugaran">
                            Hasil Pemeriksaan Kebugaran
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseHasilKebugaran" class="collapse" aria-labelledby="headingHasilKebugaran"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_sekolah_collapseHasilKebugaran" class="collapse" aria-labelledby="detail_sekolah_headingHasilKebugaran"
+                     data-parent="#detail_sekolah_accordionPemeriksaan">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-12">
@@ -1546,47 +1765,216 @@ $(document).ready(function() {
             // Show loading state
             $(this).prop('disabled', true);
             
-            $.ajax({
-                url: '{{ route("ilp.pendaftaran-ckg.update-petugas-entry-sekolah") }}',
-                method: 'POST',
-                data: {
-                    '_token': '{{ csrf_token() }}',
-                    'id': pkgId,
-                    'id_petugas_entri': petugasId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message || 'Petugas entry berhasil diperbarui');
-                        // Reload the detail to show updated data
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1000);
-                    } else {
-                        toastr.error(response.message || 'Gagal memperbarui petugas entry');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error updating petugas entry:', error);
-                    toastr.error('Terjadi kesalahan saat memperbarui petugas entry');
-                },
-                complete: function() {
-                    $('#id_petugas_entri').prop('disabled', false);
-                }
-            });
+<script>
+$(document).ready(function() {
+    // Update petugas entry functionality
+    $('#id_petugas_entri').change(function() {
+        var petugasId = $(this).val();
+        var pkgId = '{{ $detail->id ?? "" }}';
+        
+        if (!petugasId || !pkgId) {
+            toastr.warning('Data tidak lengkap');
+            return;
         }
+        
+        // Disable the select while processing
+        $(this).prop('disabled', true);
+        
+        $.ajax({
+            url: '{{ route("ilp.pendaftaran-ckg.update-petugas-entry-sekolah") }}',
+            method: 'POST',
+            data: {
+                '_token': '{{ csrf_token() }}',
+                'id': pkgId,
+                'id_petugas_entri': petugasId
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Petugas entry berhasil diperbarui');
+                    // Reload the detail to show updated data
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    toastr.error(response.message || 'Gagal memperbarui petugas entry');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating petugas entry:', error);
+                toastr.error('Terjadi kesalahan saat memperbarui petugas entry');
+            },
+            complete: function() {
+                $('#id_petugas_entri').prop('disabled', false);
+            }
+        });
     });
 });
 </script>
 
+<style>
+/* Enhanced accordion styles for all school accordion sections */
+#detail_sekolah_accordionSkrining .collapse,
+#detail_sekolah_accordionPemeriksaan .collapse {
+    display: none;
+    height: auto !important;
+    transition: none !important;
+}
+
+#detail_sekolah_accordionSkrining .collapse.show,
+#detail_sekolah_accordionPemeriksaan .collapse.show {
+    display: block !important;
+    height: auto !important;
+    /* Ensure table content is visible */
+}
+
+#detail_sekolah_accordionSkrining .collapse.show table,
+#detail_sekolah_accordionPemeriksaan .collapse.show table {
+    display: table !important;
+}
+
+#detail_sekolah_accordionSkrining .collapse.show tr,
+#detail_sekolah_accordionPemeriksaan .collapse.show tr {
+    display: table-row !important;
+}
+
+#detail_sekolah_accordionSkrining .collapse.show td,
+#detail_sekolah_accordionPemeriksaan .collapse.show td {
+    display: table-cell !important;
+}
+
+#detail_sekolah_accordionSkrining .collapsing,
+#detail_sekolah_accordionPemeriksaan .collapsing {
+    display: block !important;
+    height: auto !important;
+    transition: none !important;
+}
+</style>
+
 <script>
 $(document).ready(function() {
-    // Initialize accordion behavior
-    $('.collapse').on('show.bs.collapse', function () {
-        $(this).siblings('.card-header').find('.btn-link').removeClass('collapsed');
-    });
+    // Global state management for accordions
+    let currentOpenPanel = null;
+    let currentOpenButton = null;
     
-    $('.collapse').on('hide.bs.collapse', function () {
-        $(this).siblings('.card-header').find('.btn-link').addClass('collapsed');
-    });
+    // Enhanced accordion implementation with global state management
+    function initializeAccordion(accordionId) {
+        var $accordion = $(accordionId);
+        if (!$accordion.length) return;
+        
+        console.log('Initializing school accordion:', accordionId);
+        
+        // Remove any existing event handlers
+        $accordion.off('click.customAccordion');
+        
+        // Disable Bootstrap's collapse behavior by removing data attributes
+        $accordion.find('[data-toggle="collapse"]').each(function() {
+            $(this).removeAttr('data-toggle').attr('data-custom-toggle', 'collapse');
+        });
+        
+        // Add click handler for accordion buttons
+        $accordion.on('click.customAccordion', '[data-custom-toggle="collapse"]', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $button = $(this);
+            var targetId = $button.attr('data-target');
+            var $target = $(targetId);
+            
+            console.log('School button clicked:', targetId);
+            
+            if (!$target.length) {
+                console.log('School target not found:', targetId);
+                return;
+            }
+            
+            // Check if this panel is already open
+            if (currentOpenPanel === targetId) {
+                // Close current panel
+                console.log('Closing current school panel:', targetId);
+                $target.removeClass('show');
+                $button.addClass('collapsed').attr('aria-expanded', 'false');
+                
+                // Clear inline styles
+                $target[0].style.display = '';
+                $target[0].style.visibility = '';
+                $target[0].style.opacity = '';
+                
+                currentOpenPanel = null;
+                currentOpenButton = null;
+            } else {
+                // Close previously open panel if exists
+                if (currentOpenPanel && currentOpenButton) {
+                    console.log('Closing previous school panel:', currentOpenPanel);
+                    $(currentOpenPanel).removeClass('show');
+                    $(currentOpenButton).addClass('collapsed').attr('aria-expanded', 'false');
+                    
+                    // Clear previous panel styles
+                    $(currentOpenPanel)[0].style.display = '';
+                    $(currentOpenPanel)[0].style.visibility = '';
+                    $(currentOpenPanel)[0].style.opacity = '';
+                }
+                
+                // Open new panel
+                console.log('Opening new school panel:', targetId);
+                $target.addClass('show');
+                $button.removeClass('collapsed').attr('aria-expanded', 'true');
+                
+                // Force display properties for better visibility
+                $target[0].style.display = 'block';
+                $target[0].style.visibility = 'visible';
+                $target[0].style.opacity = '1';
+                
+                // Ensure table content is visible
+                $target.find('table').each(function() {
+                    this.style.display = 'table';
+                });
+                $target.find('tr').each(function() {
+                    this.style.display = 'table-row';
+                });
+                $target.find('td, th').each(function() {
+                    this.style.display = 'table-cell';
+                });
+                
+                // Update global state
+                currentOpenPanel = targetId;
+                currentOpenButton = $button[0];
+            }
+        });
+        
+        // Ensure panels with 'show' class are properly displayed on load
+        $accordion.find('.collapse.show').each(function() {
+            var $panel = $(this);
+            var panelId = '#' + $panel.attr('id');
+            var $button = $accordion.find('[data-target="' + panelId + '"]');
+            
+            $button.removeClass('collapsed').attr('aria-expanded', 'true');
+            
+            // Force display properties
+            $panel[0].style.display = 'block';
+            $panel[0].style.visibility = 'visible';
+            $panel[0].style.opacity = '1';
+            
+            // Ensure table content is visible
+            $panel.find('table').each(function() {
+                this.style.display = 'table';
+            });
+            $panel.find('tr').each(function() {
+                this.style.display = 'table-row';
+            });
+            $panel.find('td, th').each(function() {
+                this.style.display = 'table-cell';
+            });
+            
+            // Set as current open panel
+            currentOpenPanel = panelId;
+            currentOpenButton = $button[0];
+            
+            console.log('School panel already shown on load:', panelId);
+        });
+    }
+    
+    // Initialize all school accordions
+    initializeAccordion('#detail_sekolah_accordionSkrining');
+    initializeAccordion('#detail_sekolah_accordionPemeriksaan');
 });
 </script>

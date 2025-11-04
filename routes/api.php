@@ -18,6 +18,7 @@ use App\Http\Controllers\PasienController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\AntriPendaftaranController;
+use App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +42,32 @@ Route::get('/test-api', function () {
         'timestamp' => date('Y-m-d H:i:s')
     ]);
 });
+
+// Endpoint data jabatan untuk dropdown kd_jbtn (menampilkan nm_jbtn)
+Route::get('/jabatan', function (Request $request) {
+    try {
+        $q = trim((string) $request->query('q', ''));
+        $limit = (int) $request->query('limit', 50);
+        $limit = max(1, min($limit, 200));
+
+        $query = DB::table('jabatan')->select('kd_jbtn', 'nm_jbtn');
+        if ($q !== '') {
+            $query->where(function ($qq) use ($q) {
+                $qq->where('nm_jbtn', 'like', "%{$q}%")
+                   ->orWhere('kd_jbtn', 'like', "%{$q}%");
+            });
+        }
+
+        $rows = $query->orderBy('nm_jbtn')->limit($limit)->get();
+        return response()->json($rows);
+    } catch (\Throwable $e) {
+        Log::error('API /jabatan error: ' . $e->getMessage());
+        return response()->json(['error' => 'Gagal mengambil data jabatan'], 500);
+    }
+});
+
+// Compatibility endpoint for legacy frontend
+Route::get('/set-harga-obat', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'getPercentageData']);
 
 // Rute untuk obat ranap
 Route::get('/ranap/{bangsal}/obat', [App\Http\Controllers\API\ResepRanapController::class, 'getObatRanap']);
@@ -500,6 +527,82 @@ Route::get('/bpjs/srk-status', function (Request $request) {
 Route::prefix('antripendaftaran')->group(function () {
     Route::get('/next', [AntriPendaftaranController::class, 'next']);
     Route::get('/stats', [AntriPendaftaranController::class, 'stats']);
+    // New: nomor yang sedang dipanggil (status=2)
+    Route::get('/current', [AntriPendaftaranController::class, 'current']);
     Route::post('/call', [AntriPendaftaranController::class, 'call']);
     Route::post('/recall', [AntriPendaftaranController::class, 'recall']);
+});
+
+// Farmasi: generate nomor permintaan medis otomatis (PMYYYYMMDDNNN)
+Route::get('/permintaan-medis/next-number', [\App\Http\Controllers\PermintaanMedisController::class, 'nextNumber']);
+// Farmasi: simpan permintaan medis
+Route::post('/permintaan-medis', [\App\Http\Controllers\PermintaanMedisController::class, 'store']);
+
+// Farmasi: endpoint pembelian/lokasi dan pembelian/petugas untuk autocomplete di PermintaanMedis.jsx
+Route::prefix('pembelian')->group(function () {
+    // Lokasi gudang/ruangan (bangsal)
+    Route::get('/lokasi', function () {
+        try {
+            $data = DB::table('bangsal')
+                ->select('kd_bangsal', 'nm_bangsal')
+                ->orderBy('nm_bangsal', 'asc')
+                ->get();
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Error get pembelian/lokasi: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
+        }
+    });
+    // Daftar petugas (gunakan tabel petugas dengan kolom nip, nama)
+    Route::get('/petugas', function () {
+        try {
+            $data = DB::table('petugas')
+                ->select('nip', 'nama')
+                ->orderBy('nama', 'asc')
+                ->get();
+            return response()->json(['success' => true, 'data' => $data])
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        } catch (\Exception $e) {
+            Log::error('Error get pembelian/petugas: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
+        }
+    });
+});
+
+// Farmasi: fallback endpoint untuk riwayat-transaksi-gudang/bangsal (struktur sama)
+Route::prefix('riwayat-transaksi-gudang')->group(function () {
+    Route::get('/bangsal', function () {
+        try {
+            $data = DB::table('bangsal')
+                ->select('kd_bangsal', 'nm_bangsal')
+                ->orderBy('nm_bangsal', 'asc')
+                ->get();
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Error get riwayat-transaksi-gudang/bangsal: '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
+        }
+    });
+});
+
+// Debug: lihat kolom tabel
+Route::get('/debug/columns/{table}', function ($table) {
+    try {
+        $cols = DB::select("SHOW COLUMNS FROM `$table`");
+        return response()->json(['table' => $table, 'columns' => $cols]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
+// Jadwal UKM routes
+Route::prefix('jadwal-ukm')->group(function () {
+    Route::get('/meta', [JadwalUkmController::class, 'meta']);
+    Route::get('/describe', [JadwalUkmController::class, 'describe']);
+    Route::get('/', [JadwalUkmController::class, 'data']);
+    Route::post('/', [JadwalUkmController::class, 'store']);
+    Route::put('/{id}', [JadwalUkmController::class, 'update']);
+    Route::delete('/{id}', [JadwalUkmController::class, 'destroy']);
 });

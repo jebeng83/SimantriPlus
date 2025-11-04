@@ -93,6 +93,17 @@ const cardVariants = {
 };
 
 export default function EppbgmMenu() {
+  const handleNavigate = (href) => {
+    // Paksa navigasi penuh untuk menghindari intersepsi oleh library lain
+    if (href.startsWith('#')) {
+      // biarkan anchor internal bekerja
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    window.location.assign(href);
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -122,6 +133,7 @@ export default function EppbgmMenu() {
             variants={cardVariants}
             whileHover={{ y: -3, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={(e) => { e.preventDefault(); handleNavigate(item.href); }}
             className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:shadow-md min-h-[120px]"
           >
             <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-md`}>

@@ -233,13 +233,20 @@
                                 <div class="btn-group" role="group">
                                     <button type="button" class="btn btn-info btn-sm detail-btn" data-toggle="modal"
                                         data-target="#detailModal" data-id="{{ $pendaftaran->id_pkg }}">
-                                        <i class="fas fa-eye"></i> Detail
+                                        <i class="fas fa-eye"></i> Detail CKG
                                     </button>
-                                    <button type="button" class="btn btn-primary btn-sm detail-sekolah-btn"
-                                        data-toggle="modal" data-target="#detailSekolahModal"
-                                        data-id="{{ $pendaftaran->id_pkg }}">
-                                        <i class="fas fa-school"></i> Detail CKG Sekolah
-                                    </button>
+                                    @if($pendaftaran->nama_sekolah)
+                                        <button type="button" class="btn btn-primary btn-sm detail-sekolah-btn"
+                                            data-toggle="modal" data-target="#detailSekolahModal"
+                                            data-id="{{ $pendaftaran->id_pkg }}" title="Data Siswa Sekolah">
+                                            <i class="fas fa-school"></i> Detail CKG Sekolah
+                                        </button>
+                                    @else
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled 
+                                            title="Bukan data siswa sekolah - gunakan tombol 'Detail CKG' untuk melihat data ini">
+                                            <i class="fas fa-school"></i> Detail CKG Sekolah
+                                        </button>
+                                    @endif
                                     <button type="button" class="btn btn-success btn-sm set-status-btn"
                                         data-id="{{ $pendaftaran->id_pkg }}" data-status="{{ $pendaftaran->status }}">
                                         <i class="fas fa-tasks"></i> Set Status

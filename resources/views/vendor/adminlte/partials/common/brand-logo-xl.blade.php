@@ -13,7 +13,8 @@
         class="navbar-brand logo-switch {{ config('adminlte.classes_brand') }}"
     @else
         class="brand-link logo-switch {{ config('adminlte.classes_brand') }}"
-    @endif>
+    @endif
+    style="text-decoration: none">
 
     {{-- Small brand logo --}}
     <img src="{{ asset(config('adminlte.logo_img', 'vendor/adminlte/dist/img/AdminLTELogo.png')) }}"

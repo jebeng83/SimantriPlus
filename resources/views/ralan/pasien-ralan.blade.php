@@ -1232,21 +1232,14 @@
         initializePaginationData();
         
         // Modifikasi setup DataTable untuk tabel pasien ralan
-        let tablePasienRalan = $('#tablePasienRalan').DataTable({
-            "paging": false,
-            "searching": false, // Nonaktifkan pencarian bawaan DataTables
-            "info": false,
-            "autoWidth": false,
-            "responsive": true,
-            "order": [[0, 'asc']],
-            "retrieve": true, // Mencegah reinisialisasi
-            "destroy": false, // Jangan hancurkan data yang ada
-            "language": {
-                "search": "Cari:",
-                "zeroRecords": "Tidak ada data yang ditemukan",
-                "infoEmpty": "Tidak ada data yang tersedia"
-            }
-        });
+        // Nonaktifkan inisialisasi DataTables karena tabel dimanipulasi secara manual (append/remove rows)
+        // Hal ini mencegah error "Cannot set properties of undefined (setting '_DT_CellIndex')" dari DataTables
+        // Jika ingin menggunakan DataTables, pastikan update baris menggunakan API DataTables (clear/rows.add/draw)
+        // dan hindari manipulasi DOM manual pada tbody.
+        let tablePasienRalan = null;
+        if ($.fn.DataTable && $.fn.dataTable.isDataTable('#tablePasienRalan')) {
+            $('#tablePasienRalan').DataTable().destroy();
+        }
         
         // Tambahkan fungsi pencarian manual dengan delay
         $('#searchBox').on('keyup', function() {
@@ -1731,8 +1724,9 @@
         
         // Handler untuk tab changes
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            // Sesuaikan ukuran tabel saat tab berubah
-            $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+            // Tidak perlu penyesuaian kolom DataTables karena tidak digunakan pada tabel ini
+            // Jika nanti kembali menggunakan DataTables, aktifkan kembali columns.adjust()
+            // $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
         });
         
         // Tambahkan event listener untuk tombol refresh

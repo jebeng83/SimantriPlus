@@ -113,6 +113,8 @@ class ResepController extends Controller
                 $obat = DB::table('databarang')
                     ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
                     ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('kategori_barang', 'databarang.kode_kategori', '=', 'kategori_barang.kode')
+                    ->join('golongan_barang', 'databarang.kode_golongan', '=', 'golongan_barang.kode')
                     ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
                     ->where('databarang.status', '=', '1')
                     ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
@@ -123,14 +125,20 @@ class ResepController extends Controller
                         $query->where('databarang.kode_brng', 'like', $que)
                             ->orWhere('databarang.nama_brng', 'like', $que)
                             ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('kategori_barang.nama', 'like', $que)
+                            ->orWhere('golongan_barang.nama', 'like', $que)
                             ->orWhere('databarang.letak_barang', 'like', $que);
                     })
                     ->select(
                         'databarang.kode_brng as id',
                         'databarang.nama_brng as text',
-                        DB::raw('sum(gudangbarang.stok) as stok')
+                        'databarang.kode_sat',
+                        DB::raw('SUM(gudangbarang.stok) as stok'),
+                        DB::raw('jenis.nama as jenis'),
+                        DB::raw('kategori_barang.nama as kategori'),
+                        DB::raw('golongan_barang.nama as golongan')
                     )
-                    ->groupBy('gudangbarang.kode_brng')
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'jenis.nama', 'kategori_barang.nama', 'golongan_barang.nama')
                     ->orderBy('databarang.nama_brng')
                     ->limit(20) // Batasi hasil untuk performa
                     ->get();
@@ -140,6 +148,8 @@ class ResepController extends Controller
                 $obat = DB::table('databarang')
                     ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
                     ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('kategori_barang', 'databarang.kode_kategori', '=', 'kategori_barang.kode')
+                    ->join('golongan_barang', 'databarang.kode_golongan', '=', 'golongan_barang.kode')
                     ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
                     ->where('databarang.status', '=', '1')
                     ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
@@ -151,14 +161,20 @@ class ResepController extends Controller
                         $query->where('databarang.kode_brng', 'like', $que)
                             ->orWhere('databarang.nama_brng', 'like', $que)
                             ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('kategori_barang.nama', 'like', $que)
+                            ->orWhere('golongan_barang.nama', 'like', $que)
                             ->orWhere('databarang.letak_barang', 'like', $que);
                     })
                     ->select(
                         'databarang.kode_brng as id',
                         'databarang.nama_brng as text',
-                        DB::raw('SUM(gudangbarang.stok) as stok')
+                        'databarang.kode_sat',
+                        DB::raw('SUM(gudangbarang.stok) as stok'),
+                        DB::raw('jenis.nama as jenis'),
+                        DB::raw('kategori_barang.nama as kategori'),
+                        DB::raw('golongan_barang.nama as golongan')
                     )
-                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng')
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'jenis.nama', 'kategori_barang.nama', 'golongan_barang.nama')
                     ->orderBy('databarang.nama_brng')
                     ->limit(100) // Meningkatkan batas hasil
                     ->get();
@@ -217,6 +233,8 @@ class ResepController extends Controller
                 $obat = DB::table('databarang')
                     ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
                     ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('kategori_barang', 'databarang.kode_kategori', '=', 'kategori_barang.kode')
+                    ->join('golongan_barang', 'databarang.kode_golongan', '=', 'golongan_barang.kode')
                     ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
                     ->where('databarang.status', '=', '1')
                     ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
@@ -227,14 +245,20 @@ class ResepController extends Controller
                         $query->where('databarang.kode_brng', 'like', $que)
                             ->orWhere('databarang.nama_brng', 'like', $que)
                             ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('kategori_barang.nama', 'like', $que)
+                            ->orWhere('golongan_barang.nama', 'like', $que)
                             ->orWhere('databarang.letak_barang', 'like', $que);
                     })
                     ->select(
                         'databarang.kode_brng as id',
                         'databarang.nama_brng as text',
-                        DB::raw('sum(gudangbarang.stok) as stok')
+                        'databarang.kode_sat',
+                        DB::raw('SUM(gudangbarang.stok) as stok'),
+                        DB::raw('jenis.nama as jenis'),
+                        DB::raw('kategori_barang.nama as kategori'),
+                        DB::raw('golongan_barang.nama as golongan')
                     )
-                    ->groupBy('gudangbarang.kode_brng')
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'jenis.nama', 'kategori_barang.nama', 'golongan_barang.nama')
                     ->orderBy('databarang.nama_brng')
                     ->limit(20) // Batasi hasil untuk performa
                     ->get();
@@ -244,6 +268,8 @@ class ResepController extends Controller
                 $obat = DB::table('databarang')
                     ->join('jenis', 'databarang.kdjns', '=', 'jenis.kdjns')
                     ->join('industrifarmasi', 'industrifarmasi.kode_industri', '=', 'databarang.kode_industri')
+                    ->join('kategori_barang', 'databarang.kode_kategori', '=', 'kategori_barang.kode')
+                    ->join('golongan_barang', 'databarang.kode_golongan', '=', 'golongan_barang.kode')
                     ->join('gudangbarang', 'databarang.kode_brng', '=', 'gudangbarang.kode_brng')
                     ->where('databarang.status', '=', '1')
                     ->where('gudangbarang.kd_bangsal', '=', $kd_bangsal)
@@ -255,14 +281,20 @@ class ResepController extends Controller
                         $query->where('databarang.kode_brng', 'like', $que)
                             ->orWhere('databarang.nama_brng', 'like', $que)
                             ->orWhere('jenis.nama', 'like', $que)
+                            ->orWhere('kategori_barang.nama', 'like', $que)
+                            ->orWhere('golongan_barang.nama', 'like', $que)
                             ->orWhere('databarang.letak_barang', 'like', $que);
                     })
                     ->select(
                         'databarang.kode_brng as id',
                         'databarang.nama_brng as text',
-                        DB::raw('SUM(gudangbarang.stok) as stok')
+                        'databarang.kode_sat',
+                        DB::raw('SUM(gudangbarang.stok) as stok'),
+                        DB::raw('jenis.nama as jenis'),
+                        DB::raw('kategori_barang.nama as kategori'),
+                        DB::raw('golongan_barang.nama as golongan')
                     )
-                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng')
+                    ->groupBy('databarang.kode_brng', 'databarang.nama_brng', 'databarang.kode_sat', 'jenis.nama', 'kategori_barang.nama', 'golongan_barang.nama')
                     ->orderBy('databarang.nama_brng')
                     ->limit(100) // Meningkatkan batas hasil
                     ->get();

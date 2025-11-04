@@ -6,9 +6,7 @@ import {
     LineChartOutlined,
     AreaChartOutlined,
     DotChartOutlined,
-    FundProjectionScreenOutlined,
-    TrendingUpOutlined,
-    AnalyticsOutlined,
+    FundOutlined,
     DashboardOutlined,
     FileImageOutlined,
     DownloadOutlined,
@@ -107,7 +105,7 @@ const GrafikAnalisa = () => {
         {
             title: 'Analisa Farmasi',
             description: 'Tracking penggunaan obat, stok, dan efektivitas treatment',
-            icon: <FundProjectionScreenOutlined />,
+            icon: <FundOutlined />,
             color: '#f5222d',
             gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
             chartType: 'Mixed Chart',
@@ -118,7 +116,7 @@ const GrafikAnalisa = () => {
         {
             title: 'Predictive Analytics',
             description: 'Machine learning untuk prediksi capacity planning dan resource allocation',
-            icon: <TrendingUpOutlined />,
+            icon: <LineChartOutlined />,
             color: '#fa8c16',
             gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
             chartType: 'Prediction Model',
@@ -152,7 +150,7 @@ const GrafikAnalisa = () => {
             value: 8,
             suffix: 'processes',
             valueStyle: { color: '#1890ff' },
-            prefix: <AnalyticsOutlined />
+            prefix: <BarChartOutlined />
         },
         {
             title: 'Akurasi Data',

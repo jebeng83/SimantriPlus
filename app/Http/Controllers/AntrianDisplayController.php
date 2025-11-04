@@ -13,7 +13,7 @@ class AntrianDisplayController extends Controller
         // Ambil setting aplikasi
         $setting = DB::table('setting')->first();
         
-        return view('antrian-display', [
+        return view('react.antrian-display', [
             'setting' => $setting
         ]);
     }
@@ -103,4 +103,4 @@ class AntrianDisplayController extends Controller
             ], 500);
         }
     }
-} 
+}

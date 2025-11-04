@@ -285,7 +285,11 @@ Route::get('/generate-norawat/{tgl_registrasi}', [App\Http\Controllers\RegPeriks
     // Route untuk Partograf
     Route::get('/partograf-klasik/{id_hamil}', [App\Http\Controllers\PartografController::class, 'showKlasik'])->name('partograf.klasik');
     
+    // Route menu ePPBGM
+    Route::get('/eppbgm', function () { return view('eppbgm.index'); })->name('eppbgm.index');
+    
     // Route menu ILP
+    Route::get('/ilp', function () { return view('ilp.index'); })->name('ilp.index');
     Route::prefix('ilp')->name('ilp.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/data', [App\Http\Controllers\ILP\DashboardController::class, 'index'])->name('dashboard.data');
@@ -562,8 +566,79 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
         ->name('antrian-poliklinik.cetak');
     Route::get('/laporan/antrian-poliklinik/export', [App\Http\Controllers\AntrianPoliklinikController::class, 'exportExcel'])
         ->name('antrian-poliklinik.export');
+Route::get('/antri-poli', [App\Http\Controllers\AntriPoliController::class, 'index'])->name('antri-poli.index');
+Route::get('/api/antri-poli/display', [App\Http\Controllers\AntriPoliController::class, 'getDisplayData'])->name('api.antri-poli.display');
 
-    Route::get('/get-videos', [App\Http\Controllers\VideoController::class, 'getVideos']);
+    
+Route::get('/farmasi/permintaan-medis', function () {
+    return view('farmasi.permintaan-medis');
+});
+
+
+
+// Farmasi module routes
+Route::prefix('farmasi')->name('farmasi.')->group(function () {
+    // Index (cards menu)
+    Route::get('/', function () {
+        return view('farmasi.index');
+    })->name('index');
+
+    // Master Data
+    Route::get('/industri-farmasi', function () { return view('farmasi.industri-farmasi'); });
+    Route::get('/data-suplier', function () { return view('farmasi.data-suplier'); })->name('datasuplier.index');
+    Route::get('/satuan-barang', function () { return view('farmasi.satuan-barang'); })->name('satuan-barang.index');
+    // Added JSON and CRUD endpoints for Satuan Barang
+    Route::get('/satuan-barang/json', [App\Http\Controllers\Farmasi\SatuanBarangController::class, 'indexJson'])->name('satuan-barang.json');
+    Route::post('/satuan-barang', [App\Http\Controllers\Farmasi\SatuanBarangController::class, 'store'])->name('satuan-barang.store');
+    Route::put('/satuan-barang/{kode_sat}', [App\Http\Controllers\Farmasi\SatuanBarangController::class, 'update'])->name('satuan-barang.update');
+    Route::delete('/satuan-barang/{kode_sat}', [App\Http\Controllers\Farmasi\SatuanBarangController::class, 'destroy'])->name('satuan-barang.destroy');
+    Route::get('/metode-racik', function () { return view('farmasi.metode-racik'); });
+    Route::get('/konversi-satuan', function () { return view('farmasi.konversi-satuan'); });
+    Route::get('/jenis-obat', function () { return view('farmasi.jenis-obat'); });
+    Route::get('/kategori-obat', function () { return view('farmasi.kategori-obat'); })->name('kategori-obat.index');
+    Route::get('/golongan-obat', function () { return view('farmasi.golongan-obat'); });
+    // JSON and CRUD endpoints for Golongan Obat (React)
+    Route::get('/golongan-obat/json', [App\Http\Controllers\Farmasi\GolonganBarangController::class, 'indexJson'])->name('golongan-obat.json');
+    Route::post('/golongan-obat', [App\Http\Controllers\Farmasi\GolonganBarangController::class, 'store'])->name('golongan-obat.store');
+    Route::put('/golongan-obat/{kode}', [App\Http\Controllers\Farmasi\GolonganBarangController::class, 'update'])->name('golongan-obat.update');
+    Route::delete('/golongan-obat/{kode}', [App\Http\Controllers\Farmasi\GolonganBarangController::class, 'destroy'])->name('golongan-obat.destroy');
+    Route::get('/set-harga-obat', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'index'])->name('set-harga-obat');
+    Route::get('/set-harga-obat/json', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'getPercentageData'])->name('set-harga-obat.json');
+    Route::get('/set-penjualan-umum', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'showPenjualanUmum']);
+    Route::get('/set-penjualan/{kdjns}', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'showPenjualanPerJenis']);
+    Route::get('/set-penjualan-barang/{kode_brng}', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'showPenjualanPerBarang']);
+// JSON list endpoints for React summary tables
+Route::get('/set-penjualan/json', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'listPenjualanPerJenis']);
+Route::get('/set-penjualan-barang/json', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'listPenjualanPerBarang']);
+Route::post('/set-penjualan-barang', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'storePenjualanPerBarang'])->name('set-penjualan-barang.store');
+Route::delete('/set-penjualan-barang/{kode_brng}', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'destroyPenjualanPerBarang'])->name('set-penjualan-barang.destroy');
+    
+    // Data Obat (gunakan controller untuk dukungan Inertia + JSON)
+    Route::get('/data-obat', [App\Http\Controllers\Farmasi\DataBarangController::class, 'index'])->name('data-obat');
+    Route::post('/data-obat', [App\Http\Controllers\Farmasi\DataBarangController::class, 'store'])->name('data-obat.store');
+    Route::put('/data-obat/{kode_brng}', [App\Http\Controllers\Farmasi\DataBarangController::class, 'update'])->name('data-obat.update');
+    Route::delete('/data-obat/{kode_brng}', [App\Http\Controllers\Farmasi\DataBarangController::class, 'destroy'])->name('data-obat.destroy');
+    Route::put('/data-obat/update-harga-semua', [App\Http\Controllers\Farmasi\DataBarangController::class, 'updateHargaSemua'])->name('data-obat.update-harga-semua');
+    Route::get('/data-obat/dropdowns', [App\Http\Controllers\Farmasi\DataBarangController::class, 'dropdowns'])->name('data-obat.dropdowns');
+    Route::get('/data-obat/next-code', [App\Http\Controllers\Farmasi\DataBarangController::class, 'nextCode'])->name('data-obat.next-code');
+
+    // Transaksi
+    Route::get('/stok-opname', function () { return view('farmasi.stok-opname'); })->name('stok-opname');
+    Route::get('/pembelian-obat', function () { return view('farmasi.pembelian-obat'); })->name('pembelian-obat');
+    Route::get('/penjualan-obat', function () { return view('farmasi.penjualan-obat'); })->name('penjualan-obat');
+    Route::get('/resep-obat', function () { return view('farmasi.resep-obat'); })->name('resep-obat');
+    Route::get('/riwayat-transaksi-gudang', function () { return view('farmasi.riwayat-transaksi-gudang'); })->name('riwayat-transaksi-gudang');
+
+    // Laporan
+    Route::get('/dashboard', function () { return view('farmasi.dashboard'); })->name('dashboard');
+
+    // Tambahan opsional
+    Route::get('/stok-obat', function () { return view('farmasi.stok-obat'); })->name('stok-obat');
+    Route::get('/data-opname', function () { return view('farmasi.data-opname'); })->name('data-opname');
+});
+
+Route::get('/get-videos', [App\Http\Controllers\VideoController::class, 'getVideos']);
+Route::get('/display/videos/{filename}', [App\Http\Controllers\VideoController::class, 'stream'])->where('filename', '.*');
 });
 
 // Temporary route for debugging
@@ -595,64 +670,96 @@ Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::cla
 Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
 
 // Route untuk API skrining (tanpa autentikasi)
-Route::post('/api/skrining/demografi', [App\Http\Controllers\SkriningController::class, 'simpanDemografi'])
-    ->name('api.skrining.demografi')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-    
-Route::post('/api/skrining/tekanan-darah', [App\Http\Controllers\SkriningController::class, 'simpanTekananDarah'])
-    ->name('api.skrining.tekanan-darah')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-    
-Route::post('/api/skrining/perilaku-merokok', [App\Http\Controllers\SkriningController::class, 'simpanPerilakuMerokok'])
-    ->name('api.skrining.perilaku-merokok')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-    
-Route::post('/api/skrining/kesehatan-jiwa', [App\Http\Controllers\SkriningController::class, 'simpanKesehatanJiwa'])
-    ->name('api.skrining.kesehatan-jiwa')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-    
-Route::post('/api/skrining/simpan', [App\Http\Controllers\SkriningController::class, 'simpanSkrining'])
-    ->name('api.skrining.simpan')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
-// Route untuk debugging API
-Route::any('/api/skrining/debug', [App\Http\Controllers\SkriningController::class, 'debug'])
-    ->name('api.skrining.debug')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+// POST/DELETE endpoints (unprefixed names expected by frontend)
+Route::post('/farmasi/set-harga-obat', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'update'])->name('set-harga-obat.update');
+Route::post('/farmasi/set-penjualan-umum', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'updatePenjualanUmum'])->name('set-penjualan-umum.update');
+Route::post('/farmasi/set-penjualan', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'storePenjualanPerJenis'])->name('set-penjualan.store');
+Route::delete('/farmasi/set-penjualan/{kdjns}', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'destroyPenjualanPerJenis'])->name('set-penjualan.destroy');
 
-// Ruta para obtener detalles de pendaftaran PCare para asegurar que coincida con el formato utilizado en la vista.
-Route::get('/api/pcare/pendaftaran/detail/{year}/{month}/{day}/{number}', [PcarePendaftaranController::class, 'getDetailByParts']);
-Route::get('/api/pcare/pendaftaran/detail/{no_rawat}', [PcarePendaftaranController::class, 'getDetail']);
-Route::delete('/api/pcare/pendaftaran/peserta/{noKartu}/tglDaftar/{tglDaftar}/noUrut/{noUrut}/kdPoli/{kdPoli}', [PcarePendaftaranController::class, 'deletePendaftaran']);
-Route::get('/api/test', function() {
-    return response()->json(['message' => 'API working', 'time' => now()]);
+
+// CRUD Jadwal UKM (React + API)
+Route::middleware(['web', 'loginauth'])->group(function () {
+    // Halaman React untuk Jadwal UKM
+    Route::get('/jadwal-ukm', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'page'])->name('jadwal-ukm.page');
+    Route::get('/display-kegiatan-ukm', function () { return view('react.display-kegiatan-ukm'); })->name('display-kegiatan-ukm.page');
+    // Alias route agar konsisten dengan nama kartu 'Display Jadwal UKM'
+    Route::get('/display-jadwal-ukm', function () { return view('react.display-kegiatan-ukm'); })->name('display-jadwal-ukm.page');
+
+    // API Endpoints
+    Route::get('/api/jadwal-ukm/meta', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'meta'])->name('jadwal-ukm.meta');
+    Route::get('/api/jadwal-ukm/describe', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'describe'])->name('jadwal-ukm.describe');
+    Route::get('/api/jadwal-ukm/monthly', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'monthly'])->name('jadwal-ukm.monthly');
+    Route::get('/api/jadwal-ukm', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'data'])->name('jadwal-ukm.data');
+    Route::post('/api/jadwal-ukm', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'store'])->name('jadwal-ukm.store');
+    Route::put('/api/jadwal-ukm/{id}', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'update'])->name('jadwal-ukm.update');
+    Route::delete('/api/jadwal-ukm/{id}', [App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController::class, 'destroy'])->name('jadwal-ukm.destroy');
 });
 
-// Duplikasi route PCare dihapus - sudah ada di atas
-
-// Include test routes untuk development
-// Mobile JKN Routes (Public Access)
-Route::prefix('pendaftaran-mobile-jkn')->name('mobile-jkn.')->group(function () {
-    Route::get('/', [App\Http\Controllers\MobileJknController::class, 'index'])->name('index');
-    Route::get('/get-peserta', [App\Http\Controllers\MobileJknController::class, 'getPeserta'])->name('get-peserta');
-    Route::get('/get-poli', [App\Http\Controllers\MobileJknController::class, 'getPoli'])->name('get-poli');
-    Route::get('/get-dokter', [App\Http\Controllers\MobileJknController::class, 'getDokter'])->name('get-dokter');
-    Route::get('/get-sisa-antrean', [App\Http\Controllers\MobileJknController::class, 'getSisaAntrean'])->name('get-sisa-antrean');
-    Route::get('/status-antrean', [App\Http\Controllers\MobileJknController::class, 'statusAntrean'])->name('get-status-antrean');
-    Route::post('/daftar-antrean', [App\Http\Controllers\MobileJknController::class, 'daftarAntrean'])->name('daftar-antrean');
-    Route::post('/batal-antrean', [App\Http\Controllers\MobileJknController::class, 'batalAntrean'])->name('batal-antrean');
+// Temporary route for debugging
+Route::get('/debug/permintaan-lab', function() {
+    $data = DB::table('permintaan_lab')
+            ->where('noorder', 'PL202503180001')
+            ->orWhere('no_rawat', '2025/03/18/000001')
+            ->get();
+    
+    $pemeriksaan = DB::table('permintaan_pemeriksaan_lab AS ppl')
+            ->join('jns_perawatan_lab AS jpl', 'ppl.kd_jenis_prw', '=', 'jpl.kd_jenis_prw')
+            ->where('ppl.noorder', 'PL202503180001')
+            ->select('ppl.kd_jenis_prw', 'jpl.nm_perawatan')
+            ->get();
+            
+    return [
+        'permintaan_lab' => $data,
+        'detail_pemeriksaan' => $pemeriksaan
+    ];
 });
 
-// if (app()->environment('local')) {
-//     require __DIR__.'/test-auth-error.php';
-// }
+// Rute pengujian untuk memeriksa nomor registrasi
+Route::get('/test-noreg', [App\Http\Controllers\RegPeriksaController::class, 'testNoReg']);
 
-// ILP Menu index route
-Route::get('/ilp', function () {
-    return view('ilp.index');
-})->name('ilp.index');
+// Rute pengujian tanpa autentikasi
+Route::get('/test-noreg-public', [App\Http\Controllers\RegPeriksaController::class, 'testNoRegPublic'])->withoutMiddleware(['loginauth']);
 
-// ePPBGM Menu index route
-Route::get('/eppbgm', function () {
-    return view('eppbgm.index');
-})->name('eppbgm.index');
+// Rute pengujian dokter spesifik
+Route::get('/test-dokter-noreg-public/{kd_dokter?}', [App\Http\Controllers\RegPeriksaController::class, 'testDokterNoRegPublic'])->withoutMiddleware(['loginauth']);
+
+// Route untuk API skrining (tanpa autentikasi)
+
+// POST/DELETE endpoints (unprefixed names expected by frontend)
+Route::post('/farmasi/set-harga-obat', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'update'])->name('set-harga-obat.update');
+Route::post('/farmasi/set-penjualan-umum', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'updatePenjualanUmum'])->name('set-penjualan-umum.update');
+Route::post('/farmasi/set-penjualan', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'storePenjualanPerJenis'])->name('set-penjualan.store');
+Route::delete('/farmasi/set-penjualan/{kdjns}', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'destroyPenjualanPerJenis'])->name('set-penjualan.destroy');
+
+
+// CRUD Kegiatan UKM (React + API)
+Route::middleware(['web', 'loginauth'])->group(function () {
+    // Halaman Menu UKM (React)
+    Route::get('/matrik-kegiatan-ukm', function () {
+        return view('react.matrik-kegiatan-ukm');
+    })->name('ukm.menu');
+
+    // Halaman React untuk Kegiatan UKM
+    Route::get('/kegiatan-ukm', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'page'])->name('kegiatan-ukm.page');
+
+    // API Endpoints
+    Route::get('/api/kegiatan-ukm/meta', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'meta'])
+        ->name('kegiatan-ukm.meta')
+        ->withoutMiddleware(['loginauth']);
+    Route::get('/api/kegiatan-ukm', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'data'])
+        ->name('kegiatan-ukm.data')
+        ->withoutMiddleware(['loginauth']);
+    Route::get('/api/kegiatan-ukm/next-code', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'nextCode'])
+        ->name('kegiatan-ukm.next-code')
+        ->withoutMiddleware(['loginauth']);
+    Route::post('/api/kegiatan-ukm', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'store'])
+        ->name('kegiatan-ukm.store')
+        ->withoutMiddleware(['loginauth', \App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::put('/api/kegiatan-ukm/{id}', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'update'])
+        ->name('kegiatan-ukm.update')
+        ->withoutMiddleware(['loginauth', \App\Http\Middleware\VerifyCsrfToken::class]);
+    Route::delete('/api/kegiatan-ukm/{id}', [App\Http\Controllers\MatrikKegiatanUkm\KegiatanUkmController::class, 'destroy'])
+        ->name('kegiatan-ukm.destroy')
+        ->withoutMiddleware(['loginauth', \App\Http\Middleware\VerifyCsrfToken::class]);
+});

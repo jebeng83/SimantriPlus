@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use App\Models\Setting; // tambah import Setting
 
 class LoginController extends Controller
 {
@@ -24,7 +25,49 @@ class LoginController extends Controller
             "actionsBox" => true,
         ];
         $poli = DB::table('poliklinik')->where('status', '1')->get();
-        return view('auth.login-premium',['poli'=>$poli, 'config'=>$config]);
+
+        // Ambil wallpaper dari tabel setting (blob) dan konversi ke data URL
+        $wallpaperUrl = asset('images/wallpaper.jpg');
+        try {
+            $blob = Setting::get('wallpaper');
+            if (!empty($blob)) {
+                // Deteksi mime type dari blob
+                $mime = 'image/jpeg';
+                if (class_exists('finfo')) {
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $detected = $finfo->buffer($blob);
+                    if ($detected) $mime = $detected;
+                }
+                $base64 = base64_encode($blob);
+                $wallpaperUrl = "data:$mime;base64,$base64";
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal memuat wallpaper dari setting, gunakan default asset', ['error' => $e->getMessage()]);
+        }
+
+        // Ambil logo dari tabel setting (blob) dan konversi ke data URL
+        $logoUrl = asset(config('adminlte.logo_img'));
+        try {
+            $logoBlob = Setting::get('logo');
+            if (!empty($logoBlob)) {
+                $logoMime = 'image/png';
+                if (class_exists('finfo')) {
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $detected = $finfo->buffer($logoBlob);
+                    if ($detected) $logoMime = $detected;
+                }
+                $logoUrl = "data:$logoMime;base64," . base64_encode($logoBlob);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal memuat logo dari setting, gunakan default asset', ['error' => $e->getMessage()]);
+        }
+
+        return view('auth.login-premium',[
+            'poli' => $poli,
+            'config' => $config,
+            'wallpaperUrl' => $wallpaperUrl,
+            'logoUrl' => $logoUrl,
+        ]);
     }
 
     public function customLogin(Request $request)
@@ -126,7 +169,6 @@ class LoginController extends Controller
         }
     }
 
-
     public function username()
     {
         return 'username';
@@ -145,69 +187,10 @@ class LoginController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
+    public function create() { /* ... */ }
+    public function store(Request $request) { /* ... */ }
+    public function show($id) { /* ... */ }
+    public function edit($id) { /* ... */ }
+    public function update(Request $request, $id) { /* ... */ }
+    public function destroy($id) { /* ... */ }
 }

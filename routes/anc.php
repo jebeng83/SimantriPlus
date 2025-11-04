@@ -5,12 +5,14 @@ use App\Http\Controllers\ANC\DataBalitaSakitController;
 use App\Http\Controllers\ANC\DataRematriController;
 use App\Http\Controllers\ANC\DataIbuNifasController;
 use App\Http\Controllers\ANC\PartografController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('anc')->name('anc.')->group(function () {
     // Data Ibu Hamil Routes
-    Route::resource('data-ibu-hamil', DataIbuHamilController::class);
+    // Use 'id' as the route parameter to match controller method signatures
+    Route::resource('data-ibu-hamil', DataIbuHamilController::class)
+        ->parameters(['data-ibu-hamil' => 'id']);
     Route::get('data-ibu-hamil/get-data-pasien/{nik}', [DataIbuHamilController::class, 'getDataPasien'])->name('data-ibu-hamil.get-data-pasien');
-    Route::get('data-ibu-hamil/{id}/edit', [DataIbuHamilController::class, 'edit'])->name('data-ibu-hamil.edit');
     Route::get('data-ibu-hamil/{id}/detail', [DataIbuHamilController::class, 'detail'])->name('data-ibu-hamil.detail');
     
     // Partograf Routes

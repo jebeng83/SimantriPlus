@@ -1,0 +1,84 @@
+==== resources/js/app.jsx ====
+--- dynamic_import_backup_20251024_090116/app.jsx	2025-10-24 09:01:16
++++ resources/js/app.jsx	2025-10-24 09:01:16
+@@ -26,7 +26,7 @@
+ const rootElement = document.getElementById('react-root');
+ if (rootElement) {
+   const root = createRoot(rootElement);
+-  importIfPreamble('./components/HelloMotion.jsx')
++  import('./components/HelloMotion.jsx')
+     .then(({ default: HelloMotion }) => {
+       root.render(<HelloMotion />);
+     })
+\ No newline at end of file
+@@ -75,7 +75,7 @@
+ const ilpMenuRoot = document.getElementById('ilp-menu-root');
+ if (ilpMenuRoot) {
+   const root = createRoot(ilpMenuRoot);
+-  importIfPreamble('./pages/ilp/index.jsx')
++  import('./pages/ilp/index.jsx')
+     .then(({ default: IlpMenu }) => {
+       root.render(<IlpMenu />);
+     })
+\ No newline at end of file
+@@ -89,7 +89,7 @@
+ const pcareMenuRoot = document.getElementById('pcare-menu-root');
+ if (pcareMenuRoot) {
+   const root = createRoot(pcareMenuRoot);
+-  importIfPreamble('./pages/Pcare/index.jsx')
++  import('./pages/Pcare/index.jsx')
+     .then(({ default: PcareMenu }) => {
+       root.render(<PcareMenu />);
+     })
+\ No newline at end of file
+@@ -103,7 +103,7 @@
+ const mobileJknHomeRoot = document.getElementById('mobile-jkn-home-root');
+ if (mobileJknHomeRoot) {
+   const root = createRoot(mobileJknHomeRoot);
+-  importIfPreamble('./pages/Mobile-Jkn/home.jsx')
++  import('./pages/Mobile-Jkn/home.jsx')
+     .then(({ default: MobileJknHome }) => {
+       root.render(<MobileJknHome />);
+     })
+\ No newline at end of file
+@@ -117,7 +117,7 @@
+ const eppbgmMenuRoot = document.getElementById('eppbgm-menu-root');
+ if (eppbgmMenuRoot) {
+   const root = createRoot(eppbgmMenuRoot);
+-  importIfPreamble('./pages/Eppbgm/index.jsx')
++  import('./pages/Eppbgm/index.jsx')
+     .then(({ default: EppbgmMenu }) => {
+       root.render(<EppbgmMenu />);
+     })
+\ No newline at end of file
+@@ -131,7 +131,7 @@
+ const laporanMenuRoot = document.getElementById('laporan-menu-root');
+ if (laporanMenuRoot) {
+   const root = createRoot(laporanMenuRoot);
+-  importIfPreamble('./pages/Laporan/index.jsx')
++  import('./pages/Laporan/index.jsx')
+     .then(({ default: LaporanMenu }) => {
+       root.render(<LaporanMenu />);
+     })
+\ No newline at end of file
+@@ -173,7 +173,7 @@
+ const permintaanMedisRoot = document.getElementById('farmasi-permintaan-root');
+ if (permintaanMedisRoot) {
+   const root = createRoot(permintaanMedisRoot);
+-  importIfPreamble('./pages/Farmasi/PermintaanMedis.jsx')
++  import('./pages/Farmasi/PermintaanMedis.jsx')
+     .then(({ default: PermintaanMedis }) => {
+       root.render(<PermintaanMedis />);
+     })
+\ No newline at end of file
+@@ -188,7 +188,7 @@
+ if (farmasiIndexRoot) {
+   console.log('[Farmasi] Mounting Farmasi Index at #farmasi-index-root');
+   const root = createRoot(farmasiIndexRoot);
+-  importIfPreamble('./pages/Farmasi/index.jsx')
++  import('./pages/Farmasi/index.jsx')
+     .then(({ default: FarmasiIndex }) => {
+       root.render(<FarmasiIndex />);
+     })
+\ No newline at end of file
+

@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
+// Audio assets for antrian announcement
+import nomorAntrianUrl from '../Display/assets/nomor antrian.mp3';
+import menujuUrl from '../Display/assets/menuju/Silahkan ke.mp3';
 
 // CSRF token for Laravel POST
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -225,6 +228,11 @@ const PatientSearchRegister = ({
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ p_jawab: 'PASIEN', almt_pj: '-', hubunganpj: 'DIRI SENDIRI', biaya_reg: 0 });
   const [skriningModal, setSkriningModal] = useState({ open: false, message: '' });
+  // Cache detail pasien untuk melengkapi tampilan hasil pencarian (nama, alamat, kelurahan)
+  const [resultsDetails, setResultsDetails] = useState({});
+  // Cache mapping kelurahan: kd_kel -> nm_kel, dan daftar kelurahan per kecamatan
+  const kelLabelCacheRef = useRef(new Map()); // key: kd_kel, value: nm_kel
+  const kelListCacheRef = useRef(new Map()); // key: kd_kec, value: Array<{kd_kel,nm_kel}>
   const keluargaOptions = ['AYAH','IBU','ISTRI','SUAMI','SAUDARA','ANAK','DIRI SENDIRI','LAIN-LAIN'].map((v)=>({ value: v, label: v }));
 
   const openSkriningModal = (message) => {
@@ -304,6 +312,90 @@ const PatientSearchRegister = ({
       active = false;
     };
   }, [query]);
+
+  // Lengkapi hasil pencarian dengan detail pasien (nama lengkap, alamat, kelurahan) bila belum tersedia
+  useEffect(() => {
+    let cancelled = false;
+    const toFetch = [];
+    const seen = new Set();
+    for (const r of results) {
+      const rmRaw = r?.id ?? r?.no_rkm_medis ?? r?.rm ?? '';
+      const rm = String(rmRaw || '').trim();
+      if (!rm || seen.has(rm)) continue;
+      seen.add(rm);
+      const hasName = Boolean(r?.nm_pasien || r?.nama || resultsDetails[rm]?.nm_pasien || resultsDetails[rm]?.nama);
+      const hasAlamat = Boolean(r?.alamat || r?.alamat_pasien || resultsDetails[rm]?.alamat);
+      const hasKelurahan = Boolean(r?.nm_kel || r?.kelurahan || r?.kelurahanpj || resultsDetails[rm]?.kelurahan);
+      if (!hasName || !hasAlamat || !hasKelurahan) {
+        toFetch.push(rm);
+      }
+    }
+    if (toFetch.length === 0) return;
+
+    // Batasi jumlah dan jalankan SEKUENSIAL dengan jeda kecil untuk menghindari 429 (rate limit)
+    const limited = toFetch.slice(0, 3);
+    (async () => {
+      for (const rm of limited) {
+        if (cancelled) break;
+        try {
+          const res = await api.pasienDetail(rm);
+          const d = res?.data || res;
+          if (!d || cancelled) continue;
+          // Derive nm_kel label from kd_kel/kd_kec with lightweight caching
+          const kdKel = d?.kd_kel || '';
+          const kdKec = d?.kd_kec || '';
+          let kelLabel = d?.kelurahan || d?.nm_kel || '';
+
+          if (!kelLabel && kdKel) {
+            const cached = kelLabelCacheRef.current.get(String(kdKel));
+            if (cached) {
+              kelLabel = cached;
+            } else if (kdKec) {
+              let list = kelListCacheRef.current.get(String(kdKec));
+              if (!list) {
+                try {
+                  const resp = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(kdKec)}`).then((x) => x.json()).catch(() => []);
+                  list = Array.isArray(resp) ? resp : [];
+                  kelListCacheRef.current.set(String(kdKec), list);
+                  for (const k of list) {
+                    if (k?.kd_kel) kelLabelCacheRef.current.set(String(k.kd_kel), k?.nm_kel || '');
+                  }
+                } catch (_) {}
+              }
+              kelLabel = kelLabelCacheRef.current.get(String(kdKel)) || '';
+            }
+          }
+
+          setResultsDetails((prev) => ({
+            ...prev,
+            [rm]: {
+              nama: d?.nm_pasien || d?.nama || '',
+              nm_pasien: d?.nm_pasien || d?.nama || '',
+              no_ktp: d?.no_ktp || '',
+              alamat: d?.alamat || '',
+              kd_kec: kdKec,
+              kd_kel: kdKel,
+              kelurahan: kelLabel || '',
+            },
+          }));
+        } catch (err) {
+          const is429 = (err?.status === 429) || (err?.response?.status === 429) || (String(err?.message||'').includes('429'));
+          const isHtml = String(err?.message||'').includes('<!DOCTYPE');
+          if (is429) {
+            console.warn(`Rate limited (429) saat memuat detail pasien ${rm}. Akan mencoba lagi secara bertahap.`);
+          } else if (isHtml) {
+            console.warn(`Respon bukan JSON saat memuat detail pasien ${rm}. Lewati entri ini.`);
+          } else {
+            console.warn('Gagal memuat detail pasien untuk', rm, err);
+          }
+        }
+        // Jeda antar permintaan untuk menurunkan beban server
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [results]);
 
   useEffect(() => {
     if (selectedPatient?.id) {
@@ -467,15 +559,18 @@ const PatientSearchRegister = ({
 
       const bpjsRes = await api.bpjsAddAntrean(dataAdd);
       const meta = bpjsRes?.metadata ?? bpjsRes?.metaData;
+      const code = Number(meta?.code);
 
-      if (meta?.code === 200) {
+      if (code === 200) {
         const nomor = bpjsRes?.response?.nomorantrean || dataAdd.nomorantrean;
         notify?.({ type: 'success', title: 'Antrean BPJS berhasil', description: `Nomor antrean: ${nomor}` });
-      } else if (meta?.code === 201) {
-        const msg = (meta?.message || '').toLowerCase();
-        const isSkrining = msg.includes('skrining');
+      } else if (code === 201) {
+        const msgRaw = meta?.message || '';
+        const msg = msgRaw.toLowerCase();
+        const isSkrining = msg.includes('skrining') || msg.includes('srk') || msg.includes('screening');
         if (isSkrining) {
           // Peserta belum melakukan skrining kesehatan
+          notify?.({ type: 'warning', title: 'Belum melakukan Skrining Kesehatan', description: msgRaw || 'Peserta belum melakukan SRK (Skrining Kesehatan BPJS).' });
           openSkriningModal(meta?.message);
           // Jangan lanjut fallback karena instruksi harus skrining terlebih dulu
           return;
@@ -548,11 +643,8 @@ const PatientSearchRegister = ({
     }
   };
 
-  const handleSubmit = async () => {
-    if (!canRegister) {
-      notify?.({ type: 'info', title: 'Lengkapi data', description: 'Pilih pasien, poli, dokter, dan cara bayar. NoReg akan dibuat otomatis saat pasien dipilih.' });
-      return;
-    }
+  // Simpan pendaftaran (dipanggil setelah konfirmasi SRK jika diperlukan)
+  const handleSubmitProceed = async () => {
     setSaving(true);
     try {
       const umurInfo = calcUmurDaftar(patientInfo?.tgl_lahir, date);
@@ -598,6 +690,40 @@ const PatientSearchRegister = ({
     }
   };
 
+  const handleSubmit = async () => {
+    if (!canRegister) {
+      notify?.({ type: 'info', title: 'Lengkapi data', description: 'Pilih pasien, poli, dokter, dan cara bayar. NoReg akan dibuat otomatis saat pasien dipilih.' });
+      return;
+    }
+    // Pre-check SRK untuk pasien BPJS (tanpa bergantung pada state di komponen lain)
+    const isBPJ = (() => {
+      const kd = String(selectedPenjab || patientInfo?.kd_pj || '').trim().toUpperCase();
+      const label = String(patientInfo?.png_jawab || '').trim().toLowerCase();
+      if (kd === 'BPJ') return true;
+      if (label.includes('bpjs')) return true;
+      return false;
+    })();
+    if (isBPJ) {
+      try {
+        const noka = String(patientInfo?.no_peserta || '');
+        const nik = String(patientInfo?.no_ktp || '');
+        if (noka || nik) {
+          const resSrk = await api.bpjsSrkStatus(noka, nik);
+          const status = resSrk?.srk_status;
+          const meta = resSrk?.metadata || resSrk?.metaData;
+          if (status === 'Belum SRK') {
+            openSkriningModal(meta?.message);
+            return; // tahan simpan, minta pengguna OK/SRK dulu
+          }
+        }
+      } catch (err) {
+        console.warn('SRK precheck error:', err);
+        // Jangan blok pendaftaran jika cek SRK gagal; lanjut simpan
+      }
+    }
+    await handleSubmitProceed();
+  };
+
   return (
     <>
       <Card title="Pencarian Pasien & Form Registrasi">
@@ -633,14 +759,25 @@ const PatientSearchRegister = ({
                   {results.map((r, idx) => {
                     const rmRaw = r.id ?? r.no_rkm_medis ?? r.rm ?? '';
                     const rm = String(rmRaw).trim();
-                    const name = (r.nm_pasien ?? r.nama ?? '').toString().trim();
+                    const detail = resultsDetails[rm] || {};
+                    const name = (r.nm_pasien ?? r.nama ?? detail.nm_pasien ?? detail.nama ?? '').toString().trim();
                     const labelRaw = r.text ?? r.label ?? (rm || name ? `${rm} - ${name}` : 'Tidak diketahui');
                     const label = String(labelRaw).trim();
-                    const nik = (r.no_ktp ?? r.nik ?? r.noKTP ?? '').toString().trim();
+                    const nik = (r.no_ktp ?? r.nik ?? r.noKTP ?? detail.no_ktp ?? '').toString().trim();
+                    const alamat = (r.alamat ?? r.alamat_pasien ?? detail.alamat ?? '').toString().trim();
+                    const kelurahanRaw = r.nm_kel ?? r.kelurahan ?? r.kelurahanpj ?? detail.kelurahan ?? '';
+                    const kelurahan = String(kelurahanRaw).trim();
+
+                    // Format baris pertama: NIK - Nama (bold)
+                    const firstLine = `${nik || '-'} - ${name || '-'}`;
+
+                    // Format baris kedua: No RM{no_rkm_medis} - alamat {alamat} - kelurahan {nm_kel}
+                    const secondLine = `No RM: ${rm || '-'} - Alamat: ${alamat || '-'} - Kelurahan: ${kelurahan || '-'}`;
+
                     return (
                       <motion.li
                         key={rm || label || idx}
-                        className="p-3 hover:bg-slate-50 cursor-pointer"
+                        className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         whileHover={{ y: -1 }}
@@ -660,8 +797,8 @@ const PatientSearchRegister = ({
                           if (r.kd_pj) setSelectedPenjab(r.kd_pj);
                         }}
                       >
-                        <div className="font-medium text-slate-800 text-sm">{label}</div>
-                        <div className="text-xs text-slate-500">No RM: {rm || '-'} • NIK: {nik || '-'}</div>
+                        <div className="font-bold text-slate-800 text-sm mb-1">{firstLine}</div>
+                        <div className="text-xs text-slate-600">{secondLine}</div>
                       </motion.li>
                     );
                   })}
@@ -687,7 +824,7 @@ const PatientSearchRegister = ({
         {/* Baris khusus untuk menyelaraskan tiga card: Informasi Pasien, Informasi Status BPJS (PCare), dan Form Registrasi */}
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
           <div className="h-full space-y-4">
-            <PatientInfoCard patientInfo={patientInfo} notify={notify} setPatientInfo={setPatientInfo} />
+            <PatientInfoCard patientInfo={patientInfo} notify={notify} setPatientInfo={setPatientInfo} selectedPenjab={selectedPenjab} />
             {/* CKG dipindah ke dalam card, di bawah Informasi Pasien */}
             <CKGStatusCard patientInfo={patientInfo} />
           </div>
@@ -736,7 +873,7 @@ const PatientSearchRegister = ({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
-                onClick={closeSkriningModal}
+                onClick={() => { closeSkriningModal(); handleSubmitProceed(); }}
               >
                 OK
               </button>
@@ -1026,7 +1163,7 @@ const CKGStatusCard = ({ patientInfo }) => {
 };
 
 // Patient info card
-const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
+const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
@@ -1244,6 +1381,21 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
     }));
   }, [copyAlamatPJ, form.alamat, form.kd_kab, form.kd_kec, form.kd_kel, kabupatenOptions, kecamatanOptions, kelurahanOptions]);
 
+  // Muat data penjab untuk penentuan label Cara Bayar meskipun tidak dalam mode edit
+  useEffect(() => {
+    let active = true;
+    if (!penjabOptions || penjabOptions.length === 0) {
+      api.penjab()
+        .then((r) => {
+          if (!active) return;
+          const arr = Array.isArray(r) ? r : (Array.isArray(r?.data) ? r.data : []);
+          setPenjabOptions(arr || []);
+        })
+        .catch(() => { if (active) setPenjabOptions([]); });
+    }
+    return () => { active = false; };
+  }, []);
+
   const submitEdit = async () => {
     if (!patientInfo) return;
     const rm = String(patientInfo?.no_rkm_medis ?? '').trim();
@@ -1283,6 +1435,21 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
     }
   };
 
+  // Hitung label Cara Bayar dari pasien.kd_pj -> penjab.png_jawab
+  const caraBayarLabel = useMemo(() => {
+    try {
+      const kd = String(selectedPenjab || patientInfo?.kd_pj || '').trim();
+      if (!kd) return patientInfo?.png_jawab || '-';
+      const match = Array.isArray(penjabOptions)
+        ? penjabOptions.find((p) => String(p.id ?? p.value ?? p.kd_pj ?? '') === kd)
+        : null;
+      const label = match?.text ?? match?.label ?? match?.png_jawab ?? '';
+      return label || patientInfo?.png_jawab || kd || '-';
+    } catch {
+      return patientInfo?.png_jawab || '-';
+    }
+  }, [selectedPenjab, patientInfo?.kd_pj, patientInfo?.png_jawab, penjabOptions]);
+
   return (
     <Card title="Informasi Pasien" headerRight={toggleBtn}>
       {collapsed ? null : (
@@ -1308,7 +1475,7 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo }) => {
               <div className="text-slate-600">Alamat:</div>
               <div className="font-medium text-slate-800">{patientInfo.alamat || '-'}</div>
               <div className="text-slate-600">Cara Bayar:</div>
-              <div className="font-medium text-slate-800">{patientInfo.png_jawab || '-'}</div>
+              <div className="font-medium text-slate-800">{caraBayarLabel}</div>
               <div className="text-slate-600">Umur:</div>
               <div className="font-medium text-slate-800">{patientInfo.umur || '-'}</div>
             </div>
@@ -1497,7 +1664,14 @@ const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
     const content = el.outerHTML;
     const css = `
       <style>
+        /* Paksa orientasi landscape dan ukuran 6x4cm saat print */
         @page { size: 6cm 4cm; margin: 0; }
+        @media print {
+          /* Beberapa browser/driver printer membutuhkan deklarasi eksplisit ini */
+          @page { size: 6cm 4cm; margin: 0; }
+          html, body { width: 6cm; height: 4cm; }
+          #printable-label { width: 6cm !important; height: 4cm !important; }
+        }
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; }
       </style>
@@ -1728,10 +1902,94 @@ const QueueRegisterCard = ({ date, notify }) => {
   const [lastCalledNumber, setLastCalledNumber] = useState('');
   const [recalling, setRecalling] = useState(false);
 
-  const playBell = () => {
+  // Preload and map audio assets for number pronunciation
+  const numberAudioMap = useMemo(() => {
+    const mods = import.meta.glob('../Display/assets/nomor/*.mp3', { eager: true, import: 'default' });
+    const m = {};
+    for (const [path, url] of Object.entries(mods)) {
+      const key = String(path.split('/').pop() || '').replace('.mp3', '').toLowerCase();
+      m[key] = url;
+    }
+    return m;
+  }, []);
+
+  // Convert an integer into a sequence of audio URLs (Indonesian pronunciation up to 9999)
+  const numberToUrls = (val) => {
+    const raw = String(val ?? '').trim();
+    const digitsOnly = raw.replace(/\D+/g, ''); // ambil hanya angka, contoh "A001" -> "001"
+    const n = parseInt(digitsOnly, 10);
+    if (!Number.isFinite(n)) return [];
+    const m = numberAudioMap;
+    const dig = (d) => m[String(d)] || '';
+
+    const speakUnderHundred = (x) => {
+      if (x < 0) return [];
+      if (x < 10) return [dig(x)];
+      if (x === 10) return [m['10'] || dig(1), m['10'] ? '' : m['puluh']].filter(Boolean);
+      if (x === 11) return [m['sebelas']].filter(Boolean);
+      if (x < 20) {
+        // 12..19 => "<digit> belas"
+        return [dig(x % 10), m['belas']].filter(Boolean);
+      }
+      const tens = Math.floor(x / 10);
+      const ones = x % 10;
+      if (ones === 0) {
+        // 20,30,..90 prefer specific file if exists, else "<digit> puluh"
+        return [m[String(x)] || dig(tens), m[String(x)] ? '' : m['puluh']].filter(Boolean);
+      }
+      return [dig(tens), m['puluh'], dig(ones)].filter(Boolean);
+    };
+
+    const speakHundred = (x) => {
+      if (x < 100) return speakUnderHundred(x);
+      const hundreds = Math.floor(x / 100);
+      const rest = x % 100;
+      const seq = [dig(hundreds), m['ratus']].filter(Boolean);
+      if (rest > 0) seq.push(...speakUnderHundred(rest));
+      return seq;
+    };
+
+    const speakThousand = (x) => {
+      if (x < 1000) return speakHundred(x);
+      const thousands = Math.floor(x / 1000);
+      const rest = x % 1000;
+      const seq = [dig(thousands), m['ribu']].filter(Boolean);
+      if (rest > 0) seq.push(...speakHundred(rest));
+      return seq;
+    };
+
+    if (n === 0) return [dig(0)].filter(Boolean);
+    return speakThousand(n).filter(Boolean);
+  };
+
+  // Play an array of audio URLs sequentially
+  const playSequence = (urls = []) => {
+    let idx = 0;
+    const playNext = () => {
+      if (idx >= urls.length) return;
+      const src = urls[idx++];
+      try {
+        const a = new Audio(src);
+        a.addEventListener('ended', playNext);
+        a.addEventListener('error', playNext);
+        a.play().catch(playNext);
+      } catch (_) {
+        playNext();
+      }
+    };
+    playNext();
+  };
+
+  const playBell = (nomorOverride, tujuanOverride) => {
     try {
-      const audio = new Audio('/audio/bell.mp3');
-      audio.play();
+      const nomorStr = String(nomorOverride ?? lastCalledNumber ?? nextNumber ?? '').trim();
+      const sequence = [
+        '/display/assets/notifbell.mp3',
+        nomorAntrianUrl,
+        ...numberToUrls(nomorStr),
+        menujuUrl,
+      ];
+      playSequence(sequence);
     } catch (e) {
       // ignore autoplay errors
     }
@@ -1757,14 +2015,20 @@ const QueueRegisterCard = ({ date, notify }) => {
   }, [date]);
 
   const panggil = async () => {
+    // Hindari panggilan server jika tidak ada nomor berikutnya dan sisa antrian 0
+    if (!nextNumber && remaining <= 0) {
+      notify?.({ type: 'warning', title: 'Antrian habis', description: 'Tidak ada nomor antrian tersisa.' });
+      return;
+    }
     try {
       setCalling(true);
-      const res = await api.antriCall({ date, loket });
+      const payload = nextNumber ? { date, loket, nomor: nextNumber } : { date, loket };
+      const res = await api.antriCall(payload);
       const nomorDipanggil = res?.nomor ?? nextNumber;
-      if (res?.success) {
+      if (res?.success && nomorDipanggil) {
         setLastCalledNumber(String(nomorDipanggil || ''));
         notify?.({ type: 'success', title: 'Panggilan antrian', description: `Nomor ${nomorDipanggil} dipanggil (${loket}).` });
-        playBell();
+        playBell(nomorDipanggil);
       } else if (!nomorDipanggil) {
         notify?.({ type: 'error', title: 'Antrian habis', description: 'Tidak ada nomor antrian tersisa.' });
       } else {
@@ -1793,7 +2057,7 @@ const QueueRegisterCard = ({ date, notify }) => {
       }
       if (res?.success) {
         notify?.({ type: 'success', title: 'Panggil ulang', description: `Nomor ${lastCalledNumber} dipanggil ulang (${loket}).` });
-        playBell();
+        playBell(lastCalledNumber);
       } else {
         notify?.({ type: 'error', title: 'Gagal panggil ulang', description: res?.message || 'Terjadi kesalahan.' });
       }
@@ -1818,12 +2082,13 @@ const QueueRegisterCard = ({ date, notify }) => {
         </div>
         <div className="flex flex-col md:flex-row items-end gap-2">
           <div className="flex-1">
-            <Select label="Loket" options={["LOKET 1","LOKET 2","LOKET 3"].map((v)=>({ value: v, label: v }))} value={loket} onChange={setLoket} />
+            <Select label="Loket" options={["LOKET 1","LOKET 2","LOKET 3","LOKET 4"].map((v)=>({ value: v, label: v }))} value={loket} onChange={setLoket} />
           </div>
           <button
-            className={`w-full md:w-auto px-3 py-2 rounded-md text-xs font-semibold ${calling ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+            className={`w-full md:w-auto px-3 py-2 rounded-md text-xs font-semibold ${(calling || (!nextNumber && remaining <= 0)) ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
             onClick={panggil}
-            disabled={calling}
+            disabled={calling || (!nextNumber && remaining <= 0)}
+            title={!nextNumber && remaining <= 0 ? 'Antrian habis' : 'Panggil nomor berikutnya'}
           >
             {calling ? 'Memanggil…' : 'Panggil'}
           </button>
@@ -1897,7 +2162,7 @@ export default function RegPeriksaPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="w-full px-0 py-2">
         {/* notifikasi pojok kanan atas */}
-        <div className="fixed top-3 right-3 z-50 space-y-2">
+        <div className="fixed top-3 right-3 z-[2000] space-y-2">
           {toasts.map((t) => (
             <motion.div
               key={t.id}

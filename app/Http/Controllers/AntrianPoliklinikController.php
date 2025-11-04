@@ -426,42 +426,53 @@ class AntrianPoliklinikController extends Controller
     public function getMediaFiles()
     {
         try {
-            // Path untuk folder video
-            $videoPath = public_path('assets/video');
-            $videoFiles = [];
+            // Daftar folder video yang mungkin digunakan
+            $videoDirs = [
+                public_path('assets/video'),
+                public_path('display/video'),
+                public_path('video'),
+            ];
 
-            // Path untuk folder gambar
-            $imagePath = public_path('img');
-            $imageFiles = [];
+            $videoUrls = [];
 
-            // Cek apakah folder video ada dan bisa diakses
-            if (is_dir($videoPath) && is_readable($videoPath)) {
-                // Ambil semua file MP4 dari folder video
-                $videoFiles = array_filter(scandir($videoPath), function($item) use ($videoPath) {
-                    return !is_dir($videoPath . '/' . $item) && 
-                           pathinfo($item, PATHINFO_EXTENSION) == 'mp4';
-                });
-            } else {
-                \Log::warning("Folder video tidak ditemukan atau tidak bisa diakses: $videoPath");
+            foreach ($videoDirs as $dir) {
+                if (is_dir($dir) && is_readable($dir)) {
+                    $files = array_filter(scandir($dir), function($item) use ($dir) {
+                        return !is_dir($dir . '/' . $item) && strtolower(pathinfo($item, PATHINFO_EXTENSION)) === 'mp4';
+                    });
+                    // Buat URL absolut per file
+                    // Konversi path fisik ke base URL relatif public
+                    $baseRel = str_replace(public_path(), '', $dir); // contoh: /assets/video
+                    $baseRel = ltrim($baseRel, '/');
+                    foreach ($files as $f) {
+                        $videoUrls[] = asset($baseRel . '/' . $f);
+                    }
+                }
             }
 
-            // Cek apakah folder gambar ada dan bisa diakses
+            // Gambar tetap dari public/img
+            $imagePath = public_path('img');
+            $imageFiles = [];
             if (is_dir($imagePath) && is_readable($imagePath)) {
-                // Ambil semua file gambar dari folder img
                 $imageFiles = array_filter(scandir($imagePath), function($item) use ($imagePath) {
                     $ext = strtolower(pathinfo($item, PATHINFO_EXTENSION));
-                    return !is_dir($imagePath . '/' . $item) && 
-                           in_array($ext, ['jpg', 'jpeg', 'png', 'gif']);
+                    return !is_dir($imagePath . '/' . $item) && in_array($ext, ['jpg', 'jpeg', 'png', 'gif']);
                 });
             } else {
                 \Log::warning("Folder gambar tidak ditemukan atau tidak bisa diakses: $imagePath");
             }
 
             return response()->json([
-                'video' => array_values($videoFiles),
+                // kompatibilitas lama (tetap kirim path lama jika ada)
+                'video' => array_map(function($url){
+                    // Ambil nama file saja supaya struktur lama tetap ada jika dibutuhkan
+                    return basename(parse_url($url, PHP_URL_PATH));
+                }, $videoUrls),
                 'images' => array_values($imageFiles),
-                'video_path' => asset('assets/video'),
+                'video_path' => asset('assets/video'), // salah satu base lama
                 'image_path' => asset('img'),
+                // struktur baru yang lebih fleksibel
+                'video_urls' => $videoUrls,
                 'status' => 'success'
             ]);
         } catch (\Exception $e) {
@@ -473,4 +484,4 @@ class AntrianPoliklinikController extends Controller
             ], 500);
         }
     }
-} 
+}

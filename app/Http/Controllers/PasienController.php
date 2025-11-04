@@ -340,7 +340,10 @@ class PasienController extends Controller
                     'reg_periksa.kd_pj',
                     'penjab.png_jawab',
                     'pasien.no_tlp',
-                    'pasien.alamat'
+                    'pasien.alamat',
+                    // Tambahan untuk melengkapi informasi wilayah
+                    'pasien.kd_kec',
+                    'pasien.kd_kel'
                 )
                 ->orderBy('reg_periksa.jam_reg', 'desc')
                 ->first();
@@ -376,7 +379,10 @@ class PasienController extends Controller
                         'penjab.png_jawab',
                         'pasien.no_tlp',
                         'pasien.alamat',
-                        'reg_periksa.tgl_registrasi'
+                        'reg_periksa.tgl_registrasi',
+                        // Tambahan untuk melengkapi informasi wilayah
+                        'pasien.kd_kec',
+                        'pasien.kd_kel'
                     )
                     ->orderBy('reg_periksa.tgl_registrasi', 'desc')
                     ->orderBy('reg_periksa.jam_reg', 'desc')
@@ -410,14 +416,29 @@ class PasienController extends Controller
                             DB::raw("'' as kd_pj"),
                             DB::raw("'' as png_jawab"),
                             'no_tlp',
-                            'alamat'
+                            'alamat',
+                            // Tambahan untuk melengkapi informasi wilayah
+                            'kd_kec',
+                            'kd_kel'
                         )
-                        // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                         ->where('no_rkm_medis', $no_rkm_medis)
                         ->first();
                 }
             }
-            
+
+            // Override kd_pj dan png_jawab dengan data master pasien (prioritas dari tabel pasien)
+            // Sesuai kebutuhan UI: Informasi Pasien harus menampilkan Cara Bayar berdasarkan pasien.kd_pj
+            if ($pasien) {
+                $pasienMaster = DB::table('pasien')->select('kd_pj')->where('no_rkm_medis', $no_rkm_medis)->first();
+                if ($pasienMaster && !empty($pasienMaster->kd_pj)) {
+                    $pasien->kd_pj = $pasienMaster->kd_pj;
+                    $pj = DB::table('penjab')->select('png_jawab')->where('kd_pj', $pasienMaster->kd_pj)->first();
+                    if ($pj && !empty($pj->png_jawab)) {
+                        $pasien->png_jawab = $pj->png_jawab;
+                    }
+                }
+            }
+
             if (!$pasien) {
                 // Fallback pencarian: coba LIKE dan hilangkan semua spasi (termasuk NBSP) untuk mengatasi inkonsistensi penyimpanan RM
                 $rmNoSpaces = preg_replace('/\s+/', '', $no_rkm_medis);
@@ -434,7 +455,10 @@ class PasienController extends Controller
                         DB::raw("'' as kd_pj"),
                         DB::raw("'' as png_jawab"),
                         'no_tlp',
-                        'alamat'
+                        'alamat',
+                        // Tambahan untuk melengkapi informasi wilayah
+                        'kd_kec',
+                        'kd_kel'
                     )
                     ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$rmNoSpaces])
                     ->first();

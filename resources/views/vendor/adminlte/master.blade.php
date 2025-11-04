@@ -46,6 +46,8 @@
     {{-- Premium AdminLTE style for consistent look --}}
     <link rel="stylesheet" href="{{ asset('css/adminlte-premium.css') }}">
     <link rel="stylesheet" href="{{ asset('css/uniform-layout.css') }}">
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
     {{-- Script untuk menghapus tombol Debug --}}
     <script>
@@ -95,11 +97,36 @@
     {{-- Custom Stylesheets (post AdminLTE) --}}
     @yield('adminlte_css')
 
+    {{-- Vite React Refresh (React HMR preamble) - Only when dev server is running (hot file present) --}}
+    @php
+        $hotPath = public_path('hot');
+        $hotUrl = file_exists($hotPath) ? trim(file_get_contents($hotPath)) : null;
+    @endphp
+    @if(app()->environment('local', 'development') && !empty($hotUrl))
+        @viteReactRefresh
+        <script type="module">
+            try {
+                const devBase = {{ json_encode($hotUrl) }};
+                await import(devBase + '/@@vite/client');
+                await import(devBase + '/@react-refresh');
+                window.__vite_plugin_react_preamble_installed__ = true;
+                window.$RefreshReg$ = window.$RefreshReg$ || (() => {});
+                window.$RefreshSig$ = window.$RefreshSig$ || (() => (type) => type);
+                console.debug('[Blade] Injected Vite React refresh preamble manually from', devBase);
+            } catch (e) {
+                console.warn('Failed to inject Vite React refresh preamble', e);
+            }
+        </script>
+    @endif
+
+    {{-- Vite React & Tailwind --}}
+    @vite(['resources/js/app.jsx'])
+
     {{-- Removing conflicting favicon settings --}}
     {{-- @laravelPWA --}}
 </head>
 
-<body class="@yield('classes_body') dark-sidebar premium-route" @yield('body_data') data-route="{{ Request::path() }}">
+<body class="@yield('classes_body') sidebar-mini dark-sidebar premium-route" @yield('body_data') data-route="{{ Request::path() }}">
 
     {{-- Body Content --}}
     @yield('body')
@@ -118,8 +145,11 @@
 
     {{-- Navigation Handler Script --}}
     <script src="{{ asset('js/navigation-handler.js') }}"></script>
-    {{-- React bundle (built to public/js/app.js via Laravel Mix) --}}
+    {{-- Nonaktifkan include bundle legacy Mix (public/js/app.js) untuk mencegah konflik dengan Vite
+         Jika diperlukan, aktifkan kembali dengan env khusus atau setelah validasi. --}}
+    {{-- @if(app()->environment('production'))
     <script src="{{ asset('js/app.js') }}"></script>
+    @endif --}}
     @else
     <script src="{{ mix(config('adminlte.laravel_mix_js_path', 'js/app.js')) }}"></script>
     @endif
@@ -135,19 +165,34 @@
     <x-livewire-alert::scripts />
 
     <!-- Service Worker Script -->
+    @if(app()->environment('production'))
     <script>
-        // Hanya mendaftarkan service worker jika protokol HTTPS atau localhost
-        if (('https:' === window.location.protocol || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 'serviceWorker' in navigator) {
-            // Gunakan hanya satu service worker (dari LaravelPWA)
+        // Production: daftarkan Service Worker
+        if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/serviceworker.js')
                 .then(function(registration) {
-                    console.log('Service worker berhasil didaftarkan dengan scope:', registration.scope);
+                    console.log('Service worker (production) scope:', registration.scope);
                 })
                 .catch(function(error) {
                     console.error('Pendaftaran Service Worker gagal:', error);
                 });
         }
     </script>
+    @else
+    <script>
+        // Development: pastikan tidak ada Service Worker aktif dan bersihkan cache untuk menghindari konflik HMR
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        if (window.caches && typeof window.caches.keys === 'function') {
+            caches.keys().then(function(keys) { keys.forEach(function(key) { caches.delete(key); }); });
+        }
+    </script>
+    @endif
 
     {{-- Custom Scripts --}}
     @yield('adminlte_js')

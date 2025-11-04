@@ -20,5 +20,5 @@
 @endsection
 
 @section('js')
-    @vite('resources/js/app.jsx')
+    {{-- App.jsx is loaded globally by adminlte::master. No per-page injection to avoid duplicate evaluation. --}}
 @endsection

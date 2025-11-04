@@ -715,151 +715,105 @@
           setTimeout(() => errorDiv.remove(), 5000);
       }
 
-      // Fungsi untuk menampilkan prompt aktivasi audio
+      // Fungsi untuk menampilkan prompt aktivasi audio (dinonaktifkan)
       function showAudioActivationPrompt() {
-          const promptDiv = document.createElement('div');
-          promptDiv.style.cssText = `
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background: rgba(0, 0, 0, 0.9);
-              color: white;
-              padding: 20px;
-              border-radius: 10px;
-              text-align: center;
-              z-index: 9999;
-          `;
-          
-          promptDiv.innerHTML = `
-              <h3>Aktivasi Sistem Suara</h3>
-              <p>Klik tombol di bawah untuk mengaktifkan sistem suara antrian</p>
-              <button onclick="initAudio()" style="
-                  padding: 10px 20px;
-                  background: #007bff;
-                  color: white;
-                  border: none;
-                  border-radius: 5px;
-                  cursor: pointer;
-              ">Aktifkan Suara</button>
-          `;
-          
-          document.body.appendChild(promptDiv);
+          // Audio prompt dihapus sesuai permintaan; tidak melakukan apa-apa.
       }
 
-      // Fungsi untuk inisialisasi audio
+      // Fungsi untuk inisialisasi audio (dinonaktifkan)
       async function initAudio() {
-          try {
-              audioContext = new (window.AudioContext || window.webkitAudioContext)();
-              audioElement = new Audio();
-              const source = audioContext.createMediaElementSource(audioElement);
-              source.connect(audioContext.destination);
-              
-              if (audioContext.state === 'suspended') {
-                  await audioContext.resume();
-              }
-              
-              audioInitialized = true;
-              
-              // Remove prompt if exists
-              const prompt = document.querySelector('[onclick="initAudio()"]')?.parentElement;
-              if (prompt) prompt.remove();
-              
-              // Play pending audio if exists
-              if (pendingAudioPlay) {
-                  const data = pendingAudioPlay;
-                  pendingAudioPlay = null;
-                  await playAntrianSound(data);
-              }
-              
-              return true;
-          } catch (error) {
-              showError('Gagal mengaktifkan sistem suara');
-              return false;
-          }
+          // Sistem audio di halaman Blade dinonaktifkan sesuai permintaan.
+          return false;
       }
 
-      // Fungsi untuk memainkan file audio
+      // Otomatisasi audio dinonaktifkan
+      async function initAudioAuto() {
+          return false;
+      }
+
+      // Fungsi untuk memainkan file audio (dinonaktifkan)
       function playAudioFile(filename) {
-          return new Promise((resolve, reject) => {
-              if (!audioElement) {
-                  reject(new Error('Audio belum diinisialisasi'));
-                  return;
-              }
-
-              const fullPath = filename.startsWith('/') ? filename : '/' + filename;
-              audioElement.src = fullPath;
-              
-              audioElement.onloadeddata = () => {};
-              audioElement.onended = () => setTimeout(resolve, 300);
-              audioElement.onerror = () => reject(new Error(`Gagal memainkan ${filename}`));
-              
-              const playPromise = audioElement.play();
-              if (playPromise !== undefined) {
-                  playPromise.catch(error => {
-                      if (error.name === 'NotAllowedError') {
-                          showAudioActivationPrompt();
-                          reject(new Error('Perlu interaksi pengguna'));
-                      } else {
-                          reject(error);
-                      }
-                  });
-              }
-          });
+          return Promise.resolve();
       }
 
-      // Fungsi untuk memainkan nomor antrian
+      // Susun token audio untuk pembacaan angka Indonesia (0-9999)
+      function buildNumberAudioTokens(num) {
+          const n = parseInt(String(num).replace(/\D/g, ''), 10);
+          if (!Number.isFinite(n)) return ['0'];
+          if (n === 0) return ['0'];
+          if (n <= 9) return [String(n)];
+          if (n === 10) return ['10'];
+          if (n === 11) return ['sebelas'];
+          if (n < 20) return [String(n % 10), 'belas']; // 12..19 => dua belas, dst
+          if (n < 100) {
+              const tens = Math.floor(n / 10) * 10; // 20..90
+              const ones = n % 10;
+              const tokens = [String(tens)]; // contoh: '20.mp3' (dua puluh)
+              if (ones > 0) tokens.push(String(ones));
+              return tokens;
+          }
+          if (n < 1000) {
+              const hundreds = Math.floor(n / 100); // 1..9 ratus
+              const rest = n % 100;
+              const tokens = [String(hundreds), 'ratus'];
+              if (rest === 0) return tokens;
+              return tokens.concat(buildNumberAudioTokens(rest));
+          }
+          if (n < 10000) {
+              const thousands = Math.floor(n / 1000); // 1..9 ribu
+              const rest = n % 1000;
+              const tokens = [String(thousands), 'ribu'];
+              if (rest === 0) return tokens;
+              return tokens.concat(buildNumberAudioTokens(rest));
+          }
+          // Fallback: bacakan per digit jika lebih besar
+          return String(n).split('');
+      }
+
+      // Fungsi untuk memainkan nomor antrian menggunakan aset di public/display/assets/nomor
       async function playAntrianNumber(number) {
-          const cleanNumber = String(number).replace(/\D/g, '');
-          if (!cleanNumber) throw new Error('Nomor antrian tidak valid');
-          
-          for (const digit of cleanNumber) {
-              await playAudioFile(`/assets/audio/antrian/${digit}.mp3`);
+          const tokens = buildNumberAudioTokens(number);
+          for (const tk of tokens) {
+              await playAudioFile(`/display/assets/nomor/${tk}.mp3`);
           }
       }
 
-      // Fungsi untuk mendapatkan nama file poli
+      // Fungsi untuk mendapatkan nama file poli (fallback jika loket tidak tersedia)
       function getPoliFileName(poliName) {
-          const poliLower = poliName.toLowerCase();
+          const poliLower = String(poliName || '').toLowerCase();
           if (poliLower.includes('umum')) return 'umum';
           if (poliLower.includes('gigi')) return 'gigi';
           if (poliLower.includes('kia')) return 'kia';
+          if (poliLower.includes('klaster 2')) return 'klaster 2';
+          if (poliLower.includes('klaster 3')) return 'klaster 3';
           return 'umum';
       }
 
-      // Fungsi utama untuk memainkan suara antrian
-      async function playAntrianSound(data) {
-          try {
-              if (!audioInitialized) {
-                  pendingAudioPlay = data;
-                  showAudioActivationPrompt();
-                  return;
-              }
+      // Fungsi untuk mendapatkan nama file loket di public/display/assets/loket
+      function getLoketFileName(loket) {
+          const n = parseInt(String(loket).replace(/\D/g, ''), 10);
+          if (!Number.isFinite(n) || n <= 0) return null;
+          return `loket ${n}`; // contoh: 'loket 1.mp3'
+      }
 
-              await playAudioFile('assets/audio/bell.mp3');
-              await playAudioFile('assets/audio/nomor-antrian.mp3');
-              await playAntrianNumber(data.no_reg || data.nomor_antrian);
-              await playAudioFile('assets/audio/menuju.mp3');
-              await playAudioFile(`assets/audio/poli/${getPoliFileName(data.poli)}.mp3`);
-              
-          } catch (error) {
-              showError(error.message);
-          }
+      // Fungsi utama untuk memainkan suara antrian (dinonaktifkan)
+      async function playAntrianSound(data) {
+          // Audio callout telah dipindahkan ke form reg_periksa. Tidak melakukan apa pun di halaman ini.
+          return;
       }
 
       // Event listener saat dokumen dimuat
-      document.addEventListener('DOMContentLoaded', () => {
-          // Tampilkan prompt aktivasi audio
-          showAudioActivationPrompt();
+      document.addEventListener('DOMContentLoaded', async () => {
+          // Audio otomatis dan prompt aktivasi dihapus sesuai permintaan.
           
-          // Setup event listener untuk antrian
+          // Setup event listener untuk antrian (tanpa pemutaran audio)
           channel.bind('antrian.dipanggil', async (data) => {
-              if (!data?.no_reg) {
+              if (!data?.no_reg && !data?.nomor_antrian) {
                   return;
               }
               
               try {
-                  await playAntrianSound(data);
+                  // Pemanggilan suara dinonaktifkan di halaman ini.
                   updatePanggilanStatus(data);
               } catch (error) {
                   showError(error.message);
@@ -940,7 +894,7 @@
                   let currentVideoIndex = 0;
                   
                   function playNextVideo() {
-                     mediaVideo.src = `/assets/vidio/${videos[currentVideoIndex]}`;
+                     mediaVideo.src = `/display/videos/${encodeURIComponent(videos[currentVideoIndex])}`;
                      mediaVideo.load();
                      mediaVideo.play();
                      currentVideoIndex = (currentVideoIndex + 1) % videos.length;
@@ -1043,43 +997,17 @@
           setTimeout(() => icon.removeClass('spin'), 1000);
       });
 
-      // Fungsi untuk test suara
+      // Fungsi untuk test suara (dinonaktifkan)
       async function testSuara() {
-         try {
-            // Data test
-            const testData = {
-               no_reg: '001',
-               nama: 'PASIEN TEST',
-               poli: 'POLI UMUM',
-               is_ulang: false
-            };
-            
-            // Mainkan suara
-            await playAntrianSound(testData);
-         } catch (error) {
-            showError('Error: ' + error.message);
-         }
+         // Pemutaran suara pada halaman Display telah dipindahkan ke form reg_periksa.
+         // Fungsi ini tidak lagi memutar audio.
+         showError('Fungsi test suara dinonaktifkan. Audio diputar dari form reg_periksa.');
+         return;
       }
 
       // Panggil setupContent saat dokumen dimuat
       document.addEventListener('DOMContentLoaded', function() {
-         // Inisialisasi audio context dan element
-         try {
-             initAudio();
-             
-             // Tambahkan event listener untuk user interaction
-             document.body.addEventListener('click', function() {
-                 if (audioContext.state === 'suspended') {
-                     audioContext.resume().then(() => {
-                         showError('Sistem suara siap digunakan');
-                     });
-                 }
-             }, { once: true });
-             
-         } catch (error) {
-             showError('Error inisialisasi sistem suara: ' + error.message);
-         }
-         
+         // Inisialisasi konten display tanpa sistem audio
          setupContent();
          updateDateTime();
          loadAntrianData();
@@ -1126,6 +1054,9 @@
 </head>
 
 <body>
+   <div id="react-root" style="position: fixed; inset: 0; z-index: 9999"></div>
+   @vite(['resources/css/app.css', 'resources/js/pages/Display/entry.jsx'])
+
    <!-- Header -->
    <div class="header">
       <div class="datetime-container">

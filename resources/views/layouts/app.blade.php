@@ -256,8 +256,9 @@
     <!-- Stacked Scripts -->
     @stack('scripts')
 
+    @if(app()->environment('production'))
     <script>
-        // Registrasi Service Worker
+        // Registrasi Service Worker (production)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/serviceworker.js', {
@@ -270,6 +271,20 @@
                 });
             });
         }
+    </script>
+    @else
+    <script>
+        // Development: pastikan SW tidak aktif untuk menghindari konflik Vite HMR
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) { registration.unregister(); }
+            });
+        }
+        if (window.caches && typeof window.caches.keys === 'function') {
+            caches.keys().then(function(keys) { keys.forEach(function(key) { caches.delete(key); }); });
+        }
+    </script>
+    @endif
 
         // Konfigurasi untuk memastikan grafik dimuat dengan benar
         document.addEventListener('DOMContentLoaded', function() {

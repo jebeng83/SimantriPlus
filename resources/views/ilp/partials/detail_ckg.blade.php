@@ -155,18 +155,18 @@
             <h5 class="card-title"><i class="fas fa-child mr-2"></i> Pemeriksaan Anak Usia dibawah 6 Tahun</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionAnakDibawah6">
+            <div class="accordion" id="detail_accordionAnakDibawah6">
                <!-- Gejala DM Anak -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingDMAnak">
+                  <div class="card-header" id="detail_headingDMAnak">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseDMAnak" aria-expanded="false" aria-controls="collapseDMAnak">
+                           data-target="#detail_collapseDMAnak" aria-expanded="false" aria-controls="detail_collapseDMAnak">
                            Gejala DM Anak
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseDMAnak" class="collapse" aria-labelledby="headingDMAnak" data-parent="#accordionAnakDibawah6">
+                  <div id="detail_collapseDMAnak" class="collapse" aria-labelledby="detail_headingDMAnak" data-parent="#detail_accordionAnakDibawah6">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -200,15 +200,15 @@
 
                <!-- Demografi Anak -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingDemografiAnak">
+                  <div class="card-header" id="detail_headingDemografiAnak">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseDemografiAnak" aria-expanded="false" aria-controls="collapseDemografiAnak">
+                           data-target="#detail_collapseDemografiAnak" aria-expanded="false" aria-controls="detail_collapseDemografiAnak">
                            Demografi Anak
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseDemografiAnak" class="collapse" aria-labelledby="headingDemografiAnak" data-parent="#accordionAnakDibawah6">
+                  <div id="detail_collapseDemografiAnak" class="collapse" aria-labelledby="detail_headingDemografiAnak" data-parent="#detail_accordionAnakDibawah6">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -222,15 +222,15 @@
 
                <!-- Perkembangan (3-6 Tahun) -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingPerkembangan">
+                  <div class="card-header" id="detail_headingPerkembangan">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapsePerkembangan" aria-expanded="false" aria-controls="collapsePerkembangan">
+                           data-target="#detail_collapsePerkembangan" aria-expanded="false" aria-controls="detail_collapsePerkembangan">
                            Perkembangan (3-6 Tahun)
                         </button>
                      </h2>
                   </div>
-                  <div id="collapsePerkembangan" class="collapse" aria-labelledby="headingPerkembangan" data-parent="#accordionAnakDibawah6">
+                  <div id="detail_collapsePerkembangan" class="collapse" aria-labelledby="detail_headingPerkembangan" data-parent="#detail_accordionAnakDibawah6">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -248,15 +248,15 @@
 
                <!-- Talasemia -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTalasemia">
+                  <div class="card-header" id="detail_headingTalasemia">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTalasemia" aria-expanded="false" aria-controls="collapseTalasemia">
+                           data-target="#detail_collapseTalasemia" aria-expanded="false" aria-controls="detail_collapseTalasemia">
                            Talasemia
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTalasemia" class="collapse" aria-labelledby="headingTalasemia" data-parent="#accordionAnakDibawah6">
+                  <div id="detail_collapseTalasemia" class="collapse" aria-labelledby="detail_headingTalasemia" data-parent="#detail_accordionAnakDibawah6">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -274,15 +274,15 @@
 
                <!-- Tuberkulosis Bayi & Anak Pra Sekolah -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTBCAnak">
+                  <div class="card-header" id="detail_headingTBCAnak">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTBCAnak" aria-expanded="false" aria-controls="collapseTBCAnak">
+                           data-target="#detail_collapseTBCAnak" aria-expanded="false" aria-controls="detail_collapseTBCAnak">
                            Tuberkulosis Bayi & Anak Pra Sekolah
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTBCAnak" class="collapse" aria-labelledby="headingTBCAnak" data-parent="#accordionAnakDibawah6">
+                  <div id="detail_collapseTBCAnak" class="collapse" aria-labelledby="detail_headingTBCAnak" data-parent="#detail_accordionAnakDibawah6">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -323,19 +323,19 @@
             <h5 class="card-title"><i class="fas fa-clipboard-check mr-2"></i> Pemeriksaan Mandiri</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionPemeriksaan">
+            <div class="accordion" id="detail_accordionPemeriksaan">
                <!-- Demografi Dewasa Perempuan -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingDemografi">
+                  <div class="card-header" id="detail_headingDemografi">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                           data-target="#collapseDemografi" aria-expanded="true" aria-controls="collapseDemografi">
+                           data-target="#detail_collapseDemografi" aria-expanded="true" aria-controls="detail_collapseDemografi">
                            Data Demografi Dewasa
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseDemografi" class="collapse show" aria-labelledby="headingDemografi"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseDemografi" class="collapse show" aria-labelledby="detail_headingDemografi"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -362,16 +362,16 @@
 
                <!-- Hati -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingHati">
+                  <div class="card-header" id="detail_headingHati">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseHati" aria-expanded="false" aria-controls="collapseHati">
+                           data-target="#detail_collapseHati" aria-expanded="false" aria-controls="detail_collapseHati">
                            Hati
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseHati" class="collapse" aria-labelledby="headingHati"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseHati" class="collapse" aria-labelledby="detail_headingHati"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -421,16 +421,16 @@
 
                <!-- Kanker Leher Rahim -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKanker">
+                  <div class="card-header" id="detail_headingKanker">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseKanker" aria-expanded="false" aria-controls="collapseKanker">
+                           data-target="#detail_collapseKanker" aria-expanded="false" aria-controls="detail_collapseKanker">
                            Kanker Leher Rahim
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKanker" class="collapse" aria-labelledby="headingKanker"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseKanker" class="collapse" aria-labelledby="detail_headingKanker"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -444,16 +444,16 @@
 
                <!-- Kesehatan Jiwa -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingJiwa">
+                  <div class="card-header" id="detail_headingJiwa">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseJiwa" aria-expanded="false" aria-controls="collapseJiwa">
+                           data-target="#detail_collapseJiwa" aria-expanded="false" aria-controls="detail_collapseJiwa">
                            Kesehatan Jiwa
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseJiwa" class="collapse" aria-labelledby="headingJiwa"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseJiwa" class="collapse" aria-labelledby="detail_headingJiwa"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -482,16 +482,16 @@
 
                <!-- Perilaku Merokok -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingMerokok">
+                  <div class="card-header" id="detail_headingMerokok">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseMerokok" aria-expanded="false" aria-controls="collapseMerokok">
+                           data-target="#detail_collapseMerokok" aria-expanded="false" aria-controls="detail_collapseMerokok">
                            Perilaku Merokok
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseMerokok" class="collapse" aria-labelledby="headingMerokok"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseMerokok" class="collapse" aria-labelledby="detail_headingMerokok"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -520,16 +520,16 @@
 
                <!-- Tekanan Darah & Gula Darah -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTekanan">
+                  <div class="card-header" id="detail_headingTekanan">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTekanan" aria-expanded="false" aria-controls="collapseTekanan">
+                           data-target="#detail_collapseTekanan" aria-expanded="false" aria-controls="detail_collapseTekanan">
                            Tekanan Darah & Gula Darah
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTekanan" class="collapse" aria-labelledby="headingTekanan"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseTekanan" class="collapse" aria-labelledby="detail_headingTekanan"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -554,16 +554,16 @@
 
                <!-- Tingkat Aktivitas Fisik -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingAktivitas">
+                  <div class="card-header" id="detail_headingAktivitas">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseAktivitas" aria-expanded="false" aria-controls="collapseAktivitas">
+                           data-target="#detail_collapseAktivitas" aria-expanded="false" aria-controls="detail_collapseAktivitas">
                            Tingkat Aktivitas Fisik
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseAktivitas" class="collapse" aria-labelledby="headingAktivitas"
-                     data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseAktivitas" class="collapse" aria-labelledby="detail_headingAktivitas"
+                     data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -581,15 +581,15 @@
 
                <!-- Tuberkulosis -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingTB">
+                  <div class="card-header" id="detail_headingTB">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseTB" aria-expanded="false" aria-controls="collapseTB">
+                           data-target="#detail_collapseTB" aria-expanded="false" aria-controls="detail_collapseTB">
                            Tuberkulosis
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseTB" class="collapse" aria-labelledby="headingTB" data-parent="#accordionPemeriksaan">
+                  <div id="detail_collapseTB" class="collapse" aria-labelledby="detail_headingTB" data-parent="#detail_accordionPemeriksaan">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -620,20 +620,20 @@
             <h5 class="card-title"><i class="fas fa-user-md mr-2"></i> Pelayanan Medis</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionPelayananMedis">
+            <div class="accordion" id="detail_accordionPelayananMedis">
                <!-- Skrining Pertumbuhan - Balita dan Anak Prasekolah -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingSkriningPertumbuhan">
+                  <div class="card-header" id="detail_headingSkriningPertumbuhan">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                           data-target="#collapseSkriningPertumbuhan" aria-expanded="true"
-                           aria-controls="collapseSkriningPertumbuhan">
+                           data-target="#detail_collapseSkriningPertumbuhan" aria-expanded="true"
+                           aria-controls="detail_collapseSkriningPertumbuhan">
                            Skrining Pertumbuhan - Balita dan Anak Prasekolah
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseSkriningPertumbuhan" class="collapse show" aria-labelledby="headingSkriningPertumbuhan"
-                     data-parent="#accordionPelayananMedis">
+                  <div id="detail_collapseSkriningPertumbuhan" class="collapse show" aria-labelledby="detail_headingSkriningPertumbuhan"
+                     data-parent="#detail_accordionPelayananMedis">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-6">
@@ -679,16 +679,16 @@
 
                <!-- Hasil Pemeriksaan KPSP -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingKPSP">
+                  <div class="card-header" id="detail_headingKPSP">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseKPSP" aria-expanded="false" aria-controls="collapseKPSP">
+                           data-target="#detail_collapseKPSP" aria-expanded="false" aria-controls="detail_collapseKPSP">
                            Hasil Pemeriksaan KPSP
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseKPSP" class="collapse" aria-labelledby="headingKPSP"
-                     data-parent="#accordionPelayananMedis">
+                  <div id="detail_collapseKPSP" class="collapse" aria-labelledby="detail_headingKPSP"
+                     data-parent="#detail_accordionPelayananMedis">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -702,16 +702,16 @@
 
                <!-- Skrining Telinga dan Mata -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingSkriningTelingaMata">
+                  <div class="card-header" id="detail_headingSkriningTelingaMata">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseSkriningTelingaMata" aria-expanded="false" aria-controls="collapseSkriningTelingaMata">
+                           data-target="#detail_collapseSkriningTelingaMata" aria-expanded="false" aria-controls="detail_collapseSkriningTelingaMata">
                            Skrining Telinga dan Mata
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseSkriningTelingaMata" class="collapse" aria-labelledby="headingSkriningTelingaMata"
-                     data-parent="#accordionPelayananMedis">
+                  <div id="detail_collapseSkriningTelingaMata" class="collapse" aria-labelledby="detail_headingSkriningTelingaMata"
+                     data-parent="#detail_accordionPelayananMedis">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -729,16 +729,16 @@
 
                <!-- Skrining Gigi -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingSkriningGigiMedis">
+                  <div class="card-header" id="detail_headingSkriningGigiMedis">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseSkriningGigiMedis" aria-expanded="false" aria-controls="collapseSkriningGigiMedis">
+                           data-target="#detail_collapseSkriningGigiMedis" aria-expanded="false" aria-controls="detail_collapseSkriningGigiMedis">
                            Skrining Gigi
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseSkriningGigiMedis" class="collapse" aria-labelledby="headingSkriningGigiMedis"
-                     data-parent="#accordionPelayananMedis">
+                  <div id="detail_collapseSkriningGigiMedis" class="collapse" aria-labelledby="detail_headingSkriningGigiMedis"
+                     data-parent="#detail_accordionPelayananMedis">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -771,20 +771,20 @@
             <h5 class="card-title"><i class="fas fa-stethoscope mr-2"></i> Assesment Mandiri</h5>
          </div>
          <div class="card-body p-0">
-            <div class="accordion" id="accordionAssesment">
+            <div class="accordion" id="detail_accordionAssesment">
                <!-- Antropometri dan Laboratorium -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingAntropometri">
+                  <div class="card-header" id="detail_headingAntropometri">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                           data-target="#collapseAntropometri" aria-expanded="true"
-                           aria-controls="collapseAntropometri">
+                           data-target="#detail_collapseAntropometri" aria-expanded="true"
+                           aria-controls="detail_collapseAntropometri">
                            Antropometri dan Laboratorium
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseAntropometri" class="collapse show" aria-labelledby="headingAntropometri"
-                     data-parent="#accordionAssesment">
+                  <div id="detail_collapseAntropometri" class="collapse show" aria-labelledby="detail_headingAntropometri"
+                     data-parent="#detail_accordionAssesment">
                      <div class="card-body">
                         <div class="row">
                            <div class="col-md-6">
@@ -839,16 +839,16 @@
 
                <!-- Skrining PUMA -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingPUMA">
+                  <div class="card-header" id="detail_headingPUMA">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapsePUMA" aria-expanded="false" aria-controls="collapsePUMA">
+                           data-target="#detail_collapsePUMA" aria-expanded="false" aria-controls="detail_collapsePUMA">
                            Skrining PUMA
                         </button>
                      </h2>
                   </div>
-                  <div id="collapsePUMA" class="collapse" aria-labelledby="headingPUMA"
-                     data-parent="#accordionAssesment">
+                  <div id="detail_collapsePUMA" class="collapse" aria-labelledby="detail_headingPUMA"
+                     data-parent="#detail_accordionAssesment">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -882,16 +882,16 @@
 
                <!-- Skrining Indra -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingIndra">
+                  <div class="card-header" id="detail_headingIndra">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseIndra" aria-expanded="false" aria-controls="collapseIndra">
+                           data-target="#detail_collapseIndra" aria-expanded="false" aria-controls="detail_collapseIndra">
                            Skrining Indra
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseIndra" class="collapse" aria-labelledby="headingIndra"
-                     data-parent="#accordionAssesment">
+                  <div id="detail_collapseIndra" class="collapse" aria-labelledby="detail_headingIndra"
+                     data-parent="#detail_accordionAssesment">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -909,16 +909,16 @@
 
                <!-- Skrining Gigi -->
                <div class="card mb-0">
-                  <div class="card-header" id="headingGigi">
+                  <div class="card-header" id="detail_headingGigi">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseGigi" aria-expanded="false" aria-controls="collapseGigi">
+                           data-target="#detail_collapseGigi" aria-expanded="false" aria-controls="detail_collapseGigi">
                            Skrining Gigi
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseGigi" class="collapse" aria-labelledby="headingGigi"
-                     data-parent="#accordionAssesment">
+                  <div id="detail_collapseGigi" class="collapse" aria-labelledby="detail_headingGigi"
+                     data-parent="#detail_accordionAssesment">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -941,16 +941,16 @@
                <!-- Pemeriksaan Gangguan Fungsional/Barthel Index - Hanya untuk Lansia (>60 tahun) -->
                @if(isset($detail->umur) && $detail->umur > 60)
                <div class="card mb-0">
-                  <div class="card-header" id="headingBarthelIndex">
+                  <div class="card-header" id="detail_headingBarthelIndex">
                      <h2 class="mb-0">
                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
-                           data-target="#collapseBarthelIndex" aria-expanded="false" aria-controls="collapseBarthelIndex">
+                           data-target="#detail_collapseBarthelIndex" aria-expanded="false" aria-controls="detail_collapseBarthelIndex">
                            Pemeriksaan Gangguan Fungsional/Barthel Index
                         </button>
                      </h2>
                   </div>
-                  <div id="collapseBarthelIndex" class="collapse" aria-labelledby="headingBarthelIndex"
-                     data-parent="#accordionAssesment">
+                  <div id="detail_collapseBarthelIndex" class="collapse" aria-labelledby="detail_headingBarthelIndex"
+                     data-parent="#detail_accordionAssesment">
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
@@ -1024,11 +1024,190 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+<style>
+/* Improved accordion styles - better visibility control */
+#detail_accordionAnakDibawah6 .collapse,
+#detail_accordionPemeriksaan .collapse,
+#detail_accordionPelayananMedis .collapse,
+#detail_accordionAssesment .collapse {
+    display: none;
+    height: auto;
+    transition: none;
+    overflow: visible;
+}
+
+#detail_accordionAnakDibawah6 .collapse.show,
+#detail_accordionPemeriksaan .collapse.show,
+#detail_accordionPelayananMedis .collapse.show,
+#detail_accordionAssesment .collapse.show {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure table content is visible */
+#detail_accordionAnakDibawah6 .collapse.show .table,
+#detail_accordionPemeriksaan .collapse.show .table,
+#detail_accordionPelayananMedis .collapse.show .table,
+#detail_accordionAssesment .collapse.show .table {
+    display: table !important;
+    width: 100% !important;
+}
+
+/* Ensure table rows and cells are visible */
+#detail_accordionAnakDibawah6 .collapse.show .table tr,
+#detail_accordionPemeriksaan .collapse.show .table tr,
+#detail_accordionPelayananMedis .collapse.show .table tr,
+#detail_accordionAssesment .collapse.show .table tr {
+    display: table-row !important;
+}
+
+#detail_accordionAnakDibawah6 .collapse.show .table td,
+#detail_accordionAnakDibawah6 .collapse.show .table th,
+#detail_accordionPemeriksaan .collapse.show .table td,
+#detail_accordionPemeriksaan .collapse.show .table th,
+#detail_accordionPelayananMedis .collapse.show .table td,
+#detail_accordionPelayananMedis .collapse.show .table th,
+#detail_accordionAssesment .collapse.show .table td,
+#detail_accordionAssesment .collapse.show .table th {
+    display: table-cell !important;
+}
+</style>
+
 <script>
 $(document).ready(function() {
-    // Fungsi daftarKunjunganSehat sudah dipindahkan ke file utama pendaftaran_ckg.blade.php
+    // Global accordion state management - ensures only one panel is open across all accordions
+    var currentOpenPanel = null;
+    var currentOpenButton = null;
     
-    // Event handler sudah dipindahkan ke file utama pendaftaran_ckg.blade.php
-    // untuk menghindari konflik dan duplikasi
+    // Enhanced accordion implementation with proper collapse behavior
+    function initializeAccordion(accordionId) {
+        var $accordion = $(accordionId);
+        if (!$accordion.length) return;
+        
+        console.log('Initializing accordion:', accordionId);
+        
+        // Remove any existing event handlers
+        $accordion.off('click.customAccordion');
+        
+        // Disable Bootstrap's collapse behavior by removing data attributes
+        $accordion.find('[data-toggle="collapse"]').each(function() {
+            $(this).removeAttr('data-toggle').attr('data-custom-toggle', 'collapse');
+        });
+        
+        // Add click handler for accordion buttons
+        $accordion.on('click.customAccordion', '[data-custom-toggle="collapse"]', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $button = $(this);
+            var targetId = $button.attr('data-target');
+            var $target = $(targetId);
+            
+            console.log('Button clicked:', targetId);
+            
+            if (!$target.length) {
+                console.log('Target not found:', targetId);
+                return;
+            }
+            
+            // Check if this panel is currently open
+            var isCurrentlyOpen = $target.hasClass('show');
+            
+            // Close any currently open panel (global accordion behavior)
+            if (currentOpenPanel && currentOpenPanel.length) {
+                console.log('Closing previously open panel:', currentOpenPanel.attr('id'));
+                currentOpenPanel.removeClass('show').css('display', 'none');
+                if (currentOpenButton && currentOpenButton.length) {
+                    currentOpenButton.addClass('collapsed').attr('aria-expanded', 'false');
+                }
+            }
+            
+            // Reset global state
+            currentOpenPanel = null;
+            currentOpenButton = null;
+            
+            // If the clicked panel wasn't open, open it
+            if (!isCurrentlyOpen) {
+                console.log('Opening panel:', targetId);
+                
+                // Show this panel
+                $target.addClass('show');
+                $button.removeClass('collapsed').attr('aria-expanded', 'true');
+                
+                // Force display of content
+                $target.css({
+                    'display': 'block',
+                    'visibility': 'visible',
+                    'opacity': '1'
+                });
+                
+                // Ensure table content is visible
+                $target.find('.table').css({
+                    'display': 'table',
+                    'width': '100%'
+                });
+                
+                $target.find('.table tr').css('display', 'table-row');
+                $target.find('.table td, .table th').css('display', 'table-cell');
+                
+                // Update global state
+                currentOpenPanel = $target;
+                currentOpenButton = $button;
+                
+                console.log('Panel opened with content:', targetId);
+            } else {
+                console.log('Panel was open, now closed:', targetId);
+            }
+        });
+        
+        // Ensure panels with 'show' class are properly displayed on load
+        $accordion.find('.collapse.show').each(function() {
+            var $panel = $(this);
+            var panelId = $panel.attr('id');
+            var $button = $accordion.find('[data-target="#' + panelId + '"]');
+            
+            // Close any other open panels first
+            if (currentOpenPanel && currentOpenPanel.length && currentOpenPanel.attr('id') !== panelId) {
+                currentOpenPanel.removeClass('show').css('display', 'none');
+                if (currentOpenButton && currentOpenButton.length) {
+                    currentOpenButton.addClass('collapsed').attr('aria-expanded', 'false');
+                }
+            }
+            
+            // Set button state
+            $button.removeClass('collapsed').attr('aria-expanded', 'true');
+            
+            // Force display of content
+            $panel.css({
+                'display': 'block',
+                'visibility': 'visible',
+                'opacity': '1'
+            });
+            
+            // Ensure table content is visible
+            $panel.find('.table').css({
+                'display': 'table',
+                'width': '100%'
+            });
+            
+            $panel.find('.table tr').css('display', 'table-row');
+            $panel.find('.table td, .table th').css('display', 'table-cell');
+            
+            // Update global state
+            currentOpenPanel = $panel;
+            currentOpenButton = $button;
+            
+            console.log('Panel already shown with content:', panelId);
+        });
+    }
+    
+    // Initialize all accordions
+    initializeAccordion('#detail_accordionAnakDibawah6');
+    initializeAccordion('#detail_accordionPemeriksaan');
+    initializeAccordion('#detail_accordionPelayananMedis');
+    initializeAccordion('#detail_accordionAssesment');
 });
 </script>

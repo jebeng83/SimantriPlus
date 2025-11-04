@@ -1,0 +1,14 @@
+==== resources/js/components/ui.jsx ====
+--- casefix_backup_20251024_084310/resources/js/components/ui.jsx	2025-10-24 08:43:10
++++ resources/js/components/ui.jsx	2025-10-24 08:43:10
+@@ -1,7 +1,7 @@
+ import React from 'react';
+ 
+ // Lightweight UI primitives based on Bootstrap classes
+-// This file provides minimal components so pages that import '@/Components/ui'
++// This file provides minimal components so pages that import '@/components/ui'
+ // can render without bringing in a heavy UI library.
+ 
+ export function Card({ children, className = '', ...props }) {
+\ No newline at end of file
+
