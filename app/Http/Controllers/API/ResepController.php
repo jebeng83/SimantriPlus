@@ -538,6 +538,23 @@ class ResepController extends Controller
             
             try {
                 $noRawat = $cleanNoRawat; // Gunakan no_rawat yang sudah dibersihkan
+                // Pastikan kd_dokter valid dan sesuai dengan reg_periksa untuk no_rawat ini
+                $kdDokterFromReg = DB::table('reg_periksa')
+                    ->where(DB::raw('BINARY no_rawat'), $noRawat)
+                    ->value('kd_dokter');
+                if ($kdDokterFromReg) {
+                    $dokter = $kdDokterFromReg;
+                } else {
+                    // fallback: gunakan session username hanya jika valid di tabel dokter
+                    $existsDokter = DB::table('dokter')->where('kd_dokter', $dokter)->exists();
+                    if (!$existsDokter) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'gagal',
+                            'pesan' => 'Kode dokter tidak valid untuk No. Rawat ini'
+                        ]);
+                    }
+                }
                 $bangsal = "";
             
                 if ($status == 'Ralan') {
@@ -1031,6 +1048,22 @@ class ResepController extends Controller
             // Gunakan no_rawat yang sudah dibersihkan
             $no_rawat = $cleanNoRawat;
             $dokter = session()->get('username');
+            // Pastikan kd_dokter valid dan sesuai dengan reg_periksa untuk no_rawat ini
+            $kdDokterFromReg = DB::table('reg_periksa')
+                ->where(DB::raw('BINARY no_rawat'), $no_rawat)
+                ->value('kd_dokter');
+            if ($kdDokterFromReg) {
+                $dokter = $kdDokterFromReg;
+            } else {
+                // fallback: gunakan session username hanya jika valid di tabel dokter
+                $existsDokter = DB::table('dokter')->where('kd_dokter', $dokter)->exists();
+                if (!$existsDokter) {
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Kode dokter tidak valid untuk No. Rawat ini'
+                    ]);
+                }
+            }
             $status = $request->get('status');
             $bangsal = $request->get('kode');
 

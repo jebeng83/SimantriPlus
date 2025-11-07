@@ -72,6 +72,8 @@
         // Inisialisasi Select2 untuk diagnosa
         $('#diagnosa-select').select2({
             placeholder: 'Pilih Diagnosa',
+            // Pastikan dropdown tampil di atas elemen lain
+            dropdownParent: $('#diagnosa-select').closest('.form-group'),
             ajax: {
                 url: "{{ route('diagnosa') }}",
                 dataType: 'json',
@@ -94,6 +96,8 @@
         // Inisialisasi Select2 untuk prosedur dengan default 89.06
         $('#prosedur-select').select2({
             placeholder: 'Pilih prosedur',
+            // Pastikan dropdown tampil di atas elemen lain
+            dropdownParent: $('#prosedur-select').closest('.form-group'),
             ajax: {
                 url: "{{ route('icd9') }}",
                 dataType: 'json',
@@ -195,4 +199,12 @@
         @this.call('setPrioritas', '1');
     });
 </script>
+@endpush
+
+@push('css')
+<style>
+    /* Tinggikan z-index untuk Select2 agar dropdown muncul di atas navbar/kartu AdminLTE */
+    .select2-container { z-index: 2000 !important; }
+    .select2-dropdown { z-index: 2001 !important; }
+</style>
 @endpush

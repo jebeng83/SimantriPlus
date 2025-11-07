@@ -163,8 +163,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.1/dist/cdn.min.js"></script>
 
     {{-- Configured Scripts --}}
-    {{-- Temporarily disabled to isolate JSON.parse SyntaxError source; will re-enable after fix --}}
-    {{-- @include('adminlte::plugins', ['type' => 'js']) --}}
+    @include('adminlte::plugins', ['type' => 'js'])
 
     {{-- Pre-sanitize AdminLTE IFrame localStorage to prevent JSON.parse errors from HTML-encoded strings --}}
     <script>

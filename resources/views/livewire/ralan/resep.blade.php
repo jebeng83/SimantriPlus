@@ -75,25 +75,33 @@
             // Using @json ensures proper quoting and escaping within JavaScript context
             poli = @json($this->poli);
             console.log(poli);
+            // Pastikan dropdown Select2 muncul di atas elemen lain (z-index) dan tidak terpotong oleh tab-content
+            // dengan menetapkan dropdownParent ke container resep.
             $('.obat-1').select2({
                 placeholder: 'Pilih Obat',
+                dropdownParent: $('.containerResep'),
                 ajax: {
                     url: '/api/ralan/'+poli+'/obat',
                     dataType: 'json',
                     delay: 250,
+                    data: function (params) {
+                        return { q: params.term };
+                    },
                     processResults: function (data) {
                         return {
                             results: data
                         };
                     },
-                    templateResult: formatData,
+                    cache: true,
                 },
-                cache: true,
+                templateResult: formatData,
+                width: '100%',
                 minimumInputLength: 3
             });
             
             $('#iter').select2({
                 placeholder: 'Pilih jumlah iter',
+                dropdownParent: $('.containerResep'),
                 allowClear: true,
             });
         })
@@ -102,20 +110,37 @@
             var i = e.jml;
             $('.obat-'+i).select2({
                 placeholder: 'Pilih Obat',
+                dropdownParent: $('.containerResep'),
                 ajax: {
                     url: '/api/ralan/'+poli+'/obat',
                     dataType: 'json',
                     delay: 250,
+                    data: function (params) {
+                        return { q: params.term };
+                    },
                     processResults: function (data) {
                         return {
                             results: data
                         };
                     },
-                    templateResult: formatData,
+                    cache: true,
                 },
-                cache: true,
+                templateResult: formatData,
+                width: '100%',
                 minimumInputLength: 3
             });
         });
 </script>
+@endpush
+
+@push('css')
+<style>
+    /* Tinggikan z-index untuk container dan dropdown Select2 agar tidak tertutup navbar/kartu AdminLTE */
+    .select2-container { z-index: 2000 !important; }
+    .select2-dropdown { z-index: 2001 !important; }
+    /* Hindari dropdown terpotong di dalam tab-content pada halaman resep */
+    #myTabContent { overflow: visible !important; }
+    /* Pastikan container resep tidak memotong dropdown */
+    .containerResep { position: relative; overflow: visible; }
+</style>
 @endpush

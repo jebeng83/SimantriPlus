@@ -471,10 +471,28 @@ class PemeriksaanRalanController extends Controller
         $no = DB::table('resep_obat')->where('tgl_perawatan', 'like', '%' . date('Y-m-d') . '%')->orWhere('tgl_peresepan', 'like', '%' . date('Y-m-d') . '%')->selectRaw("ifnull(MAX(CONVERT(RIGHT(no_resep,4),signed)),0) as resep")->first();
         $maxNo = substr($no->resep, 0, 4);
         $nextNo = sprintf('%04s', ($maxNo + 1));
-        $tgl = date('Ymd');
-        $noResep = $tgl . '' . $nextNo;
+        // Format tanggal untuk kolom DATE dan untuk nomor resep
+        $tglDate = date('Y-m-d');
+        $tglNoResep = date('Ymd');
+        $noResep = $tglNoResep . '' . $nextNo;
 
         try {
+            // Pastikan kd_dokter valid: ambil dari reg_periksa berdasarkan no_rawat
+            $kdDokterFromReg = DB::table('reg_periksa')
+                ->where(DB::raw('BINARY no_rawat'), $no_rawat)
+                ->value('kd_dokter');
+            if ($kdDokterFromReg) {
+                $dokter = $kdDokterFromReg;
+            } else {
+                // fallback hanya jika session username memang ada di tabel dokter
+                $existsDokter = DB::table('dokter')->where('kd_dokter', $dokter)->exists();
+                if (!$existsDokter) {
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Kode dokter tidak valid untuk No. Rawat ini'
+                    ]);
+                }
+            }
             for ($i = 0; $i < count($resObat); $i++) {
                 $obat = $resObat[$i];
                 $jml = $resJml[$i];
@@ -506,11 +524,11 @@ class PemeriksaanRalanController extends Controller
                 } else {
                     DB::table('resep_obat')->insert([
                         'no_resep' => $noResep,
-                        'tgl_perawatan' => $tgl,
+                        'tgl_perawatan' => $tglDate,
                         'jam' => date('H:i:s'),
                         'no_rawat' => $no_rawat,
                         'kd_dokter' => $dokter,
-                        'tgl_peresepan' => $tgl,
+                        'tgl_peresepan' => $tglDate,
                         'jam_peresepan' => date('H:i:s'),
                         'status' => 'Ralan',
                     ]);
@@ -581,6 +599,22 @@ class PemeriksaanRalanController extends Controller
                     'pesan' => 'No Rawat tidak ditemukan di database'
                 ]);
             }
+            // Ambil kd_dokter dari reg_periksa (lebih aman untuk FK)
+            $kdDokterFromReg = DB::table('reg_periksa')
+                ->where(DB::raw('BINARY no_rawat'), $cleanNoRawat)
+                ->value('kd_dokter');
+            if ($kdDokterFromReg) {
+                $dokter = $kdDokterFromReg;
+            } else {
+                // fallback: gunakan session username HANYA jika valid di tabel dokter
+                $existsDokter = DB::table('dokter')->where('kd_dokter', $dokter)->exists();
+                if (!$existsDokter) {
+                    return response()->json([
+                        'status' => 'gagal',
+                        'pesan' => 'Kode dokter tidak valid. Harap pastikan pemeriksaan memiliki dokter yang terdaftar.'
+                    ]);
+                }
+            }
             
             // Proses iter jika ada
             if ($iter != '-') {
@@ -641,7 +675,7 @@ class PemeriksaanRalanController extends Controller
                         'tgl_perawatan' => '0000-00-00',
                         'jam' => '00:00:00',
                         'no_rawat' => $cleanNoRawat, // Gunakan no_rawat yang sudah dibersihkan
-                        'kd_dokter' => $dokter,
+                        'kd_dokter' => $dokter, // Sudah dipastikan valid di atas
                         'tgl_peresepan' => $tgl,
                         'jam_peresepan' => date('H:i:s'),
                         'status' => 'Ralan',
