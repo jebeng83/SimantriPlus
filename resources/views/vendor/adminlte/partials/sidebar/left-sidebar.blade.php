@@ -10,6 +10,8 @@
     {{-- React Sidebar mount point --}}
     <div class="sidebar p-2">
         <div id="react-sidebar-root" class="h-full">
+            {{-- Provide SIDEBAR menu via application/json script tag to avoid HTML attribute entity pitfalls --}}
+            <script id="admin-menu-json" type="application/json">{!! json_encode($adminlte->menu('sidebar')) !!}</script>
             {{-- Fallback menu is now INSIDE the react root. React will replace it. --}}
             <nav id="fallback-sidebar-menu" class="pt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column {{ config('adminlte.classes_sidebar_nav', '') }}"
@@ -23,9 +25,6 @@
         </div>
     </div>
 
-    {{-- Expose AdminLTE menu to React --}}
-    <script>
-        window.ADMIN_MENU = @json($adminlte->menu('sidebar'));
-    </script>
+    {{-- AdminLTE menu is exposed via data-admin-menu attribute to avoid inline script parsing issues. --}}
 
 </aside>

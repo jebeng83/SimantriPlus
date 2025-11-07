@@ -310,8 +310,9 @@
         });
         
         Livewire.on('openModalPendaftaran', () => {
-            $('#dokter').append(new Option(@this.nm_dokter, @this.dokter, true, true)).trigger('change');
-            $('#no_rm').append(new Option(@this.nm_pasien, @this.no_rkm_medis, true, true)).trigger('change');
+            // Use @json to safely inject strings containing special characters
+            $('#dokter').append(new Option(@json($this->nm_dokter), @json($this->dokter), true, true)).trigger('change');
+            $('#no_rm').append(new Option(@json($this->nm_pasien), @json($this->no_rkm_medis), true, true)).trigger('change');
             $('#modalPendaftaran').modal('show');
         });
         
@@ -656,7 +657,7 @@
         // Handle form submission success with BPJS integration
         Livewire.on('registrationSuccess', (data) => {
             // Cek jika pasien menggunakan BPJS
-            const kdPj = @this.penjab;
+            const kdPj = @json($this->penjab);
             const isBpjs = kdPj && (kdPj === 'A03' || kdPj === 'A14' || kdPj === 'A15' || kdPj === 'BPJ' || kdPj.toLowerCase().includes('bpjs'));
             
             let successTitle = 'Berhasil!';
@@ -687,7 +688,7 @@
         
         // Handle form submission with BPJS check
         Livewire.on('beforeSubmit', () => {
-            const kdPj = @this.penjab;
+            const kdPj = @json($this->penjab);
             const isBpjs = kdPj && (kdPj === 'A03' || kdPj === 'A14' || kdPj === 'A15' || kdPj === 'BPJ' || kdPj.toLowerCase().includes('bpjs'));
             
             if (isBpjs) {

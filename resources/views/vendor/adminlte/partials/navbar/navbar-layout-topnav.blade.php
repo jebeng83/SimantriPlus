@@ -13,10 +13,10 @@
 
         {{-- React TopNavbar mount point --}}
         <div id="react-topnav-root" class="flex-1"></div>
-        <script>
-            window.TOPNAV_LEFT = @json($adminlte->menu('navbar-left'));
-            window.TOPNAV_RIGHT = @json($adminlte->menu('navbar-right'));
-        </script>
+
+        {{-- Provide TOPNAV menus via application/json script tags (safer than HTML attributes when content contains & or quotes) --}}
+        <script id="topnav-left-json" type="application/json">{!! json_encode($adminlte->menu('navbar-left')) !!}</script>
+        <script id="topnav-right-json" type="application/json">{!! json_encode($adminlte->menu('navbar-right')) !!}</script>
 
         {{-- Fallback: AdminLTE default menus (hidden after React mounts) --}}
         <div id="topnav-fallback" class="w-100">

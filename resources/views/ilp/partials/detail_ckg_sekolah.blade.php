@@ -1791,10 +1791,14 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     toastr.success(response.message || 'Petugas entry berhasil diperbarui');
-                    // Reload the detail to show updated data
+                    // Refresh main table without full page reload if available
                     setTimeout(function() {
-                        location.reload();
-                    }, 1000);
+                        if (window.pendaftaranCKGTable) {
+                            window.pendaftaranCKGTable.ajax.reload(null, false);
+                        } else {
+                            location.reload();
+                        }
+                    }, 800);
                 } else {
                     toastr.error(response.message || 'Gagal memperbarui petugas entry');
                 }

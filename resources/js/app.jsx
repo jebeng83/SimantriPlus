@@ -114,11 +114,53 @@ if (pcareRoot) {
   const root = createRoot(pcareRoot);
   importIfPreamble('./pages/PcareStatusHeader.jsx')
     .then(({ default: PcareStatusHeader }) => {
+      // Render React header
       root.render(<PcareStatusHeader />);
+
+      // Tandai bahwa komponen React untuk summary PCare sudah aktif
+      // dan sembunyikan fallback non-React agar tidak menampilkan informasi ganda.
+      try {
+        window.PCARE_STATUS_REACT_READY = true;
+        const fb = document.getElementById('pcare-summary-fallback');
+        if (fb) {
+          fb.style.display = 'none';
+          fb.setAttribute('aria-hidden', 'true');
+        }
+      } catch (e) {
+        console.debug('[PCare] Tidak bisa menyembunyikan fallback summary:', e?.message ?? e);
+      }
     })
     .catch((err) => {
       console.warn('PcareStatusHeader failed to load or preamble missing, rendering nothing.', err);
       root.render(null);
+    });
+}
+
+// Initialize PCare Status jQuery/DataTables logic when the table exists on the page.
+// We wait until the DataTables plugin is loaded (provided via Blade includes) before running.
+const pcareStatusTableEl = document.getElementById('tabel-status-pcare');
+if (pcareStatusTableEl) {
+  const waitForDataTables = () => new Promise((resolve) => {
+    const check = () => {
+      const hasDT = !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable);
+      if (hasDT) return resolve();
+      setTimeout(check, 50);
+    };
+    check();
+  });
+
+  importIfPreamble('./pages/Pcare/statusPendaftaranInit.jsx')
+    .then(({ default: initStatusPendaftaran }) => {
+      return waitForDataTables().then(() => {
+        try {
+          initStatusPendaftaran();
+        } catch (e) {
+          console.error('[PCare Status] Failed to initialize page script:', e?.message ?? e);
+        }
+      });
+    })
+    .catch((err) => {
+      console.warn('[PCare Status] Failed to load statusPendaftaranInit.jsx', err?.message ?? err);
     });
 }
 
@@ -452,7 +494,41 @@ const sidebarRoot = document.getElementById('react-sidebar-root');
 if (sidebarRoot && sidebarRoot.dataset.reactMounted !== 'true') {
   sidebarRoot.dataset.reactMounted = 'true';
   const root = createRoot(sidebarRoot);
-  const raw = window.ADMIN_MENU;
+  // Helper: decode HTML entities from attribute strings (e.g., &quot; &amp;)
+  const decodeHtmlEntities = (str) => {
+    try {
+      if (typeof str !== 'string') return str;
+      const div = document.createElement('div');
+      div.innerHTML = str;
+      return div.textContent || div.innerText || str;
+    } catch {
+      return str;
+    }
+  };
+  // Prefer script tag JSON first to avoid HTML entity pitfalls
+  let raw = null;
+  const adminMenuScript = document.getElementById('admin-menu-json');
+  if (adminMenuScript && adminMenuScript.textContent) {
+    try {
+      raw = JSON.parse(adminMenuScript.textContent);
+    } catch (e) {
+      console.warn('[Sidebar] Failed to parse admin-menu-json script content', e);
+    }
+  }
+  // Fallback: window var then data attribute
+  if (!raw && window.ADMIN_MENU) {
+    raw = window.ADMIN_MENU;
+  }
+  if (!raw) {
+    try {
+      const dataAttr = sidebarRoot.getAttribute('data-admin-menu') || '[]';
+      const decoded = decodeHtmlEntities(dataAttr);
+      raw = JSON.parse(decoded);
+    } catch (e) {
+      console.warn('[Sidebar] Failed to parse data-admin-menu JSON', e);
+      raw = [];
+    }
+  }
   let menu = [];
   try {
     if (Array.isArray(raw)) menu = raw;
@@ -483,11 +559,50 @@ const topnavRoot = document.getElementById('react-topnav-root');
 if (topnavRoot && topnavRoot.dataset.reactMounted !== 'true') {
   topnavRoot.dataset.reactMounted = 'true';
   const root = createRoot(topnavRoot);
+  // Helpers
+  const decodeHtmlEntitiesTop = (str) => {
+    try {
+      if (typeof str !== 'string') return str;
+      const div = document.createElement('div');
+      div.innerHTML = str;
+      return div.textContent || div.innerText || str;
+    } catch {
+      return str;
+    }
+  };
+  const parseJSONFromScript = (id) => {
+    const el = document.getElementById(id);
+    if (!el || !el.textContent) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (e) {
+      console.warn(`[TopNavbar] Failed to parse ${id} script content`, e);
+      return null;
+    }
+  };
+  const parseJSONFromAttr = (attrName) => {
+    const val = topnavRoot.getAttribute(attrName);
+    if (!val) return null;
+    try {
+      const decoded = decodeHtmlEntitiesTop(val);
+      return JSON.parse(decoded);
+    } catch (e) {
+      console.warn(`[TopNavbar] Failed to parse ${attrName} attribute`, e);
+      return null;
+    }
+  };
+
   let left = [];
   let right = [];
   try {
-    const rawLeft = window.TOPNAV_LEFT;
-    const rawRight = window.TOPNAV_RIGHT;
+    // Priority: script tags -> window globals -> data attributes
+    let rawLeft = parseJSONFromScript('topnav-left-json');
+    let rawRight = parseJSONFromScript('topnav-right-json');
+    if (!rawLeft && window.TOPNAV_LEFT) rawLeft = window.TOPNAV_LEFT;
+    if (!rawRight && window.TOPNAV_RIGHT) rawRight = window.TOPNAV_RIGHT;
+    if (!rawLeft) rawLeft = parseJSONFromAttr('data-topnav-left');
+    if (!rawRight) rawRight = parseJSONFromAttr('data-topnav-right');
+
     left = Array.isArray(rawLeft) ? rawLeft : (rawLeft ? Object.values(rawLeft) : []);
     right = Array.isArray(rawRight) ? rawRight : (rawRight ? Object.values(rawRight) : []);
   } catch (e) {

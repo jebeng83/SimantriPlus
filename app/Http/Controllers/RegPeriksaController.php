@@ -254,7 +254,9 @@ class RegPeriksaController extends Controller
                 }
                 
                 // 2. Cek di reg_periksa
+                // Gunakan write PDO untuk menghindari lag replikasi pada server produksi
                 $regPeriksaQuery = DB::table('reg_periksa')
+                    ->useWritePdo()
                     ->where('tgl_registrasi', $tgl_registrasi)
                     ->where('kd_dokter', $kd_dokter);
                     
@@ -300,6 +302,7 @@ class RegPeriksaController extends Controller
                 
                 while (!$isUnique && $attempts < 10) {
                     $existingQuery = DB::table('reg_periksa')
+                        ->useWritePdo()
                         ->where('tgl_registrasi', $tgl_registrasi)
                         ->where('kd_dokter', $kd_dokter)
                         ->where('no_reg', $no_reg);
@@ -314,6 +317,7 @@ class RegPeriksaController extends Controller
                         // Cek juga di booking_registrasi jika ada
                         if (Schema::hasTable('booking_registrasi')) {
                             $bookingExistQuery = DB::table('booking_registrasi')
+                                ->useWritePdo()
                                 ->where('tanggal_periksa', $tgl_registrasi)
                                 ->where('kd_dokter', $kd_dokter)
                                 ->where('no_reg', $no_reg);

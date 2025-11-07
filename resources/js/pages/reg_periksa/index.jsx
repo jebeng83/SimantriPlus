@@ -59,79 +59,140 @@ const calcUmurDaftar = (tglLahir, tglRegistrasi) => {
   }
 };
 
+// Helper untuk ambil JSON yang aman (hindari error jika server mengembalikan HTML)
+// Sekaligus logging ringkas agar mudah melacak endpoint yang menghasilkan non-JSON
+const safeJson = async (response) => {
+  try {
+    const ct = response.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      try {
+        return await response.json();
+      } catch (e) {
+        const url = response.url || '';
+        console.error('[safeJson] JSON.parse failed for', url, 'status:', response.status, 'ct:', ct, e);
+        // Fallback: coba baca sebagai text agar bisa diinspeksi
+        const txt = await response.text();
+        return { error: true, message: 'Invalid JSON response', status: response.status, url, contentType: ct, preview: (txt || '').slice(0, 120), raw: txt };
+      }
+    }
+    const text = await response.text();
+    const url = response.url || '';
+    // Log apabila bukan JSON (seringkali HTML atau HTML-encoded)
+    const preview = (text || '').slice(0, 120);
+    console.warn('[safeJson] Non-JSON received from', url, 'status:', response.status, 'ct:', ct, '\nPreview:', preview);
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      return { error: true, message: 'Non-JSON response', status: response.status, url, contentType: ct, preview, raw: text };
+    }
+  } catch (err) {
+    // Jika Response sudah digunakan atau error lain, kembalikan objek error yang informatif
+    try {
+      const url = response && response.url ? response.url : '';
+      const status = response && typeof response.status !== 'undefined' ? response.status : 0;
+      console.error('[safeJson] Unexpected error handling response', url, err);
+      return { error: true, message: 'safeJson unexpected error', url, status };
+    } catch (_) {
+      return { error: true, message: 'safeJson unexpected error' };
+    }
+  }
+};
+
 // API helpers
 const api = {
-  poliklinik: (q = '', limit = 200) => fetch(`/api/poliklinik?q=${encodeURIComponent(q)}&limit=${limit}`).then((r) => r.json()),
-  dokterByPoli: (kdPoli) => fetch(`/ralan/dokter/${enc(kdPoli)}`).then((r) => r.json()),
-  dokter: (q = '', limit = 200) => fetch(`/api/dokter?q=${encodeURIComponent(q)}&limit=${limit}`).then((r) => r.json()),
-  penjab: () => fetch('/api/penjab').then((r) => r.json()),
-  pasienSearch: (q, limit = 10) => fetch(`/api/pasien?q=${encodeURIComponent(q)}&limit=${limit}`).then((r) => r.json()),
-  pasienDetail: (rm) => fetch(`/api/pasien/detail/${enc(rm)}`).then((r) => r.json()),
-  pcarePesertaByKartu: (noKartu) => fetch(`/api/pcare/peserta/noka/${enc(noKartu)}`).then((r) => r.json()),
-  pcarePesertaByNik: (nik) => fetch(`/api/pcare/peserta/nik/${enc(nik)}`).then((r) => r.json()),
-  todayRegs: (date, kdPoli = '') => fetch(`/api/regperiksa/today?date=${encodeURIComponent(date)}${kdPoli ? `&kd_poli=${encodeURIComponent(kdPoli)}` : ''}`).then((r) => r.json()),
-  generateNoReg: (kdDokter, tgl, kdPoli = '') => fetch(`/regperiksa/generate-noreg/${enc(kdDokter)}/${enc(tgl)}${kdPoli ? `?kd_poli=${encodeURIComponent(kdPoli)}` : ''}`).then((r) => r.json()),
-  generateNoRawat: (tgl) => fetch(`/regperiksa/generate-norawat/${enc(tgl)}`).then(async (r) => {
-    const ct = r.headers.get('content-type') || '';
-    if (ct.includes('application/json')) return r.json();
-    const text = await r.text();
-    return { success: false, message: 'Invalid JSON response', raw: text };
-  }),
-  storeReg: (payload) => fetch('/regperiksa/store', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
-  deleteReg: (no_rawat) => fetch('/regperiksa/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify({ no_rawat }) }).then((r) => r.json()),
+  poliklinik: async (q = '', limit = 200) => safeJson(await fetch(`/api/poliklinik?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  dokterByPoli: async (kdPoli) => safeJson(await fetch(`/ralan/dokter/${enc(kdPoli)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  dokter: async (q = '', limit = 200) => safeJson(await fetch(`/api/dokter?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  penjab: async () => safeJson(await fetch('/api/penjab', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  pasienSearch: async (q, limit = 10) => safeJson(await fetch(`/api/pasien?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  pasienDetail: async (rm) => safeJson(await fetch(`/api/pasien/detail/${enc(rm)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  pcarePesertaByKartu: async (noKartu) => safeJson(await fetch(`/api/pcare/peserta/noka/${enc(noKartu)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  pcarePesertaByNik: async (nik) => safeJson(await fetch(`/api/pcare/peserta/nik/${enc(nik)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  todayRegs: async (date, kdPoli = '') => safeJson(await fetch(`/api/regperiksa/today?date=${encodeURIComponent(date)}${kdPoli ? `&kd_poli=${encodeURIComponent(kdPoli)}` : ''}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
+  generateNoReg: async (kdDokter, tgl, kdPoli = '') => {
+    const url = `/regperiksa/generate-noreg/${enc(kdDokter)}/${enc(tgl)}${kdPoli ? `?kd_poli=${encodeURIComponent(kdPoli)}` : ''}`;
+    const r = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      cache: 'no-store',
+    });
+    return safeJson(r);
+  },
+  generateNoRawat: async (tgl) => {
+    const r = await fetch(`/regperiksa/generate-norawat/${enc(tgl)}`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      cache: 'no-store',
+    });
+    return safeJson(r);
+  },
+  storeReg: (payload) => fetch('/regperiksa/store', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-TOKEN': csrfToken,
+    },
+    cache: 'no-store',
+    body: JSON.stringify(payload),
+  }).then((r) => safeJson(r)),
+  deleteReg: (no_rawat) => fetch('/regperiksa/delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-TOKEN': csrfToken,
+    },
+    cache: 'no-store',
+    body: JSON.stringify({ no_rawat }),
+  }).then((r) => safeJson(r)),
   // Tambah: kirim antrean ke BPJS (Mobile JKN)
   bpjsAddAntrean: (data) =>
     fetch('/api/antrean/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
         'X-CSRF-TOKEN': csrfToken,
       },
+      cache: 'no-store',
       body: JSON.stringify(data),
-    }).then(async (r) => {
-      const ct = r.headers.get('content-type') || '';
-      if (ct.includes('application/json')) return r.json();
-      const text = await r.text();
-      try {
-        return JSON.parse(text);
-      } catch (err) {
-        return { metadata: { code: r.status, message: 'Non-JSON response from server' }, raw: text };
-      }
-    }),
+    }).then((r) => safeJson(r)),
   // Fallback: buat antrean BPJS dari no_rawat (server akan merakit payload-nya)
   bpjsCreateAntrean: (payload) =>
     fetch('/api/antrean/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
         'X-CSRF-TOKEN': csrfToken,
       },
+      cache: 'no-store',
       body: JSON.stringify(payload),
-    }).then(async (r) => {
-      const ct = r.headers.get('content-type') || '';
-      if (ct.includes('application/json')) return r.json();
-      const text = await r.text();
-      try {
-        return JSON.parse(text);
-      } catch (err) {
-        return { metadata: { code: r.status, message: 'Non-JSON response from server' }, raw: text };
-      }
-    }),
+    }).then((r) => safeJson(r)),
   // Cek Status SRK via endpoint backend (Mobile JKN antrean/add simulasi)
   bpjsSrkStatus: (nomorkartu = '', nik = '') => {
     const params = new URLSearchParams();
     if (String(nomorkartu || '').trim()) params.append('nomorkartu', String(nomorkartu).trim());
     if (String(nik || '').trim()) params.append('nik', String(nik).trim());
     const qs = params.toString();
-    return fetch(`/api/bpjs/srk-status${qs ? `?${qs}` : ''}`).then((r) => r.json());
+    return fetch(`/api/bpjs/srk-status${qs ? `?${qs}` : ''}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((r) => safeJson(r));
   },
   // Antri Pendaftaran (tabel antripendaftaran_nomor)
-  antriNext: (date) => fetch(`/api/antripendaftaran/next?date=${encodeURIComponent(date)}`).then((r) => r.json()),
-  antriStats: (date) => fetch(`/api/antripendaftaran/stats?date=${encodeURIComponent(date)}`).then((r) => r.json()),
-  antriCall: (payload) => fetch('/api/antripendaftaran/call', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
-  antriRecall: (payload) => fetch('/api/antripendaftaran/recall', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload) }).then((r) => r.json()),
+  antriNext: (date) => fetch(`/api/antripendaftaran/next?date=${encodeURIComponent(date)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((r) => safeJson(r)),
+  antriStats: (date) => fetch(`/api/antripendaftaran/stats?date=${encodeURIComponent(date)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((r) => safeJson(r)),
+  antriCall: (payload) => fetch('/api/antripendaftaran/call', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(payload), cache: 'no-store' }).then((r) => safeJson(r)),
+  antriRecall: (payload) => fetch('/api/antripendaftaran/recall', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(payload), cache: 'no-store' }).then((r) => safeJson(r)),
   // Setting Rumah Sakit (untuk header label)
-  hospitalInfo: () => fetch('/api/setting/hospital-info').then((r) => r.json()),
+  hospitalInfo: async () => safeJson(await fetch('/api/setting/hospital-info', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })),
 };
 
 // UI helpers
@@ -354,7 +415,9 @@ const PatientSearchRegister = ({
               let list = kelListCacheRef.current.get(String(kdKec));
               if (!list) {
                 try {
-                  const resp = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(kdKec)}`).then((x) => x.json()).catch(() => []);
+                  const resp = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(kdKec)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                    .then((x) => safeJson(x))
+                    .catch(() => []);
                   list = Array.isArray(resp) ? resp : [];
                   kelListCacheRef.current.set(String(kdKec), list);
                   for (const k of list) {
@@ -444,6 +507,35 @@ const PatientSearchRegister = ({
     } finally {
       setIsGeneratingNoReg(false);
     }
+  };
+
+  // Setelah simpan, ambil nomor berikutnya dengan retry kecil untuk menghindari efek lag replikasi/caching
+  const retryGenerateNoReg = async (lastUsedNoReg = '') => {
+    if (!canGenerate) return;
+    const lastNum = parseInt(String(lastUsedNoReg || '').replace(/^0+/, ''), 10) || 0;
+    const maxAttempts = 5;
+    const baseDelay = 250; // ms
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await api.generateNoReg(selectedDokter, date, selectedPoli || '');
+        const nextStr = String(res?.no_reg || '').trim();
+        const nextNum = parseInt(nextStr.replace(/^0+/, ''), 10) || 0;
+        if (res?.success && nextNum > lastNum) {
+          setNoReg(nextStr);
+          notify?.({ type: 'success', title: 'Nomor berikutnya siap', description: `No. Registrasi: ${nextStr}` });
+          return;
+        }
+      } catch (err) {
+        console.warn('retryGenerateNoReg attempt failed:', err);
+      }
+      // Jeda dengan incremental backoff
+      await new Promise((r) => setTimeout(r, baseDelay * attempt));
+    }
+    // Jika gagal mendapatkan yang lebih besar, tetap coba ambil satu kali tanpa validasi
+    try {
+      const res = await api.generateNoReg(selectedDokter, date, selectedPoli || '');
+      if (res?.success && res?.no_reg) setNoReg(String(res.no_reg));
+    } catch (_) {}
   };
 
   // Otomatis generate NoReg saat pasien dipilih (dan syarat terpenuhi)
@@ -679,6 +771,9 @@ const PatientSearchRegister = ({
         setQuery('');
         setResults([]);
         setSelectedPatient(null);
+
+        // Prefetch nomor registrasi berikutnya agar siap dipakai tanpa hard refresh
+        retryGenerateNoReg(payload.no_reg);
       } else {
         notify?.({ type: 'error', title: 'Gagal menyimpan registrasi', description: res?.message || 'Coba lagi beberapa saat.' });
       }
@@ -1112,8 +1207,8 @@ const CKGStatusCard = ({ patientInfo }) => {
     const rm = patientInfo?.no_rkm_medis;
     if (!rm) { setData(null); return; }
     setLoading(true);
-    fetch(`/api/ckg/status/${enc(rm)}?year=${year}`)
-      .then((r) => r.json())
+    fetch(`/api/ckg/status/${enc(rm)}?year=${year}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+      .then((r) => safeJson(r))
       .then((res) => setData(res))
       .catch((e) => { console.error('CKG status error:', e); setData({ success: false, message: 'Gagal memuat status CKG' }); })
       .finally(() => setLoading(false));
@@ -1235,8 +1330,11 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
     setEditOpen(true);
     setLoadingEdit(true);
     try {
-      const r = await fetch(`/pasien/${enc(patientInfo.no_rkm_medis)}`);
-      const d = await r.json();
+      const r = await fetch(`/pasien/${enc(patientInfo.no_rkm_medis)}`, {
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        cache: 'no-store',
+      });
+      const d = await safeJson(r);
       setForm({
         nm_pasien: d?.nm_pasien || '',
         no_ktp: d?.no_ktp || '',
@@ -1267,31 +1365,31 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
         kabupatenpj: d?.kabupatenpj || '',
         data_posyandu: d?.data_posyandu || '',
       });
-      const pj = await fetch('/api/penjab').then((x) => x.json());
-      setPenjabOptions(Array.isArray(pj) ? pj : []);
-      const pos = await fetch('/api/data-posyandu').then((x) => x.json());
-      setPosyanduAll(Array.isArray(pos) ? pos : []);
+      const pj = await fetch('/api/penjab', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x));
+      setPenjabOptions(Array.isArray(pj) ? pj : (Array.isArray(pj?.data) ? pj.data : []));
+      const pos = await fetch('/api/data-posyandu', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x));
+      setPosyanduAll(Array.isArray(pos) ? pos : (Array.isArray(pos?.data) ? pos.data : []));
 
       // preload wilayah options based on existing codes
-      const prop = await fetch('/propinsi').then((x) => x.json()).catch(() => []);
+      const prop = await fetch('/propinsi', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x)).catch(() => []);
       const propArr = Array.isArray(prop) ? prop : (Array.isArray(prop?.data) ? prop.data : []);
       setPropinsiOptions(propArr.map((p) => ({ value: p.kd_prop, label: p.nm_prop })));
       if (d?.kd_prop) {
-        const kab = await fetch(`/kabupaten?kd_prop=${encodeURIComponent(d.kd_prop)}`).then((x) => x.json()).catch(() => []);
+        const kab = await fetch(`/kabupaten?kd_prop=${encodeURIComponent(d.kd_prop)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x)).catch(() => []);
         const kabArr = Array.isArray(kab) ? kab : (Array.isArray(kab?.data) ? kab.data : []);
         setKabupatenOptions(kabArr.map((k) => ({ value: k.kd_kab, label: k.nm_kab })));
       } else {
         setKabupatenOptions([]);
       }
       if (d?.kd_kab) {
-        const kec = await fetch(`/kecamatan?kd_kab=${encodeURIComponent(d.kd_kab)}`).then((x) => x.json()).catch(() => []);
+        const kec = await fetch(`/kecamatan?kd_kab=${encodeURIComponent(d.kd_kab)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x)).catch(() => []);
         const kecArr = Array.isArray(kec) ? kec : (Array.isArray(kec?.data) ? kec.data : []);
         setKecamatanOptions(kecArr.map((k) => ({ value: k.kd_kec, label: k.nm_kec })));
       } else {
         setKecamatanOptions([]);
       }
       if (d?.kd_kec) {
-        const kel = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(d.kd_kec)}`).then((x) => x.json()).catch(() => []);
+        const kel = await fetch(`/kelurahan?kd_kec=${encodeURIComponent(d.kd_kec)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x)).catch(() => []);
         const kelArr = Array.isArray(kel) ? kel : (Array.isArray(kel?.data) ? kel.data : []);
         setKelurahanOptions(kelArr.map((k) => ({ value: k.kd_kel, label: k.nm_kel })));
       } else {
@@ -1327,8 +1425,8 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
       setKelurahanOptions([]);
       return;
     }
-    fetch(`/kabupaten?kd_prop=${encodeURIComponent(form.kd_prop)}`)
-      .then((r) => r.json())
+    fetch(`/kabupaten?kd_prop=${encodeURIComponent(form.kd_prop)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+      .then((r) => safeJson(r))
       .then((kab) => setKabupatenOptions((Array.isArray(kab) ? kab : (Array.isArray(kab?.data) ? kab.data : [])).map((k) => ({ value: k.kd_kab, label: k.nm_kab }))))
       .catch(() => setKabupatenOptions([]));
   }, [form.kd_prop, editOpen]);
@@ -1337,8 +1435,8 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
     if (!editOpen) return;
     // Load kecamatan when kabupaten changes
     if (!form.kd_kab) { setKecamatanOptions([]); setKelurahanOptions([]); return; }
-    fetch(`/kecamatan?kd_kab=${encodeURIComponent(form.kd_kab)}`)
-      .then((r) => r.json())
+    fetch(`/kecamatan?kd_kab=${encodeURIComponent(form.kd_kab)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+      .then((r) => safeJson(r))
       .then((kec) => setKecamatanOptions((Array.isArray(kec) ? kec : (Array.isArray(kec?.data) ? kec.data : [])).map((k) => ({ value: k.kd_kec, label: k.nm_kec }))))
       .catch(() => setKecamatanOptions([]));
   }, [form.kd_kab, editOpen]);
@@ -1347,8 +1445,8 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
     if (!editOpen) return;
     // Load kelurahan when kecamatan changes
     if (!form.kd_kec) { setKelurahanOptions([]); return; }
-    fetch(`/kelurahan?kd_kec=${encodeURIComponent(form.kd_kec)}`)
-      .then((r) => r.json())
+    fetch(`/kelurahan?kd_kec=${encodeURIComponent(form.kd_kec)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+      .then((r) => safeJson(r))
       .then((kel) => setKelurahanOptions(Array.isArray(kel) ? kel.map((k) => ({ value: k.kd_kel, label: k.nm_kel })) : []))
       .catch(() => setKelurahanOptions([]));
   }, [form.kd_kec, editOpen]);
@@ -1412,16 +1510,17 @@ const PatientInfoCard = ({ patientInfo, notify, setPatientInfo, selectedPenjab }
 
       const resp = await fetch(`/data-pasien/${enc(rm)}`, {
         method: 'POST',
-        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
         body: fd,
+        cache: 'no-store',
       });
       if (!resp.ok) {
         let msg = 'Gagal menyimpan data pasien';
-        try { const j = await resp.json(); msg = j?.message || msg; } catch {}
+        try { const j = await safeJson(resp); msg = j?.message || msg; } catch {}
         notify && notify({ type: 'error', title: 'Simpan gagal', description: msg });
         return;
       }
-      const refreshed = await fetch(`/api/pasien/detail/${enc(rm)}`).then((x) => x.json());
+      const refreshed = await fetch(`/api/pasien/detail/${enc(rm)}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' }).then((x) => safeJson(x));
       if (refreshed?.data) {
         setPatientInfo && setPatientInfo(refreshed.data);
       }
@@ -1694,7 +1793,7 @@ const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
   }, [labelOpen]);
 
   return (
-    <Card title={`Registrasi Hari Ini (${date})`} headerRight={<div className="text-[11px] text-slate-500">Klik nama pasien untuk cetak label</div>}>
+    <Card title={`Registrasi Hari Ini (${date})`} headerRight={<div className="text-[11px] text-slate-500">Klik No. Rawat untuk membuka pemeriksaan ralan, atau klik nama pasien untuk cetak label</div>}>
       {loading ? (
         <div className="text-sm text-slate-500">Memuat data...</div>
       ) : (
@@ -1703,7 +1802,7 @@ const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
             <thead>
               <tr className="text-slate-600">
                 <th className="text-left px-3 py-2">NoReg</th>
-                <th className="text-left px-3 py-2">NoRawat</th>
+                <th className="text-left px-3 py-2">No. Rawat</th>
                 <th className="text-left px-3 py-2">Pasien</th>
                 <th className="text-left px-3 py-2">Poli</th>
                 <th className="text-left px-3 py-2">Dokter</th>
@@ -1724,7 +1823,23 @@ const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
                 rows.map((r) => (
                   <tr key={r.no_rawat} className="hover:bg-slate-50">
                     <td className="px-3 py-2 font-mono">{r.no_reg}</td>
-                    <td className="px-3 py-2 font-mono">{r.no_rawat}</td>
+                    <td
+                      className="px-3 py-2 font-mono cursor-pointer"
+                      onClick={() => {
+                        const url = `/ralan/pemeriksaan?no_rawat=${enc(r.no_rawat)}&no_rm=${enc(r.no_rkm_medis)}`;
+                        try { window.location.assign(url); } catch { window.location.href = url; }
+                      }}
+                      title="Klik untuk buka Pemeriksaan Ralan"
+                    >
+                      <a
+                        className="text-indigo-700 hover:underline btn-no-rawat"
+                        href={`/ralan/pemeriksaan?no_rawat=${enc(r.no_rawat)}&no_rm=${enc(r.no_rkm_medis)}`}
+                        title="Buka Pemeriksaan Ralan"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {r.no_rawat}
+                      </a>
+                    </td>
                     <td className="px-3 py-2">
                       <button className="text-sky-700 hover:underline" onClick={() => openLabelForRow(r)} title="Cetak Label 6x4">
                         {r.nm_pasien}

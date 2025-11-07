@@ -78,9 +78,57 @@ class JadwalUkmController extends Controller
             if (!$exists) {
                 return response()->json(['data' => [], 'warning' => 'Tabel ' . $this->table . ' belum dibuat.']);
             }
-            
+            // Pagination params
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = (int) $request->query('per_page', 10);
+            if ($perPage < 1) $perPage = 10; else if ($perPage > 100) $perPage = 100;
+
+            // Ambil PK & kolom
             $pk = $this->getPrimaryKey();
             $columns = $this->getColumnsNames();
+
+            // Base query + join untuk mendukung filter nama petugas & kelurahan
+            $query = DB::table($this->table . ' as j')
+                ->leftJoin('petugas as p', 'j.nip', '=', 'p.nip')
+                ->leftJoin('kelurahan as l', 'j.kd_kel', '=', 'l.kd_kel')
+                ->select('j.*');
+
+            // Filter tanggal
+            $startDate = trim((string) $request->query('start_date', ''));
+            $endDate = trim((string) $request->query('end_date', ''));
+            if ($startDate && $endDate) {
+                $query->whereBetween('j.tanggal', [$startDate, $endDate]);
+            } else if ($startDate) {
+                $query->whereDate('j.tanggal', '>=', $startDate);
+            } else if ($endDate) {
+                $query->whereDate('j.tanggal', '<=', $endDate);
+            }
+
+            // Filter status
+            $status = trim((string) $request->query('status', ''));
+            if ($status !== '') {
+                $query->where('j.status', $status);
+            }
+
+            // Filter petugas: by nama atau nip
+            $petugas = trim((string) $request->query('petugas', ''));
+            if ($petugas !== '') {
+                $query->where(function ($q) use ($petugas) {
+                    $q->where('p.nama', 'like', '%' . $petugas . '%')
+                      ->orWhere('j.nip', 'like', '%' . $petugas . '%');
+                });
+            }
+
+            // Filter kelurahan: by nama atau kode
+            $kel = trim((string) $request->query('kelurahan', ''));
+            if ($kel !== '') {
+                $query->where(function ($q) use ($kel) {
+                    $q->where('l.nm_kel', 'like', '%' . $kel . '%')
+                      ->orWhere('j.kd_kel', 'like', '%' . $kel . '%');
+                });
+            }
+
+            // Penentuan kolom order
             $orderCol = $pk;
             if (!$orderCol || !in_array($orderCol, $columns)) {
                 foreach (['updated_at','created_at','kd_jadwal','tanggal'] as $cand) {
@@ -88,10 +136,23 @@ class JadwalUkmController extends Controller
                 }
                 if (!$orderCol || !in_array($orderCol, $columns)) { $orderCol = null; }
             }
-            $query = DB::table($this->table);
-            if ($orderCol) $query = $query->orderBy($orderCol, 'desc');
-            $rows = $query->limit(500)->get();
-            return response()->json(['data' => $rows]);
+            if ($orderCol) $query->orderBy('j.' . $orderCol, 'desc');
+
+            // Hitung total dan ambil page data
+            $countQuery = clone $query;
+            $total = (int) $countQuery->count();
+            $rows = $query->forPage($page, $perPage)->get();
+
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            return response()->json([
+                'data' => $rows,
+                'total' => $total,
+                'meta' => [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'last_page' => $lastPage,
+                ],
+            ]);
         } catch (\Throwable $e) {
             Log::error('JadwalUkm data error: ' . $e->getMessage());
             return response()->json(['error' => true, 'message' => 'Gagal mengambil data jadwal', 'detail' => $e->getMessage()], 500);
@@ -141,6 +202,24 @@ class JadwalUkmController extends Controller
             $id = null;
             $row = null;
 
+            // Cek duplikasi: NIP hanya boleh dijadwalkan 1 kali pada tanggal yang sama
+            $dupExists = DB::table($this->table)
+                ->whereDate('tanggal', $validated['tanggal'])
+                ->where('nip', $validated['nip'])
+                ->exists();
+            if ($dupExists) {
+                $petugas = DB::table('petugas')->where('nip', $validated['nip'])->first();
+                $nm = $petugas && isset($petugas->nama) ? $petugas->nama : $validated['nip'];
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Duplikat jadwal: ' . $nm . ' sudah dijadwalkan pada tanggal ini.',
+                    'errors' => [
+                        'nip' => ['Petugas sudah dijadwalkan pada tanggal tersebut'],
+                        'tanggal' => ['Tanggal sudah berisi jadwal untuk petugas yang sama'],
+                    ],
+                ], 422);
+            }
+
             try {
                 $id = DB::table($this->table)->insertGetId($validated);
             } catch (\Throwable $insertIdErr) {
@@ -181,6 +260,10 @@ class JadwalUkmController extends Controller
             if (!$pk) {
                 return response()->json(['error' => true, 'message' => 'Primary key tidak ditemukan pada tabel ' . $this->table], 422);
             }
+            $current = DB::table($this->table)->where($pk, $id)->first();
+            if (!$current) {
+                return response()->json(['error' => true, 'message' => 'Data tidak ditemukan'], 404);
+            }
 
             // Validasi partial (only provided fields)
             $validated = $request->validate([
@@ -198,6 +281,27 @@ class JadwalUkmController extends Controller
             $updateData = array_intersect_key($payload, array_flip($columns));
             if (empty($updateData)) {
                 return response()->json(['error' => true, 'message' => 'Tidak ada field yang valid untuk diupdate'], 422);
+            }
+            $finalTanggal = array_key_exists('tanggal', $updateData) ? $updateData['tanggal'] : ($current->tanggal ?? null);
+            $finalNip = array_key_exists('nip', $updateData) ? $updateData['nip'] : ($current->nip ?? null);
+            if ($finalTanggal && $finalNip) {
+                $dupExists = DB::table($this->table)
+                    ->whereDate('tanggal', $finalTanggal)
+                    ->where('nip', $finalNip)
+                    ->where($pk, '<>', $id)
+                    ->exists();
+                if ($dupExists) {
+                    $petugas = DB::table('petugas')->where('nip', $finalNip)->first();
+                    $nm = $petugas && isset($petugas->nama) ? $petugas->nama : $finalNip;
+                    return response()->json([
+                        'error' => true,
+                        'message' => 'Duplikat jadwal: ' . $nm . ' sudah dijadwalkan pada tanggal ini.',
+                        'errors' => [
+                            'nip' => ['Petugas sudah dijadwalkan pada tanggal tersebut'],
+                            'tanggal' => ['Tanggal sudah berisi jadwal untuk petugas yang sama'],
+                        ],
+                    ], 422);
+                }
             }
             DB::table($this->table)->where($pk, $id)->update($updateData);
             $row = DB::table($this->table)->where($pk, $id)->first();

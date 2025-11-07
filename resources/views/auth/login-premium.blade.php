@@ -301,7 +301,9 @@
    <div class="bg-wallpaper"></div>
 
    <div id="login-premium-react-root" data-action-url="{{ route('customlogin') }}" data-csrf-token="{{ csrf_token() }}"
-      data-logo-url="{{ $logoUrl }}" data-poli='@json($poli)' data-error-message="{{ $errors->first('message') }}"
+      data-logo-url="{{ $logoUrl }}"
+      data-poli-b64="{{ base64_encode(json_encode($poli, JSON_UNESCAPED_UNICODE)) }}"
+      data-error-message="{{ $errors->first('message') }}"
       data-old-username="{{ old('username') }}" data-old-poli="{{ old('poli') }}"
       data-error-username="{{ $errors->first('username') }}" data-error-password="{{ $errors->first('password') }}"
       data-error-poli="{{ $errors->first('poli') }}">

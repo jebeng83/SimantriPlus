@@ -71,7 +71,9 @@
         };
 
         window.addEventListener('livewire:load', function () {
-            poli = @this.poli;
+            // Safely inject Livewire property into JS to avoid breaking on special characters like '&'
+            // Using @json ensures proper quoting and escaping within JavaScript context
+            poli = @json($this->poli);
             console.log(poli);
             $('.obat-1').select2({
                 placeholder: 'Pilih Obat',

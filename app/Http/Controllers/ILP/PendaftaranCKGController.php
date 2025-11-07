@@ -23,74 +23,22 @@ class PendaftaranCKGController extends Controller
         // Filter data jika ada
         $tanggal_awal = $request->input('tanggal_awal');
         $tanggal_akhir = $request->input('tanggal_akhir');
-        $status = $request->input('status');
+        // Set default status ke "Menunggu" hanya jika parameter 'status' TIDAK dikirim
+        if (!$request->has('status')) {
+            $status = '0'; // 0 = Menunggu (default saat pertama kali load)
+        } else {
+            $status = $request->input('status'); // bisa '', '0', '1', atau '2'
+        }
         $nama_sekolah = $request->input('nama_sekolah');
         $kelas = $request->input('kelas');
         // Filter tambahan
         $kd_kel = $request->input('kelurahan');
         $kode_posyandu = $request->input('posyandu');
         
-        // Query dasar
-        $query = DB::table('skrining_pkg')
-            ->leftJoin('pasien', 'skrining_pkg.no_rkm_medis', '=', 'pasien.no_rkm_medis')
-            ->leftJoin('data_siswa_sekolah', 'skrining_pkg.no_rkm_medis', '=', 'data_siswa_sekolah.no_rkm_medis')
-            ->leftJoin('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
-            ->leftJoin('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
-            ->leftJoin('kelurahan', 'skrining_pkg.kd_kel', '=', 'kelurahan.kd_kel')
-            ->leftJoin('data_posyandu', 'skrining_pkg.kode_posyandu', '=', 'data_posyandu.kode_posyandu')
-            ->select(
-                'skrining_pkg.id_pkg',
-                'skrining_pkg.nik',
-                'skrining_pkg.nama_lengkap',
-                'skrining_pkg.tanggal_lahir',
-                'skrining_pkg.umur',
-                'skrining_pkg.jenis_kelamin',
-                'skrining_pkg.no_handphone',
-                'skrining_pkg.no_rkm_medis',
-                'skrining_pkg.tanggal_skrining',
-                'skrining_pkg.status',
-                'skrining_pkg.kunjungan_sehat',
-                'skrining_pkg.kd_kel',
-                'skrining_pkg.kode_posyandu',
-                'pasien.no_peserta',
-                'data_sekolah.nama_sekolah',
-                'data_kelas.kelas',
-                'kelurahan.nm_kel',
-                'data_posyandu.nama_posyandu'
-            );
-                     
-        // Terapkan filter jika ada
-        if ($tanggal_awal) {
-            $query->whereDate('tanggal_skrining', '>=', $tanggal_awal);
-        }
-        
-        if ($tanggal_akhir) {
-            $query->whereDate('tanggal_skrining', '<=', $tanggal_akhir);
-        }
-        
-        if ($status !== null && $status !== '') {
-            $query->where('skrining_pkg.status', $status);
-        }
-        
-        if ($nama_sekolah !== null && $nama_sekolah !== '') {
-            $query->where('data_sekolah.id_sekolah', $nama_sekolah);
-        }
-        
-        if ($kelas !== null && $kelas !== '') {
-            $query->where('data_kelas.id_kelas', $kelas);
-        }
-        // Filter kelurahan
-        if ($kd_kel !== null && $kd_kel !== '') {
-            $query->where('skrining_pkg.kd_kel', $kd_kel);
-        }
-        // Filter posyandu
-        if ($kode_posyandu !== null && $kode_posyandu !== '') {
-            $query->where('skrining_pkg.kode_posyandu', $kode_posyandu);
-        }
-        
-        // Ambil data
-        $data_pendaftaran = $query->orderBy('tanggal_skrining', 'desc')->get();
-        
+        // Untuk mode server-side DataTables, data tabel dimuat via endpoint JSON.
+        // Karena itu, kita tidak mengambil semua data di sini untuk menghindari beban awal.
+        $data_pendaftaran = collect();
+
         // Ambil data untuk dropdown filter
         $daftar_sekolah = DB::table('data_sekolah')
             ->orderBy('nama_sekolah')
@@ -110,13 +58,212 @@ class PendaftaranCKGController extends Controller
             ->orderBy('nama_posyandu')
             ->get(['kode_posyandu', 'nama_posyandu']);
         
-        // Log hasil query untuk debugging
-        Log::info('Jumlah data pendaftaran CKG: ' . count($data_pendaftaran));
-        if (count($data_pendaftaran) > 0) {
-            Log::info('Data pertama: ', (array) $data_pendaftaran[0]);
-        }
+        // Log akses halaman saja untuk debugging
+        Log::info('Halaman pendaftaran CKG dimuat dengan filter default status: ' . ($status === '' ? 'Semua' : $status));
 
-        return view('ilp.pendaftaran_ckg', compact('data_pendaftaran', 'daftar_sekolah', 'daftar_kelas', 'daftar_kelurahan', 'daftar_posyandu', 'kd_kel', 'kode_posyandu'));
+        return view(
+            'ilp.pendaftaran_ckg',
+            compact(
+                'data_pendaftaran',
+                'daftar_sekolah',
+                'daftar_kelas',
+                'daftar_kelurahan',
+                'daftar_posyandu',
+                'kd_kel',
+                'kode_posyandu',
+                'status'
+            )
+        );
+    }
+
+    /**
+     * Endpoint server-side DataTables untuk pendaftaran CKG
+     */
+    public function data(Request $request)
+    {
+        try {
+            $draw = intval($request->input('draw'));
+            $start = intval($request->input('start', 0));
+            $length = intval($request->input('length', 25));
+            $orderColumnIndex = $request->input('order.0.column');
+            $orderDir = $request->input('order.0.dir', 'desc');
+            $searchValue = $request->input('search.value');
+
+            // Filters
+            $tanggal_awal = $request->input('tanggal_awal');
+            $tanggal_akhir = $request->input('tanggal_akhir');
+            // Default status ke Menunggu jika parameter tidak dikirim
+            if (!$request->has('status')) {
+                $status = '0';
+            } else {
+                $status = $request->input('status'); // bisa '', '0', '1', atau '2'
+            }
+            $nama_sekolah = $request->input('nama_sekolah');
+            $kelas = $request->input('kelas');
+            $kd_kel = $request->input('kelurahan');
+            $kode_posyandu = $request->input('posyandu');
+
+            $base = DB::table('skrining_pkg')
+                ->leftJoin('pasien', 'skrining_pkg.no_rkm_medis', '=', 'pasien.no_rkm_medis')
+                ->leftJoin('data_siswa_sekolah', 'skrining_pkg.no_rkm_medis', '=', 'data_siswa_sekolah.no_rkm_medis')
+                ->leftJoin('data_sekolah', 'data_siswa_sekolah.id_sekolah', '=', 'data_sekolah.id_sekolah')
+                ->leftJoin('data_kelas', 'data_siswa_sekolah.id_kelas', '=', 'data_kelas.id_kelas')
+                ->leftJoin('kelurahan', 'skrining_pkg.kd_kel', '=', 'kelurahan.kd_kel')
+                ->leftJoin('data_posyandu', 'skrining_pkg.kode_posyandu', '=', 'data_posyandu.kode_posyandu')
+                ->select(
+                    'skrining_pkg.id_pkg',
+                    'skrining_pkg.nik',
+                    'skrining_pkg.nama_lengkap',
+                    'skrining_pkg.tanggal_lahir',
+                    'skrining_pkg.umur',
+                    'skrining_pkg.jenis_kelamin',
+                    'skrining_pkg.no_handphone',
+                    'skrining_pkg.no_rkm_medis',
+                    'skrining_pkg.tanggal_skrining',
+                    'skrining_pkg.status',
+                    'skrining_pkg.kunjungan_sehat',
+                    'skrining_pkg.kd_kel',
+                    'skrining_pkg.kode_posyandu',
+                    'pasien.no_peserta',
+                    'data_sekolah.nama_sekolah',
+                    'data_kelas.kelas',
+                    'kelurahan.nm_kel',
+                    'data_posyandu.nama_posyandu'
+                );
+
+            // Apply external filters
+            if ($tanggal_awal) {
+                $base->whereDate('skrining_pkg.tanggal_skrining', '>=', $tanggal_awal);
+            }
+            if ($tanggal_akhir) {
+                $base->whereDate('skrining_pkg.tanggal_skrining', '<=', $tanggal_akhir);
+            }
+            if ($status !== null && $status !== '') {
+                $base->where('skrining_pkg.status', $status);
+            }
+            if ($nama_sekolah !== null && $nama_sekolah !== '') {
+                $base->where('data_sekolah.id_sekolah', $nama_sekolah);
+            }
+            if ($kelas !== null && $kelas !== '') {
+                $base->where('data_kelas.id_kelas', $kelas);
+            }
+            if ($kd_kel !== null && $kd_kel !== '') {
+                $base->where('skrining_pkg.kd_kel', $kd_kel);
+            }
+            if ($kode_posyandu !== null && $kode_posyandu !== '') {
+                $base->where('skrining_pkg.kode_posyandu', $kode_posyandu);
+            }
+
+            // Count after external filters (dataset size for current filter context)
+            $recordsTotal = (clone $base)->count();
+
+            // Apply search
+            if ($searchValue) {
+                $search = "%" . $searchValue . "%";
+                $base->where(function($q) use ($search) {
+                    $q->where('skrining_pkg.nik', 'like', $search)
+                      ->orWhere('skrining_pkg.nama_lengkap', 'like', $search)
+                      ->orWhere('skrining_pkg.no_rkm_medis', 'like', $search)
+                      ->orWhere('pasien.no_peserta', 'like', $search)
+                      ->orWhere('data_sekolah.nama_sekolah', 'like', $search)
+                      ->orWhere('data_kelas.kelas', 'like', $search)
+                      ->orWhere('kelurahan.nm_kel', 'like', $search)
+                      ->orWhere('data_posyandu.nama_posyandu', 'like', $search)
+                      ->orWhere('skrining_pkg.no_handphone', 'like', $search);
+                });
+            }
+
+            $recordsFiltered = (clone $base)->count();
+
+            // Ordering
+            $columnsMap = [
+                0 => null, // No.
+                1 => 'skrining_pkg.nik',
+                2 => 'skrining_pkg.nama_lengkap',
+                3 => 'skrining_pkg.tanggal_lahir',
+                4 => 'skrining_pkg.umur',
+                5 => 'skrining_pkg.jenis_kelamin',
+                6 => 'skrining_pkg.no_handphone',
+                7 => 'pasien.no_peserta',
+                8 => 'data_sekolah.nama_sekolah',
+                9 => 'data_kelas.kelas',
+                10 => 'kelurahan.nm_kel',
+                11 => 'data_posyandu.nama_posyandu',
+                12 => 'skrining_pkg.tanggal_skrining',
+                13 => 'skrining_pkg.kunjungan_sehat',
+                14 => 'skrining_pkg.status',
+                15 => null, // Aksi
+            ];
+
+            if ($orderColumnIndex !== null && isset($columnsMap[$orderColumnIndex]) && $columnsMap[$orderColumnIndex]) {
+                $base->orderBy($columnsMap[$orderColumnIndex], $orderDir === 'asc' ? 'asc' : 'desc');
+            } else {
+                $base->orderBy('skrining_pkg.tanggal_skrining', 'desc');
+            }
+
+            $rows = $base->skip($start)->take($length)->get();
+
+            $data = [];
+            foreach ($rows as $i => $row) {
+                $jenisKelaminLabel = $row->jenis_kelamin === 'L' ? 'Laki-laki' : (($row->jenis_kelamin === 'P') ? 'Perempuan' : ($row->jenis_kelamin ?? '-'));
+                $tglLahir = $row->tanggal_lahir ? date('d-m-Y', strtotime($row->tanggal_lahir)) : '-';
+                $tglSkrining = $row->tanggal_skrining ? date('d-m-Y', strtotime($row->tanggal_skrining)) : '-';
+                $kunjunganBadge = (isset($row->kunjungan_sehat) && ($row->kunjungan_sehat == 1 || $row->kunjungan_sehat === '1'))
+                    ? '<span class="badge badge-success">Sudah</span>'
+                    : '<span class="badge badge-secondary">Belum</span>';
+                $statusBadge = ($row->status == 1 || $row->status === '1')
+                    ? '<span class="badge badge-success">Selesai</span>'
+                    : (($row->status == 0 || $row->status === '0')
+                        ? '<span class="badge badge-warning">Menunggu</span>'
+                        : '<span class="badge badge-secondary">Usia Sekolah</span>');
+
+                $aksiHtml = '<div class="btn-group" role="group">'
+                    . '<button type="button" class="btn btn-info btn-sm detail-btn" data-toggle="modal" data-target="#detailModal" data-id="' . e($row->id_pkg) . '"><i class="fas fa-eye"></i> Detail CKG</button>'
+                    . ($row->nama_sekolah
+                        ? '<button type="button" class="btn btn-primary btn-sm detail-sekolah-btn" data-toggle="modal" data-target="#detailSekolahModal" data-id="' . e($row->id_pkg) . '" title="Data Siswa Sekolah"><i class="fas fa-school"></i> Detail CKG Sekolah</button>'
+                        : '<button type="button" class="btn btn-secondary btn-sm" disabled title="Bukan data siswa sekolah - gunakan tombol \"Detail CKG\" untuk melihat data ini"><i class="fas fa-school"></i> Detail CKG Sekolah</button>'
+                    )
+                    . '<button type="button" class="btn btn-success btn-sm set-status-btn" data-id="' . e($row->id_pkg) . '" data-status="' . e($row->status) . '"><i class="fas fa-tasks"></i> Set Status</button>'
+                    . '<button type="button" class="btn btn-warning btn-sm kunjungan-sehat-btn" data-id="' . e($row->id_pkg) . '" data-nokartu="' . e($row->no_peserta ?? '') . '" data-nama="' . e($row->nama_lengkap) . '"><i class="fas fa-heartbeat"></i> Kunjungan Sehat</button>'
+                    . '</div>';
+
+                $data[] = [
+                    // kolom 0 (No.) akan dihitung di client-side
+                    'nik' => e($row->nik),
+                    'nama_lengkap' => e($row->nama_lengkap),
+                    'tanggal_lahir' => $tglLahir,
+                    'umur' => e($row->umur) . ' tahun',
+                    'jenis_kelamin' => $jenisKelaminLabel,
+                    'no_handphone' => e($row->no_handphone),
+                    'no_peserta' => e($row->no_peserta ?? '-'),
+                    'nama_sekolah' => e($row->nama_sekolah ?? '-'),
+                    'kelas' => e($row->kelas ?? '-'),
+                    'nm_kel' => e($row->nm_kel ?? '-'),
+                    'nama_posyandu' => e($row->nama_posyandu ?? '-'),
+                    'tanggal_skrining' => $tglSkrining,
+                    'kunjungan_sehat' => $kunjunganBadge,
+                    'status' => $statusBadge,
+                    'aksi' => $aksiHtml,
+                    'id_pkg' => $row->id_pkg,
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error DataTables CKG: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Terjadi kesalahan saat memuat data: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

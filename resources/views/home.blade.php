@@ -396,12 +396,15 @@ $config = [
                 'rgba(222, 234, 361, 1)'
             ];
             
+            // Safely encode dynamic label text to avoid breaking the JS with quotes or special chars
+            const poliklinikLabel = {!! json_encode($poliklinik != 'Poliklinik tidak ditemukan' ? ucwords(strtolower($poliklinik)) : 'Poliklinik') !!};
+
             const myChart = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: {!! json_encode($bulan) !!},
                     datasets: [{
-                        label: 'Jumlah Kunjungan ' + "{{ $poliklinik != 'Poliklinik tidak ditemukan' ? ucwords(strtolower($poliklinik)) : 'Poliklinik' }}",
+                        label: `Jumlah Kunjungan ${poliklinikLabel}`,
                         data: {!! json_encode($jumlah) !!},
                         backgroundColor: colors,
                         borderColor: borderColors,

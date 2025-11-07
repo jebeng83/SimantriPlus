@@ -89,11 +89,15 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Status:</label>
+                            @php
+                                // Default ke Menunggu hanya saat parameter 'status' tidak ada sama sekali
+                                $selectedStatus = request()->has('status') ? request('status') : '0';
+                            @endphp
                             <select class="form-control" name="status" id="status">
                                 <option value="">Semua Status</option>
-                                <option value="1" {{ request('status')=='1' ? 'selected' : '' }}>Selesai</option>
-                                <option value="0" {{ request('status')=='0' ? 'selected' : '' }}>Menunggu</option>
-                                <option value="2" {{ request('status')=='2' ? 'selected' : '' }}>Usia Sekolah</option>
+                                <option value="1" {{ $selectedStatus=='1' ? 'selected' : '' }}>Selesai</option>
+                                <option value="0" {{ $selectedStatus=='0' ? 'selected' : '' }}>Menunggu</option>
+                                <option value="2" {{ $selectedStatus=='2' ? 'selected' : '' }}>Usia Sekolah</option>
                             </select>
                         </div>
                     </div>
@@ -424,7 +428,7 @@
             }
         }
         
-        // Initialize DataTable with performance-friendly settings
+        // Initialize DataTable in server-side mode for fast loading
         var table = $('#tabel-pendaftaran-ckg').DataTable({
             responsive: false,
             autoWidth: false,
@@ -432,15 +436,70 @@
             stateSave: true,
             stateDuration: 60 * 60 * 24, // 24 hours
             processing: true,
+            serverSide: true,
             deferRender: true,
             searchDelay: 350,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-            order: [], // disable initial ordering to speed up first paint
+            // Default order by Tanggal Skrining desc (column index 12)
+            order: [[12, 'desc']],
             pagingType: 'simple_numbers',
-            columnDefs: [
-                { targets: [0], orderable: false, searchable: false }, // No.
-                { targets: [14, 15], orderable: false, searchable: false } // Kunjungan Sehat, Aksi
+            ajax: {
+                url: "{{ route('ilp.pendaftaran-ckg.data') }}",
+                type: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                beforeSend: function (xhr) {
+                    // Ensure Laravel treats this as an AJAX/JSON request to avoid HTML redirects
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                },
+                data: function (d) {
+                    d.tanggal_awal = $('#tanggal_awal').val();
+                    d.tanggal_akhir = $('#tanggal_akhir').val();
+                    d.status = $('#status').val(); // '' untuk semua status
+                    d.nama_sekolah = $('#nama_sekolah').val();
+                    d.kelas = $('#kelas').val();
+                    d.kelurahan = $('#kelurahan').val();
+                    d.posyandu = $('#posyandu').val();
+                },
+                error: function (xhr, error, thrown) {
+                    console.error('DataTables AJAX error:', error, thrown, xhr);
+                    let msg = 'Gagal memuat data. Silakan coba lagi.';
+                    if (xhr.status === 401) {
+                        msg = 'Sesi Anda sudah berakhir atau belum login. Silakan login ulang.';
+                    } else if (xhr.status === 403) {
+                        msg = 'Anda tidak memiliki izin untuk mengakses data ini.';
+                    } else if (xhr.status === 0) {
+                        msg = 'Tidak dapat terhubung ke server. Periksa koneksi jaringan Anda.';
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: msg,
+                        confirmButtonColor: '#3085d6'
+                    });
+                }
+            },
+            columns: [
+                { data: null, orderable: false, searchable: false, render: function (data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1; // row number
+                }},
+                { data: 'nik', name: 'nik' },
+                { data: 'nama_lengkap', name: 'nama_lengkap' },
+                { data: 'tanggal_lahir', name: 'tanggal_lahir' },
+                { data: 'umur', name: 'umur' },
+                { data: 'jenis_kelamin', name: 'jenis_kelamin' },
+                { data: 'no_handphone', name: 'no_handphone' },
+                { data: 'no_peserta', name: 'no_peserta' },
+                { data: 'nama_sekolah', name: 'nama_sekolah' },
+                { data: 'kelas', name: 'kelas' },
+                { data: 'nm_kel', name: 'nm_kel' },
+                { data: 'nama_posyandu', name: 'nama_posyandu' },
+                { data: 'tanggal_skrining', name: 'tanggal_skrining' },
+                { data: 'kunjungan_sehat', orderable: false, searchable: false },
+                { data: 'status', orderable: false, searchable: false },
+                { data: 'aksi', orderable: false, searchable: false }
             ],
             language: {
                 "emptyTable": "Tidak ada data yang tersedia",
@@ -460,6 +519,20 @@
                     "previous": "Sebelumnya"
                 }
             }
+        });
+
+        // Expose the DataTable instance globally for use in dynamically loaded scripts/modals
+        window.pendaftaranCKGTable = table;
+
+        // Submit filter via AJAX to reload server-side data
+        $('#filter-form').on('submit', function(e) {
+            e.preventDefault();
+            table.ajax.reload();
+        });
+
+        // Refresh processing locks on each table draw
+        $('#tabel-pendaftaran-ckg').on('draw.dt', function() {
+            checkProcessingStatus();
         });
         
         // Release processing status when Detail CKG Sekolah modal is closed
@@ -577,8 +650,12 @@
                                     text: 'Data berhasil diselesaikan',
                                     icon: 'success'
                                 }).then(() => {
-                                    // Reload page; DataTables stateSave will restore table state
-                                    location.reload();
+                                    // Reload table data without resetting pagination
+                                    if (window.pendaftaranCKGTable) {
+                                        window.pendaftaranCKGTable.ajax.reload(null, false);
+                                    } else {
+                                        location.reload();
+                                    }
                                 });
                             } else {
                                 Swal.fire({
@@ -1415,7 +1492,11 @@
                             text: 'Status berhasil diperbarui',
                             icon: 'success'
                         }).then(() => {
-                            location.reload();
+                            if (window.pendaftaranCKGTable) {
+                                window.pendaftaranCKGTable.ajax.reload(null, false);
+                            } else {
+                                location.reload();
+                            }
                         });
                     } else {
                         Swal.fire({
@@ -1596,9 +1677,11 @@
                                                     },
                                                     success: function(updateResponse) {
                                                         if (updateResponse.success) {
-                                                            // Save current page state before reload
-                                                            saveCurrentPageState();
-                                                            location.reload();
+                                                            if (window.pendaftaranCKGTable) {
+                                                                window.pendaftaranCKGTable.ajax.reload(null, false);
+                                                            } else {
+                                                                location.reload();
+                                                            }
                                                         } else {
                                                             Swal.fire({
                                                                 icon: 'warning',
@@ -1682,8 +1765,11 @@
                                                 },
                                                 success: function(updateResponse) {
                                                     if (updateResponse.success) {
-                                                        saveCurrentPageState();
-                                                        location.reload();
+                                                        if (window.pendaftaranCKGTable) {
+                                                            window.pendaftaranCKGTable.ajax.reload(null, false);
+                                                        } else {
+                                                            location.reload();
+                                                        }
                                                     } else {
                                                         Swal.fire({
                                                             icon: 'warning',
@@ -1828,9 +1914,11 @@
                                     text: 'Data berhasil diselesaikan',
                                     icon: 'success'
                                 }).then(() => {
-                                    // Save current page state before reload
-                                    saveCurrentPageState();
-                                    location.reload();
+                                    if (window.pendaftaranCKGTable) {
+                                        window.pendaftaranCKGTable.ajax.reload(null, false);
+                                    } else {
+                                        location.reload();
+                                    }
                                 });
                             } else {
                                 Swal.fire({
@@ -1918,8 +2006,12 @@
                                     icon: 'success',
                                     confirmButtonText: 'OK'
                                 }).then(() => {
-                                    // Refresh halaman untuk melihat perubahan
-                                    location.reload();
+                                    // Refresh table to reflect changes
+                                    if (window.pendaftaranCKGTable) {
+                                        window.pendaftaranCKGTable.ajax.reload(null, false);
+                                    } else {
+                                        location.reload();
+                                    }
                                 });
                             } else {
                                 Swal.fire({
@@ -2006,8 +2098,12 @@
                                     icon: 'success',
                                     confirmButtonText: 'OK'
                                 }).then(() => {
-                                    // Refresh halaman untuk melihat perubahan
-                                    location.reload();
+                                    // Refresh table to reflect changes
+                                    if (window.pendaftaranCKGTable) {
+                                        window.pendaftaranCKGTable.ajax.reload(null, false);
+                                    } else {
+                                        location.reload();
+                                    }
                                 });
                             } else {
                                 Swal.fire({

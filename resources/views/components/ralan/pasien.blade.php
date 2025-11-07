@@ -4,15 +4,22 @@ function maskKtp($ktp) {
 if (!$ktp || $ktp === '-') return '-';
 $ktpLength = strlen($ktp);
 if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr($ktp, -1); $masked=str_repeat('x',
-    $ktpLength - 5); return $firstFour . $masked . $lastOne; } } @endphp @if(!$data) <div class="alert alert-warning">
+    $ktpLength - 5); return $firstFour . $masked . $lastOne; } }
+
+// Tentukan URL foto hanya jika gambar tersedia (hindari alt text berantakan)
+$imgUrl = (!empty($data->gambar) && $data->gambar !== 'avatar.png')
+    ? "https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{$data->gambar}"
+    : null;
+@endphp
+@if(!$data) <div class="alert alert-warning">
     <h5><i class="icon fas fa-exclamation-triangle"></i> Peringatan!</h5>
     Data pasien tidak ditemukan atau terjadi kesalahan saat memuat data pasien.
     </div>
     @else
     <div>
         <x-adminlte-profile-widget name="{{$data->nm_pasien ?? '-'}}" desc="{{$data->no_rkm_medis ?? '-'}}"
-            theme="lightblue" layout-type="classic"
-            img="https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}">
+            theme="lightblue" layout-type="modern" class="patient-profile"
+            :img="$imgUrl">
             <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat"
                 text="{{$data->no_rawat ?? '-'}}" />
             <!--<x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP" text="{{$data->no_ktp ?? '-'}}"-->
@@ -81,7 +88,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                 text="{{$data->data_posyandu ?? '-'}}" /> -->
             <div class="p-0 col-12">
                 <span class="nav-link">
-                    <div class="d-flex flex-row justify-content-between" style="gap:10px">
+                    <div class="profile-actions">
                         <x-adminlte-button label="Riwayat Pemeriksaan" data-toggle="modal"
                             data-target="#modalRiwayatPemeriksaanRalan" class="bg-info" />
                     </div>
@@ -90,7 +97,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                     <x-ralan.icare-bpjs :noPeserta="$data->no_peserta ?? ''" :kodeDokter="$dokter ?? '102'" />
                 </span>
                 <span class="nav-link">
-                    <div class="d-flex flex-row justify-content-between" style="gap:10px">
+                    <div class="profile-actions">
                         <x-adminlte-button icon="fas fa-folder" id="btn-rm" data-rm="{{$data->no_rkm_medis ?? ''}}"
                             label="Berkas RM Digital" theme="success" />
                         <x-adminlte-button icon="fas fa-folder" label="Berkas RM Retensi" theme="secondary"
@@ -98,7 +105,7 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
                     </div>
                 </span>
             </div>
-            <span class="nav-link">
+            <span class="nav-link profile-upload-group">
                 <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm"
                     accept="image/*,application/pdf" placeholder="Berkas Digital" legend="Pilih">
                     <x-slot name="appendSlot">
@@ -146,6 +153,51 @@ if ($ktpLength <= 5) return $ktp; $firstFour=substr($ktp, 0, 4); $lastOne=substr
             .modal-lg {
                 max-width: 100%;
             }
+        }
+
+        /* Spacing and modern styling for patient profile card */
+        .patient-profile .widget-user-header {
+            min-height: 135px;
+            padding-bottom: 16px;
+        }
+        .patient-profile .card-footer > .row {
+            row-gap: 10px; /* modern vertical spacing between items */
+        }
+        .patient-profile .nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* icon dan label berdekatan */
+            gap: 3px; /* jarak icon-label lebih rapat */
+            padding: 6px 10px;
+            margin: 0;
+            border-radius: 10px;
+            background: transparent;
+        }
+        /* Perkecil lebar fixed-width icon FontAwesome agar tidak melebar terlalu jauh */
+        .patient-profile .fa-fw {
+            width: 1em;
+        }
+        .patient-profile .nav-link + .nav-link {
+            margin-top: 8px; /* vertical space between action rows */
+        }
+        .patient-profile .nav-link .float-right {
+            float: none !important;
+            margin-left: auto; /* nilai pindah ke kanan */
+            display: inline-flex;
+            align-items: center;
+            gap: 4px; /* jarak nilai dan tombol edit lebih rapat */
+        }
+        .patient-profile .profile-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; /* space between buttons */
+            width: 100%;
+        }
+        .patient-profile .btn {
+            border-radius: 10px; /* more modern rounded corners */
+        }
+        .patient-profile .profile-upload-group {
+            margin-top: 12px; /* space above upload input */
         }
     </style>
     @endpush

@@ -202,13 +202,14 @@ export default function DisplayKegiatanUkm({ monthlyUrl = "/api/jadwal-ukm/month
 
       <AnimatePresence>
         {!loading && groups.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div key="empty"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="rounded border border-gray-200 bg-white px-4 py-6 text-gray-600">
             Tidak ada data untuk bulan ini.
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div key="grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {groups.map(([tanggal, items]) => {
             const aggItems = aggregateByKode(items);
             return (
@@ -224,10 +225,10 @@ export default function DisplayKegiatanUkm({ monthlyUrl = "/api/jadwal-ukm/month
                 </div>
                 <ul className="divide-y">
                   {aggItems.map((it, idx) => (
-                    <li key={it.id ?? `${tanggal}-${it.kode ?? ''}-${idx}`} className="px-4 py-3">
+                    <li key={makeAggKey(tanggal, it, idx)} className="px-4 py-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-medium text-gray-800">
+                          <div className={`font-medium ${isBelumStatus(it) ? 'text-red-600' : 'text-gray-800'}`}>
                             {it.nama_kegiatan || it.kegiatan || it.kode || "-"}
                           </div>
                           <div className="text-sm text-gray-600">
@@ -236,7 +237,7 @@ export default function DisplayKegiatanUkm({ monthlyUrl = "/api/jadwal-ukm/month
                           {/* Tampilkan per-petugas dengan badge status yang bisa di-klik */}
                           {(it.items && it.items.length > 0) ? (
                             it.items.map((rec, i) => (
-                              <div key={`pet-${rec.id}-${i}`} className="mt-1 flex items-center justify-between gap-2">
+                              <div key={makePetKey(tanggal, it, rec, i)} className="mt-1 flex items-center justify-between gap-2">
                                 <div className="text-sm text-gray-600">
                                   Petugas: <span className="font-medium">{rec.petugas_nama}</span>
                                 </div>
@@ -335,3 +336,46 @@ function statusClasses(st) {
 }
 
 // (dihapus) STATUS_OPTIONS dideklarasikan di bagian atas file untuk menghindari duplikasi.
+
+// Helper untuk membuat key yang selalu unik dan tidak kosong
+function makeAggKey(day, aggItem, idx) {
+  try {
+    const id = aggItem?.id;
+    const idStr = id != null ? String(id) : '';
+    const hasId = idStr.trim() !== '';
+    const kode = aggItem?.kode;
+    const kodeStr = kode != null && String(kode).trim() !== '' ? String(kode).trim() : '__no_kode__';
+    // Sertakan idx agar benar-benar unik meski ada id duplikat tak terduga
+    return hasId ? `agg-${idStr}-${idx}` : `agg-${String(day)}-${kodeStr}-${idx}`;
+  } catch {
+    return `agg-${String(day)}-__unknown__-${idx}`;
+  }
+}
+
+function makePetKey(day, aggItem, rec, i) {
+  try {
+    const recId = rec?.id;
+    const recIdStr = recId != null ? String(recId) : '';
+    const hasRecId = recIdStr.trim() !== '';
+    const kode = aggItem?.kode;
+    const kodeStr = (kode != null && String(kode).trim() !== '') ? String(kode).trim() : '__no_kode__';
+    // Sertakan day/kode/i untuk menjamin keunikan
+    return hasRecId ? `pet-${String(day)}-${kodeStr}-${recIdStr}-${i}` : `pet-${String(day)}-${kodeStr}-${i}`;
+  } catch {
+    return `pet-${String(day)}-__unknown__-${i}`;
+  }
+}
+
+// Helper untuk menentukan apakah sebuah kegiatan memiliki status "Belum"
+function isBelumStatus(aggItem) {
+  try {
+    const s = String(aggItem?.status || '').toLowerCase();
+    if (s) return s === 'belum';
+    if (Array.isArray(aggItem?.items)) {
+      return aggItem.items.some((x) => String(x?.status || '').toLowerCase() === 'belum');
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}

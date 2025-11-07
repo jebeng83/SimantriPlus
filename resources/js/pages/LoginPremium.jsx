@@ -14,8 +14,26 @@ function useRootData() {
   const errorPoli = el?.dataset?.errorPoli || "";
   let poli = [];
   try {
-    const raw = el?.dataset?.poli || "[]";
-    const parsed = JSON.parse(raw);
+    // Prefer Base64-encoded JSON from data-poli-b64 to avoid any inline HTML encoding issues (e.g., '&').
+    const b64 = el?.dataset?.poliB64 || "";
+    let parsed = [];
+    if (b64) {
+      try {
+        const jsonStr = atob(b64);
+        parsed = JSON.parse(jsonStr);
+      } catch (_e) {
+        // Fallback to plain JSON in data-poli if base64 decoding fails.
+        try {
+          const raw = el?.dataset?.poli || "[]";
+          parsed = JSON.parse(raw);
+        } catch (__e) {
+          parsed = [];
+        }
+      }
+    } else {
+      const raw = el?.dataset?.poli || "[]";
+      parsed = JSON.parse(raw);
+    }
     poli = Array.isArray(parsed)
       ? parsed.map((p) => ({
           value: p?.kd_poli ?? "",

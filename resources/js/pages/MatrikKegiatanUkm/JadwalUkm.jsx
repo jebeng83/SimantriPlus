@@ -56,6 +56,8 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
   const [showForm, setShowForm] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [serverTotalPages, setServerTotalPages] = useState(1);
   // Filter state untuk card pencarian
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
@@ -70,6 +72,12 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
     setFilterStatus("");
     setPage(1);
   }
+  // Debounce nilai filter agar request tidak memanggil API di setiap ketikan
+  const debFilterStart = useDebouncedValue(filterStart, 250);
+  const debFilterEnd = useDebouncedValue(filterEnd, 250);
+  const debFilterNipKeyword = useDebouncedValue(filterNipKeyword, 350);
+  const debFilterKelKeyword = useDebouncedValue(filterKelKeyword, 350);
+  const debFilterStatus = useDebouncedValue(filterStatus, 250);
   // Gunakan preferensi Reduced Motion agar transisi tetap ringan
   const prefersReducedMotion = useReducedMotion();
 
@@ -241,62 +249,10 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
     return name;
   }
 
-  // Filtering + Pagination client-side
-  const filteredRows = useMemo(() => {
-    let result = Array.isArray(rows) ? rows : [];
-    // Filter tanggal mulai
-    if (filterStart) {
-      const s = new Date(filterStart);
-      result = result.filter((r) => {
-        const d = r?.tanggal ? new Date(r.tanggal) : null;
-        return d && d >= s;
-      });
-    }
-    // Filter tanggal akhir
-    if (filterEnd) {
-      const e = new Date(filterEnd);
-      result = result.filter((r) => {
-        const d = r?.tanggal ? new Date(r.tanggal) : null;
-        return d && d <= e;
-      });
-    }
-    // Filter petugas (nip atau nama)
-    const qPet = (filterNipKeyword || "").toLowerCase().trim();
-    if (qPet) {
-      result = result.filter((r) => {
-        const nip = String(r?.nip || "").toLowerCase();
-        const nama = (petugasList.find((p) => String(p.nip) === String(r?.nip))?.nama || "").toLowerCase();
-        return nip.includes(qPet) || nama.includes(qPet);
-      });
-    }
-    // Filter kelurahan/desa (kd_kel atau nm_kel)
-    const qKel = (filterKelKeyword || "").toLowerCase().trim();
-    if (qKel) {
-      result = result.filter((r) => {
-        const kd = String(r?.kd_kel || "").toLowerCase();
-        const nm = (kelurahanList.find((k) => String(k.kd_kel) === String(r?.kd_kel))?.nm_kel || "").toLowerCase();
-        return kd.includes(qKel) || nm.includes(qKel);
-      });
-    }
-    // Filter status
-    if (filterStatus) {
-      result = result.filter((r) => String(r?.status || "") === String(filterStatus));
-    }
-    return result;
-  }, [rows, filterStart, filterEnd, filterNipKeyword, filterKelKeyword, filterStatus, petugasList, kelurahanList]);
-
-  const totalPages = Math.max(1, Math.ceil((filteredRows?.length || 0) / pageSize));
-  const pageRows = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredRows.slice(start, end);
-  }, [filteredRows, page, pageSize]);
-  useEffect(() => {
-    const total = Math.max(1, Math.ceil((filteredRows?.length || 0) / pageSize));
-    if (page > total) setPage(total);
-    if (page < 1) setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredRows, pageSize]);
+  // Catatan: Filter-card tetap client-side agar fleksibel.
+  // Namun pagination diambil dari server. Ketika filter berubah, reset ke halaman 1
+  // Reset halaman hanya setelah nilai filter berhenti berubah (debounced)
+  useEffect(() => { setPage(1); }, [debFilterStart, debFilterEnd, debFilterNipKeyword, debFilterKelKeyword, debFilterStatus]);
 
   // Render field dengan searchable dropdown untuk nip, kode, kd_kel
   function renderField(c) {
@@ -459,6 +415,18 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
     return (template || "").replace("__ID__", encodeURIComponent(val(id)));
   }
 
+  // Cek duplikasi lokal berdasarkan data yang sedang ditampilkan (client-side)
+  function isDuplicateInRows(nip, tanggal, exceptId = null) {
+    if (!nip || !tanggal) return false;
+    const pk = meta.primary_key || "kd_jadwal";
+    const t10 = String(tanggal).slice(0, 10);
+    return (rows || []).some((r) => {
+      const rT = String(r?.tanggal || "").slice(0, 10);
+      const sameId = exceptId != null && String(r?.[pk]) === String(exceptId);
+      return !sameId && String(r?.nip) === String(nip) && rT === t10;
+    });
+  }
+
   async function fetchMeta(signal) {
     try {
       const res = await fetch(metaUrl, { headers: { Accept: "application/json" }, signal });
@@ -472,14 +440,40 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
     }
   }
 
+  function buildQueryUrl(base, params = {}) {
+    const u = new URL(base, window.location.origin);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v != null && v !== "") u.searchParams.set(k, v);
+    });
+    return u.toString();
+  }
+
   async function fetchList(signal) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(listUrl, { headers: { Accept: "application/json" }, signal });
-      const json = await res.json();
-      if (json?.error) throw new Error(json?.message || "Gagal mengambil data");
-      setRows(Array.isArray(json.data) ? json.data : []);
+      const url = buildQueryUrl(listUrl, {
+        page,
+        per_page: pageSize,
+        start_date: debFilterStart,
+        end_date: debFilterEnd,
+        status: debFilterStatus,
+        petugas: debFilterNipKeyword,
+        kelurahan: debFilterKelKeyword,
+      });
+      const res = await fetch(url, { headers: { Accept: "application/json" }, signal });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.error) throw new Error(json?.message || "Gagal mengambil data");
+      const data = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+      setRows(data);
+      // Coba baca total dari berbagai struktur umum Laravel / custom
+      const meta = json?.meta || json?.pagination || {};
+      let total = Number(json?.total ?? meta?.total ?? json?.count ?? 0);
+      let lastPage = Number(meta?.last_page ?? json?.last_page ?? Math.max(1, Math.ceil((total || data.length) / pageSize)));
+      if (!Number.isFinite(total) || total <= 0) total = data.length + (page - 1) * pageSize; // fallback minimal
+      if (!Number.isFinite(lastPage) || lastPage <= 0) lastPage = Math.max(1, Math.ceil(total / pageSize));
+      setServerTotal(total);
+      setServerTotalPages(lastPage);
     } catch (e) {
       if (e?.name === "AbortError") return;
       console.error("fetchList error", e);
@@ -496,6 +490,14 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
     return () => ac.abort();
   }, []);
 
+  // Refetch saat pagination / quick search berubah
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchList(ac.signal);
+    return () => ac.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, debFilterStart, debFilterEnd, debFilterNipKeyword, debFilterKelKeyword, debFilterStatus]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (editing) { await submitEdit(); return; }
@@ -507,6 +509,18 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       for (const c of inputColumns) {
         if (form.hasOwnProperty(c.name)) payload[c.name] = form[c.name];
       }
+
+      // Preflight duplikasi di sisi client agar user langsung mendapatkan feedback
+      if (isDuplicateInRows(payload.nip, payload.tanggal)) {
+        const msg = `Duplikat jadwal: petugas ini sudah dijadwalkan pada tanggal ${payload.tanggal}.`;
+        toast.error(msg);
+        try {
+          if (window?.Swal) await window.Swal.fire({ title: "Duplikat jadwal", text: msg, icon: "warning" });
+        } catch {}
+        setFieldErrors({ ...fieldErrors, nip: ["Petugas sudah dijadwalkan pada tanggal ini"], tanggal: ["Tanggal sudah berisi jadwal untuk petugas yang sama"] });
+        throw new Error(msg);
+      }
+
       const res = await fetch(storeUrl, {
         method: "POST",
         headers: {
@@ -520,6 +534,9 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json?.error) {
         if (json?.errors && typeof json.errors === "object") setFieldErrors(json.errors);
+        if ((json?.message || "").toLowerCase().includes("duplikat")) {
+          toast.error(json?.message || "Duplikat jadwal");
+        }
         throw new Error(json?.message || json?.detail || "Gagal menyimpan");
       }
       setForm({});
@@ -575,6 +592,20 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       for (const c of inputColumns) {
         if (form.hasOwnProperty(c.name)) payload[c.name] = form[c.name];
       }
+
+      // Preflight duplikasi lokal untuk edit (pakai nilai final tanggal+nip)
+      const finalTanggal = payload.hasOwnProperty("tanggal") ? payload.tanggal : (editing?.tanggal || "").slice(0, 10);
+      const finalNip = payload.hasOwnProperty("nip") ? payload.nip : editing?.nip;
+      if (isDuplicateInRows(finalNip, finalTanggal, id)) {
+        const msg = `Duplikat jadwal: petugas ini sudah dijadwalkan pada tanggal ${finalTanggal}.`;
+        toast.error(msg);
+        try {
+          if (window?.Swal) await window.Swal.fire({ title: "Duplikat jadwal", text: msg, icon: "warning" });
+        } catch {}
+        setFieldErrors({ ...fieldErrors, nip: ["Petugas sudah dijadwalkan pada tanggal ini"], tanggal: ["Tanggal sudah berisi jadwal untuk petugas yang sama"] });
+        throw new Error(msg);
+      }
+
       const res = await fetch(urlFor(updateUrlTemplate, id), {
         method: "PUT",
         headers: {
@@ -588,6 +619,9 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json?.error) {
         if (json?.errors && typeof json.errors === "object") setFieldErrors(json.errors);
+        if ((json?.message || "").toLowerCase().includes("duplikat")) {
+          toast.error(json?.message || "Duplikat jadwal");
+        }
         throw new Error(json?.message || json?.detail || "Gagal mengubah data");
       }
       setEditing(null);
@@ -651,7 +685,8 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: "easeOut" }}
       className="p-4 space-y-6"
     >
-      
+
+      {/* Quick Search dihapus sesuai permintaan */}
 
       <AnimatePresence initial={false}>
         {error && (
@@ -667,16 +702,17 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
       </AnimatePresence>
 
       {/* Form Tambah / Edit */}
-      <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-semibold">Form Jadwal</h3>
+      <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-emerald-500 to-sky-500 rounded-t" />
+        <div className="p-5 flex items-center justify-between">
+          <h3 className="text-base font-semibold tracking-tight">Form Jadwal</h3>
           <button type="button" onClick={() => setShowForm((s) => !s)} className="px-3 py-1 text-xs rounded border hover:bg-gray-50 transition-colors duration-150 ease-out">
             {showForm ? "Ciutkan" : "Buka"}
           </button>
         </div>
         <AnimatePresence initial={false}>
           {showForm && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden p-5 pt-0">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {inputColumns.map((c) => (
                   <div key={c.name} className="space-y-1">
@@ -698,49 +734,39 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
         </AnimatePresence>
       </form>
 
-      {/* Card Pencarian */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-semibold">Pencarian</h3>
-          <button type="button" onClick={clearFilters} className="px-3 py-1 text-xs rounded border hover:bg-gray-50 transition-colors duration-150 ease-out">Reset</button>
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <div className="space-y-1">
-              <label className="text-xs text-gray-700">Tanggal mulai</label>
-              <input type="date" value={filterStart} onChange={(e)=>{ setFilterStart(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-700">Tanggal akhir</label>
-              <input type="date" value={filterEnd} onChange={(e)=>{ setFilterEnd(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-700">Petugas</label>
-              <input type="text" value={filterNipKeyword} onChange={(e)=>{ setFilterNipKeyword(e.target.value); setPage(1); }} placeholder="ketik nama atau nip" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 transition-colors duration-200 ease-out" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-700">Kelurahan/Desa</label>
-              <input type="text" value={filterKelKeyword} onChange={(e)=>{ setFilterKelKeyword(e.target.value); setPage(1); }} placeholder="ketik nm_kel atau kd_kel" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 transition-colors duration-200 ease-out" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-700">Status</label>
-              <select value={filterStatus} onChange={(e)=>{ setFilterStatus(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out">
-                <option value="">-- Semua --</option>
-                <option value="Belum">Belum</option>
-                <option value="Tunda">Tunda</option>
-                <option value="Sudah">Sudah</option>
-                <option value="Batal">Batal</option>
-              </select>
-            </div>
+      {/* Tabel Data Modern (Sekaligus toolbar filter) */}
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-emerald-500 to-sky-500 rounded-t" />
+        {/* Toolbar Filter dipindahkan dari Card Pencarian dan diletakkan DI ATAS bar Total data */}
+        <div className="px-3 sm:px-5 pt-5 pb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="space-y-1">
+            <label className="text-xs text-gray-700">Tanggal mulai</label>
+            <input type="date" value={filterStart} onChange={(e)=>{ setFilterStart(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out" />
           </div>
-        <p className="mt-2 text-xs text-gray-500">Menampilkan {filteredRows.length} dari {rows.length} data</p>
-      </div>
-
-      {/* Tabel Data Modern */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="text-sm text-gray-600">Total data: {filteredRows.length} dari {rows.length}</div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-700">Tanggal akhir</label>
+            <input type="date" value={filterEnd} onChange={(e)=>{ setFilterEnd(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-700">Petugas</label>
+            <input type="text" value={filterNipKeyword} onChange={(e)=>{ setFilterNipKeyword(e.target.value); setPage(1); }} placeholder="ketik nama atau nip" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 transition-colors duration-200 ease-out" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-700">Kelurahan/Desa</label>
+            <input type="text" value={filterKelKeyword} onChange={(e)=>{ setFilterKelKeyword(e.target.value); setPage(1); }} placeholder="ketik nm_kel atau kd_kel" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-400 transition-colors duration-200 ease-out" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-700">Status</label>
+            <select value={filterStatus} onChange={(e)=>{ setFilterStatus(e.target.value); setPage(1); }} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ease-out">
+              <option value="">-- Semua --</option>
+              <option value="Belum">Belum</option>
+              <option value="Tunda">Tunda</option>
+              <option value="Sudah">Sudah</option>
+              <option value="Batal">Batal</option>
+            </select>
+          </div>
         </div>
-        <div className="overflow-auto">
+        <div className="px-3 sm:px-5 overflow-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-gray-700">
@@ -763,7 +789,7 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
                   </tr>
                 ))
               ) : (
-                pageRows.map((row, idx) => (
+                rows.map((row, idx) => (
                   <tr key={idx} className="border-t hover:bg-gray-50 transition-colors duration-150 ease-out">
                     <td className="px-3 py-2">{(page - 1) * pageSize + idx + 1}</td>
                     {displayColumns.map((c) => {
@@ -798,21 +824,33 @@ export default function JadwalUkm({ metaUrl, listUrl, storeUrl, updateUrlTemplat
             </tbody>
           </table>
         </div>
-        {loading && <div className="mt-3 text-xs text-gray-500">Memuat data...</div>}
+        {/* Bar Total data & Page size dipindah ke bawah tabel */}
+        <div className="py-5 px-3 sm:px-5 flex items-center justify-between border-t border-gray-100">
+          <div className="text-sm text-gray-600">Total data: {serverTotal}</div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-600">Tampilkan</label>
+            <select
+              className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-xs text-gray-600">data</span>
+            <button type="button" onClick={clearFilters} className="ml-2 px-3 py-1 text-xs rounded border hover:bg-gray-50 transition-colors duration-150 ease-out">Reset Filter</button>
+          </div>
+        </div>
+        {loading && <div className="px-3 sm:px-5 pb-5 text-xs text-gray-500">Memuat data...</div>}
       </div>
-      <div className="mb-2 text-sm text-gray-600 flex items-center justify-between">
-        <span>Total data: {filteredRows.length} dari {rows.length}</span>
+      <div className="text-sm text-gray-600 flex items-center justify-between">
+        <span className="px-1">Menampilkan {(page - 1) * pageSize + (rows.length > 0 ? 1 : 0)} hingga {(page - 1) * pageSize + rows.length} dari {serverTotal} data</span>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-600">Baris/hal</label>
-          <select className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-150 ease-out" value={pageSize} onChange={(e)=>{ setPageSize(Number(e.target.value)); setPage(1); }}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-          <span className="text-xs text-gray-600">Hal {page} / {totalPages}</span>
+          <span className="text-xs text-gray-600">Hal {page} / {serverTotalPages}</span>
           <button className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-150 ease-out" disabled={page<=1} onClick={()=>setPage((p)=>Math.max(1, p-1))}>Prev</button>
-          <button className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-150 ease-out" disabled={page>=totalPages} onClick={()=>setPage((p)=>Math.min(totalPages, p+1))}>Next</button>
+          <button className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-150 ease-out" disabled={page>=serverTotalPages} onClick={()=>setPage((p)=>Math.min(serverTotalPages, p+1))}>Next</button>
         </div>
       </div>
     </motion.div>

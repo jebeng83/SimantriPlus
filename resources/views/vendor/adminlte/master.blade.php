@@ -104,7 +104,8 @@
     @endphp
     @if(app()->environment('local', 'development') && !empty($hotUrl))
         @viteReactRefresh
-        <script type="module">
+        {{-- Manual Vite React preamble injection disabled for debugging unexpected JSON.parse issue. --}}
+        {{-- <script type="module">
             try {
                 const devBase = {{ json_encode($hotUrl) }};
                 await import(devBase + '/@@vite/client');
@@ -116,10 +117,33 @@
             } catch (e) {
                 console.warn('Failed to inject Vite React refresh preamble', e);
             }
-        </script>
+        </script> --}}
     @endif
 
     {{-- Vite React & Tailwind --}}
+    {{-- Debug: instrument JSON.parse and global error to capture source of SyntaxError '&' --}}
+    <script>
+        (function(){
+            try {
+                var origParse = JSON.parse;
+                JSON.parse = function(input){
+                    try { return origParse(input); }
+                    catch (e) {
+                        var preview = '';
+                        try { preview = (typeof input === 'string' ? input.slice(0, 200) : String(input)); } catch(_) {}
+                        console.error('[Debug JSON.parse] Failed:', e && e.message, '\nInput preview:', preview);
+                        throw e; // rethrow so normal behavior remains
+                    }
+                };
+            } catch(_) {}
+            try {
+                window.addEventListener('error', function(ev){
+                    var stack = ev && ev.error && ev.error.stack ? ev.error.stack : '';
+                    console.error('[Global Error]', ev.message, '@', ev.filename + ':' + ev.lineno + ':' + ev.colno, '\n', stack);
+                }, true);
+            } catch(_) {}
+        })();
+    </script>
     @vite(['resources/js/app.jsx'])
 
     {{-- Removing conflicting favicon settings --}}
@@ -139,19 +163,51 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.1/dist/cdn.min.js"></script>
 
     {{-- Configured Scripts --}}
-    @include('adminlte::plugins', ['type' => 'js'])
+    {{-- Temporarily disabled to isolate JSON.parse SyntaxError source; will re-enable after fix --}}
+    {{-- @include('adminlte::plugins', ['type' => 'js']) --}}
+
+    {{-- Pre-sanitize AdminLTE IFrame localStorage to prevent JSON.parse errors from HTML-encoded strings --}}
+    <script>
+        (function () {
+            try {
+                var key = 'AdminLTE:IFrame:Options';
+                var raw = localStorage.getItem(key);
+                if (!raw) return;
+                // Try normal parse first
+                try {
+                    JSON.parse(raw);
+                    return; // OK
+                } catch (_) {
+                    // Attempt to decode HTML entities (e.g., &quot;) and re-parse
+                    var div = document.createElement('div');
+                    div.innerHTML = raw;
+                    var decoded = div.textContent || div.innerText || raw;
+                    try {
+                        var obj = JSON.parse(decoded);
+                        localStorage.setItem(key, JSON.stringify(obj));
+                        console.warn('[AdminLTE:IFrame] Sanitized invalid localStorage value');
+                    } catch (e2) {
+                        // If still invalid, set a safe default to avoid hard failure inside AdminLTE
+                        localStorage.setItem(key, '{}');
+                        console.warn('[AdminLTE:IFrame] Replaced invalid localStorage value with safe default {}:', e2);
+                    }
+                }
+            } catch (e) {
+                // No-op
+            }
+        })();
+    </script>
 
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
 
-    {{-- Navigation Handler Script --}}
-    <script src="{{ asset('js/navigation-handler.js') }}"></script>
+    {{-- Navigation Handler Script temporarily disabled for debugging --}}
+    {{-- <script src="{{ asset('js/navigation-handler.js') }}"></script> --}}
     {{-- Nonaktifkan include bundle legacy Mix (public/js/app.js) untuk mencegah konflik dengan Vite
          Jika diperlukan, aktifkan kembali dengan env khusus atau setelah validasi. --}}
     {{-- @if(app()->environment('production'))
     <script src="{{ asset('js/app.js') }}"></script>
     @endif --}}
-    @else
-    <script src="{{ mix(config('adminlte.laravel_mix_js_path', 'js/app.js')) }}"></script>
+    {{-- Legacy Laravel Mix app.js disabled to avoid conflicts with Vite and prevent axios from forcibly parsing non-JSON responses. --}}
     @endif
 
     {{-- Livewire Script --}}

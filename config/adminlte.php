@@ -250,7 +250,13 @@ return [
         [
             'text'        => 'Display',
             'url'         => '/antrian-display',
-            'icon'        => 'fas fa-fw fa-book',
+            'icon'        => 'fas fa-fw fa-ticket-alt',
+            'topnav_right' => true,
+        ],
+        [
+            'text'        => 'Poli',
+            'url'         => '/antri-poli',
+            'icon'        => 'fas fa-fw fa-user-md',
             'topnav_right' => true,
         ],
         // [

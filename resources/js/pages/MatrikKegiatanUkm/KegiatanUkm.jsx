@@ -506,6 +506,37 @@ export default function KegiatanUkm({
     }
   }
 
+  // Hard reload: benar-benar refresh halaman browser
+  function hardReload() {
+    try {
+      setReloading(true);
+      // Beri sedikit delay agar spinner terlihat sebelum reload
+      setTimeout(() => {
+        // Paksa reload penuh; fallback ke set href jika ada masalah
+        try {
+          window.location.reload();
+        } catch (err) {
+          try { window.location.href = window.location.href; } catch {}
+        }
+      }, 50);
+    } catch (e) {
+      console.warn('hardReload gagal, fallback softReload', e);
+      softReload();
+    }
+  }
+
+  // Click handler: klik biasa => hard reload; klik dengan Ctrl/Shift/Meta => soft reload
+  function handleReloadClick(e) {
+    if (reloading || loading) return;
+    try {
+      const useSoft = !!(e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey));
+      if (useSoft) return softReload();
+      return hardReload();
+    } catch {
+      return hardReload();
+    }
+  }
+
   async function confirmDelete(message = "Hapus data ini?") {
     try {
       if (window?.Swal) {
@@ -789,8 +820,9 @@ export default function KegiatanUkm({
             Daftar Kegiatan
           </h5>
           <button
-            onClick={softReload}
+            onClick={handleReloadClick}
             disabled={reloading || loading}
+            title="Klik untuk reload halaman. Tahan Ctrl/Shift untuk reload data saja."
             className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 border border-gray-200 disabled:opacity-60"
           >
             {reloading ? (
@@ -801,7 +833,7 @@ export default function KegiatanUkm({
             ) : (
               <span className="inline-flex items-center gap-2">
                 <RefreshCcw className="h-4 w-4" />
-                Reload
+                Reload Halaman
               </span>
             )}
           </button>

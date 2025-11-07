@@ -232,7 +232,13 @@ self.addEventListener("fetch", function (event) {
         (event.request.url.startsWith('https://') && !event.request.url.includes('faskesku.com/sw.js'))) {
         
         // Jangan cache permintaan ke /ilp/dewasa/ atau /customlogin
-        if (event.request.url.includes('/ilp/dewasa/') || event.request.url.includes('/customlogin')) {
+        // Dan hindari cache untuk endpoint generate nomor registrasi/no rawat yang harus selalu real-time
+        if (
+            event.request.url.includes('/ilp/dewasa/') ||
+            event.request.url.includes('/customlogin') ||
+            event.request.url.includes('/regperiksa/generate-noreg') ||
+            event.request.url.includes('/regperiksa/generate-norawat')
+        ) {
             return;
         }
         
