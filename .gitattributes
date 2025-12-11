@@ -7,12 +7,6 @@
 *.php diff=php
 /.github export-ignore
 CHANGELOG.md export-ignore
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.zip filter=lfs diff=lfs merge=lfs -text
-*.exe filter=lfs diff=lfs merge=lfs -text
-*.dll filter=lfs diff=lfs merge=lfs -text
-*.dylib filter=lfs diff=lfs merge=lfs -text
-*.pak filter=lfs diff=lfs merge=lfs -text
 public/wagateway/node_mrlee/node_modules/puppeteer/.local-chromium/** filter=lfs diff=lfs merge=lfs -text
 public/wagateway/node_mrlee/node_modules/puppeteer-core/.local-chromium/** filter=lfs diff=lfs merge=lfs -text
 *.mp4 !text !filter !merge !diff
