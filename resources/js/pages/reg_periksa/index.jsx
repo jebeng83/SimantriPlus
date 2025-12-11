@@ -5,8 +5,14 @@ import { createPortal } from 'react-dom';
 import nomorAntrianUrl from '../Display/assets/nomor antrian.mp3';
 import menujuUrl from '../Display/assets/menuju/Silahkan ke.mp3';
 
-// CSRF token for Laravel POST
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+// CSRF token for Laravel POST (hindari optional chaining untuk kompatibilitas server lama)
+let csrfToken = '';
+try {
+  const el = document.querySelector('meta[name="csrf-token"]');
+  csrfToken = (el && (el.content || el.getAttribute?.('content'))) ? (el.content || el.getAttribute('content') || '') : '';
+} catch (_) {
+  csrfToken = '';
+}
 // Tambah helper sanitasi untuk path segment
 const enc = (v) => encodeURIComponent(String(v ?? '').trim());
 // Validasi helpers
@@ -569,6 +575,9 @@ const PatientSearchRegister = ({
   }, [date, selectedPatient]);
 
 
+  // Reset form untuk registrasi berikutnya.
+  // Catatan: TIDAK mengosongkan pilihan Poli/Dokter/Penjab agar No. Registrasi bisa langsung digenerate lagi.
+  // Ini membantu mengatasi race condition: setelah klik "Baru" kita segera ambil nomor terbaru dari server.
   const clearForm = () => {
     setQuery('');
     setResults([]);
@@ -579,18 +588,25 @@ const PatientSearchRegister = ({
     setForm({ p_jawab: 'PASIEN', almt_pj: '-', hubunganpj: 'DIRI SENDIRI', biaya_reg: 0 });
     setNoRawatPreview('');
     setPatientInfo(null);
-    // Bersihkan filter untuk registrasi berikutnya
-    setSelectedPoli('');
-    setSelectedDokter('');
-    setSelectedPenjab('');
     // juga refresh kartu BPJS (PCare)
     refreshBpjs?.();
+  };
+
+  // Tombol Baru yang tetap mempertahankan Poli/Dokter/Penjab lalu langsung generate NoReg terbaru dengan retry kecil.
+  const newRegistration = async () => {
+    clearForm();
+    // Jika prasyarat tersedia, segera ambil nomor registrasi terbaru dari server (race-condition safe)
+    if (selectedDokter && date) {
+      await retryGenerateNoReg('');
+    }
+    // Trigger event agar komponen lain (mis. kartu antrian) ikut refresh
+    try { window.dispatchEvent(new CustomEvent('reg:new')); } catch (_) {}
   };
 
   // Tombol reset untuk menyiapkan registrasi berikutnya
   const newBtn = (
     <button
-      onClick={() => clearForm()}
+      onClick={() => newRegistration()}
       className={`px-4 py-2 rounded-lg text-sm font-medium ${saving || isGeneratingNoReg ? 'bg-slate-300 text-slate-600 cursor-not-allowed' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
       disabled={saving || isGeneratingNoReg}
     >
@@ -762,6 +778,8 @@ const PatientSearchRegister = ({
         onRegistered?.(res);
         notify?.({ type: 'success', title: 'Registrasi berhasil', description: `No. Rawat: ${res.no_rawat || '-'}` });
         setNoRawatPreview(res.no_rawat || '');
+        // Beritahu komponen lain (antrian) untuk refresh segera setelah registrasi tersimpan
+        try { window.dispatchEvent(new CustomEvent('reg:saved')); } catch (_) {}
 
         // Kirim antrean ke BPJS jika pasien BPJS
         await sendBpjsAntrean(res);
@@ -2016,6 +2034,9 @@ const QueueRegisterCard = ({ date, notify }) => {
   const [calling, setCalling] = useState(false);
   const [lastCalledNumber, setLastCalledNumber] = useState('');
   const [recalling, setRecalling] = useState(false);
+  // Track current nextNumber to compare during retry
+  const nextNumberRef = useRef('');
+  useEffect(() => { nextNumberRef.current = String(nextNumber || ''); }, [nextNumber]);
 
   // Preload and map audio assets for number pronunciation
   const numberAudioMap = useMemo(() => {
@@ -2059,7 +2080,10 @@ const QueueRegisterCard = ({ date, notify }) => {
       if (x < 100) return speakUnderHundred(x);
       const hundreds = Math.floor(x / 100);
       const rest = x % 100;
-      const seq = [dig(hundreds), m['ratus']].filter(Boolean);
+      // Khusus 100..199: gunakan "seratus" (tanpa "satu"). Jika ada file seratus.mp3, gunakan itu; jika tidak, fallback ke ratus.mp3
+      const seq = (hundreds === 1)
+        ? [m['seratus'] || m['ratus']].filter(Boolean)
+        : [dig(hundreds), m['ratus']].filter(Boolean);
       if (rest > 0) seq.push(...speakUnderHundred(rest));
       return seq;
     };
@@ -2068,7 +2092,10 @@ const QueueRegisterCard = ({ date, notify }) => {
       if (x < 1000) return speakHundred(x);
       const thousands = Math.floor(x / 1000);
       const rest = x % 1000;
-      const seq = [dig(thousands), m['ribu']].filter(Boolean);
+      // Khusus 1000..1999: gunakan "seribu" (tanpa "satu"). Jika ada file seribu.mp3, gunakan itu; jika tidak, fallback ke ribu.mp3
+      const seq = (thousands === 1)
+        ? [m['seribu'] || m['ribu']].filter(Boolean)
+        : [dig(thousands), m['ribu']].filter(Boolean);
       if (rest > 0) seq.push(...speakHundred(rest));
       return seq;
     };
@@ -2110,23 +2137,90 @@ const QueueRegisterCard = ({ date, notify }) => {
     }
   };
 
-  const loadNext = async () => {
+  // Muat data antrian (Nomor Berikutnya + Sisa) langsung dari tabel antripendaftaran_nomor via endpoint next + stats
+  const refreshQueueStats = async () => {
     try {
       setLoading(true);
-      const res = await api.antriNext(date);
-      const nomor = res?.nomor ?? res?.next ?? res?.data?.nomor ?? '';
-      const sisa = Number(res?.sisa ?? res?.remaining ?? res?.data?.sisa ?? 0);
+      const [nextRes, statsRes] = await Promise.all([
+        api.antriNext(date),
+        api.antriStats(date),
+      ]);
+      const nomor = nextRes?.nomor ?? nextRes?.next ?? nextRes?.data?.nomor ?? '';
+      const sisaFromNext = Number(nextRes?.sisa ?? nextRes?.remaining ?? nextRes?.data?.sisa ?? 0);
+      const sisaFromStats = Number(statsRes?.sisa ?? statsRes?.remaining ?? statsRes?.data?.sisa ?? 0);
+      const sisa = Number.isFinite(sisaFromStats) ? sisaFromStats : (Number.isFinite(sisaFromNext) ? sisaFromNext : 0);
       setNextNumber(String(nomor || ''));
-      setRemaining(Number.isFinite(sisa) ? sisa : 0);
+      setRemaining(sisa);
     } catch (e) {
-      console.error('Gagal memuat antrian berikutnya:', e);
+      console.error('Gagal memuat statistik antrian:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  // Retry loader untuk menghindari efek lag (replication/cache),
+  // dan memastikan nomor berikutnya benar-benar maju setelah dipanggil
+  const loadNextWithRetry = async (avoidNomor = '') => {
+    const maxAttempts = 5;
+    const baseDelay = 200; // ms
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        setLoading(true);
+        const res = await api.antriNext(date);
+        const nomor = String(res?.nomor ?? res?.next ?? res?.data?.nomor ?? '');
+        const sisa = Number(res?.sisa ?? res?.remaining ?? res?.data?.sisa ?? 0);
+        // Jika sudah berubah dan bukan nomor yang baru saja dipanggil, terima
+        if (nomor && nomor !== String(avoidNomor || '')) {
+          setNextNumber(nomor);
+          setRemaining(Number.isFinite(sisa) ? sisa : 0);
+          return;
+        }
+      } catch (err) {
+        console.warn('loadNextWithRetry attempt failed:', err);
+      } finally {
+        setLoading(false);
+      }
+      // incremental backoff
+      await new Promise((r) => setTimeout(r, baseDelay * attempt));
+    }
+    // Fallback: panggil sekali lagi dan terima hasil apa adanya
+    try {
+      setLoading(true);
+      const res = await api.antriNext(date);
+      const nomor = String(res?.nomor ?? res?.next ?? res?.data?.nomor ?? '');
+      const sisa = Number(res?.sisa ?? res?.remaining ?? res?.data?.sisa ?? 0);
+      setNextNumber(nomor);
+      setRemaining(Number.isFinite(sisa) ? sisa : 0);
+    } catch (_) {
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load and polling to keep data fresh even ketika beberapa loket mendaftar/memanggil bersamaan
   useEffect(() => {
-    if (date) loadNext();
+    let timer;
+    const doInitial = () => { if (date) refreshQueueStats(); };
+    doInitial();
+    // Poll setiap 2 detik untuk menjaga sinkronisasi dengan tabel antripendaftaran_nomor
+    timer = setInterval(() => { refreshQueueStats(); }, 2000);
+    // Refresh ketika tab kembali fokus atau terlihat
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshQueueStats(); };
+    const onFocus = () => { refreshQueueStats(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    // Listen event setelah registrasi baru atau klik tombol Baru
+    const onRegSaved = () => refreshQueueStats();
+    const onRegNew = () => refreshQueueStats();
+    window.addEventListener('reg:saved', onRegSaved);
+    window.addEventListener('reg:new', onRegNew);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('reg:saved', onRegSaved);
+      window.removeEventListener('reg:new', onRegNew);
+    };
   }, [date]);
 
   const panggil = async () => {
@@ -2142,6 +2236,11 @@ const QueueRegisterCard = ({ date, notify }) => {
       const nomorDipanggil = res?.nomor ?? nextNumber;
       if (res?.success && nomorDipanggil) {
         setLastCalledNumber(String(nomorDipanggil || ''));
+        // Segera update sisa antrian berdasarkan respons server agar UI terasa responsif
+        if (typeof res?.sisa !== 'undefined') {
+          const sisaNow = Number(res.sisa);
+          if (Number.isFinite(sisaNow)) setRemaining(sisaNow);
+        }
         notify?.({ type: 'success', title: 'Panggilan antrian', description: `Nomor ${nomorDipanggil} dipanggil (${loket}).` });
         playBell(nomorDipanggil);
       } else if (!nomorDipanggil) {
@@ -2149,7 +2248,14 @@ const QueueRegisterCard = ({ date, notify }) => {
       } else {
         notify?.({ type: 'error', title: 'Gagal memanggil', description: res?.message || 'Terjadi kesalahan.' });
       }
-      await loadNext();
+      // Coba ambil nomor berikutnya dengan retry kecil agar tidak tertahan oleh lag/caching
+      await loadNextWithRetry(nomorDipanggil);
+      // Segera refresh sisa antrian via stats untuk akurasi ketika beberapa loket memanggil bersamaan
+      try {
+        const stats = await api.antriStats(date);
+        const sisaNow = Number(stats?.sisa ?? stats?.remaining ?? stats?.data?.sisa ?? remaining);
+        if (Number.isFinite(sisaNow)) setRemaining(sisaNow);
+      } catch (_) {}
     } catch (e) {
       console.error('Gagal memanggil antrian:', e);
       notify?.({ type: 'error', title: 'Kesalahan jaringan', description: 'Gagal memanggil antrian.' });
@@ -2173,6 +2279,12 @@ const QueueRegisterCard = ({ date, notify }) => {
       if (res?.success) {
         notify?.({ type: 'success', title: 'Panggil ulang', description: `Nomor ${lastCalledNumber} dipanggil ulang (${loket}).` });
         playBell(lastCalledNumber);
+        // Refresh agar Sisa Antrian tetap akurat
+        try {
+          const stats = await api.antriStats(date);
+          const sisaNow = Number(stats?.sisa ?? stats?.remaining ?? stats?.data?.sisa ?? remaining);
+          if (Number.isFinite(sisaNow)) setRemaining(sisaNow);
+        } catch (_) {}
       } else {
         notify?.({ type: 'error', title: 'Gagal panggil ulang', description: res?.message || 'Terjadi kesalahan.' });
       }

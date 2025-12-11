@@ -209,10 +209,29 @@ class PasienController extends Controller
             // Format tanggal lahir untuk database (date type)
             $tgl_lahir_formatted = Carbon::parse($request->tgl_lahir)->format('Y-m-d');
             
-            // Gunakan parameter binding yang eksplisit untuk menghindari konflik prepared statement
-            $affected = DB::table('pasien')
+            // Tentukan RM yang tersimpan sebenarnya di DB (mengatasi kasus spasi/NBSP)
+            $noRmNormalizedParam = preg_replace('/\s+/', '', str_replace(chr(160), '', (string)$no_rkm_medis));
+            $storedPatient = DB::table('pasien')
+                ->select('no_rkm_medis')
                 ->where('no_rkm_medis', '=', $no_rkm_medis)
-                ->update([
+                ->first();
+
+            if (!$storedPatient) {
+                $storedPatient = DB::table('pasien')
+                    ->select('no_rkm_medis')
+                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
+                    ->first();
+            }
+
+            $noRmToUpdate = $storedPatient ? (string)$storedPatient->no_rkm_medis : (string)$no_rkm_medis;
+
+            // Ambil baris existing untuk menjaga integritas FK bila field relasi tidak dikirim
+            $existingRow = DB::table('pasien')
+                ->where('no_rkm_medis', '=', $noRmToUpdate)
+                ->first();
+
+            // Gunakan parameter binding yang eksplisit untuk menghindari konflik prepared statement
+            $updateData = [
                     'nm_pasien' => $request->nm_pasien,
                     'no_ktp' => $request->no_ktp,
                     'jk' => $request->jk,
@@ -228,10 +247,10 @@ class PasienController extends Controller
                     'tgl_lahir' => $tgl_lahir_formatted,
                     'umur' => $umur_calculated,
                     'alamat' => $request->alamat,
-                    'kd_prop' => $request->kd_prop,
-                    'kd_kab' => $request->kd_kab,
-                    'kd_kec' => $request->kd_kec,
-                    'kd_kel' => $request->kd_kel,
+                    'kd_prop' => $request->filled('kd_prop') ? $request->kd_prop : ($existingRow->kd_prop ?? null),
+                    'kd_kab' => $request->filled('kd_kab') ? $request->kd_kab : ($existingRow->kd_kab ?? null),
+                    'kd_kec' => $request->filled('kd_kec') ? $request->kd_kec : ($existingRow->kd_kec ?? null),
+                    'kd_kel' => $request->filled('kd_kel') ? $request->kd_kel : ($existingRow->kd_kel ?? null),
                     'alamatpj' => $request->alamatpj,
                     'kelurahanpj' => $request->kelurahanpj,
                     'kecamatanpj' => $request->kecamatanpj,
@@ -242,10 +261,77 @@ class PasienController extends Controller
                     'no_kk' => $request->no_kk,
                     'pekerjaan' => $request->pekerjaan,
                     'kd_pj' => $request->kd_pj,
-                ]);
+            ];
+
+            // (debug dihapus sesuai permintaan)
+
+            // Percobaan update utama menggunakan RM yang terdeteksi di DB
+            $affected = DB::table('pasien')
+                ->where('no_rkm_medis', '=', $noRmToUpdate)
+                ->update($updateData);
                 
             if ($affected === 0) {
-                Log::warning('No rows affected when updating pasien data for no_rkm_medis: ' . $no_rkm_medis);
+                // Cek keberadaan data untuk memberikan log yang lebih informatif
+                $existsExact = DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->exists();
+                $existsNormalized = DB::table('pasien')
+                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
+                    ->exists();
+
+                Log::warning('No rows affected when updating pasien data', [
+                    'requested_no_rkm_medis' => (string)$no_rkm_medis,
+                    'target_no_rkm_medis' => $noRmToUpdate,
+                    'exists_exact' => $existsExact,
+                    'exists_normalized' => $existsNormalized
+                ]);
+
+                // Fallback percobaan update menggunakan normalized RM langsung
+                $affectedFallback = DB::table('pasien')
+                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
+                    ->update($updateData);
+
+                if ($affectedFallback > 0) {
+                    Log::info('Update pasien berhasil melalui fallback normalized RM', [
+                        'requested_no_rkm_medis' => (string)$no_rkm_medis,
+                        'normalized_param' => $noRmNormalizedParam
+                    ]);
+                    return Redirect::to('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui (fallback normalized RM)');
+                }
+
+                // Jika tetap tidak ada baris yang ter-update, tentukan apakah memang tidak ada perubahan
+                $current = DB::table('pasien')
+                    ->where('no_rkm_medis', '=', $noRmToUpdate)
+                    ->first();
+
+                if ($current) {
+                    $noChange = (
+                        ($current->nm_pasien ?? null) === $request->nm_pasien &&
+                        ($current->no_ktp ?? null) === $request->no_ktp &&
+                        ($current->no_peserta ?? null) === $request->no_peserta &&
+                        ($current->no_tlp ?? null) === $request->no_tlp &&
+                        ($current->tgl_lahir ?? null) === $tgl_lahir_formatted &&
+                        ($current->alamat ?? null) === $request->alamat &&
+                        ($current->stts_nikah ?? null) === $request->stts_nikah &&
+                        ($current->status ?? null) === $request->status &&
+                        ($current->data_posyandu ?? null) === $request->data_posyandu &&
+                        ($current->no_kk ?? null) === $request->no_kk &&
+                        ($current->pekerjaan ?? null) === $request->pekerjaan &&
+                        ($current->kd_pj ?? null) === $request->kd_pj
+                    );
+
+                    if ($noChange) {
+                        Log::info('Tidak ada perubahan data pasien (nilai yang dikirim sama dengan di database)', [
+                            'no_rkm_medis' => $noRmToUpdate
+                        ]);
+                        return Redirect::to('/data-pasien')->with('success', 'Tidak ada perubahan data pasien');
+                    }
+                }
+
+                // Jika sampai di sini, berarti gagal update walaupun ada perubahan
+                Log::error('Gagal memperbarui data pasien: tidak ada baris yang ter-update', [
+                    'no_rkm_medis' => $noRmToUpdate,
+                    'requested_no_rkm_medis' => (string)$no_rkm_medis
+                ]);
+                return Redirect::to('/data-pasien')->with('error', 'Update gagal: Data pasien tidak terubah. Periksa kembali nomor rekam medis atau coba ulang.');
             }
 
             // Log sukses update

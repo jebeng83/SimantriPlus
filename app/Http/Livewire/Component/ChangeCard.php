@@ -35,8 +35,18 @@ class ChangeCard extends Component
         ]);
 
         try{
+            // Normalisasi RM (menghapus spasi/NBSP) dan pilih RM tersimpan sebenarnya untuk update
+            $noRmNormalizedParam = preg_replace('/\s+/', '', str_replace(chr(160), '', (string)$this->noRm));
+            $storedPatient = DB::table('pasien')->select('no_rkm_medis')->where('no_rkm_medis', $this->noRm)->first();
+            if (!$storedPatient) {
+                $storedPatient = DB::table('pasien')
+                    ->select('no_rkm_medis')
+                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
+                    ->first();
+            }
+            $noRmToUpdate = $storedPatient ? (string)$storedPatient->no_rkm_medis : (string)$this->noRm;
 
-            DB::table('pasien')->where('no_rkm_medis', $this->noRm)->update([
+            DB::table('pasien')->where('no_rkm_medis', $noRmToUpdate)->update([
                 'no_peserta' => $this->no_card
             ]);
 

@@ -3,7 +3,7 @@
 // Aktifkan display errors untuk debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
 // Menetapkan zona waktu
 date_default_timezone_set('Asia/Jakarta');
@@ -22,6 +22,9 @@ if (!is_dir($logDir)) {
 
 // Fungsi penanganan error kustom
 function handleError($errno, $errstr, $errfile, $errline) {
+    if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
+        return true;
+    }
     $logFile = __DIR__ . '/../storage/logs/php-error.log';
     $message = date('Y-m-d H:i:s') . " - Error [$errno]: $errstr in $errfile on line $errline\n";
     error_log($message, 3, $logFile);

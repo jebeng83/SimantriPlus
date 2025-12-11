@@ -201,7 +201,8 @@ export default function LoketDisplay() {
     if (num >= 1000) {
       const ribuan = Math.floor(num / 1000);
       if (ribuan === 1) {
-        const url = getNomorUrl('ribu.mp3');
+        // Gunakan seribu.mp3 jika tersedia, fallback ke ribu.mp3
+        const url = getNomorUrl('seribu.mp3') || getNomorUrl('ribu.mp3');
         if (url) sequence.push(url);
       } else {
         const url = getNomorUrl(`${ribuan}.mp3`);
@@ -216,7 +217,8 @@ export default function LoketDisplay() {
     if (num >= 100) {
       const ratusan = Math.floor(num / 100);
       if (ratusan === 1) {
-        const url = getNomorUrl('ratus.mp3');
+        // Gunakan seratus.mp3 jika tersedia, fallback ke ratus.mp3
+        const url = getNomorUrl('seratus.mp3') || getNomorUrl('ratus.mp3');
         if (url) sequence.push(url);
       } else {
         const url = getNomorUrl(`${ratusan}.mp3`);
@@ -476,11 +478,23 @@ export default function LoketDisplay() {
     async function loadAll() {
       setLoading(true);
       let hadError = false;
+      // Kandidat nomor yang sedang dipanggil (akan dipilih dari beberapa sumber)
+      let calledCandidate = null;
+      const prevNext = lastNextRef.current;
   
       const next = await getJSON('/api/antripendaftaran/next');
       if (!cancelled && next) {
-        setNextNomor(next.nomor ?? null);
+        const newNext = next.nomor ?? null;
+        setNextNomor(newNext);
         setSisa(next.sisa ?? 0);
+
+        // Jika nomor berikutnya berubah, artinya ada nomor yang baru saja dipanggil.
+        // Gunakan nomor sebelumnya sebagai kandidat "dipanggil".
+        if (prevNext != null && newNext != null && newNext !== prevNext) {
+          calledCandidate = prevNext;
+        }
+        // Simpan nomor berikutnya terakhir untuk deteksi perubahan berikutnya
+        lastNextRef.current = newNext;
       } else {
         hadError = true;
       }
@@ -493,21 +507,26 @@ export default function LoketDisplay() {
       // Ambil nomor yang sedang dipanggil dari antripendaftaran (status=2)
       const cur = await getJSON('/api/antripendaftaran/current');
       if (!cancelled && cur) {
-        setCalledNomor(cur.nomor ?? null);
+        if (cur.nomor != null) {
+          // Jika backend menyediakan nomor "sedang diputar" (status=2), gunakan itu sebagai sumber utama
+          calledCandidate = cur.nomor;
+        }
       }
       const disp = await getJSON('/api/antrian-display');
       if (!cancelled && disp && disp.antrian) {
         setDisplayData(disp.antrian || []);
         // Fallback jika belum ada nomor dipanggil dari antripendaftaran
-        if (!cur?.nomor) {
+        if (!cur?.nomor && calledCandidate == null) {
           const called = disp?.dipanggil?.no_reg ?? null;
-          setCalledNomor(called);
+          calledCandidate = called;
         }
       } else {
         hadError = true;
       }
   
       if (!cancelled) {
+        // Set satu kali setelah semua sumber diproses
+        setCalledNomor(calledCandidate ?? null);
         setLoading(false);
         setLastUpdatedAt(new Date());
         setErrorCount(prev => (hadError ? prev + 1 : 0));
@@ -772,7 +791,7 @@ export default function LoketDisplay() {
                 transition={{ duration: 0.3, delay: 0.1 }}
                 className="mr-4 text-[clamp(1.25rem,2vw,2rem)]"
               >
-                Nomor
+                Nomor Dipanggil
               </motion.span>
               <motion.span
                  initial={{ scale: 0.9, opacity: 0 }}

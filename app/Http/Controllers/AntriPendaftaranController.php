@@ -134,7 +134,7 @@ class AntriPendaftaranController extends Controller
             ]);
         }
 
-        // Normal call: ambil nomor berikutnya jika tidak diberikan, lalu ubah status ke 2 (sedang dipanggil)
+        // Normal call: ambil nomor berikutnya jika tidak diberikan, lalu ubah status ke 1 (dipanggil oleh loket)
         if (!$nomor) {
             $row = DB::table('antripendaftaran_nomor')
                 ->select('nomor')
@@ -157,7 +157,10 @@ class AntriPendaftaranController extends Controller
             ->whereDate('jam', $date)
             ->where('nomor', $nomor)
             ->update([
-                'status' => '2',
+                // Sesuaikan dengan aplikasi Java/display yang sudah berjalan:
+                // 0 = menunggu, 1 = dipanggil oleh loket (siap untuk display), 2 = sedang diputar di display, 3 = selesai
+                // Di sini kita set ke 1 agar display yang aktif dapat menaikkan menjadi 2 saat audio diputar.
+                'status' => '1',
                 'loket' => $loket,
             ]);
 
@@ -199,12 +202,12 @@ class AntriPendaftaranController extends Controller
             ]);
         }
 
-        // Set ulang ke status=2 untuk nomor ini agar display memutar kembali
+        // Set ulang ke status=1 untuk nomor ini agar display (yang aktif) akan menaikkan ke 2 dan memutar kembali
         $updated = DB::table('antripendaftaran_nomor')
             ->whereDate('jam', $date)
             ->where('nomor', $nomor)
             ->update([
-                'status' => '2',
+                'status' => '1',
                 'loket' => $loket,
             ]);
 
@@ -218,7 +221,7 @@ class AntriPendaftaranController extends Controller
             'nomor' => $nomor,
             'loket' => $loket,
             'recall' => true,
-            'message' => 'Recall succeeded (status set to 2)'
+            'message' => 'Recall succeeded (status set to 1)'
         ]);
     }
 }

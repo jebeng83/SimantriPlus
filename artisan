@@ -1,5 +1,14 @@
 #!/usr/bin/env php
 <?php
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('error_reporting', (string)(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED));
+ini_set('display_errors', '0');
+set_error_handler(function($errno){
+    if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
+        return true;
+    }
+    return false;
+});
 
 define('LARAVEL_START', microtime(true));
 

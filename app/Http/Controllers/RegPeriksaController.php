@@ -81,27 +81,67 @@ class RegPeriksaController extends Controller
     {
         // Format tanggal menjadi Y/m/d untuk nomor rawat
         $today = date('Y/m/d', strtotime($tgl_registrasi));
-        
-        // Ambil nomor urut terakhir
-        $lastRawat = DB::table('reg_periksa')
-            ->where('tgl_registrasi', $tgl_registrasi)
-            ->orderByRaw('CONVERT(RIGHT(no_rawat, 6), UNSIGNED) DESC')
-            ->first();
 
-        if ($lastRawat) {
-            Log::info('Last rawat found: ' . $lastRawat->no_rawat);
-            // Ambil 6 digit terakhir
-            $lastNumber = (int) substr($lastRawat->no_rawat, -6);
-            $nextNumber = $lastNumber + 1;
-        } else {
-            Log::info('No last rawat found, using 1');
-            $nextNumber = 1;
+        // Gunakan distributed lock untuk mencegah race condition antar loket
+        $lockKey = "lock_no_rawat_{$tgl_registrasi}";
+        $isLocked = Cache::add($lockKey, true, 30); // Lock selama maks 30 detik
+
+        if (!$isLocked) {
+            Log::warning("Menunggu lock untuk generate nomor rawat tanggal {$tgl_registrasi}");
+            // Tunggu sampai 3 detik untuk mendapatkan lock
+            $startTime = microtime(true);
+            while (!$isLocked && microtime(true) - $startTime < 3) {
+                usleep(100000); // 100ms
+                $isLocked = Cache::add($lockKey, true, 30);
+            }
         }
 
-        $no_rawat = $today . '/' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-        Log::info('Nomor rawat yang dibuat: ' . $no_rawat);
-        
-        return $no_rawat;
+        try {
+            // Ambil nomor urut maksimum menggunakan write PDO untuk menghindari lag replikasi
+            $maxRow = DB::table('reg_periksa')
+                ->useWritePdo()
+                ->where('tgl_registrasi', $tgl_registrasi)
+                ->selectRaw('IFNULL(MAX(CONVERT(RIGHT(no_rawat, 6), UNSIGNED)), 0) as max_num')
+                ->first();
+
+            $nextNumber = ($maxRow && isset($maxRow->max_num)) ? ((int)$maxRow->max_num + 1) : 1;
+
+            // Tentukan kandidat pertama
+            $no_rawat = $today . '/' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+
+            // Verifikasi keunikan dengan retry bila perlu (menghadapi kondisi sangat sibuk)
+            $attempts = 0;
+            $isUnique = false;
+            while (!$isUnique && $attempts < 10) {
+                $exists = DB::table('reg_periksa')
+                    ->useWritePdo()
+                    ->where('tgl_registrasi', $tgl_registrasi)
+                    ->where('no_rawat', $no_rawat)
+                    ->exists();
+
+                if (!$exists) {
+                    $isUnique = true;
+                } else {
+                    $attempts++;
+                    $nextNumber++;
+                    $no_rawat = $today . '/' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+                    Log::info("Nomor rawat konflik, mencoba: {$no_rawat}");
+                }
+            }
+
+            if (!$isUnique) {
+                Log::warning("Gagal mendapatkan nomor rawat unik setelah 10 percobaan. Menggunakan: {$no_rawat}");
+            }
+
+            Log::info('Nomor rawat yang dibuat: ' . $no_rawat);
+            return $no_rawat;
+        } finally {
+            // Lepaskan lock setelah selesai
+            if ($isLocked) {
+                Cache::forget($lockKey);
+                Log::info("Lock untuk generate nomor rawat tanggal {$tgl_registrasi} dilepaskan");
+            }
+        }
     }
 
     public function store(Request $request)
@@ -132,9 +172,27 @@ class RegPeriksaController extends Controller
                 ], 422);
             }
 
-            // Generate nomor rawat dengan format: tahun/bulan/tanggal/nomor urut
+            // Generate atau gunakan nomor rawat yang disediakan dengan perlindungan race condition
             $tgl_registrasi = $input['tgl_registrasi'] ?? date('Y-m-d');
-            $no_rawat = $this->generateNoRawat($tgl_registrasi);
+            $no_rawat = null;
+
+            // Jika front-end menyuplai no_rawat (mis. hasil reservasi), gunakan jika belum dipakai
+            if (!empty($input['no_rawat'])) {
+                $candidate = (string)$input['no_rawat'];
+                $exists = DB::table('reg_periksa')
+                    ->useWritePdo()
+                    ->where('no_rawat', $candidate)
+                    ->exists();
+                if ($exists) {
+                    Log::warning("no_rawat yang disuplai sudah digunakan: {$candidate}. Menghasilkan nomor baru.");
+                    $no_rawat = $this->generateNoRawat($tgl_registrasi);
+                } else {
+                    $no_rawat = $candidate;
+                }
+            } else {
+                // Tidak ada kandidat dari front-end, generate dengan lock
+                $no_rawat = $this->generateNoRawat($tgl_registrasi);
+            }
             
             // Siapkan data yang akan disimpan
             $data = [
@@ -168,6 +226,17 @@ class RegPeriksaController extends Controller
                 $tableColumns = DB::getSchemaBuilder()->getColumnListing('reg_periksa');
                 Log::info('Struktur kolom tabel reg_periksa:', $tableColumns);
                 
+                // Double-check keunikan sebelum insert untuk meminimalisir duplikasi
+                $existsFinal = DB::table('reg_periksa')
+                    ->useWritePdo()
+                    ->where('no_rawat', $no_rawat)
+                    ->exists();
+                if ($existsFinal) {
+                    Log::warning("Terjadi race tepat sebelum insert untuk no_rawat {$no_rawat}. Regenerate.");
+                    $no_rawat = $this->generateNoRawat($tgl_registrasi);
+                    $data['no_rawat'] = $no_rawat;
+                }
+
                 DB::table('reg_periksa')->insert($data);
                 
                 // Log query yang dieksekusi

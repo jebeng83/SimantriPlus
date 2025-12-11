@@ -192,6 +192,8 @@
         </div>
         <button class="btn btn-primary" type="submit">Simpan</button>
         <a href="{{ route('pasien.index') }}" class="btn btn-secondary">Kembali</a>
+
+        
     </form>
 </x-adminlte-card>
 @stop
@@ -240,6 +242,8 @@
 @section('js')
 <script>
     $(document).ready(function() {
+        
+
         // Refresh data dari server
         const no_rkm_medis = '{{ $pasien->no_rkm_medis }}';
         
@@ -264,10 +268,10 @@
                 $('#data_posyandu').val(data.data_posyandu);
                 $('#kd_pj').val(data.kd_pj);
                 
-                console.log('Data pasien berhasil disegarkan dari database');
+                
             },
             error: function(xhr) {
-                console.error('Gagal memperbarui data: ' + xhr.responseText);
+                
             }
         });
         
@@ -316,6 +320,8 @@
                     confirmButtonText: 'OK'
                 });
             }
+
+            
         });
     });
 </script>

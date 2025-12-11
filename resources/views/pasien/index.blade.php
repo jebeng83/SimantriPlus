@@ -645,6 +645,31 @@
 
 @section('js')
 <script>
+    // Pastikan tabel Livewire memuat data terbaru ketika halaman dibuka atau kembali dari halaman edit
+    (function() {
+        function tryRefresh() {
+            if (window.Livewire && typeof window.Livewire.emit === 'function') {
+                window.Livewire.emit('refresh');
+            }
+        }
+
+        // Saat Livewire siap
+        document.addEventListener('livewire:load', tryRefresh);
+
+        // Saat halaman ditampilkan kembali (mis. Back/Forward Cache)
+        window.addEventListener('pageshow', function(event) {
+            // Selalu emit refresh agar data tabel terbaru tampil
+            tryRefresh();
+        });
+
+        // Ketika tab kembali aktif
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                tryRefresh();
+            }
+        });
+    })();
+
     $(document).ready(function() {
         // Animasi untuk elemen saat halaman dimuat
         $('.info-box').each(function(index) {
