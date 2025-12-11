@@ -1,4 +1,6 @@
 /node_modules
+/public/wagateway/node_mrlee/node_modules/
+**/node_modules/
 /public/build
 /public/hot
 /public/storage
@@ -14,3 +16,4 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+**/.DS_Store
