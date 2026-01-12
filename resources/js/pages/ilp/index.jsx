@@ -130,6 +130,35 @@ const menuItems = [
         <path d="M12 3v18" />
       </svg>
     )
+  },
+  {
+    key: 'analisaCkgSekolah',
+    title: 'Analisa CKG Sekolah',
+    desc: 'Analitik CKG per sekolah',
+    href: '/ilp/analisa-ckg-sekolah',
+    gradient: 'from-teal-500 to-blue-600',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M4 19h16" />
+        <path d="M7 15v4" />
+        <path d="M12 11v8" />
+        <path d="M17 6v13" />
+      </svg>
+    )
+  },
+  {
+    key: 'presentasiCkg',
+    title: 'Presentasi CKG',
+    desc: 'Pemaparan eksekutif',
+    href: '/ilp/presentasi-ckg-sekolah',
+    gradient: 'from-indigo-500 to-purple-600',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 4h18v12H3z" />
+        <path d="M12 16v4" />
+        <path d="M8 20h8" />
+      </svg>
+    )
   }
 ];
 

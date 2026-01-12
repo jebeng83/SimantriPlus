@@ -387,6 +387,9 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
         Route::get('/dashboard-sekolah', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'index'])->name('dashboard-sekolah');
         Route::get('/dashboard-sekolah/export/excel', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'exportExcel'])->name('dashboard-sekolah.export.excel');
         Route::get('/dashboard-sekolah/export/pdf', [App\Http\Controllers\ILP\DashboardSekolahController::class, 'exportPdf'])->name('dashboard-sekolah.export.pdf');
+        Route::get('/analisa-ckg-sekolah', [App\Http\Controllers\ILP\DashboardCkgSekolahController::class, 'index'])->name('analisa-ckg-sekolah');
+        Route::get('/analisa-ckg-sekolah/export/excel', [App\Http\Controllers\ILP\DashboardCkgSekolahController::class, 'exportExcel'])->name('analisa-ckg-sekolah.export.excel');
+        Route::get('/presentasi-ckg-sekolah', [App\Http\Controllers\ILP\DashboardCkgSekolahController::class, 'presentasi'])->name('presentasi-ckg-sekolah');
     });
 
     // Route untuk refresh CSRF token

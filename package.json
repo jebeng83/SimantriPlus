@@ -3,7 +3,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "postbuild": "cp -f public/build/.vite/manifest.json public/build/manifest.json || true"
+        "postbuild": "cp -f public/build/.vite/manifest.json public/build/manifest.json || true; rm -f public/hot || true"
     },
     "devDependencies": {
         "@babel/preset-react": "^7.27.1",

@@ -720,3 +720,5 @@ if (antriPoliRoot) {
       root.render(null);
     });
 }
+
+// (Kelurahan React filter removed)

@@ -205,11 +205,9 @@ const api = {
 const Card = ({ title, children, className = '', headerRight = null }) => (
   <motion.div
     className={`bg-white/95 backdrop-blur-sm shadow-sm hover:shadow-md rounded-2xl border border-slate-200/80 transition-all duration-300 ${className}`}
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    whileHover={{ y: -2 }}
-    transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-    layout
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.2, ease: 'easeOut' }}
   >
     {title && (
       <div className="px-4 py-2 border-b border-slate-200/80 bg-sky-50 rounded-t-2xl flex items-center justify-between">
@@ -891,11 +889,9 @@ const PatientSearchRegister = ({
                       <motion.li
                         key={rm || label || idx}
                         className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.99 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
                         onClick={() => {
                           setSelectedPatient({ id: rm, text: label, no_ktp: nik });
                           setQuery(label);
@@ -1952,9 +1948,9 @@ const TodayRegistrationTable = ({ date, kdPoli, refreshKey = 0 }) => {
 const StatBadge = ({ label, value, loading = false, color = 'bg-indigo-50 border-indigo-200 text-indigo-700' }) => (
   <motion.div
     className={`rounded-lg border ${color} p-3 flex items-center justify-between shadow-sm w-full`}
-    initial={{ opacity: 0, y: 6 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.2 }}
     title={label}
   >
     <div className="text-xs font-medium pr-2 truncate">{label}</div>

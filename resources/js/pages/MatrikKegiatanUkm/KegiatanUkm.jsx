@@ -30,6 +30,9 @@ function InputForType({ type, name, value, onChange }) {
   if (name === "tujuan_kegiatan" || name === "sasaran_kegiatan") {
     return <textarea rows={4} {...common} />;
   }
+  if (name === "nama_kegiatan") {
+    return <textarea rows={3} {...common} />;
+  }
   if (name === "tahun") {
     const now = new Date().getFullYear();
     const yearOptions = Array.from({ length: 11 }, (_, i) => now - 5 + i);
@@ -124,8 +127,12 @@ export default function KegiatanUkm({
   const [form, setForm] = useState({});
   const [editing, setEditing] = useState(null); // row object being edited
   const [saving, setSaving] = useState(false);
-  const [showTambah, setShowTambah] = useState(true);
+  const [showTambah, setShowTambah] = useState(false);
+  const [showTambahModal, setShowTambahModal] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
+  const [filterNama, setFilterNama] = useState("");
+  const [filterPelaksana, setFilterPelaksana] = useState("");
 
   // Autocomplete Jabatan (kd_jbtn / jabatan)
   const [jabatanList, setJabatanList] = useState([]);
@@ -406,7 +413,7 @@ export default function KegiatanUkm({
   const displayColumns = useMemo(() => {
     return (meta.columns || [])
       .map((c) => ({ name: c.name, type: (c.type || "").toLowerCase() }))
-      .filter((c) => !["created_at", "updated_at"].includes(c.name));
+      .filter((c) => !["created_at", "updated_at", "kode", "kode_kegiatan"].includes(c.name));
   }, [meta]);
 
   const inputColumns = useMemo(() => {
@@ -414,12 +421,56 @@ export default function KegiatanUkm({
     return displayColumns.filter((c) => c.name !== pk);
   }, [displayColumns, meta]);
 
+  const filteredRows = useMemo(() => {
+    try {
+      const namaQ = String(filterNama || "").toLowerCase().trim();
+      const pelQ = String(filterPelaksana || "").toLowerCase().trim();
+      if (!namaQ && !pelQ) return rows;
+      return (rows || []).filter((row) => {
+        let okNama = true;
+        let okPel = true;
+        if (namaQ) {
+          const keys = ["nama_kegiatan", "kegiatan", "nama", "nm_kegiatan"];
+          const text = keys
+            .map((k) => String(row?.[k] ?? ""))
+            .join(" ")
+            .toLowerCase();
+          okNama = text.includes(namaQ);
+        }
+        if (pelQ) {
+          const kd = String(row?.kd_jbtn ?? "").toLowerCase();
+          const found = jabatanList.find(
+            (j) => String(j.kd_jbtn || "").toLowerCase() === kd
+          );
+          const nm = String(found?.nm_jbtn ?? "").toLowerCase();
+          okPel = kd.includes(pelQ) || nm.includes(pelQ);
+        }
+        return okNama && okPel;
+      });
+    } catch {
+      return rows;
+    }
+  }, [rows, filterNama, filterPelaksana, jabatanList]);
+
   function val(id) {
     return id == null ? "" : String(id);
   }
 
   function urlFor(template, id) {
     return (template || "").replace("__ID__", encodeURIComponent(val(id)));
+  }
+
+  function urlNoCache(u) {
+    try {
+      const base = typeof window !== "undefined" ? window.location.origin : undefined;
+      const nu = base ? new URL(String(u || ""), base) : new URL(String(u || ""));
+      nu.searchParams.set("t", String(Date.now()));
+      return nu.toString();
+    } catch {
+      const s = String(u || "");
+      const sep = s.includes("?") ? "&" : "?";
+      return s + sep + "t=" + Date.now();
+    }
   }
 
   function updateForm(name, value) {
@@ -469,7 +520,7 @@ export default function KegiatanUkm({
     setError("");
     try {
       const res = await safeFetch(
-        listUrlNorm,
+        urlNoCache(listUrlNorm),
         {
           headers: buildHeaders(),
         },
@@ -493,10 +544,11 @@ export default function KegiatanUkm({
     setReloading(true);
     setError("");
     try {
-      const res = await safeFetch(listUrlNorm, { headers: buildHeaders() });
+      const res = await safeFetch(urlNoCache(listUrlNorm), { headers: buildHeaders() });
       const json = await res.json();
       if (json?.error) throw new Error(json?.message || "Gagal memuat ulang");
       setRows(Array.isArray(json.data) ? json.data : []);
+      setReloadCount((c) => c + 1);
     } catch (e) {
       console.error("softReload error", e);
       setError(e.message || "Gagal memuat ulang");
@@ -529,11 +581,11 @@ export default function KegiatanUkm({
   function handleReloadClick(e) {
     if (reloading || loading) return;
     try {
-      const useSoft = !!(e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey));
-      if (useSoft) return softReload();
-      return hardReload();
+      const useHard = !!(e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey));
+      if (useHard) return hardReload();
+      return softReload();
     } catch {
-      return hardReload();
+      return softReload();
     }
   }
 
@@ -576,12 +628,12 @@ export default function KegiatanUkm({
       setActiveJabatanIndex(0);
       // Izinkan generate kode otomatis lagi untuk tahun yang sama
       autoInitKeyRef.current = "";
-      // Pastikan panel Tambah tetap terbuka agar siap input selanjutnya
-      if (!keepCollapsed) setShowTambah(true);
+      // Tutup modal tambah setelah berhasil
+      if (!keepCollapsed) setShowTambahModal(false);
       // Fokuskan ke input pertama di form tambah (jika ada)
       setTimeout(() => {
         const first = document.querySelector(
-          "#form-tambah-kegiatan input, #form-tambah-kegiatan select, #form-tambah-kegiatan textarea"
+          "#modal-tambah-kegiatan input, #modal-tambah-kegiatan select, #modal-tambah-kegiatan textarea"
         );
         if (first) first.focus();
       }, 0);
@@ -734,12 +786,39 @@ export default function KegiatanUkm({
     }
   }
 
+  useEffect(() => {
+    if (!editing) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") cancelEdit();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editing]);
+
+  useEffect(() => {
+    if (!showTambahModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setShowTambahModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showTambahModal]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="w-full px-0 py-6 lg:py-8">
-        <h3 className="text-2xl font-semibold tracking-tight text-gray-900 mb-6">
-          :: [ Data Kegiatan Integrasi Layanan Primer ( ILP ) ] ::
-        </h3>
+      <div className="w-full px-3 md:px-0 py-6 lg:py-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xl md:text-2xl font-semibold tracking-tight text-gray-900">
+            :: [ Data Kegiatan Integrasi Layanan Primer ( ILP ) ] ::
+          </h3>
+          <button
+            type="button"
+            onClick={() => { setShowTambahModal(true); setEditing(null); }}
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-white font-medium shadow-sm hover:bg-emerald-700"
+          >
+            Tambah Kegiatan
+          </button>
+        </div>
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
@@ -747,82 +826,108 @@ export default function KegiatanUkm({
           </div>
         )}
 
-        {/* Form Tambah */}
-        {!editing && (
-          <motion.div
-            className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 240, damping: 24 }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h5 className="text-xl font-semibold tracking-tight text-gray-900">
-                Tambah Kegiatan
-              </h5>
-              <button
-                type="button"
-                onClick={() => setShowTambah((v) => !v)}
-                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                aria-expanded={showTambah}
-                aria-controls="form-tambah-kegiatan"
-                title={showTambah ? "Ciutkan" : "Buka"}
+        {/* Modal Tambah Kegiatan */}
+        <AnimatePresence>
+          {showTambahModal && !editing && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+              onClick={() => setShowTambahModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.98, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.98, opacity: 0 }}
+                className="w-[96vw] max-w-6xl rounded-lg bg-white shadow-lg border border-gray-200"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                id="modal-tambah-kegiatan"
               >
-                {showTambah ? "Ciutkan" : "Buka"}
-                <span className="ml-1">{showTambah ? "▴" : "▾"}</span>
-              </button>
-            </div>
-            <AnimatePresence initial={false}>
-              {showTambah && (
-                <motion.div
-                  id="form-tambah-kegiatan"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="overflow-hidden"
-                >
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {inputColumns.map((c) => (
-                        <div key={c.name}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {c.name === "kd_jbtn" ? "Pelaksana Program" : c.name}
-                          </label>
-                          {renderField(c)}
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <div className="font-semibold">Tambah Kegiatan</div>
+                  <button type="button" onClick={() => setShowTambahModal(false)} className="px-3 py-1.5 text-xs rounded border hover:bg-gray-50">Tutup</button>
+                </div>
+                <form onSubmit={handleSubmit}>
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:flex md:flex-row gap-3 items-start mb-4">
+                      {columnNames.includes("kd_jbtn") && (
+                        <div className="w-full md:basis-[20%] md:min-w-0">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Pelaksana Program</label>
+                          {renderField({ name: "kd_jbtn" })}
                         </div>
-                      ))}
+                      )}
+                      {columnNames.includes("tahun") && (
+                        <div className="w-full md:basis-[10%] md:min-w-0">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">tahun</label>
+                          {renderField({ name: "tahun" })}
+                        </div>
+                      )}
+                      {columnNames.includes("nama_kegiatan") && (
+                        <div className="w-full md:basis-[70%] md:min-w-0">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">nama_kegiatan</label>
+                          {renderField({ name: "nama_kegiatan" })}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                      >
-                        {saving ? "Menyimpan..." : "Simpan"}
-                      </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {inputColumns
+                        .filter((c) => !["kd_jbtn", "tahun", "nama_kegiatan"].includes(c.name))
+                        .map((c) => (
+                          <div key={c.name}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{c.name}</label>
+                            {renderField(c)}
+                          </div>
+                        ))}
                     </div>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
+                  </div>
+                  <div className="px-4 py-3 border-t flex items-center justify-end gap-2">
+                    <button type="button" onClick={() => setShowTambahModal(false)} className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200">Batal</button>
+                    <button type="submit" disabled={saving} className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
+                      {saving ? "Menyimpan..." : "Simpan"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabel Data */}
         <motion.div
-          className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm"
+          className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm w-full max-w-none"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 240, damping: 26 }}
         >
-        <div className="flex justify-between items-center mb-3">
-          <h5 className="text-xl font-semibold tracking-tight text-gray-900">
-            Daftar Kegiatan
-          </h5>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-3">
+            <h5 className="text-lg md:text-xl font-semibold tracking-tight text-gray-900">
+              Kegiatan UKM
+            </h5>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={filterNama}
+                onChange={(e) => setFilterNama(e.target.value)}
+                placeholder="Cari nama kegiatan"
+                className="w-44 md:w-56 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <input
+                type="text"
+                value={filterPelaksana}
+                onChange={(e) => setFilterPelaksana(e.target.value)}
+                placeholder="Cari pelaksana"
+                className="w-36 md:w-48 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
           <button
             onClick={handleReloadClick}
             disabled={reloading || loading}
-            title="Klik untuk reload halaman. Tahan Ctrl/Shift untuk reload data saja."
+            title="Klik untuk memuat ulang data. Tahan Ctrl/Shift untuk reload penuh halaman."
             className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 border border-gray-200 disabled:opacity-60"
           >
             {reloading ? (
@@ -844,25 +949,35 @@ export default function KegiatanUkm({
           ) : rows.length === 0 ? (
             <div className="p-3 text-gray-600">Belum ada data.</div>
           ) : (
-            <div className="overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    {displayColumns.map((c) => (
-                      <th key={c.name} className="sticky top-0 z-10 bg-gray-50 px-3 py-2 text-left font-medium uppercase text-xs tracking-wide border-b border-gray-200">
-                        {c.name === "kd_jbtn" ? "Pelaksana Program" : c.name}
-                      </th>
-                    ))}
-                    <th className="sticky top-0 z-10 bg-gray-50 px-3 py-2 text-left font-medium uppercase text-xs tracking-wide border-b border-gray-200">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, idx) => (
-                    <tr key={row?.[meta.primary_key || "id"] ?? idx} className="border-t hover:bg-gray-50 transition-colors duration-150 ease-out">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`tbl-${reloadCount}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                className={`overflow-x-auto transition-opacity duration-300 ${reloading ? "opacity-60" : "opacity-100"}`}
+              >
+                <table className="min-w-[800px] sm:min-w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-700">
+                      <th className="sticky top-0 z-10 bg-gray-50 px-3 py-2 text-center font-medium uppercase text-xs tracking-wide border-b border-gray-200 whitespace-nowrap">No</th>
                       {displayColumns.map((c) => (
-                        <td key={c.name} className="px-3 py-2">
-                          {c.name === "kd_jbtn"
-                            ? (() => {
+                        <th key={c.name} className="sticky top-0 z-10 bg-gray-50 px-3 py-2 text-left font-medium uppercase text-xs tracking-wide border-b border-gray-200 whitespace-nowrap">
+                          {c.name === "kd_jbtn" ? "Pelaksana Program" : c.name}
+                        </th>
+                      ))}
+                      <th className="sticky top-0 z-10 bg-gray-50 px-3 py-2 text-left font-medium uppercase text-xs tracking-wide border-b border-gray-200 whitespace-nowrap">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((row, idx) => (
+                      <tr key={row?.[meta.primary_key || "id"] ?? idx} className="border-t hover:bg-gray-50 transition-colors duration-150 ease-out">
+                        <td className="px-3 py-2 text-center">{idx + 1}</td>
+                        {displayColumns.map((c) => (
+                          <td key={c.name} className="px-3 py-2">
+                            {c.name === "kd_jbtn"
+                              ? (() => {
                                 const kd = row?.[c.name];
                                 const found = jabatanList.find((j) => String(j.kd_jbtn) === String(kd));
                                 return (
@@ -871,65 +986,102 @@ export default function KegiatanUkm({
                                   </span>
                                 );
                               })()
-                            : (
-                              <span className="inline-flex items-center rounded bg-white px-1 py-0.5 text-xs text-gray-900">
-                                {String(row?.[c.name] ?? "")}
-                              </span>
-                            )}
+                              : (
+                                <span className="inline-flex items-center rounded bg-white px-1 py-0.5 text-xs text-gray-900">
+                                  {String(row?.[c.name] ?? "")}
+                                </span>
+                              )}
+                          </td>
+                        ))}
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => startEdit(row)} className="px-3 py-1.5 rounded-md bg-amber-500 text-white text-xs hover:bg-amber-600 shadow-sm">Edit</button>
+                            <button onClick={() => removeRow(row)} className="px-3 py-1.5 rounded-md bg-rose-600 text-white text-xs hover:bg-rose-700 shadow-sm">Hapus</button>
+                          </div>
                         </td>
-                      ))}
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => startEdit(row)} className="px-3 py-1.5 rounded-md bg-amber-500 text-white text-xs hover:bg-amber-600 shadow-sm">Edit</button>
-                          <button onClick={() => removeRow(row)} className="px-3 py-1.5 rounded-md bg-rose-600 text-white text-xs hover:bg-rose-700 shadow-sm">Hapus</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </motion.div>
+            </AnimatePresence>
           )}
         </motion.div>
 
-        {/* Panel Edit */}
-        {editing && (
-          <motion.div
-            className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mt-6"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 240, damping: 26 }}
-          >
-            <h2 className="text-xl font-semibold tracking-tight text-gray-900 mb-4">
-              Edit Kegiatan
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {inputColumns.map((c) => (
-                <div key={c.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {c.name}
-                  </label>
-                  {renderField(c)}
+        <AnimatePresence>
+          {editing && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+              onClick={cancelEdit}
+            >
+              <motion.div
+                initial={{ scale: 0.98, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.98, opacity: 0 }}
+                className="w-[96vw] max-w-4xl rounded-lg bg-white shadow-lg border border-gray-200"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+              >
+                <div className="px-4 py-3 border-b">
+                  <div className="font-semibold">Edit Kegiatan</div>
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={submitEdit}
-                disabled={saving}
-                className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-              >
-                {saving ? "Menyimpan..." : "Simpan Perubahan"}
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
-              >
-                Batal
-              </button>
-            </div>
-          </motion.div>
-        )}
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:flex md:flex-row gap-3 items-start mb-4">
+                    {columnNames.includes("kd_jbtn") && (
+                      <div className="w-full md:basis-[20%] md:min-w-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Pelaksana Program</label>
+                        {renderField({ name: "kd_jbtn" })}
+                      </div>
+                    )}
+                    {columnNames.includes("tahun") && (
+                      <div className="w-full md:basis-[10%] md:min-w-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">tahun</label>
+                        {renderField({ name: "tahun" })}
+                      </div>
+                    )}
+                    {columnNames.includes("nama_kegiatan") && (
+                      <div className="w-full md:basis-[70%] md:min-w-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">nama_kegiatan</label>
+                        {renderField({ name: "nama_kegiatan" })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {inputColumns
+                      .filter((c) => !["kd_jbtn", "tahun", "nama_kegiatan"].includes(c.name))
+                      .map((c) => (
+                        <div key={c.name}>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {c.name}
+                          </label>
+                          {renderField(c)}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t flex items-center justify-end gap-2">
+                  <button
+                    onClick={cancelEdit}
+                    className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={submitEdit}
+                    disabled={saving}
+                    className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                  >
+                    {saving ? "Menyimpan..." : "Simpan Perubahan"}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
