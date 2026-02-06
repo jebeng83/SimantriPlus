@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\SkriningPkg;
 use App\Models\Pegawai;
-use Session;
 use Carbon\Carbon;
 
 class DashboardCKGController extends Controller
@@ -29,55 +28,71 @@ class DashboardCKGController extends Controller
      */
     public function index(Request $request)
     {
-        $kd_dokter = session()->get('username');
-        
-        // Ambil filter periode (default: bulan)
-        $periode_filter = $request->input('periode', 'bulan');
-        
-        // Hitung data jumlah entri per pegawai berdasarkan filter periode
-        $data_entri_pegawai = $this->getDataEntriPegawai($periode_filter);
-        
-        // Jika permintaan AJAX, kembalikan data dalam format JSON
-        if ($request->ajax() || $request->has('ajax')) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'entri_pegawai' => $data_entri_pegawai
-                ],
+        try {
+            $kd_dokter = session()->get('username');
+            
+            // Ambil filter periode (default: bulan)
+            $periode_filter = $request->input('periode', 'bulan');
+            // Ambil filter berdasarkan (default: asik)
+            $berdasarkan = $request->input('berdasarkan', 'asik');
+            
+            // Hitung data jumlah entri per pegawai berdasarkan filter
+            $data_entri_pegawai = $this->getDataEntriPegawai($periode_filter, $berdasarkan);
+            
+            // Jika permintaan AJAX, kembalikan data dalam format JSON
+            if ($request->ajax() || $request->has('ajax')) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'entri_pegawai' => $data_entri_pegawai
+                    ],
+                    'periode_filter' => $periode_filter,
+                    'berdasarkan' => $berdasarkan,
+                    'message' => 'Data berhasil dimuat'
+                ]);
+            }
+            
+            return view('ilp.dashboard_ckg', [
+                'nm_dokter' => $this->getDokter($kd_dokter),
+                'data_entri_pegawai' => $data_entri_pegawai,
                 'periode_filter' => $periode_filter,
-                'message' => 'Data berhasil dimuat'
+                'berdasarkan' => $berdasarkan,
             ]);
+        } catch (\Exception $e) {
+            \Log::error('DashboardCKG Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'username' => session()->get('username')
+            ]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
-        
-        return view('ilp.dashboard_ckg', [
-            'nm_dokter' => $this->getDokter($kd_dokter),
-            'data_entri_pegawai' => $data_entri_pegawai,
-            'periode_filter' => $periode_filter,
-        ]);
     }
     
     /**
-     * Ambil data jumlah entri per pegawai berdasarkan periode
+     * Ambil data jumlah entri per pegawai berdasarkan periode dan sumber entri
      * 
      * @param string $periode
+     * @param string $berdasarkan
      * @return array
      */
-    private function getDataEntriPegawai($periode = 'bulan')
+    private function getDataEntriPegawai($periode = 'bulan', $berdasarkan = 'asik')
     {
-        // Tentukan rentang tanggal berdasarkan periode
+        // Tentukan rentang tanggal mulai berdasarkan periode (hari, minggu, bulan, tahun)
         $tanggal_mulai = $this->getTanggalMulai($periode);
         $tanggal_akhir = Carbon::now()->endOfDay();
         
+        // Tentukan field join berdasarkan sumber entri
+        $join_field = ($berdasarkan == 'skrining') ? 'sp.petugas_entri' : 'sp.id_petugas_entri';
+        
         // Query untuk mendapatkan data entri per pegawai
         $query = DB::table('skrining_pkg as sp')
-            ->join('pegawai as p', 'sp.id_petugas_entri', '=', 'p.nik')
+            ->join('pegawai as p', $join_field, '=', 'p.nik')
             ->select(
                 'p.nik',
                 'p.nama as nama_pegawai',
                 DB::raw('COUNT(sp.id_pkg) as jumlah_entri')
             )
-            ->whereNotNull('sp.id_petugas_entri')
-            ->whereBetween('sp.updated_at', [$tanggal_mulai, $tanggal_akhir])
+            ->whereNotNull($join_field)
+            ->whereBetween('sp.updated_at', [$tanggal_mulai->toDateTimeString(), $tanggal_akhir->toDateTimeString()])
             ->groupBy('p.nik', 'p.nama')
             ->orderBy('jumlah_entri', 'desc')
             ->get();

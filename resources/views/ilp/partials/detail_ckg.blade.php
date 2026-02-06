@@ -72,7 +72,7 @@
                               <select name="id_petugas_entri" id="id_petugas_entri" class="form-control" required style="border-left: 3px solid #dc3545;">
                                  <option value="">-- Pilih Petugas Entry --</option>
                                  @foreach($pegawai_aktif as $pegawai)
-                                    <option value="{{ $pegawai->nik }}" {{ (isset($detail->id_petugas_entri) && $detail->id_petugas_entri == $pegawai->nik) ? 'selected' : '' }}>
+                                    <option value="{{ $pegawai->nik }}" {{ (isset($detail->id_petugas_entri) && $detail->id_petugas_entri != '' ? $detail->id_petugas_entri == $pegawai->nik : session('username') == $pegawai->nik) ? 'selected' : '' }}>
                                        {{ $pegawai->nama }}
                                     </option>
                                  @endforeach
@@ -360,6 +360,56 @@
                   </div>
                </div>
 
+               <!-- Faktor Resiko Kanker Usus -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_headingKankerUsus">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_collapseKankerUsus" aria-expanded="false" aria-controls="detail_collapseKankerUsus">
+                           Faktor Resiko Kanker Usus
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_collapseKankerUsus" class="collapse" aria-labelledby="detail_headingKankerUsus"
+                     data-parent="#detail_accordionPemeriksaan">
+                     <div class="card-body">
+                        <table class="table table-bordered">
+                           <tr>
+                              <th width="70%">1. Apakah ada anggota keluarga Anda, yang pernah dinyatakan menderita kanker kolorektal atau kanker usus?</th>
+                              <td>{{ $detail->kanker_usus_1 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>2. apakah Anda merokok?</th>
+                              <td>{{ $detail->kanker_usus_2 ?? '-' }}</td>
+                           </tr>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Faktor Resiko TB - Dewasa&Lansia -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_headingTBDewasa">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_collapseTBDewasa" aria-expanded="false" aria-controls="detail_collapseTBDewasa">
+                           Faktor Resiko TB - Dewasa&Lansia
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_collapseTBDewasa" class="collapse" aria-labelledby="detail_headingTBDewasa"
+                     data-parent="#detail_accordionPemeriksaan">
+                     <div class="card-body">
+                        <table class="table table-bordered">
+                           <tr>
+                              <th width="70%">1. Apakah Anda pernah atau sedang mengalami batuk yang tidak sembuh-sembuh?</th>
+                              <td>{{ $detail->faktor_resiko_tb ?? '-' }}</td>
+                           </tr>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+
                <!-- Hati -->
                <div class="card mb-0">
                   <div class="card-header" id="detail_headingHati">
@@ -480,6 +530,41 @@
                   </div>
                </div>
 
+               <!-- Penapisan Resiko Kanker Paru -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_headingKankerParu">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_collapseKankerParu" aria-expanded="false" aria-controls="detail_collapseKankerParu">
+                           Penapisan Resiko Kanker Paru
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_collapseKankerParu" class="collapse" aria-labelledby="detail_headingKankerParu"
+                     data-parent="#detail_accordionPemeriksaan">
+                     <div class="card-body">
+                        <table class="table table-bordered">
+                           <tr>
+                              <th width="70%">1. Apakah Anda merokok dalam setahun terakhir ini?</th>
+                              <td>{{ $detail->kanker_paru_1 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>2. Apakah Anda terpapar atau menghirup asap rokok dari orang lain di rumah, lingkungan atau tempat kerja dalam 1 bulan terakhir?</th>
+                              <td>{{ $detail->kanker_paru_2 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>3. Apakah Anda sedang mengalami salah satu atau lebih gejala berikut dan telah diobati tetapi tidak sembuh-sembuh : batuk dalam jangka waktu yang lama / batuk berdarah/ sesak napas/ nyeri dada/ leher bengkak/ terdapat benjolan pada leher?</th>
+                              <td>{{ $detail->kanker_paru_4 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>4. Apakah Anda pernah memiliki riwayat penyakit TBC atau PPOK?</th>
+                              <td>{{ $detail->kanker_paru_3 ?? '-' }}</td>
+                           </tr>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+
                <!-- Perilaku Merokok -->
                <div class="card mb-0">
                   <div class="card-header" id="detail_headingMerokok">
@@ -567,12 +652,76 @@
                      <div class="card-body">
                         <table class="table table-bordered">
                            <tr>
-                              <th width="70%">1. Berapa kali dalam seminggu Anda berolahraga?</th>
+                              <th width="70%">1. Apakah Anda melakukan aktivitas fisik sedang pada kegiatan rumah tangga/domestik seperti membersihkan rumah/lingkungan (menyapu, menata perabotan), mencuci baju manual, memasak, mengasuh anak, atau mengangkat beban dengan berat < 20 kg?</th>
                               <td>{{ $detail->frekuensi_olahraga ?? '-' }}</td>
                            </tr>
                            <tr>
-                              <th>2. Berapa lama durasi Anda berolahraga dalam sekali sesi?</th>
-                              <td>{{ $detail->durasi_olahraga ?? '-' }}</td>
+                              <th>2. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->frekuensi_olahraga_1 ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>3. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->frekuensi_olahraga_2 ?? '-' }} menit</td>
+                           </tr>
+                           <tr>
+                              <th>4. Apakah Anda melakukan aktivitas fisik sedang pada tempat kerja seperti pekerjaan dengan mengangkat beban, memberi makan ternak, berkebun dan membersihkan kendaraan (motor/mobil/perahu)?</th>
+                              <td>{{ $detail->aktivitas_fisik_2 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>5. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_2_hari ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>6. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_2_menit ?? '-' }} menit</td>
+                           </tr>
+                           <tr>
+                              <th>7. Apakah Anda melakukan aktivitas fisik sedang dalam perjalanan seperti berjalan kaki atau bersepeda ke ladang, sawah, pasar dan tempat kerja?</th>
+                              <td>{{ $detail->aktivitas_fisik_3 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>8. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_3_hari ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>9. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_3_menit ?? '-' }} menit</td>
+                           </tr>
+                           <tr>
+                              <th>10. Apakah Anda melakukan olahraga intensitas sedang seperti latihan beban < 20 kg, senam aerobic, yoga, bermain bola, bersepeda dan berenang (santai)?</th>
+                              <td>{{ $detail->aktivitas_fisik_4 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>11. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_4_hari ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>12. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_4_menit ?? '-' }} menit</td>
+                           </tr>
+                           <tr>
+                              <th>13. Apakah Anda melakukan aktivitas fisik intensitas berat di tempat kerja seperti mengangkat/memikul beban berat ≥20 kg, mencangkul, menggali, memanen, memanjat pohon, menebang pohon, mengayuh becak, menarik jaring, mendorong atau menarik (mesin pemotong rumput/gerobak/perahu/kendaraan)?</th>
+                              <td>{{ $detail->aktivitas_fisik_5 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>14. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_5_hari ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>15. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_5_menit ?? '-' }} menit</td>
+                           </tr>
+                           <tr>
+                              <th>16. Apakah Anda melakukan olahraga intensitas berat seperti bersepeda cepat (>16 km/jam), jalan cepat (>7 km/jam), lari, sepak bola, futsal, bulutangkis, tenis, basket dan lompat tali?</th>
+                              <td>{{ $detail->aktivitas_fisik_6 ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>17. Berapa hari dalam satu minggu Anda melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_6_hari ?? '-' }} hari</td>
+                           </tr>
+                           <tr>
+                              <th>18. Dalam satu hari berapa menit waktu yang digunakan untuk melakukan aktivitas tersebut?</th>
+                              <td>{{ $detail->aktivitas_fisik_6_menit ?? '-' }} menit</td>
                            </tr>
                         </table>
                      </div>
@@ -805,17 +954,24 @@
                                     <th>Tekanan Sistolik</th>
                                     <td>{{ $detail->tekanan_sistolik ? $detail->tekanan_sistolik . ' mmHg' : '-' }}</td>
                                  </tr>
+                                 <tr>
+                                    <th>Tekanan Sistolik 2</th>
+                                    <td>{{ $detail->tekanan_sistolik_2 ? $detail->tekanan_sistolik_2 . ' mmHg' : '-' }}</td>
+                                 </tr>
+                                 <tr>
+                                    <th>Tekanan Diastolik</th>
+                                    <td>{{ $detail->tekanan_diastolik ? $detail->tekanan_diastolik . ' mmHg' : '-' }}</td>
+                                 </tr>
+                                 <tr>
+                                    <th>Tekanan Diastolik 2</th>
+                                    <td>{{ $detail->tekanan_diastolik_2 ? $detail->tekanan_diastolik_2 . ' mmHg' : '-' }}</td>
+                                 </tr>
                               </table>
                            </div>
                            <div class="col-md-6">
-                              <table class="table table-bordered">
+                               <table class="table table-bordered">
                                  <tr>
-                                    <th width="40%">Tekanan Diastolik</th>
-                                    <td>{{ $detail->tekanan_diastolik ? $detail->tekanan_diastolik . ' mmHg' : '-' }}
-                                    </td>
-                                 </tr>
-                                 <tr>
-                                    <th>GDS</th>
+                                    <th width="40%">GDS</th>
                                     <td>{{ $detail->gds ? $detail->gds . ' mg/dL' : '-' }}</td>
                                  </tr>
                                  <tr>
@@ -829,6 +985,14 @@
                                  <tr>
                                     <th>Trigliserida</th>
                                     <td>{{ $detail->trigliserida ? $detail->trigliserida . ' mg/dL' : '-' }}</td>
+                                 </tr>
+                                 <tr>
+                                    <th>Riwayat DM</th>
+                                    <td>{{ $detail->riwayat_dm ?? '-' }}</td>
+                                 </tr>
+                                 <tr>
+                                    <th>Riwayat HT</th>
+                                    <td>{{ $detail->riwayat_ht ?? '-' }}</td>
                                  </tr>
                               </table>
                            </div>
@@ -874,6 +1038,37 @@
                                  pemeriksaan spirometri atau peak flow meter (meniup ke dalam suatu alat) untuk
                                  mengetahui fungsi paru?</th>
                               <td>{{ $detail->spirometri ?? '-' }}</td>
+                           </tr>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Penyakit Tropis -->
+               <div class="card mb-0">
+                  <div class="card-header" id="detail_headingTropis">
+                     <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse"
+                           data-target="#detail_collapseTropis" aria-expanded="false" aria-controls="detail_collapseTropis">
+                           Penyakit Tropis
+                        </button>
+                     </h2>
+                  </div>
+                  <div id="detail_collapseTropis" class="collapse" aria-labelledby="detail_headingTropis"
+                     data-parent="#detail_accordionAssesment">
+                     <div class="card-body">
+                        <table class="table table-bordered">
+                           <tr>
+                              <th width="70%">1. Apakah ada papul/nodul/ulkus/krusta papiloma?</th>
+                              <td>{{ $detail->frambusia ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>2. Apakah tubuh anda ada bercak kulit putih atau merah yang tidak/kurang rasa/ kebal saat disentuh panas/dingin, tidak gatal/ tidak nyeri?</th>
+                              <td>{{ $detail->kusta ?? '-' }}</td>
+                           </tr>
+                           <tr>
+                              <th>3. Apakah ada koreng/ruam/bentol/kudis bergerombol yang gatal terutama di malam hari walaupun sudah diberi bedak atau lotion?</th>
+                              <td>{{ $detail->skabies ?? '-' }}</td>
                            </tr>
                         </table>
                      </div>

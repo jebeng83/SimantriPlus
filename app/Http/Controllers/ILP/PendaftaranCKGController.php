@@ -245,6 +245,7 @@ class PendaftaranCKGController extends Controller
                     'status' => $statusBadge,
                     'aksi' => $aksiHtml,
                     'id_pkg' => $row->id_pkg,
+                    'no_rkm_medis' => e($row->no_rkm_medis),
                 ];
             }
 
@@ -790,87 +791,82 @@ class PendaftaranCKGController extends Controller
     public function updateKdKel(Request $request)
     {
         try {
-            Log::info('Memulai proses update kd_kel dari tabel pasien ke skrining_pkg');
-            
-            // Ambil data dari skrining_pkg yang belum memiliki kd_kel (NULL, 0, atau kosong)
-            // Catatan: beberapa data tidak memiliki no_rkm_medis, sehingga kita siapkan fallback menggunakan NIK -> pasien.no_ktp
+            Log::info('Memulai proses update kd_kel/no_handphone/no_peserta dari tabel pasien ke skrining_pkg');
             $skriningData = DB::table('skrining_pkg')
                 ->where(function($query) {
-                    $query->whereNull('kd_kel')
-                          ->orWhere('kd_kel', 0)
-                          ->orWhere('kd_kel', '');
+                    $query->whereNotNull('no_rkm_medis')
+                          ->orWhereNotNull('nik');
                 })
-                ->get(['id_pkg', 'no_rkm_medis', 'nik']);
-            
+                ->get(['id_pkg', 'no_rkm_medis', 'nik', 'no_handphone', 'kd_kel']);
+
             $totalData = count($skriningData);
             $updatedCount = 0;
             $errorCount = 0;
+            $updatedKel = 0;
+            $updatedHp = 0;
             
-            Log::info("Ditemukan {$totalData} record skrining_pkg yang perlu diupdate kd_kel");
-            
+
             foreach ($skriningData as $skrining) {
                 try {
-                    $kdKelToSet = null;
-
-                    // 1) Prioritas utama: gunakan no_rkm_medis jika tersedia
+                    $pasienRow = null;
                     if (!empty($skrining->no_rkm_medis)) {
-                        $pasien = DB::table('pasien')
+                        $pasienRow = DB::table('pasien')
                             ->where('no_rkm_medis', $skrining->no_rkm_medis)
-                            ->first(['kd_kel']);
-
-                        if ($pasien && !empty($pasien->kd_kel)) {
-                            $kdKelToSet = $pasien->kd_kel;
-                            Log::info("Menemukan kd_kel via no_rkm_medis untuk ID {$skrining->id_pkg}: {$kdKelToSet}");
-                        }
+                            ->first(['kd_kel', 'no_tlp', 'no_peserta']);
                     }
-
-                    // 2) Fallback: jika no_rkm_medis tidak ada atau tidak menemukan kd_kel, coba gunakan NIK (skrining_pkg.nik -> pasien.no_ktp)
-                    if ($kdKelToSet === null && !empty($skrining->nik)) {
-                        $pasienByNik = DB::table('pasien')
+                    if ($pasienRow === null && !empty($skrining->nik)) {
+                        $pasienRow = DB::table('pasien')
                             ->where('no_ktp', $skrining->nik)
-                            ->first(['kd_kel']);
-
-                        if ($pasienByNik && !empty($pasienByNik->kd_kel)) {
-                            $kdKelToSet = $pasienByNik->kd_kel;
-                            Log::info("Menemukan kd_kel via NIK untuk ID {$skrining->id_pkg}: {$kdKelToSet}");
-                        }
+                            ->first(['kd_kel', 'no_tlp', 'no_peserta']);
                     }
 
-                    if ($kdKelToSet !== null) {
-                        // Update kd_kel di tabel skrining_pkg
-                        DB::table('skrining_pkg')
-                            ->where('id_pkg', $skrining->id_pkg)
-                            ->update(['kd_kel' => $kdKelToSet]);
+                    if ($pasienRow !== null) {
+                        $updateFields = [];
+                        if ($pasienRow->kd_kel) {
+                            if ($skrining->kd_kel !== $pasienRow->kd_kel) {
+                                $updateFields['kd_kel'] = $pasienRow->kd_kel;
+                                $updatedKel++;
+                            }
+                        }
+                        if ($pasienRow->no_tlp) {
+                            if ($skrining->no_handphone !== $pasienRow->no_tlp) {
+                                $updateFields['no_handphone'] = $pasienRow->no_tlp;
+                                $updatedHp++;
+                            }
+                        }
                         
-                        $updatedCount++;
-                        Log::info("Updated skrining_pkg ID {$skrining->id_pkg} dengan kd_kel: {$kdKelToSet}");
+
+                        if (!empty($updateFields)) {
+                            DB::table('skrining_pkg')
+                                ->where('id_pkg', $skrining->id_pkg)
+                                ->update($updateFields);
+                            $updatedCount++;
+                        }
                     } else {
-                        Log::warning("Tidak ditemukan kd_kel untuk skrining_pkg ID {$skrining->id_pkg} (no_rkm_medis: " . ($skrining->no_rkm_medis ?? '-') . ", nik: " . ($skrining->nik ?? '-') . ")");
                         $errorCount++;
                     }
                 } catch (\Exception $e) {
-                    Log::error("Error updating skrining_pkg ID {$skrining->id_pkg}: " . $e->getMessage());
+                    Log::error('Error updating skrining_pkg: ' . $e->getMessage());
                     $errorCount++;
                 }
             }
-            
-            Log::info("Proses update kd_kel selesai. Updated: {$updatedCount}, Error: {$errorCount}, Total: {$totalData}");
-            
+
             return response()->json([
                 'success' => true,
-                'message' => "Update kd_kel berhasil! {$updatedCount} record diupdate dari {$totalData} record yang diperiksa.",
+                'message' => "Update berhasil",
                 'data' => [
                     'total_checked' => $totalData,
                     'updated_count' => $updatedCount,
-                    'error_count' => $errorCount
+                    'error_count' => $errorCount,
+                    'updated_kd_kel' => $updatedKel,
+                    'updated_no_handphone' => $updatedHp,
                 ]
             ]);
-            
         } catch (\Exception $e) {
-            Log::error('Error dalam proses update kd_kel: ' . $e->getMessage());
+            Log::error('Error dalam proses update kd_kel/no_handphone/no_peserta: ' . $e->getMessage());
             return response()->json([
-                'success' => false, 
-                'message' => 'Terjadi kesalahan saat mengupdate kd_kel: ' . $e->getMessage()
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }

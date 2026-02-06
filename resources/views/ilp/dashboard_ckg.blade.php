@@ -3,614 +3,433 @@
 @section('title', 'Dashboard CKG')
 
 @section('css')
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- DataTables -->
 <link rel="stylesheet" href="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/css/dataTables.bootstrap.min.css') }}">
-<!-- DataTables Buttons -->
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap4.min.css">
-<!-- DataTables Responsive -->
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
-<!-- DataTables FixedHeader -->
-<link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.bootstrap4.min.css">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-.card-stats {
-    transition: transform 0.2s;
-}
-.card-stats:hover {
-    transform: translateY(-2px);
-}
-.periode-filter .btn {
-    border-radius: 20px;
-    margin: 0 2px;
-    transition: all 0.3s ease;
-}
-.periode-filter .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.table-responsive {
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    background: white;
-    margin-bottom: 0;
-}
-.table {
-    margin-bottom: 0;
-    border-collapse: separate;
-    border-spacing: 0;
-}
-.table thead th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 15px 12px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    vertical-align: middle;
-    text-align: center;
-}
-.table tbody tr {
-    transition: all 0.3s ease;
-    border-bottom: 1px solid #e9ecef;
-}
-.table tbody tr:hover {
-    background-color: #f8f9fa;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.table tbody td {
-    padding: 12px;
-    vertical-align: middle;
-    border-top: none;
-}
-/* DataTables Custom Styling */
-.dataTables_wrapper {
-    padding: 20px;
-}
-.dataTables_filter {
-    margin-bottom: 20px;
-}
-.dataTables_filter input {
-    border-radius: 25px;
-    border: 2px solid #e9ecef;
-    padding: 8px 15px;
-    margin-left: 10px;
-    transition: all 0.3s ease;
-}
-.dataTables_filter input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    outline: none;
-}
-.dataTables_length select {
-    border-radius: 20px;
-    border: 2px solid #e9ecef;
-    padding: 5px 10px;
-    margin: 0 10px;
-}
-.dataTables_info {
-    color: #6c757d;
-    font-weight: 500;
-}
-.dataTables_paginate .paginate_button {
-    border-radius: 20px !important;
-    margin: 0 2px;
-    transition: all 0.3s ease;
-}
-.dataTables_paginate .paginate_button:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border-color: #667eea !important;
-    color: white !important;
-    transform: translateY(-1px);
-}
-.dataTables_paginate .paginate_button.current {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border-color: #667eea !important;
-    color: white !important;
-}
-/* Export Buttons Styling */
-.dt-buttons {
-    margin-bottom: 20px;
-}
-.dt-button {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
-    border: none !important;
-    color: white !important;
-    border-radius: 20px !important;
-    padding: 8px 16px !important;
-    margin: 0 5px !important;
-    font-weight: 500 !important;
-    transition: all 0.3s ease !important;
-}
-.dt-button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3) !important;
-}
-/* Responsive Design */
-.table {
-    table-layout: fixed;
-    width: 100% !important;
-}
-.table th, .table td {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-}
-/* Responsive breakpoints */
-@media (max-width: 1200px) {
-    .table th:nth-child(1), .table td:nth-child(1) { width: 10% !important; }
-    .table th:nth-child(2), .table td:nth-child(2) { width: 20% !important; }
-    .table th:nth-child(3), .table td:nth-child(3) { width: 35% !important; }
-    .table th:nth-child(4), .table td:nth-child(4) { width: 20% !important; }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 15% !important; }
-}
-@media (max-width: 768px) {
-    .table tbody tr:hover {
-        transform: none;
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        background-color: #f4f6f9 !important;
     }
+
+    .content-wrapper {
+        background-color: #f4f6f9 !important;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        border-radius: 20px;
+        padding: 30px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+    }
+
+    /* Stat Cards */
+    .card-modern {
+        border-radius: 15px;
+        padding: 20px;
+        color: white !important;
+        position: relative;
+        overflow: hidden;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .bg-grad-indigo { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+    .bg-grad-emerald { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .bg-grad-amber { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .bg-grad-rose { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+
+    .card-modern .icon-bg {
+        position: absolute;
+        right: -10px;
+        top: -10px;
+        font-size: 60px;
+        opacity: 0.15;
+    }
+
+    .card-modern .label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+    }
+
+    .card-modern .value {
+        font-size: 32px;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    /* Filter wrapper */
+    .filter-card {
+        background: white;
+        border-radius: 15px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    .btn-period {
+        border-radius: 10px;
+        padding: 8px 20px;
+        font-weight: 600;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+        color: #6b7280;
+        margin-right: 5px;
+        transition: 0.2s;
+    }
+
+    .btn-period.active {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+    }
+
+    /* Table Container */
+    .table-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    #table-entri-pegawai thead th {
+        background: #f8fafc !important;
+        color: #64748b !important;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        border-bottom: 2px solid #f1f5f9 !important;
+        padding: 12px !important;
+    }
+
     .dataTables_wrapper {
-        padding: 10px;
+        width: 100% !important;
+        position: relative;
+        clear: both;
     }
-    .table th, .table td {
-        font-size: 0.85rem;
-        padding: 8px 6px;
+
+    .dataTables_wrapper .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        width: 100% !important;
+        margin: 0 !important;
     }
-    .table th:nth-child(1), .table td:nth-child(1) { width: 12% !important; }
-    .table th:nth-child(2), .table td:nth-child(2) { width: 22% !important; }
-    .table th:nth-child(3), .table td:nth-child(3) { width: 30% !important; }
-    .table th:nth-child(4), .table td:nth-child(4) { width: 20% !important; }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 16% !important; }
-    .badge-entri {
-        font-size: 0.8em !important;
-        padding: 6px 10px !important;
-        min-width: 60px;
+
+    .dataTables_wrapper .dataTables_length {
+        float: left !important;
+        text-align: left !important;
+        margin-bottom: 20px;
     }
-    .badge-rank {
-        font-size: 0.75em;
-        padding: 4px 8px;
+
+    .dataTables_wrapper .dataTables_filter {
+        float: right !important;
+        text-align: right !important;
+        margin-bottom: 20px;
     }
-}
-@media (max-width: 576px) {
-    .table th, .table td {
-        font-size: 0.8rem;
-        padding: 6px 4px;
+
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        font-weight: 600;
+        color: #4b5563;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
     }
-    .table th:nth-child(1), .table td:nth-child(1) { width: 15% !important; }
-    .table th:nth-child(2), .table td:nth-child(2) { width: 25% !important; }
-    .table th:nth-child(3), .table td:nth-child(3) { width: 25% !important; }
-    .table th:nth-child(4), .table td:nth-child(4) { width: 20% !important; }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 15% !important; }
-    .badge-entri {
-        font-size: 0.7em !important;
-        padding: 4px 8px !important;
-        min-width: 50px;
+
+    .dataTables_wrapper .dataTables_filter input {
+        margin-left: 10px !important;
+        width: 280px !important;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 6px 12px;
+        transition: all 0.2s;
+        display: inline-block !important;
     }
-    .badge-rank {
-        font-size: 0.7em;
-        padding: 3px 6px;
+
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #4f46e5;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
     }
-    .avatar {
-        display: none;
+
+    /* Custom Pagination */
+    .dataTables_wrapper .dataTables_paginate {
+        float: right !important;
+        margin-top: 20px;
     }
-}
-.badge-rank {
-    font-size: 0.9em;
-    padding: 8px 12px;
-    border-radius: 20px;
-}
-.badge-entri {
-    font-size: 1.0em !important;
-    font-weight: bold !important;
-    padding: 12px 20px !important;
-    border-radius: 25px !important;
-    min-width: 80px;
-    display: inline-block;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
-}
-.badge-entri:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
-.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #333; }
-.rank-2 { background: linear-gradient(135deg, #C0C0C0, #A9A9A9); color: #333; }
-.rank-3 { background: linear-gradient(135deg, #CD7F32, #B8860B); color: white; }
-.rank-other { background: linear-gradient(135deg, #6c757d, #495057); color: white; }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb !important;
+        margin-left: 5px !important;
+        padding: 6px 14px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s !important;
+        background: #ffffff !important;
+        color: #4b5563 !important;
+        cursor: pointer;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #f3f4f6 !important;
+        color: #4f46e5 !important;
+        border-color: #d1d5db !important;
+        text-decoration: none !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: #4f46e5 !important;
+        color: white !important;
+        border-color: #4f46e5 !important;
+        box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        float: left !important;
+        margin-top: 20px;
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 500;
+    }
 </style>
 @endsection
 
-@section('content_header')
-<div class="d-flex justify-content-between align-items-center mb-2">
-   <div>
-      <h1 class="m-0 text-dark"><i class="fas fa-chart-bar mr-2"></i>Dashboard Monitoring Entri Data CKG</h1>
-      <h5 class="text-muted"><i class="fas fa-user-md mr-1"></i>Selamat Datang, {{$nm_dokter}}</h5>
-   </div>
-   <div class="text-right">
-      <h5 id="tanggalHari" class="text-muted"></h5>
-      <h5 id="jamDigital" class="text-muted"></h5>
-   </div>
-</div>
-@endsection
-
 @section('content')
-<!-- Filter Periode -->
-<div class="row mb-4">
-   <div class="col-12">
-      <x-adminlte-card title="Filter Periode" theme="primary" theme-mode="outline" class="card-outline">
-         <div class="periode-filter text-center">
-            <div class="btn-group" role="group">
-               <button type="button" data-periode="hari"
-                  class="btn-periode btn {{ $periode_filter == 'hari' ? 'btn-success' : 'btn-outline-success' }}">
-                  <i class="fas fa-calendar-day mr-1"></i> Harian
-               </button>
-               <button type="button" data-periode="minggu"
-                  class="btn-periode btn {{ $periode_filter == 'minggu' ? 'btn-success' : 'btn-outline-success' }}">
-                  <i class="fas fa-calendar-week mr-1"></i> Mingguan
-               </button>
-               <button type="button" data-periode="bulan"
-                  class="btn-periode btn {{ $periode_filter == 'bulan' ? 'btn-success' : 'btn-outline-success' }}">
-                  <i class="fas fa-calendar-alt mr-1"></i> Bulanan
-               </button>
-               <button type="button" data-periode="tahun"
-                  class="btn-periode btn {{ $periode_filter == 'tahun' ? 'btn-success' : 'btn-outline-success' }}">
-                  <i class="fas fa-calendar mr-1"></i> Tahunan
-               </button>
+<div class="container-fluid pt-3">
+    
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="font-weight-bold mb-1">Monitor Entri Data CKG</h2>
+                <p class="mb-0 opacity-80">Selamat datang kembali, <strong>{{$nm_dokter}}</strong></p>
             </div>
-         </div>
-         <div class="text-center mt-3">
-            <small class="text-muted">
-               <i class="fas fa-info-circle mr-1"></i>
-               @if($periode_filter == 'hari')
-               Data entri hari ini dari tabel skrining_pkg
-               @elseif($periode_filter == 'minggu')
-               Data entri minggu ini dari tabel skrining_pkg
-               @elseif($periode_filter == 'tahun')
-               Data entri tahun ini dari tabel skrining_pkg
-               @else
-               Data entri bulan ini dari tabel skrining_pkg
-               @endif
-            </small>
-         </div>
-      </x-adminlte-card>
-   </div>
-</div>
+            <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                <div class="d-inline-block text-right">
+                    <div id="tanggalHari" class="font-weight-bold small"></div>
+                    <div id="jamDigital" class="h4 font-weight-bold text-warning mb-0"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Statistik Ringkas -->
-<div class="row mb-4">
-   <div class="col-lg-3 col-md-6">
-      <div class="card card-stats bg-gradient-primary text-white">
-         <div class="card-body">
-            <div class="row">
-               <div class="col">
-                  <h5 class="card-title text-uppercase text-white mb-0">Total Pegawai</h5>
-                  <span class="h2 font-weight-bold mb-0" id="total-pegawai">{{ count($data_entri_pegawai) }}</span>
-               </div>
-               <div class="col-auto">
-                  <div class="icon icon-shape bg-white text-primary rounded-circle shadow">
-                     <i class="fas fa-users"></i>
-                  </div>
-               </div>
+    <!-- Filter Section -->
+    <div class="filter-card">
+        <div class="row align-items-center">
+            <div class="col-lg-4 col-md-12 d-flex align-items-center mb-3 mb-lg-0">
+                <div class="bg-primary p-2 rounded mr-3 text-white">
+                    <i class="fas fa-filter"></i>
+                </div>
+                <h5 class="mb-0 font-weight-bold">Filter Laporan</h5>
             </div>
-         </div>
-      </div>
-   </div>
-   <div class="col-lg-3 col-md-6">
-      <div class="card card-stats bg-gradient-success text-white">
-         <div class="card-body">
-            <div class="row">
-               <div class="col">
-                  <h5 class="card-title text-uppercase text-white mb-0">Total Entri</h5>
-                  <span class="h2 font-weight-bold mb-0" id="total-entri">{{ array_sum(array_column($data_entri_pegawai, 'jumlah_entri')) }}</span>
-               </div>
-               <div class="col-auto">
-                  <div class="icon icon-shape bg-white text-success rounded-circle shadow">
-                     <i class="fas fa-clipboard-list"></i>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-   </div>
-   <div class="col-lg-3 col-md-6">
-      <div class="card card-stats bg-gradient-info text-white">
-         <div class="card-body">
-            <div class="row">
-               <div class="col">
-                  <h5 class="card-title text-uppercase text-white mb-0">Rata-rata</h5>
-                  <span class="h2 font-weight-bold mb-0" id="rata-rata">
-                     {{ count($data_entri_pegawai) > 0 ? number_format(array_sum(array_column($data_entri_pegawai, 'jumlah_entri')) / count($data_entri_pegawai), 1) : 0 }}
-                  </span>
-               </div>
-               <div class="col-auto">
-                  <div class="icon icon-shape bg-white text-info rounded-circle shadow">
-                     <i class="fas fa-chart-line"></i>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-   </div>
-   <div class="col-lg-3 col-md-6">
-      <div class="card card-stats bg-gradient-warning text-white">
-         <div class="card-body">
-            <div class="row">
-               <div class="col">
-                  <h5 class="card-title text-uppercase text-white mb-0">Tertinggi</h5>
-                  <span class="h2 font-weight-bold mb-0" id="tertinggi">
-                     {{ count($data_entri_pegawai) > 0 ? max(array_column($data_entri_pegawai, 'jumlah_entri')) : 0 }}
-                  </span>
-               </div>
-               <div class="col-auto">
-                  <div class="icon icon-shape bg-white text-warning rounded-circle shadow">
-                     <i class="fas fa-trophy"></i>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-   </div>
-</div>
+            <div class="col-lg-8 col-md-12 text-lg-right">
+                <div class="d-flex flex-wrap align-items-center justify-content-lg-end" style="gap: 15px;">
+                    <!-- Dropdown Berdasarkan -->
+                    <div class="d-flex align-items-center">
+                        <span class="mr-2 font-weight-bold small text-muted text-uppercase">Sumber:</span>
+                        <select id="filter-berdasarkan" class="form-control form-control-sm rounded-pill px-3" style="width: auto; min-width: 220px; font-weight: 600; border-color: #e2e8f0;">
+                            <option value="asik" {{ $berdasarkan == 'asik' ? 'selected' : '' }}>Petugas Berdasarkan Entri Asik</option>
+                            <option value="skrining" {{ $berdasarkan == 'skrining' ? 'selected' : '' }}>Petugas Berdasarkan Entri Skrining</option>
+                        </select>
+                    </div>
 
-<!-- Tabel Data Entri Per Pegawai -->
-<div class="row">
-   <div class="col-12">
-      <x-adminlte-card title="Data Jumlah Entri Per Pegawai" theme="primary" theme-mode="outline">
-         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="table-entri-pegawai">
-               <thead>
-                  <tr>
-                     <th style="min-width: 60px; width: 8%;">No</th>
-                     <th style="min-width: 120px; width: 18%;">NIK</th>
-                     <th style="min-width: 200px; width: 40%;">Nama Pegawai</th>
-                     <th style="min-width: 120px; width: 20%;">Jumlah Entri</th>
-                     <th style="min-width: 100px; width: 14%;">Ranking</th>
-                  </tr>
-               </thead>
-               <tbody id="tbody-entri-pegawai">
-                  @forelse($data_entri_pegawai as $index => $pegawai)
-                  <tr>
-                     <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
-                     <td><code>{{ $pegawai->nik }}</code></td>
-                     <td>
+                    <!-- Button Group Periode -->
+                    <div class="btn-group shadow-sm rounded-pill overflow-hidden" id="wrapper-periode">
+                        @foreach(['hari' => 'Harian', 'minggu' => 'Mingguan', 'bulan' => 'Bulanan', 'tahun' => 'Tahunan'] as $key => $label)
+                            <button type="button" data-periode="{{ $key }}" class="btn-period {{ $periode_filter == $key ? 'active' : '' }}" style="margin: 0; border: none; border-radius: 0;">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="card-modern bg-grad-indigo">
+                <i class="fas fa-users icon-bg"></i>
+                <div class="label">Total Pegawai</div>
+                <div class="value" id="total-pegawai">0</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card-modern bg-grad-emerald">
+                <i class="fas fa-file-alt icon-bg"></i>
+                <div class="label">Total Entri</div>
+                <div class="value" id="total-entri">0</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card-modern bg-grad-amber">
+                <i class="fas fa-chart-line icon-bg"></i>
+                <div class="label">Rata-rata</div>
+                <div class="value" id="rata-rata">0</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card-modern bg-grad-rose">
+                <i class="fas fa-trophy icon-bg"></i>
+                <div class="label">Tertinggi</div>
+                <div class="value" id="tertinggi">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="font-weight-bold mb-0">Leaderboard Kontribusi</h5>
+            <button class="btn btn-success btn-sm font-weight-bold rounded-pill px-3" id="btn-export-excel">
+                <i class="fas fa-file-excel mr-1"></i> Excel
+            </button>
+        </div>
+        
+        <table class="table table-hover" id="table-entri-pegawai" style="width: 100% !important;">
+            <thead>
+                <tr>
+                    <th class="text-center" width="50">No</th>
+                    <th>Nama Pegawai</th>
+                    <th class="text-center">NIK</th>
+                    <th class="text-center">Jumlah Entri</th>
+                    <th class="text-center">Ranking</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data_entri_pegawai as $index => $pegawai)
+                <tr>
+                    <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
+                    <td>
                         <div class="d-flex align-items-center">
-                           <div class="avatar avatar-sm rounded-circle bg-gradient-primary text-white mr-2">
-                              <i class="fas fa-user"></i>
-                           </div>
-                           <span class="font-weight-bold">{{ $pegawai->nama_pegawai }}</span>
+                            <div class="bg-light p-2 rounded-xl mr-2 text-primary" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <span class="font-weight-bold">{{ $pegawai->nama_pegawai }}</span>
                         </div>
-                     </td>
-                     <td>
-                        <span class="badge badge-pill badge-primary badge-entri">
-                           <i class="fas fa-clipboard-check mr-2"></i>{{ $pegawai->jumlah_entri }}
-                        </span>
-                     </td>
-                     <td>
+                    </td>
+                    <td class="text-center text-muted small">{{ $pegawai->nik }}</td>
+                    <td class="text-center text-primary font-weight-bold">{{ $pegawai->jumlah_entri }}</td>
+                    <td class="text-center">
                         @if($index == 0)
-                           <span class="badge badge-rank rank-1"><i class="fas fa-trophy mr-1"></i>1st</span>
+                            <span class="badge badge-warning" style="font-size: 11px;"><i class="fas fa-crown mr-1"></i>1st Rank</span>
                         @elseif($index == 1)
-                           <span class="badge badge-rank rank-2"><i class="fas fa-medal mr-1"></i>2nd</span>
+                            <span class="badge badge-secondary" style="font-size: 11px;">2nd Rank</span>
                         @elseif($index == 2)
-                           <span class="badge badge-rank rank-3"><i class="fas fa-award mr-1"></i>3rd</span>
+                            <span class="badge" style="background:#cd7f32; color:white; font-size: 11px;">3rd Rank</span>
                         @else
-                           <span class="badge badge-rank rank-other">{{ $index + 1 }}</span>
+                            <span class="text-muted small">{{ $index + 1 }}</span>
                         @endif
-                     </td>
-                  </tr>
-                  @empty
-                  <tr>
-                     <td colspan="5" class="text-center text-muted py-4">
-                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
-                        <h5>Tidak ada data</h5>
-                        <p>Belum ada data entri untuk periode yang dipilih</p>
-                     </td>
-                  </tr>
-                  @endforelse
-               </tbody>
-            </table>
-         </div>
-      </x-adminlte-card>
-   </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    <div id="dashboard-ckg-data" class="d-none"
+         data-total-pegawai="{{ count($data_entri_pegawai) }}"
+         data-total-entri="{{ array_sum(array_column($data_entri_pegawai, 'jumlah_entri')) }}"
+         data-rata-rata="{{ count($data_entri_pegawai) > 0 ? floor(array_sum(array_column($data_entri_pegawai, 'jumlah_entri')) / count($data_entri_pegawai)) : 0 }}"
+         data-tertinggi="{{ count($data_entri_pegawai) > 0 ? max(array_column($data_entri_pegawai, 'jumlah_entri')) : 0 }}"
+    ></div>
 </div>
 @endsection
 
 @section('js')
-<!-- DataTables -->
 <script src="{{ asset('epasien/plugins/jquery-datatable/jquery.dataTables.js') }}"></script>
 <script src="{{ asset('epasien/plugins/jquery-datatable/skin/bootstrap/js/dataTables.bootstrap.min.js') }}"></script>
-<!-- DataTables Extensions -->
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    // Inisialisasi DataTable dengan fitur lengkap
+    // DataTables dengan koordinasi DOM yang lebih kuat
     var table = $('#table-entri-pegawai').DataTable({
+        "order": [[3, "desc"]],
         "responsive": true,
-        "lengthChange": true,
         "autoWidth": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "paging": true,
-        "pageLength": 25,
-        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
-        "fixedHeader": true,
-        "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-               '<"row"<"col-sm-12"tr>>' +
-               '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        "dom": "<'row mb-4'<'col-sm-6'l><'col-sm-6'f>>" +
+               "<'row'<'col-sm-12'tr>>" +
+               "<'row mt-4'<'col-sm-5'i><'col-sm-7'p>>",
         "language": {
-            "search": "<i class='fas fa-search'></i> Cari:",
-            "lengthMenu": "Tampilkan _MENU_ data per halaman",
-            "zeroRecords": "<div class='text-center'><i class='fas fa-search fa-2x text-muted mb-2'></i><br>Data tidak ditemukan</div>",
+            "search": "Cari:",
+            "lengthMenu": "Tampilkan _MENU_ data",
+            "zeroRecords": "Data tidak ditemukan",
+            "emptyTable": "Tidak ada data kontribusi untuk periode ini",
             "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
             "infoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
-            "infoFiltered": "(difilter dari _MAX_ total data)",
-            "processing": "<div class='text-center'><i class='fas fa-spinner fa-spin fa-2x text-primary'></i><br>Memproses data...</div>",
-            "loadingRecords": "<div class='text-center'><i class='fas fa-spinner fa-spin fa-2x text-primary'></i><br>Memuat data...</div>",
             "paginate": {
-                "first": "<i class='fas fa-angle-double-left'></i>",
-                "last": "<i class='fas fa-angle-double-right'></i>",
-                "next": "<i class='fas fa-angle-right'></i>",
-                "previous": "<i class='fas fa-angle-left'></i>"
-            },
-            "buttons": {
-                "copy": "Salin ke Clipboard",
-                "copyTitle": "Data Disalin",
-                "copySuccess": {
-                    _: "%d baris disalin ke clipboard",
-                    1: "1 baris disalin ke clipboard"
-                },
-                "colvis": "Visibilitas Kolom"
+                "first": "Awal",
+                "last": "Akhir",
+                "next": "Lanjut",
+                "previous": "Balik"
             }
         },
-        "order": [[3, "desc"]], // Urutkan berdasarkan jumlah entri (descending)
-        "columnDefs": [
-             {
-                 "targets": [0, 3, 4],
-                 "className": "text-center"
-             },
-             {
-                 "targets": [1],
-                 "className": "text-center"
-             },
-             {
-                 "targets": [0],
-                 "width": "8%",
-                 "orderable": false
-             },
-             {
-                 "targets": [1],
-                 "width": "18%"
-             },
-             {
-                 "targets": [2],
-                 "width": "40%"
-             },
-             {
-                 "targets": [3],
-                 "width": "20%"
-             },
-             {
-                 "targets": [4],
-                 "width": "14%",
-                 "orderable": false
-             }
-         ],
         "drawCallback": function(settings) {
-            // Animasi fade in untuk baris tabel
-            $(this.api().table().body()).find('tr').css('opacity', '0').animate({opacity: 1}, 300);
-        },
-        "initComplete": function(settings, json) {
-            // Notifikasi tabel berhasil dimuat
-            console.log('DataTable berhasil dimuat dengan ' + this.api().data().length + ' baris data');
+            $('.paginate_button').removeClass('btn-default');
         }
     });
-    
-    // Tambahkan search highlight
-    table.on('draw', function() {
-        var searchTerm = table.search();
-        if (searchTerm) {
-            table.rows().every(function() {
-                var node = this.node();
-                $(node).find('td').each(function() {
-                    var cellText = $(this).text();
-                    if (cellText.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        var highlightedText = cellText.replace(
-                            new RegExp('(' + searchTerm + ')', 'gi'),
-                            '<mark class="bg-warning">$1</mark>'
-                        );
-                        $(this).html(highlightedText);
-                    }
-                });
-            });
-        }
-    });
-    
 
-    
-    // Update jam digital
-    function updateJam() {
-        const now = new Date();
-        const options = {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
-        const tanggal = now.toLocaleDateString('id-ID', options);
-        const jam = now.toLocaleTimeString('id-ID');
-        
-        $('#tanggalHari').text(tanggal);
-        $('#jamDigital').text(jam);
-    }
-    
-    // Update jam setiap detik
-    updateJam();
-    setInterval(updateJam, 1000);
-    
-    // Handle filter periode
-    $('.btn-periode').on('click', function() {
-        const periode = $(this).data('periode');
-        
-        // Update button states
-        $('.btn-periode').removeClass('btn-success').addClass('btn-outline-success');
-        $(this).removeClass('btn-outline-success').addClass('btn-success');
-        
-        // Show loading
-        Swal.fire({
-            title: 'Memuat Data...',
-            text: 'Sedang mengambil data untuk periode ' + periode,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            willOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        // Reload halaman dengan parameter periode
-        window.location.href = '{{ route("ilp.dashboard-ckg") }}?periode=' + periode;
-    });
-    
-    // Animasi counter untuk statistik
-    function animateCounter(element, target) {
-        let current = 0;
-        const increment = target / 50;
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-                current = target;
-                clearInterval(timer);
-            }
-            $(element).text(Math.floor(current));
-        }, 20);
-    }
-    
-    // Jalankan animasi counter saat halaman dimuat
-    setTimeout(() => {
-        const totalPegawai = {{ count($data_entri_pegawai) }};
-        const totalEntri = {{ array_sum(array_column($data_entri_pegawai, 'jumlah_entri')) }};
-        const tertinggi = {{ count($data_entri_pegawai) > 0 ? max(array_column($data_entri_pegawai, 'jumlah_entri')) : 0 }};
-        
-        animateCounter('#total-pegawai', totalPegawai);
-        animateCounter('#total-entri', totalEntri);
-        animateCounter('#tertinggi', tertinggi);
+    // Refresh layout table
+    setTimeout(function() {
+        table.columns.adjust().draw();
     }, 500);
+
+    // Clock
+    function clock() {
+        const now = new Date();
+        $('#tanggalHari').text(now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'}));
+        $('#jamDigital').text(now.toLocaleTimeString('id-ID', {hour12:false}));
+    }
+    setInterval(clock, 1000); clock();
+
+    // Counters
+    function animate(id, end) {
+        $({v:0}).animate({v:end}, {
+            duration: 1000,
+            step: function() { $('#'+id).text(Math.floor(this.v).toLocaleString('id-ID')); },
+            complete: function() { $('#'+id).text(end.toLocaleString('id-ID')); }
+        });
+    }
+
+    setTimeout(() => {
+        const el = document.getElementById('dashboard-ckg-data');
+        const d = el ? el.dataset : {};
+        const totalPegawai = Number(d.totalPegawai || 0);
+        const totalEntri = Number(d.totalEntri || 0);
+        const rataRata = Number(d.rataRata || 0);
+        const tertinggi = Number(d.tertinggi || 0);
+        animate('total-pegawai', totalPegawai);
+        animate('total-entri', totalEntri);
+        animate('rata-rata', rataRata);
+        animate('tertinggi', tertinggi);
+    }, 500);
+
+    $('.btn-period').click(function() {
+        const periode = $(this).data('periode');
+        const berdasarkan = $('#filter-berdasarkan').val();
+        window.location.href = '{{ route("ilp.dashboard-ckg") }}?periode=' + periode + '&berdasarkan=' + berdasarkan;
+    });
+
+    $('#filter-berdasarkan').change(function() {
+        const berdasarkan = $(this).val();
+        const periode = $('.btn-period.active').data('periode') || 'bulan';
+        window.location.href = '{{ route("ilp.dashboard-ckg") }}?periode=' + periode + '&berdasarkan=' + berdasarkan;
+    });
 });
 </script>
 @endsection

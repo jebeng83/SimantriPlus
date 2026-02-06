@@ -1538,7 +1538,76 @@ class DashboardController extends Controller
             'analisa_rokok' => $analisa_rokok,
             'distribusi_bmi' => $distribusi_bmi,
             'analisa_pendengaran_penglihatan' => $analisa_pendengaran_penglihatan,
-            'analisa_kesehatan_gigi' => $analisa_kesehatan_gigi
+            'analisa_kesehatan_gigi' => [
+                'masalah_gigi' => $analisa_kesehatan_gigi['masalah_gigi'],
+                'kombinasi_masalah' => $analisa_kesehatan_gigi['kombinasi_masalah'],
+                'gigi_per_umur' => $this->getGigiPerUmur($posyandu, $desa, $tanggal_awal, $tanggal_akhir)
+            ]
+        ];
+    }
+
+    /**
+     * Get dental problems distribution by age groups
+     */
+    private function getGigiPerUmur($posyandu = null, $desa = null, $tanggal_awal = null, $tanggal_akhir = null)
+    {
+        $ageGroups = [
+            ['label' => '< 1 th', 'condition' => 'sp.umur < 1'],
+            ['label' => '1-6 th', 'condition' => 'sp.umur >= 1 AND sp.umur <= 6'],
+            ['label' => '7-10 th', 'condition' => 'sp.umur >= 7 AND sp.umur <= 10'],
+            ['label' => '11-18 th', 'condition' => 'sp.umur >= 11 AND sp.umur <= 18'],
+            ['label' => '19-59 th', 'condition' => 'sp.umur >= 19 AND sp.umur <= 59'],
+            ['label' => '≥ 60 th', 'condition' => 'sp.umur >= 60'],
+        ];
+
+        $selects = [];
+        foreach ($ageGroups as $index => $group) {
+            $safeLabel = 'g' . $index;
+            $selects[] = DB::raw("SUM(CASE WHEN {$group['condition']} AND sp.karies = 'Ya' THEN 1 ELSE 0 END) as {$safeLabel}_karies");
+            $selects[] = DB::raw("SUM(CASE WHEN {$group['condition']} AND sp.hilang = 'Ya' THEN 1 ELSE 0 END) as {$safeLabel}_hilang");
+            $selects[] = DB::raw("SUM(CASE WHEN {$group['condition']} AND sp.goyang = 'Ya' THEN 1 ELSE 0 END) as {$safeLabel}_goyang");
+        }
+
+        $query = DB::table('skrining_pkg as sp')
+            ->join('data_posyandu as p', 'sp.kode_posyandu', '=', 'p.kode_posyandu')
+            ->select($selects);
+
+        if ($posyandu && $posyandu != 'semua') {
+            $query->where('p.nama_posyandu', $posyandu);
+        }
+        
+        if ($desa && $desa != 'semua') {
+            $query->where('p.desa', $desa);
+        }
+        
+        if ($tanggal_awal) {
+            $query->whereDate('sp.tanggal_skrining', '>=', $tanggal_awal);
+        }
+        
+        if ($tanggal_akhir) {
+            $query->whereDate('sp.tanggal_skrining', '<=', $tanggal_akhir);
+        }
+        
+        $data = $query->first();
+
+        $series = [
+            ['name' => 'Berlubang (Karies)', 'data' => []],
+            ['name' => 'Gigi Lepas/Hilang', 'data' => []],
+            ['name' => 'Gigi Goyang', 'data' => []],
+        ];
+
+        $categories = [];
+        foreach ($ageGroups as $index => $group) {
+            $categories[] = $group['label'];
+            $safeLabel = 'g' . $index;
+            $series[0]['data'][] = (int) ($data->{$safeLabel . '_karies'} ?? 0);
+            $series[1]['data'][] = (int) ($data->{$safeLabel . '_hilang'} ?? 0);
+            $series[2]['data'][] = (int) ($data->{$safeLabel . '_goyang'} ?? 0);
+        }
+
+        return [
+            'categories' => $categories,
+            'series' => $series
         ];
     }
 

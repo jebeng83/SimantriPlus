@@ -695,6 +695,29 @@
     </div>
 </div>
 
+<!-- Masalah Gigi per Kelompok Umur -->
+<div class="row">
+    <div class="col-12">
+        <div class="card elegant-card reveal-on-scroll">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h4 class="header-title mb-0">Masalah Gigi dan Mulut Berdasarkan Kelompok Umur</h4>
+                    <div class="d-flex align-items-center">
+                        <span class="mr-2 small text-muted font-weight-bold">Filter Jenis:</span>
+                        <select id="filter-gigi-jenis" class="form-control form-control-sm rounded-pill" style="width: auto; min-width: 180px;">
+                            <option value="semua">Semua Masalah</option>
+                            <option value="Berlubang (Karies)">Berlubang (Karies)</option>
+                            <option value="Gigi Lepas/Hilang">Gigi Lepas/Hilang</option>
+                            <option value="Gigi Goyang">Gigi Goyang</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="gigi-per-umur-chart" class="chart-container reveal-on-scroll" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 @endsection
@@ -702,6 +725,12 @@
 @section('js')
 <!-- Use CDN for ApexCharts since local asset does not exist -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- Inject server-side data in HTML dataset to avoid Blade directives inside <script> -->
+<div id="dashboard-ilp-data" class="d-none"
+     data-chart='@json($chart_data)'
+     data-summary='@json($summary)'
+     data-daftar-posyandu='@json($daftar_posyandu)'
+></div>
 <script>
     $(document).ready(function() {
     // Motion: reveal on scroll
@@ -731,18 +760,28 @@
         };
         requestAnimationFrame(step);
     });
-    // Data untuk charts
-    var distribusiRisikoData = @json($chart_data['distribusi_risiko']);
-    var trendSkriningData = @json($chart_data['trend_skrining']);
-    var faktorRisikoData = @json($chart_data['faktor_risiko']);
-    var distribusiUmurData = @json($chart_data['distribusi_umur']);
-    var distribusiJenisKelaminData = @json($chart_data['distribusi_jenis_kelamin']);
-    var kunjunganPerDesaData = @json($chart_data['kunjungan_per_desa']);
-    var kunjunganPerPosyanduDesaData = @json($chart_data['kunjungan_per_posyandu_desa']);
-    var analisaRokokData = @json($chart_data['analisa_rokok']);
-    var distribusiBMIData = @json($chart_data['distribusi_bmi']);
-    var analisaPendengaranPenglihatanData = @json($chart_data['analisa_pendengaran_penglihatan']);
-    var analisaKesehatanGigiData = @json($chart_data['analisa_kesehatan_gigi']);
+    // Data untuk charts (dibaca dari dataset HTML)
+    var dsEl = document.getElementById('dashboard-ilp-data');
+    function parseJsonAttr(attr, fallback){
+        try {
+            var s = dsEl ? dsEl.getAttribute(attr) : '';
+            return s ? JSON.parse(s) : fallback;
+        } catch { return fallback; }
+    }
+    var chartData = parseJsonAttr('data-chart', {});
+    var distribusiRisikoData = chartData.distribusi_risiko || {};
+    var trendSkriningData = chartData.trend_skrining || [];
+    var faktorRisikoData = chartData.faktor_risiko || [];
+    var distribusiUmurData = chartData.distribusi_umur || [];
+    var distribusiJenisKelaminData = chartData.distribusi_jenis_kelamin || [];
+    var kunjunganPerDesaData = chartData.kunjungan_per_desa || [];
+    var kunjunganPerPosyanduDesaData = chartData.kunjungan_per_posyandu_desa || [];
+    var analisaRokokData = chartData.analisa_rokok || {};
+    var distribusiBMIData = chartData.distribusi_bmi || {};
+    var analisaPendengaranPenglihatanData = chartData.analisa_pendengaran_penglihatan || {};
+    var analisaKesehatanGigiData = chartData.analisa_kesehatan_gigi || {};
+    var summary = parseJsonAttr('data-summary', {});
+    var daftarPosyanduStatic = parseJsonAttr('data-daftar-posyandu', []);
 
     // Validate chart data to prevent ApexCharts errors
     if (!distribusiRisikoData || typeof distribusiRisikoData !== 'object') {
@@ -790,7 +829,8 @@
     if (!analisaKesehatanGigiData || typeof analisaKesehatanGigiData !== 'object') {
         analisaKesehatanGigiData = {
             masalah_gigi: [],
-            kombinasi_masalah: []
+            kombinasi_masalah: [],
+            gigi_per_umur: []
         };
     }
 
@@ -889,7 +929,6 @@
     }
 
     // Sparkline mini radial charts for summary cards
-    var summary = @json($summary);
     function renderSparkline(el, val, color){
         if (!el) return;
         var opt = {
@@ -1783,9 +1822,9 @@
             var posyanduSelect = $('#posyandu');
             posyanduSelect.empty();
             posyanduSelect.append('<option value="">Semua Posyandu</option>');
-            @foreach($daftar_posyandu as $posyandu)
-                posyanduSelect.append('<option value="{{ $posyandu }}">{{ $posyandu }}</option>');
-            @endforeach
+            (Array.isArray(daftarPosyanduStatic) ? daftarPosyanduStatic : []).forEach(function(p){
+                posyanduSelect.append('<option value="' + p + '">' + p + '</option>');
+            });
             posyanduSelect.val('');
         }
     });
@@ -1902,6 +1941,59 @@
         else if (p === 'next') nextPage = Math.min(analisisMeta.last_page, cur + 1);
         else nextPage = parseInt(p, 10) || 1;
         fetchAnalisisPkg(nextPage);
+    });
+
+    // Chart Masalah Gigi per Umur (Bar Chart)
+    // Chart Masalah Gigi per Umur (Stacked/Grouped Bar Chart)
+    var gigiPerUmurOptions = {
+        series: (analisaKesehatanGigiData.gigi_per_umur.series || []),
+        chart: {
+            type: 'bar',
+            height: 350,
+            stacked: false,
+            toolbar: { show: false }
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 4,
+                horizontal: false,
+                columnWidth: '60%',
+            }
+        },
+        dataLabels: { enabled: false },
+        colors: ['#727cf5', '#f77e53', '#ffbc00'], // Karies: Blue, Hilang: Orange, Goyang: Yellow
+        xaxis: {
+            categories: (analisaKesehatanGigiData.gigi_per_umur.categories || []),
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: { title: { text: 'Jumlah Kasus' } },
+        grid: { borderColor: '#f1f3fa' },
+        tooltip: {
+            y: {
+                formatter: function (val) { return val + " kasus" }
+            }
+        },
+        legend: { 
+            show: true,
+            position: 'top',
+            horizontalAlign: 'center'
+        }
+    };
+    var chartGigiPerUmur = new ApexCharts(document.querySelector("#gigi-per-umur-chart"), gigiPerUmurOptions);
+    chartGigiPerUmur.render();
+
+    // Event listener untuk filter jenis masalah gigi
+    $('#filter-gigi-jenis').on('change', function() {
+        var val = $(this).val();
+        var allSeries = analisaKesehatanGigiData.gigi_per_umur.series || [];
+        
+        if (val === 'semua') {
+            chartGigiPerUmur.updateSeries(allSeries);
+        } else {
+            var filtered = allSeries.filter(s => s.name === val);
+            chartGigiPerUmur.updateSeries(filtered);
+        }
     });
 
     // Muat data analisis segera saat halaman siap (tanpa menunggu scroll)

@@ -124,13 +124,25 @@
             fetch('/refresh-csrf')
                 .then(response => response.text())
                 .then(token => {
+                    // Update meta tag
                     document.querySelector('meta[name="csrf-token"]').setAttribute('content', token);
-                    console.log('CSRF token diperbarui');
+                    
+                    // Update jQuery AJAX setup if jQuery is available
+                    if (window.jQuery) {
+                        $.ajaxSetup({
+                            headers: {
+                                'X-CSRF-TOKEN': token
+                            }
+                        });
+                    }
+                    
+                    console.log('CSRF token diperbarui ' + new Date().toLocaleTimeString());
                 })
                 .catch(error => console.error('Gagal memperbarui CSRF token:', error));
         }
         
-        // Perbarui CSRF token setiap 5 menit
+        // Perbarui CSRF token setiap 5 menit (300.000 ms)
+        // Ini juga berfungsi sebagai heartbeat agar sesi tidak expire
         setInterval(refreshCsrfToken, 300000);
     </script>
 

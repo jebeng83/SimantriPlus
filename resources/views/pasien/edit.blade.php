@@ -6,6 +6,48 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>
+    try {
+        var opts = JSON.parse(localStorage.getItem('AdminLTE:IFrame:Options'));
+        if (!opts || typeof opts !== 'object') { opts = {}; }
+        opts.autoIframeMode = false;
+        localStorage.setItem('AdminLTE:IFrame:Options', JSON.stringify(opts));
+    } catch (e) {
+        localStorage.setItem('AdminLTE:IFrame:Options', '{"autoIframeMode":false}');
+    }
+</script>
+<script>
+    (function(){
+        function collapseSidebar(){
+            try {
+                var $ = window.$ || window.jQuery;
+                if ($ && $.fn && $.fn.PushMenu) {
+                    if (!document.body.classList.contains('sidebar-collapse')) {
+                        $('[data-widget="pushmenu"]').PushMenu('collapse');
+                    }
+                } else {
+                    document.body.classList.add('sidebar-collapse');
+                }
+            } catch (e) {
+                document.body.classList.add('sidebar-collapse');
+            }
+        }
+
+        try {
+            if (window.self !== window.top) {
+                if (document.readyState === 'complete') {
+                    collapseSidebar();
+                } else {
+                    document.addEventListener('DOMContentLoaded', collapseSidebar);
+                    window.addEventListener('load', collapseSidebar);
+                    setTimeout(collapseSidebar, 500);
+                }
+            }
+        } catch (e) {
+            document.addEventListener('DOMContentLoaded', collapseSidebar);
+        }
+    })();
+</script>
 <h1>Edit Data Pasien</h1>
 @stop
 
@@ -178,6 +220,41 @@
             <div class="text-danger">{{ $message }}</div>
             @enderror
         </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="kd_kab">Kabupaten</label>
+                    <select class="form-control" id="kd_kab" name="kd_kab">
+                        <option value="">Pilih Kabupaten</option>
+                    </select>
+                    @error('kd_kab')
+                    <div class="text-danger">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="kd_kec">Kecamatan</label>
+                    <select class="form-control" id="kd_kec" name="kd_kec">
+                        <option value="">Pilih Kecamatan</option>
+                    </select>
+                    @error('kd_kec')
+                    <div class="text-danger">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="kd_kel">Kelurahan</label>
+                    <select class="form-control" id="kd_kel" name="kd_kel">
+                        <option value="">Pilih Kelurahan</option>
+                    </select>
+                    @error('kd_kel')
+                    <div class="text-danger">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
         <div class="form-group">
             <label for="data_posyandu">Posyandu</label>
             <select type="text" class="form-control" id="data_posyandu" name="data_posyandu">
@@ -242,7 +319,123 @@
 @section('js')
 <script>
     $(document).ready(function() {
-        
+        function setKabOptions(rows, selected) {
+            var $sel = $('#kd_kab');
+            $sel.empty();
+            $sel.append($('<option>').val('').text('Pilih Kabupaten'));
+            if (Array.isArray(rows)) {
+                rows.forEach(function(r){
+                    var opt = $('<option>').val(r.kd_kab).text(r.nm_kab || r.nama || r.kd_kab);
+                    $sel.append(opt);
+                });
+            }
+            if (selected) {
+                $sel.val(String(selected));
+            }
+        }
+
+        function setKecOptions(rows, selected) {
+            var $sel = $('#kd_kec');
+            $sel.empty();
+            $sel.append($('<option>').val('').text('Pilih Kecamatan'));
+            if (Array.isArray(rows)) {
+                rows.forEach(function(r){
+                    var opt = $('<option>').val(r.kd_kec).text(r.nm_kec || r.nama || r.kd_kec);
+                    $sel.append(opt);
+                });
+            }
+            if (selected) {
+                $sel.val(String(selected));
+            }
+        }
+
+        function setKelOptions(rows, selected) {
+            var $sel = $('#kd_kel');
+            $sel.empty();
+            $sel.append($('<option>').val('').text('Pilih Kelurahan'));
+            if (Array.isArray(rows)) {
+                rows.forEach(function(r){
+                    var opt = $('<option>').val(r.kd_kel).text(r.nm_kel || r.nama || r.kd_kel);
+                    $sel.append(opt);
+                });
+            }
+            if (selected) {
+                $sel.val(String(selected));
+            }
+        }
+
+        function loadKabupatenList(kdProp, selectedKdKab) {
+            var url = kdProp ? "{{ route('kabupaten') }}" : "/ranap/laporan/grafik/kabupaten-db";
+            var params = kdProp ? { kd_prop: kdProp } : {};
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: params,
+                dataType: 'json',
+                cache: false,
+                success: function(rows) {
+                    setKabOptions(rows, selectedKdKab);
+                },
+                error: function() {
+                    setKabOptions([], selectedKdKab);
+                }
+            });
+        }
+
+        function loadKecamatanList(kdKab, selectedKdKec) {
+            var url = kdKab ? "{{ route('kecamatan') }}" : "/ranap/laporan/grafik/kecamatan-all";
+            var params = kdKab ? { kd_kab: kdKab } : {};
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: params,
+                dataType: 'json',
+                cache: false,
+                success: function(rows) {
+                    setKecOptions(rows, selectedKdKec);
+                },
+                error: function() {
+                    setKecOptions([], selectedKdKec);
+                }
+            });
+        }
+
+        function loadKelurahanList(kdKec, selectedKdKel) {
+            var url = kdKec ? "{{ route('kelurahan') }}" : "/ranap/laporan/grafik/kelurahan-all";
+            var params = kdKec ? { kd_kec: kdKec } : {};
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: params,
+                dataType: 'json',
+                cache: false,
+                success: function(rows) {
+                    setKelOptions(rows, selectedKdKel);
+                },
+                error: function() {
+                    setKelOptions([], selectedKdKel);
+                }
+            });
+        }
+
+        var kd_prop_initial = "{{ $pasien->kd_prop ?? '' }}";
+        var kd_kab_initial = "{{ $pasien->kd_kab ?? '' }}";
+        var kd_kec_initial = "{{ $pasien->kd_kec ?? '' }}";
+        var kd_kel_initial = "{{ $pasien->kd_kel ?? '' }}";
+        loadKabupatenList(kd_prop_initial, kd_kab_initial);
+        loadKecamatanList(kd_kab_initial, kd_kec_initial);
+        loadKelurahanList(kd_kec_initial, kd_kel_initial);
+
+        $('#kd_kab').on('change', function(){
+            var v = $(this).val();
+            loadKecamatanList(v, null);
+            setKelOptions([], null);
+        });
+
+        $('#kd_kec').on('change', function(){
+            var v = $(this).val();
+            loadKelurahanList(v, null);
+        });
 
         // Refresh data dari server
         const no_rkm_medis = '{{ $pasien->no_rkm_medis }}';
@@ -267,6 +460,13 @@
                 $('#alamat').val(data.alamat);
                 $('#data_posyandu').val(data.data_posyandu);
                 $('#kd_pj').val(data.kd_pj);
+                var kp = data.kd_prop || kd_prop_initial;
+                var kb = data.kd_kab || kd_kab_initial;
+                var kk = data.kd_kec || kd_kec_initial;
+                var kl = data.kd_kel || kd_kel_initial;
+                loadKabupatenList(kp, kb);
+                loadKecamatanList(kb, kk);
+                loadKelurahanList(kk, kl);
                 
                 
             },

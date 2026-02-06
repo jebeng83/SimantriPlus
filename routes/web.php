@@ -92,6 +92,11 @@ Route::get('/clear-cache', function() {
     return $exitCode;
 });
 
+// Route untuk refresh CSRF token (Heartbeat) agar session tidak expire
+Route::get('/refresh-csrf', function() {
+    return csrf_token();
+});
+
 // Rute API yang tidak memerlukan autentikasi
 Route::get('/diagnosa', [App\Http\Controllers\API\ResumePasienController::class, 'getDiagnosa'])->name('diagnosa');
 Route::post('/diagnosa', [App\Http\Controllers\API\ResumePasienController::class, 'simpanDiagnosa'])->name('diagnosa.simpan');
@@ -392,10 +397,6 @@ Route::post('/pendaftaran-ckg/release-processing', [App\Http\Controllers\ILP\Pen
         Route::get('/presentasi-ckg-sekolah', [App\Http\Controllers\ILP\DashboardCkgSekolahController::class, 'presentasi'])->name('presentasi-ckg-sekolah');
     });
 
-    // Route untuk refresh CSRF token
-    Route::get('/refresh-csrf', function() {
-        return csrf_token();
-    });
 
     // Halaman React Registrasi Pasien
     Route::get('/reg-periksa', function () {

@@ -51,6 +51,38 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <!-- Tambahkan Moment.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+    (function(){
+        try{
+            var __origParse = JSON.parse;
+            JSON.parse = function(v){
+                try {
+                    return __origParse.apply(JSON, arguments);
+                } catch (e) {
+                    if (typeof v === 'string'){
+                        var s = v.trim();
+                        if (s === 'auto' || s === 'static'){
+                            return s;
+                        }
+                        if (/^-?\d+(?:\.\d+)?$/.test(s)){
+                            return Number(s);
+                        }
+                        if (/^-?\d+(?:\.\d+)?(px|em|rem|%)$/.test(s)){
+                            return s;
+                        }
+                        if (s === 'true' || s === 'false'){
+                            return s === 'true';
+                        }
+                        if (s === 'null'){
+                            return null;
+                        }
+                    }
+                    throw e;
+                }
+            };
+        }catch(e){}
+    })();
+</script>
 
 <div class="container-fluid">
     <!-- Filter Card -->
@@ -201,7 +233,7 @@
                         @foreach($data_pendaftaran as $key => $pendaftaran)
                         <tr>
                             <td data-label="No.">{{ $key + 1 }}</td>
-                            <td data-label="NIK">{{ $pendaftaran->nik }}</td>
+                            <td data-label="NIK"><a href="#" class="nik-link" data-nik="{{ $pendaftaran->nik }}" data-rm="{{ $pendaftaran->no_rkm_medis ?? '' }}">{{ $pendaftaran->nik }}</a></td>
                             <td data-label="Nama Lengkap">{{ $pendaftaran->nama_lengkap }}</td>
                             <td data-label="Tanggal Lahir">{{ date('d-m-Y', strtotime($pendaftaran->tanggal_lahir)) }}
                             </td>
@@ -297,6 +329,24 @@
             </div>
         </div>
     </div>
+    </div>
+<div class="modal fade" id="pasienEditModal" tabindex="-1" role="dialog" aria-labelledby="pasienEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pasienEditModalLabel">Edit Data Pasien</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="pasien-edit-iframe" src="about:blank" style="width:100%; height:80vh; border:0;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Set Status -->
@@ -388,6 +438,7 @@
 
     /* Ensure modal body can scroll and not lock page afterwards */
     .modal { overflow-y: auto; }
+    #pasien-edit-iframe { width: 100%; height: 80vh; border: 0; }
 </style>
 @stop
 
@@ -485,7 +536,12 @@
                 { data: null, orderable: false, searchable: false, render: function (data, type, row, meta) {
                     return meta.row + meta.settings._iDisplayStart + 1; // row number
                 }},
-                { data: 'nik', name: 'nik' },
+                { data: 'nik', name: 'nik', render: function(data, type, row){
+                    var d = data || '';
+                    if (!d) return '-';
+                    var rm = row && row.no_rkm_medis ? row.no_rkm_medis : '';
+                    return '<a href="#" class="nik-link" data-nik="'+ d +'" data-rm="'+ rm +'">'+ d +'</a>';
+                } },
                 { data: 'nama_lengkap', name: 'nama_lengkap' },
                 { data: 'tanggal_lahir', name: 'tanggal_lahir' },
                 { data: 'umur', name: 'umur' },
@@ -523,6 +579,108 @@
 
         // Expose the DataTable instance globally for use in dynamically loaded scripts/modals
         window.pendaftaranCKGTable = table;
+
+        function openPasienEditByRM(noRM, nikFallback){
+            var editBase = "/data-pasien";
+            var $iframe = $('#pasien-edit-iframe');
+            var $loading = $('#pasien-edit-loading');
+            var startTs = Date.now();
+            var url = null;
+
+            // Reset state dan tampilkan modal
+            $iframe.attr('src', 'about:blank').show();
+            $('#pasien-edit-error').remove();
+            $loading.show();
+            $('#pasienEditModal').modal('show');
+
+            // Tentukan URL edit berdasarkan RM atau NIK
+            if (noRM) {
+                url = editBase + '/' + encodeURIComponent(noRM) + '/edit?t=' + Date.now();
+                $iframe.attr('src', url);
+            } else if (nikFallback) {
+                $.ajax({
+                    url: "{{ route('pasien.search') }}",
+                    type: 'GET',
+                    data: { term: nikFallback },
+                    headers: { 'Accept': 'application/json' },
+                    success: function(results){
+                        var rm = null;
+                        if (Array.isArray(results) && results.length > 0) {
+                            rm = results[0] && results[0].no_rkm_medis ? results[0].no_rkm_medis : null;
+                        } else if (results && results.items && results.items.length > 0) {
+                            var item = results.items[0];
+                            rm = item.no_rkm_medis || item.id || null;
+                        }
+                        if (!rm) {
+                            $('#pasienEditModal').modal('hide');
+                            Swal.fire({ title: 'Data tidak ditemukan', text: 'Pasien tidak ditemukan.', icon: 'warning' });
+                            return;
+                        }
+                        url = editBase + '/' + encodeURIComponent(rm) + '/edit?t=' + Date.now();
+                        $iframe.attr('src', url);
+                    },
+                    error: function(){
+                        $('#pasienEditModal').modal('hide');
+                        Swal.fire({ title:'Error', text:'Gagal mencari RM pasien', icon:'error' });
+                    }
+                });
+            } else {
+                $('#pasienEditModal').modal('hide');
+                Swal.fire({ title: 'Perhatian', text: 'Data RM tidak tersedia', icon: 'warning' });
+                return;
+            }
+
+            // Fallback jika iframe tidak selesai load dalam waktu tertentu
+            var maxWait = 10000; // 10 detik
+            var checkInterval = 500;
+            var intervalId = setInterval(function(){
+                try {
+                    var doc = $iframe[0].contentDocument || $iframe[0].contentWindow.document;
+                    if (doc && doc.readyState === 'complete') {
+                        clearInterval(intervalId);
+                        $loading.hide();
+                    }
+                } catch (e) {
+                    // Jika terjadi cross-origin (harusnya tidak), biarkan fallback timeout yang menangani
+                }
+                if (Date.now() - startTs > maxWait) {
+                    clearInterval(intervalId);
+                    $loading.hide();
+                    $iframe.hide();
+                    if (url) {
+                        $('<div id="pasien-edit-error" class="p-4 text-center text-danger">Tidak dapat memuat formulir edit pasien. <a href="'+url+'" target="_blank" rel="noopener">Buka di tab baru</a></div>').insertBefore($iframe);
+                    } else {
+                        $('<div id="pasien-edit-error" class="p-4 text-center text-danger">Tidak dapat memuat formulir edit pasien.</div>').insertBefore($iframe);
+                    }
+                }
+            }, checkInterval);
+        }
+
+        $(document).on('click', '.nik-link', function(e){
+            e.preventDefault();
+            var nik = $(this).data('nik') || $(this).text().trim();
+            var rm = $(this).data('rm');
+            openPasienEditByRM(rm, nik);
+        });
+
+        $('#pasien-edit-iframe').on('load', function(){
+            $('#pasien-edit-loading').hide();
+        });
+
+        $(document).on('click', '#pasienEditModal .close, #pasienEditModal [data-dismiss="modal"], #pasienEditModal .modal-footer .btn-secondary', function(e){
+            e.preventDefault();
+            $('#pasienEditModal').modal('hide');
+        });
+
+        $(document).on('click', '#detailModal .close, #detailModal [data-dismiss="modal"], #detailModal .modal-footer .btn-secondary', function(e){
+            e.preventDefault();
+            $('#detailModal').modal('hide');
+        });
+
+        $(document).on('click', '#detailSekolahModal .close, #detailSekolahModal [data-dismiss="modal"], #detailSekolahModal .modal-footer .btn-secondary', function(e){
+            e.preventDefault();
+            $('#detailSekolahModal').modal('hide');
+        });
 
         // Submit filter via AJAX to reload server-side data
         $('#filter-form').on('submit', function(e) {
@@ -916,6 +1074,11 @@
             $('#detail-content').empty();
             $('#detailModal').removeData('bs.modal');
             setTimeout(function() { restoreScroll(); }, 50);
+        });
+
+        $('#pasienEditModal').on('hidden.bs.modal', function () {
+            $('#pasien-edit-iframe').attr('src', 'about:blank');
+            setTimeout(function(){ restoreScroll(); }, 50);
         });
 
         // Guard umum: pastikan tidak ada backdrop tersisa saat modal mana pun ditutup
@@ -2051,8 +2214,8 @@
             
             // Konfirmasi sebelum melakukan update
             Swal.fire({
-                title: 'Konfirmasi Update Kd_Kel',
-                text: 'Apakah Anda yakin ingin mengupdate kd_kel dari tabel pasien ke skrining_pkg? Proses ini akan mencari semua record skrining_pkg yang belum memiliki kd_kel dan mengupdate dengan data dari tabel pasien.',
+                title: 'Konfirmasi Update Data',
+                text: 'Mengupdate kd_kel dan no_tlp dari tabel pasien ke skrining_pkg untuk record yang belum terisi. Lanjutkan?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
@@ -2064,7 +2227,7 @@
                     // Tampilkan loading
                     Swal.fire({
                         title: 'Memproses...',
-                        text: 'Sedang mengupdate kd_kel, mohon tunggu...',
+                        text: 'Sedang mengupdate kd_kel dan no_tlp...',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showConfirmButton: false,
@@ -2088,11 +2251,14 @@
                                     title: 'Berhasil!',
                                     html: `
                                         <div class="text-left">
-                                            <p><strong>${response.message}</strong></p>
+                                            <p><strong>Proses update selesai</strong></p>
                                             <hr>
                                             <p><i class="fas fa-check-circle text-success"></i> Total record diperiksa: <strong>${response.data.total_checked}</strong></p>
                                             <p><i class="fas fa-sync-alt text-primary"></i> Record berhasil diupdate: <strong>${response.data.updated_count}</strong></p>
                                             <p><i class="fas fa-exclamation-triangle text-warning"></i> Record dengan error: <strong>${response.data.error_count}</strong></p>
+                                            <hr>
+                                            <p><i class="fas fa-map-marker-alt text-info"></i> kd_kel diupdate: <strong>${response.data.updated_kd_kel}</strong></p>
+                                            <p><i class="fas fa-phone text-info"></i> no_tlp diupdate: <strong>${response.data.updated_no_handphone}</strong></p>
                                         </div>
                                     `,
                                     icon: 'success',
