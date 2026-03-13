@@ -35,10 +35,10 @@ class PendaftaranCKGExport implements FromCollection, WithHeadings, WithStyles, 
             ->leftJoin('data_siswa_sekolah as dss', 's.no_rkm_medis', '=', 'dss.no_rkm_medis')
             ->leftJoin('data_sekolah as ds', 'dss.id_sekolah', '=', 'ds.id_sekolah')
             ->leftJoin('data_kelas as dk', 'dss.id_kelas', '=', 'dk.id_kelas')
-            ->leftJoin('kelurahan as kel', 's.kd_kel', '=', 'kel.kd_kel')
-            ->leftJoin('kecamatan as kec', 'kel.kd_kec', '=', 'kec.kd_kec')
-            ->leftJoin('kabupaten as kab', 'kec.kd_kab', '=', 'kab.kd_kab')
-            ->leftJoin('propinsi as prop', 'kab.kd_prop', '=', 'prop.kd_prop')
+            ->leftJoin('kelurahan as kel', 'p.kd_kel', '=', 'kel.kd_kel')
+            ->leftJoin('kecamatan as kec', 'p.kd_kec', '=', 'kec.kd_kec')
+            ->leftJoin('kabupaten as kab', 'p.kd_kab', '=', 'kab.kd_kab')
+            ->leftJoin('propinsi as prop', 'p.kd_prop', '=', 'prop.kd_prop')
             ->select([
                 's.nik',
                 's.nama_lengkap',
