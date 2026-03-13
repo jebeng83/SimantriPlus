@@ -90,6 +90,9 @@
         <div class="card-header">
             <h3 class="card-title">Filter Data</h3>
             <div class="card-tools">
+                <button type="button" class="btn btn-success btn-sm mr-2" id="btn-export-excel">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
                 <button type="button" class="btn btn-warning btn-sm mr-2" id="btn-update-kel">
                     <i class="fas fa-sync-alt"></i> Update Kel
                 </button>
@@ -579,6 +582,21 @@
 
         // Expose the DataTable instance globally for use in dynamically loaded scripts/modals
         window.pendaftaranCKGTable = table;
+
+        $('#btn-export-excel').on('click', function() {
+            var baseUrl = "{{ route('ilp.pendaftaran-ckg.export.excel') }}";
+            var params = {
+                tanggal_awal: $('#tanggal_awal').val() || '',
+                tanggal_akhir: $('#tanggal_akhir').val() || '',
+                status: $('#status').val(),
+                nama_sekolah: $('#nama_sekolah').val() || '',
+                kelas: $('#kelas').val() || '',
+                kelurahan: $('#kelurahan').val() || '',
+                posyandu: $('#posyandu').val() || ''
+            };
+            var query = $.param(params);
+            window.location = baseUrl + '?' + query;
+        });
 
         function openPasienEditByRM(noRM, nikFallback){
             var editBase = "/data-pasien";

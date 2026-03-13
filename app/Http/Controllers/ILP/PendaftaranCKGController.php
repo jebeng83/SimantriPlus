@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Pegawai;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PendaftaranCKGExport;
 
 class PendaftaranCKGController extends Controller
 {
@@ -34,6 +36,9 @@ class PendaftaranCKGController extends Controller
         // Filter tambahan
         $kd_kel = $request->input('kelurahan');
         $kode_posyandu = $request->input('posyandu');
+        if (is_string($kode_posyandu)) {
+            $kode_posyandu = ltrim($kode_posyandu, ':');
+        }
         
         // Untuk mode server-side DataTables, data tabel dimuat via endpoint JSON.
         // Karena itu, kita tidak mengambil semua data di sini untuk menghindari beban awal.
@@ -265,6 +270,30 @@ class PendaftaranCKGController extends Controller
                 'error' => 'Terjadi kesalahan saat memuat data: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        $status = $request->has('status') ? $request->input('status') : '0';
+        $nama_sekolah = $request->input('nama_sekolah');
+        $kelas = $request->input('kelas');
+        $kd_kel = $request->input('kelurahan');
+        $kode_posyandu = $request->input('posyandu');
+
+        $filters = [
+            'tanggal_awal' => $tanggal_awal,
+            'tanggal_akhir' => $tanggal_akhir,
+            'status' => $status,
+            'nama_sekolah' => $nama_sekolah,
+            'kelas' => $kelas,
+            'kelurahan' => $kd_kel,
+            'posyandu' => $kode_posyandu,
+        ];
+
+        $filename = 'pendaftaran_ckg_' . date('Ymd_His') . '.xlsx';
+        return Excel::download(new PendaftaranCKGExport($filters), $filename);
     }
 
     /**

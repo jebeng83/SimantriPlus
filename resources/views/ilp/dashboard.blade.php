@@ -417,8 +417,8 @@
                      <td>{{ $balita }}</td>
                      <td>
                         <div class="progress">
-                           <div class="progress-bar bg-primary" role="progressbar"
-                              style="width: {{ $persentase_balita }}" aria-valuenow="{{ $persentase_balita }}"
+                           <div class="progress-bar bg-primary js-progress" role="progressbar"
+                              data-width="{{ $persentase_balita }}" aria-valuenow="{{ $persentase_balita }}"
                               aria-valuemin="0" aria-valuemax="100">{{ $persentase_balita }}</div>
                         </div>
                      </td>
@@ -428,8 +428,8 @@
                      <td>{{ $pra_sekolah }}</td>
                      <td>
                         <div class="progress">
-                           <div class="progress-bar bg-success" role="progressbar"
-                              style="width: {{ $persentase_pra_sekolah }}" aria-valuenow="{{ $persentase_pra_sekolah }}"
+                           <div class="progress-bar bg-success js-progress" role="progressbar"
+                              data-width="{{ $persentase_pra_sekolah }}" aria-valuenow="{{ $persentase_pra_sekolah }}"
                               aria-valuemin="0" aria-valuemax="100">{{
                               $persentase_pra_sekolah }}</div>
                         </div>
@@ -440,7 +440,7 @@
                      <td>{{ $remaja }}</td>
                      <td>
                         <div class="progress">
-                           <div class="progress-bar bg-info" role="progressbar" style="width: {{ $persentase_remaja }}"
+                           <div class="progress-bar bg-info js-progress" role="progressbar" data-width="{{ $persentase_remaja }}"
                               aria-valuenow="{{ $persentase_remaja }}" aria-valuemin="0" aria-valuemax="100">{{
                               $persentase_remaja }}</div>
                         </div>
@@ -451,8 +451,8 @@
                      <td>{{ $produktif }}</td>
                      <td>
                         <div class="progress">
-                           <div class="progress-bar bg-warning" role="progressbar"
-                              style="width: {{ $persentase_produktif }}" aria-valuenow="{{ $persentase_produktif }}"
+                           <div class="progress-bar bg-warning js-progress" role="progressbar"
+                              data-width="{{ $persentase_produktif }}" aria-valuenow="{{ $persentase_produktif }}"
                               aria-valuemin="0" aria-valuemax="100">{{ $persentase_produktif }}</div>
                         </div>
                      </td>
@@ -462,8 +462,8 @@
                      <td>{{ $lansia }}</td>
                      <td>
                         <div class="progress">
-                           <div class="progress-bar bg-danger" role="progressbar"
-                              style="width: {{ $persentase_lansia }}" aria-valuenow="{{ $persentase_lansia }}"
+                           <div class="progress-bar bg-danger js-progress" role="progressbar"
+                              data-width="{{ $persentase_lansia }}" aria-valuenow="{{ $persentase_lansia }}"
                               aria-valuemin="0" aria-valuemax="100">{{ $persentase_lansia }}</div>
                         </div>
                      </td>
@@ -657,8 +657,8 @@
                                  <td>{{ $faktor_risiko['imt']['kurus'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-info" role="progressbar"
-                                          style="width: {{ $persentase_kurus }}" aria-valuenow="{{ $persentase_kurus }}"
+                                       <div class="progress-bar bg-info js-progress" role="progressbar"
+                                          data-width="{{ $persentase_kurus }}" aria-valuenow="{{ $persentase_kurus }}"
                                           aria-valuemin="0" aria-valuemax="100">
                                           {{ $persentase_kurus }}
                                        </div>
@@ -670,8 +670,8 @@
                                  <td>{{ $faktor_risiko['imt']['normal'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-success" role="progressbar"
-                                          style="width: {{ $persentase_normal }}"
+                                       <div class="progress-bar bg-success js-progress" role="progressbar"
+                                          data-width="{{ $persentase_normal }}"
                                           aria-valuenow="{{ $persentase_normal }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_normal }}
@@ -684,8 +684,8 @@
                                  <td>{{ $faktor_risiko['imt']['kelebihan_bb'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-warning" role="progressbar"
-                                          style="width: {{ $persentase_kelebihan_bb }}"
+                                       <div class="progress-bar bg-warning js-progress" role="progressbar"
+                                          data-width="{{ $persentase_kelebihan_bb }}"
                                           aria-valuenow="{{ $persentase_kelebihan_bb }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_kelebihan_bb }}
@@ -698,8 +698,8 @@
                                  <td>{{ $faktor_risiko['imt']['obesitas'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-danger" role="progressbar"
-                                          style="width: {{ $persentase_obesitas }}"
+                                       <div class="progress-bar bg-danger js-progress" role="progressbar"
+                                          data-width="{{ $persentase_obesitas }}"
                                           aria-valuenow="{{ $persentase_obesitas }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_obesitas }}
@@ -779,8 +779,8 @@
                                  <td>{{ $faktor_risiko['td']['normal'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-success" role="progressbar"
-                                          style="width: {{ $persentase_normal_td }}"
+                                       <div class="progress-bar bg-success js-progress" role="progressbar"
+                                          data-width="{{ $persentase_normal_td }}"
                                           aria-valuenow="{{ $persentase_normal_td }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_normal_td }}
@@ -793,8 +793,8 @@
                                  <td>{{ $faktor_risiko['td']['pra_hipertensi'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-warning" role="progressbar"
-                                          style="width: {{ $persentase_pra_hipertensi }}"
+                                       <div class="progress-bar bg-warning js-progress" role="progressbar"
+                                          data-width="{{ $persentase_pra_hipertensi }}"
                                           aria-valuenow="{{ $persentase_pra_hipertensi }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_pra_hipertensi }}
@@ -807,8 +807,8 @@
                                  <td>{{ $faktor_risiko['td']['hipertensi_1'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-danger" role="progressbar"
-                                          style="width: {{ $persentase_hipertensi_1 }}"
+                                       <div class="progress-bar bg-danger js-progress" role="progressbar"
+                                          data-width="{{ $persentase_hipertensi_1 }}"
                                           aria-valuenow="{{ $persentase_hipertensi_1 }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_hipertensi_1 }}
@@ -821,8 +821,8 @@
                                  <td>{{ $faktor_risiko['td']['hipertensi_2'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-danger" role="progressbar"
-                                          style="width: {{ $persentase_hipertensi_2 }}"
+                                       <div class="progress-bar bg-danger js-progress" role="progressbar"
+                                          data-width="{{ $persentase_hipertensi_2 }}"
                                           aria-valuenow="{{ $persentase_hipertensi_2 }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_hipertensi_2 }}
@@ -835,8 +835,8 @@
                                  <td>{{ $faktor_risiko['td']['hipertensi_sistolik'] }}</td>
                                  <td>
                                     <div class="progress">
-                                       <div class="progress-bar bg-purple" role="progressbar"
-                                          style="width: {{ $persentase_hipertensi_sistolik }}"
+                                       <div class="progress-bar bg-purple js-progress" role="progressbar"
+                                          data-width="{{ $persentase_hipertensi_sistolik }}"
                                           aria-valuenow="{{ $persentase_hipertensi_sistolik }}" aria-valuemin="0"
                                           aria-valuemax="100">
                                           {{ $persentase_hipertensi_sistolik }}
@@ -875,6 +875,10 @@
    let charts = {};
 
    $(function() {
+   $('[data-width].js-progress').each(function(){
+      var v = parseFloat($(this).attr('data-width'));
+      if (!isNaN(v)) { this.style.width = v + '%'; }
+   });
    // Inisialisasi Select2
    $('.select2-custom').select2({
       theme: 'bootstrap4',
@@ -978,13 +982,7 @@
          labels: ['Balita (0-5)', 'Pra Sekolah (6-9)', 'Remaja (10-18)', 'Produktif (19-59)', 'Lansia (>60)'],
          datasets: [{
             label: 'Jumlah Sasaran',
-            data: [
-               {{ $balita }},
-               {{ $pra_sekolah }},
-               {{ $remaja }},
-               {{ $produktif }},
-               {{ $lansia }}
-            ],
+            data: JSON.parse(`[{{ $balita }}, {{ $pra_sekolah }}, {{ $remaja }}, {{ $produktif }}, {{ $lansia }}]`),
             backgroundColor: [
                'rgba(23, 162, 184, 0.8)', // info
                'rgba(40, 167, 69, 0.8)', // success
@@ -1022,7 +1020,7 @@
                   label: function(context) {
                      const label = context.dataset.label || '';
                      const value = context.raw || 0;
-                     const total = {{ $balita + $pra_sekolah + $remaja + $produktif + $lansia }};
+                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                      const percentage = Math.round((value / total) * 100);
                      return `${label}: ${value} (${percentage}%)`;
                   }
@@ -1039,13 +1037,7 @@
       data: {
          labels: ['Balita (0-5)', 'Pra Sekolah (6-9)', 'Remaja (10-18)', 'Produktif (19-59)', 'Lansia (>60)'],
          datasets: [{
-            data: [
-               {{ $balita }},
-               {{ $pra_sekolah }},
-               {{ $remaja }},
-               {{ $produktif }},
-               {{ $lansia }}
-            ],
+            data: JSON.parse(`[{{ $balita }}, {{ $pra_sekolah }}, {{ $remaja }}, {{ $produktif }}, {{ $lansia }}]`),
             backgroundColor: [
                'rgba(23, 162, 184, 0.8)', // info
                'rgba(40, 167, 69, 0.8)', // success
@@ -1075,7 +1067,7 @@
                   label: function(context) {
                      const label = context.label || '';
                      const value = context.raw || 0;
-                     const total = {{ $balita + $pra_sekolah + $remaja + $produktif + $lansia }};
+                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                      const percentage = Math.round((value / total) * 100);
                      return `${label}: ${value} (${percentage}%)`;
                   }
@@ -1092,13 +1084,7 @@
       data: {
          labels: ['Balita (0-5)', 'Pra Sekolah (6-9)', 'Remaja (10-18)', 'Produktif (19-59)', 'Lansia (>60)'],
          datasets: [{
-            data: [
-               {{ array_sum($kunjungan_posyandu['balita'] ?? []) }},
-               {{ array_sum($kunjungan_posyandu['pra_sekolah'] ?? []) }},
-               {{ array_sum($kunjungan_posyandu['remaja'] ?? []) }},
-               {{ array_sum($kunjungan_posyandu['produktif'] ?? []) }},
-               {{ array_sum($kunjungan_posyandu['lansia'] ?? []) }}
-            ],
+            data: JSON.parse(`[{{ array_sum($kunjungan_posyandu['balita'] ?? []) }}, {{ array_sum($kunjungan_posyandu['pra_sekolah'] ?? []) }}, {{ array_sum($kunjungan_posyandu['remaja'] ?? []) }}, {{ array_sum($kunjungan_posyandu['produktif'] ?? []) }}, {{ array_sum($kunjungan_posyandu['lansia'] ?? []) }}]`),
             backgroundColor: [
                'rgba(23, 162, 184, 0.8)', // info
                'rgba(40, 167, 69, 0.8)', // success
@@ -1143,11 +1129,11 @@
    const kunjunganConfig = {
       type: 'line',
       data: {
-         labels: {!! json_encode($kunjungan_posyandu['labels'] ?? []) !!},
+         labels: JSON.parse(`{!! json_encode($kunjungan_posyandu['labels'] ?? []) !!}`),
          datasets: [
             {
                label: 'Balita (0-5)',
-               data: {!! json_encode($kunjungan_posyandu['balita'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_posyandu['balita'] ?? []) !!}`),
                backgroundColor: 'rgba(23, 162, 184, 0.2)',
                borderColor: 'rgba(23, 162, 184, 1)',
                borderWidth: 2,
@@ -1155,7 +1141,7 @@
             },
             {
                label: 'Pra Sekolah (6-9)',
-               data: {!! json_encode($kunjungan_posyandu['pra_sekolah'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_posyandu['pra_sekolah'] ?? []) !!}`),
                backgroundColor: 'rgba(40, 167, 69, 0.2)',
                borderColor: 'rgba(40, 167, 69, 1)',
                borderWidth: 2,
@@ -1163,7 +1149,7 @@
             },
             {
                label: 'Remaja (10-18)',
-               data: {!! json_encode($kunjungan_posyandu['remaja'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_posyandu['remaja'] ?? []) !!}`),
                backgroundColor: 'rgba(0, 123, 255, 0.2)',
                borderColor: 'rgba(0, 123, 255, 1)',
                borderWidth: 2,
@@ -1171,7 +1157,7 @@
             },
             {
                label: 'Produktif (19-59)',
-               data: {!! json_encode($kunjungan_posyandu['produktif'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_posyandu['produktif'] ?? []) !!}`),
                backgroundColor: 'rgba(255, 193, 7, 0.2)',
                borderColor: 'rgba(255, 193, 7, 1)',
                borderWidth: 2,
@@ -1179,7 +1165,7 @@
             },
             {
                label: 'Lansia (>60)',
-               data: {!! json_encode($kunjungan_posyandu['lansia'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_posyandu['lansia'] ?? []) !!}`),
                backgroundColor: 'rgba(220, 53, 69, 0.2)',
                borderColor: 'rgba(220, 53, 69, 1)',
                borderWidth: 2,
@@ -1211,11 +1197,11 @@
    const posyanduConfig = {
       type: 'bar',
       data: {
-         labels: {!! json_encode($kunjungan_by_posyandu['labels'] ?? []) !!},
+         labels: JSON.parse(`{!! json_encode($kunjungan_by_posyandu['labels'] ?? []) !!}`),
          datasets: [
             {
                label: 'Jumlah Kunjungan',
-               data: {!! json_encode($kunjungan_by_posyandu['data'] ?? []) !!},
+               data: JSON.parse(`{!! json_encode($kunjungan_by_posyandu['data'] ?? []) !!}`),
                backgroundColor: 'rgba(40, 167, 69, 0.7)',
                borderColor: 'rgba(40, 167, 69, 1)',
                borderWidth: 1,
@@ -1398,12 +1384,7 @@
       data: {
          labels: ['Kurus (< 18.5)', 'Normal (18.5 - 24.9)', 'Kelebihan BB (25 - 29.9)', 'Obesitas (≥ 30)'],
          datasets: [{
-            data: [
-               {{ $faktor_risiko['imt']['kurus'] }},
-               {{ $faktor_risiko['imt']['normal'] }},
-               {{ $faktor_risiko['imt']['kelebihan_bb'] }},
-               {{ $faktor_risiko['imt']['obesitas'] }}
-            ],
+            data: JSON.parse(`[{{ $faktor_risiko['imt']['kurus'] }}, {{ $faktor_risiko['imt']['normal'] }}, {{ $faktor_risiko['imt']['kelebihan_bb'] }}, {{ $faktor_risiko['imt']['obesitas'] }}]`),
             backgroundColor: [
                '#17a2b8', // info
                '#28a745', // success
@@ -1448,13 +1429,7 @@
             'Hipertensi Sistolik (> 140/< 90)'
          ],
          datasets: [{
-            data: [
-               {{ $faktor_risiko['td']['normal'] }},
-               {{ $faktor_risiko['td']['pra_hipertensi'] }},
-               {{ $faktor_risiko['td']['hipertensi_1'] }},
-               {{ $faktor_risiko['td']['hipertensi_2'] }},
-               {{ $faktor_risiko['td']['hipertensi_sistolik'] }}
-            ],
+            data: JSON.parse(`[{{ $faktor_risiko['td']['normal'] }}, {{ $faktor_risiko['td']['pra_hipertensi'] }}, {{ $faktor_risiko['td']['hipertensi_1'] }}, {{ $faktor_risiko['td']['hipertensi_2'] }}, {{ $faktor_risiko['td']['hipertensi_sistolik'] }}]`),
             backgroundColor: [
                '#28a745', // success
                '#ffc107', // warning

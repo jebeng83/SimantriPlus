@@ -11,20 +11,15 @@ export default defineConfig({
     },
     // Server configuration for development
     server: {
-        host: '0.0.0.0', // Allow external connections
+        host: 'localhost',
         port: 5174,
-        strictPort: false, // Izinkan pindah port jika 5174 dipakai; hot file akan menunjuk port baru
-        // Biarkan Vite menentukan pengaturan HMR (host/port) secara otomatis
-        // agar sinkron dengan port yang dipilih ketika strictPort: false.
-        // Gunakan CORS default (origin: *). Ini mencegah mismatch origin ketika
-        // Laravel berjalan pada port berbeda (mis. 8002) dari daftar yang diizinkan.
-        // Jika Anda butuh credentials, buat fungsi dinamis yang memantulkan origin permintaan.
+        strictPort: false,
+        https: false,
+        hmr: {
+            protocol: 'http',
+            host: 'localhost',
+        },
         cors: true
-        // Contoh jika butuh credentials:
-        // cors: {
-        //   origin: (origin) => origin ?? '*',
-        //   credentials: true
-        // }
     },
     // Build configuration for production
     build: {

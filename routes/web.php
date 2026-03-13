@@ -362,6 +362,7 @@ Route::get('/generate-norawat/{tgl_registrasi}', [App\Http\Controllers\RegPeriks
         Route::get('/pendaftaran-ckg/data', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'data'])
             ->name('pendaftaran-ckg.data')
             ->withoutMiddleware(app()->environment('local') ? ['loginauth'] : []);
+        Route::get('/pendaftaran-ckg/export/excel', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'exportExcel'])->name('pendaftaran-ckg.export.excel');
         Route::get('/pendaftaran-ckg/detail', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detail'])->name('ckg.detail');
         Route::get('/pendaftaran-ckg/detail-sekolah', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'detailSekolah'])->name('ckg.detail-sekolah');
         Route::post('/pendaftaran-ckg/update-status', [App\Http\Controllers\ILP\PendaftaranCKGController::class, 'updateStatus'])->name('ckg.update-status');

@@ -329,7 +329,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="periode" class="form-label filter-label mb-0"><i
                                     class="fas fa-calendar-alt me-1"></i> Periode</label>
                             <select class="form-select select-decor" id="periode" name="periode">
@@ -341,17 +341,37 @@
                                     Terakhir</option>
                                 <option value="tahun_ini" {{ request('periode')=='tahun_ini' ? 'selected' : '' }}>Tahun
                                     Ini</option>
+                                <option value="per_bulan" {{ request('periode')=='per_bulan' ? 'selected' : '' }}>Per Bulan</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2" id="bulan-container">
+                            <label for="bulan" class="form-label filter-label mb-0"><i class="fas fa-calendar me-1"></i> Bulan</label>
+                            <input type="month" class="form-control" id="bulan" name="bulan" value="{{ request('bulan', \Carbon\Carbon::now()->format('Y-m')) }}">
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label mb-0">&nbsp;</label>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary shadow-sm">
-                                    <i class="fas fa-filter"></i> Terapkan Filter
+                                    <i class="fas fa-filter"></i> Cari
                                 </button>
                             </div>
                         </div>
                     </form>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function(){
+                            var periode = document.getElementById('periode');
+                            var bulanContainer = document.getElementById('bulan-container');
+                            function toggleBulan(){
+                                if(periode && bulanContainer){
+                                    bulanContainer.style.display = (periode.value === 'per_bulan') ? '' : 'none';
+                                }
+                            }
+                            if(periode){
+                                periode.addEventListener('change', toggleBulan);
+                                toggleBulan();
+                            }
+                        });
+                    </script>
                 </div>
             </div>
         </div>

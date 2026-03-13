@@ -710,7 +710,6 @@ class DashboardController extends Controller
         // Ambil filter periode dari UI (bulan_ini, 3_bulan, 6_bulan, tahun_ini)
         $periode_filter = $request->input('periode', 'bulan_ini');
         
-        // Tentukan rentang tanggal berdasarkan periode yang dipilih
         switch ($periode_filter) {
             case '3_bulan':
                 $tanggal_awal = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
@@ -723,6 +722,16 @@ class DashboardController extends Controller
             case 'tahun_ini':
                 $tanggal_awal = Carbon::now()->startOfYear()->format('Y-m-d');
                 $tanggal_akhir = Carbon::now()->endOfYear()->format('Y-m-d');
+                break;
+            case 'per_bulan':
+                $bulan_input = $request->input('bulan');
+                if ($bulan_input && preg_match('/^\d{4}-\d{2}$/', $bulan_input)) {
+                    $bulan = Carbon::createFromFormat('Y-m', $bulan_input);
+                } else {
+                    $bulan = Carbon::now();
+                }
+                $tanggal_awal = $bulan->copy()->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = $bulan->copy()->endOfMonth()->format('Y-m-d');
                 break;
             case 'bulan_ini':
             default:
@@ -788,7 +797,6 @@ class DashboardController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $page = (int) $request->input('page', 1);
 
-        // Rentang tanggal sesuai periode
         switch ($periode_filter) {
             case '3_bulan':
                 $tanggal_awal = Carbon::now()->subMonths(2)->startOfMonth()->format('Y-m-d');
@@ -801,6 +809,16 @@ class DashboardController extends Controller
             case 'tahun_ini':
                 $tanggal_awal = Carbon::now()->startOfYear()->format('Y-m-d');
                 $tanggal_akhir = Carbon::now()->endOfYear()->format('Y-m-d');
+                break;
+            case 'per_bulan':
+                $bulan_input = $request->input('bulan');
+                if ($bulan_input && preg_match('/^\d{4}-\d{2}$/', $bulan_input)) {
+                    $bulan = Carbon::createFromFormat('Y-m', $bulan_input);
+                } else {
+                    $bulan = Carbon::now();
+                }
+                $tanggal_awal = $bulan->copy()->startOfMonth()->format('Y-m-d');
+                $tanggal_akhir = $bulan->copy()->endOfMonth()->format('Y-m-d');
                 break;
             case 'bulan_ini':
             default:
@@ -1388,17 +1406,44 @@ class DashboardController extends Controller
         // Get summary data untuk distribusi risiko
         $summary = $this->getSummaryPkg($posyandu, $desa, $tanggal_awal, $tanggal_akhir);
         
-        // Get trend data
         $trend_data = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month_start = now()->subMonths($i)->startOfMonth()->format('Y-m-d');
-            $month_end = now()->subMonths($i)->endOfMonth()->format('Y-m-d');
-            $month_summary = $this->getSummaryPkg($posyandu, $desa, $month_start, $month_end);
-            
-            $trend_data[] = [
-                 'bulan' => now()->subMonths($i)->format('M Y'),
-                 'total' => (int) ($month_summary['total_skrining'] ?? 0)
-             ];
+        if ($tanggal_awal && $tanggal_akhir) {
+            $start = Carbon::parse($tanggal_awal);
+            $end = Carbon::parse($tanggal_akhir);
+            if ($start->isSameMonth($end)) {
+                $days = $start->daysInMonth;
+                for ($d = 1; $d <= $days; $d++) {
+                    $day = $start->copy()->day($d);
+                    $day_str = $day->format('Y-m-d');
+                    $day_summary = $this->getSummaryPkg($posyandu, $desa, $day_str, $day_str);
+                    $trend_data[] = [
+                        'bulan' => $day->format('d M'),
+                        'total' => (int) ($day_summary['total_skrining'] ?? 0)
+                    ];
+                }
+            } else {
+                $cur = $start->copy()->startOfMonth();
+                while ($cur->lte($end)) {
+                    $month_start = $cur->copy()->startOfMonth()->format('Y-m-d');
+                    $month_end = $cur->copy()->endOfMonth()->format('Y-m-d');
+                    $month_summary = $this->getSummaryPkg($posyandu, $desa, $month_start, $month_end);
+                    $trend_data[] = [
+                        'bulan' => $cur->format('M Y'),
+                        'total' => (int) ($month_summary['total_skrining'] ?? 0)
+                    ];
+                    $cur->addMonth();
+                }
+            }
+        } else {
+            for ($i = 5; $i >= 0; $i--) {
+                $month_start = now()->subMonths($i)->startOfMonth()->format('Y-m-d');
+                $month_end = now()->subMonths($i)->endOfMonth()->format('Y-m-d');
+                $month_summary = $this->getSummaryPkg($posyandu, $desa, $month_start, $month_end);
+                $trend_data[] = [
+                    'bulan' => now()->subMonths($i)->format('M Y'),
+                    'total' => (int) ($month_summary['total_skrining'] ?? 0)
+                ];
+            }
         }
         
         // Get factor risk data dengan query yang diperbaiki
