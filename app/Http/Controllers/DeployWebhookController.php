@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class DeployWebhookController extends Controller
 {
@@ -88,7 +89,7 @@ class DeployWebhookController extends Controller
     protected function hasValidSignature(Request $request, string $secret): bool
     {
         $signature = (string) $request->header('X-Hub-Signature-256', '');
-        if (! str_starts_with($signature, 'sha256=')) {
+        if (! Str::startsWith($signature, 'sha256=')) {
             return false;
         }
 
@@ -103,7 +104,7 @@ class DeployWebhookController extends Controller
             return '';
         }
 
-        return str_starts_with($path, '/') ? $path : base_path($path);
+        return Str::startsWith($path, '/') ? $path : base_path($path);
     }
 
     protected function runInBackground(string $scriptPath, string $logPath, bool $skipNpmBuild = false): void
@@ -207,11 +208,11 @@ class DeployWebhookController extends Controller
         foreach ($lines as $line) {
             $trimmed = trim((string) $line);
 
-            if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+            if ($trimmed === '' || Str::startsWith($trimmed, '#')) {
                 continue;
             }
 
-            if (! str_starts_with($trimmed, $prefix)) {
+            if (! Str::startsWith($trimmed, $prefix)) {
                 continue;
             }
 
@@ -222,8 +223,8 @@ class DeployWebhookController extends Controller
             }
 
             if (
-                (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-                (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                (Str::startsWith($value, '"') && Str::endsWith($value, '"')) ||
+                (Str::startsWith($value, "'") && Str::endsWith($value, "'"))
             ) {
                 $value = substr($value, 1, -1);
             }
