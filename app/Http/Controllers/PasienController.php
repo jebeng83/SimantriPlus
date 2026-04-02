@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Carbon;
 use App\Http\Livewire\ILP\Pendaftaran;
 use App\Exports\PasienExport;
@@ -28,25 +25,10 @@ class PasienController extends Controller
             'totalPasien' => $totalPasien,
             'pasienBaru' => $pasienBaru,
             'kunjunganHariIni' => $kunjunganHariIni,
-            'pasienBPJS' => $pasienBPJS,
-            'kdProviderPeserta' => env('BPJS_PCARE_KODE_PPK', '11251919')
+            'pasienBPJS' => $pasienBPJS
         ]);
     }
 
-    // Tambah: Halaman membuat pasien baru
-    public function create()
-    {
-        try {
-            // Tidak perlu preload data karena Livewire FormPendaftaran akan mengambil sendiri
-            return view('pasien.create');
-        } catch (\Exception $e) {
-            Log::error('PasienController - create: Gagal menampilkan form tambah pasien', [
-                'error' => $e->getMessage()
-            ]);
-            // Fallback: kembali ke index dengan pesan error
-            return Redirect::to('/data-pasien')->with('error', 'Gagal membuka halaman tambah pasien: ' . $e->getMessage());
-        }
-    }
     public function edit($no_rkm_medis)
     {
         // Memastikan query langsung ke database tanpa cache
@@ -60,13 +42,8 @@ class PasienController extends Controller
         $posyandu = DB::table('data_posyandu')
                     ->useWritePdo()
                     ->get();
-        
-        // Ambil data penjab langsung dari database
-        $penjab = DB::table('penjab')
-                  ->useWritePdo()
-                  ->get();
 
-        return view('pasien.edit', ['pasien' => $pasien, 'posyandu' => $posyandu, 'penjab' => $penjab]);
+        return view('pasien.edit', ['pasien' => $pasien, 'posyandu' => $posyandu]);
     }
 
     public function searchPasien(Request $request)
@@ -75,13 +52,13 @@ class PasienController extends Controller
         $search = $request->get('term') ?? $request->get('q');
         
         // Debug log untuk melihat query yang diterima
-        Log::info('PasienController - searchPasien: Query menerima: ' . $search);
+        \Log::info('PasienController - searchPasien: Query menerima: ' . $search);
         
         // Gunakan metode searchPasien dari Livewire\ILP\Pendaftaran
         $results = Pendaftaran::searchPasien($search);
         
         // Debug jumlah hasil yang ditemukan
-        Log::info('PasienController - searchPasien: Jumlah hasil ditemukan: ' . count($results));
+        \Log::info('PasienController - searchPasien: Jumlah hasil ditemukan: ' . count($results));
         
         // Jika request menggunakan parameter 'term' (untuk modal detail)
         if ($request->has('term')) {
@@ -125,7 +102,7 @@ class PasienController extends Controller
         
         // Tambahkan contoh hasil pertama untuk debugging
         if (count($formattedResults) > 0) {
-            Log::info('PasienController - searchPasien: Contoh hasil pertama: ', ['item' => $formattedResults[0]]);
+            \Log::info('PasienController - searchPasien: Contoh hasil pertama: ', ['item' => $formattedResults[0]]);
         }
         
         $response = [
@@ -136,10 +113,148 @@ class PasienController extends Controller
         return response()->json($response);
     }
 
+    public function storeFromSkrining(Request $request)
+    {
+        $validator = $this->makeSkriningPasienValidator($request);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $existingPasien = DB::table('pasien')
+            ->where('no_ktp', trim((string) $request->no_ktp))
+            ->first();
+
+        if ($existingPasien) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'NIK sudah terdaftar. Gunakan tombol Cari untuk memuat data pasien yang ada.',
+                'data' => $this->getPasienLookupData($existingPasien->no_rkm_medis),
+            ], 422);
+        }
+
+        $lockAcquired = false;
+
+        try {
+            DB::beginTransaction();
+
+            $lock = DB::select('SELECT GET_LOCK("pasien_no_rkm_medis_lock", 10) AS l');
+            $lockAcquired = $lock && (int)($lock[0]->l ?? 0) === 1;
+
+            if (!$lockAcquired) {
+                throw new \Exception('Gagal mendapatkan lock penomoran pasien.');
+            }
+
+            $noRkmMedis = $this->generateNoRekamMedis();
+            $referenceDefaults = $this->resolvePasienReferenceDefaults($request);
+            $data = $this->buildSkriningPasienPayload(
+                $request,
+                $referenceDefaults,
+                now()->format('Y-m-d')
+            );
+            $data['no_rkm_medis'] = $noRkmMedis;
+
+            DB::table('pasien')->insert($data);
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data pasien baru berhasil disimpan.',
+                'data' => $this->getPasienLookupData($noRkmMedis),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('PasienController - storeFromSkrining: Gagal menyimpan pasien baru', [
+                'error' => $e->getMessage(),
+                'payload' => $request->except('_token'),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menyimpan data pasien: ' . $e->getMessage(),
+            ], 500);
+        } finally {
+            if ($lockAcquired) {
+                DB::select('SELECT RELEASE_LOCK("pasien_no_rkm_medis_lock") AS r');
+            }
+        }
+    }
+
+    public function updateFromSkrining(Request $request, $noRkmMedis)
+    {
+        $validator = $this->makeSkriningPasienValidator($request);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $pasien = DB::table('pasien')
+            ->where('no_rkm_medis', $noRkmMedis)
+            ->first();
+
+        if (!$pasien) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data pasien tidak ditemukan.',
+            ], 404);
+        }
+
+        $duplicateNik = DB::table('pasien')
+            ->where('no_ktp', trim((string) $request->no_ktp))
+            ->where('no_rkm_medis', '!=', $noRkmMedis)
+            ->exists();
+
+        if ($duplicateNik) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'NIK sudah dipakai pasien lain.',
+            ], 422);
+        }
+
+        try {
+            $referenceDefaults = $this->resolvePasienReferenceDefaults($request);
+            $data = $this->buildSkriningPasienPayload(
+                $request,
+                $referenceDefaults,
+                $pasien->tgl_daftar ?: now()->format('Y-m-d')
+            );
+
+            DB::table('pasien')
+                ->where('no_rkm_medis', $noRkmMedis)
+                ->update($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data pasien berhasil diperbarui.',
+                'data' => $this->getPasienLookupData($noRkmMedis),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('PasienController - updateFromSkrining: Gagal memperbarui pasien', [
+                'no_rkm_medis' => $noRkmMedis,
+                'error' => $e->getMessage(),
+                'payload' => $request->except('_token'),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memperbarui data pasien: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function update(Request $request, $no_rkm_medis)
     {
         // Log request untuk debugging
-        Log::info('PasienController - update: Menerima permintaan update', [
+        \Log::info('PasienController - update: Menerima permintaan update', [
             'no_rkm_medis' => $no_rkm_medis,
             'method' => $request->method()
         ]);
@@ -162,25 +277,6 @@ class PasienController extends Controller
             'status' => 'required',
             'data_posyandu' => 'required',
             'no_kk' => 'required',
-            'pekerjaan' => 'nullable',
-            'kd_pj' => 'required|exists:penjab,kd_pj',
-            // tambahan field opsional
-            'jk' => 'nullable|in:L,P',
-            'tmp_lahir' => 'nullable|string',
-            'nm_ibu' => 'nullable|string',
-            'gol_darah' => 'nullable|in:A,B,AB,O,Tidak diketahui',
-            'agama' => 'nullable|string',
-            'pnd' => 'nullable|string',
-            'keluarga' => 'nullable|string',
-            'namakeluarga' => 'nullable|string',
-            'kd_prop' => 'nullable|string',
-            'kd_kab' => 'nullable|string',
-            'kd_kec' => 'nullable|string',
-            'kd_kel' => 'nullable|string',
-            'alamatpj' => 'nullable|string',
-            'kelurahanpj' => 'nullable|string',
-            'kecamatanpj' => 'nullable|string',
-            'kabupatenpj' => 'nullable|string',
         ], [
             'nm_pasien.required' => 'Nama Pasien tidak boleh kosong',
             'no_ktp.required' => 'No. KTP/SIM tidak boleh kosong',
@@ -192,190 +288,204 @@ class PasienController extends Controller
             'status.required' => 'Status tidak boleh kosong',
             'data_posyandu.required' => 'Posyandu tidak boleh kosong',
             'no_kk.required' => 'No. KK tidak boleh kosong',
-            'kd_pj.required' => 'Penjab tidak boleh kosong',
-            'kd_pj.exists' => 'Penjab yang dipilih tidak valid',
         ]);
 
         try {
             // Log data sebelum update
-            Log::info('PasienController - simpan: Memperbarui data pasien', [
-                'no_rkm_medis' => $no_rkm_medis ?? 'unknown',
+            \Log::info('PasienController - simpan: Memperbarui data pasien', [
+                'no_rkm_medis' => $no_rkm_medis,
                 'data' => $request->except('_token', '_method')
             ]);
             
-            // Hitung umur dengan penanganan error
-            $umur_calculated = $this->rubahUmur($request->tgl_lahir);
-            
-            // Format tanggal lahir untuk database (date type)
-            $tgl_lahir_formatted = Carbon::parse($request->tgl_lahir)->format('Y-m-d');
-            
-            // Tentukan RM yang tersimpan sebenarnya di DB (mengatasi kasus spasi/NBSP)
-            $noRmNormalizedParam = preg_replace('/\s+/', '', str_replace(chr(160), '', (string)$no_rkm_medis));
-            $storedPatient = DB::table('pasien')
-                ->select('no_rkm_medis')
-                ->where('no_rkm_medis', '=', $no_rkm_medis)
-                ->first();
-
-            if (!$storedPatient) {
-                $storedPatient = DB::table('pasien')
-                    ->select('no_rkm_medis')
-                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
-                    ->first();
-            }
-
-            $noRmToUpdate = $storedPatient ? (string)$storedPatient->no_rkm_medis : (string)$no_rkm_medis;
-
-            // Ambil baris existing untuk menjaga integritas FK bila field relasi tidak dikirim
-            $existingRow = DB::table('pasien')
-                ->where('no_rkm_medis', '=', $noRmToUpdate)
-                ->first();
-
-            // Gunakan parameter binding yang eksplisit untuk menghindari konflik prepared statement
-            $updateData = [
-                    'nm_pasien' => $request->nm_pasien,
-                    'no_ktp' => $request->no_ktp,
-                    'jk' => $request->jk,
-                    'tmp_lahir' => $request->tmp_lahir,
-                    'nm_ibu' => $request->nm_ibu,
-                    'gol_darah' => $request->gol_darah,
-                    'agama' => $request->agama,
-                    'pnd' => $request->pnd,
-                    'keluarga' => $request->keluarga,
-                    'namakeluarga' => $request->namakeluarga,
-                    'no_peserta' => $request->no_peserta,
-                    'no_tlp' => $request->no_tlp,
-                    'tgl_lahir' => $tgl_lahir_formatted,
-                    'umur' => $umur_calculated,
-                    'alamat' => $request->alamat,
-                    'kd_prop' => $request->filled('kd_prop') ? $request->kd_prop : ($existingRow->kd_prop ?? null),
-                    'kd_kab' => $request->filled('kd_kab') ? $request->kd_kab : ($existingRow->kd_kab ?? null),
-                    'kd_kec' => $request->filled('kd_kec') ? $request->kd_kec : ($existingRow->kd_kec ?? null),
-                    'kd_kel' => $request->filled('kd_kel') ? $request->kd_kel : ($existingRow->kd_kel ?? null),
-                    'alamatpj' => $request->alamatpj,
-                    'kelurahanpj' => $request->kelurahanpj,
-                    'kecamatanpj' => $request->kecamatanpj,
-                    'kabupatenpj' => $request->kabupatenpj,
-                    'stts_nikah' => $request->stts_nikah,
-                    'status' => $request->status,
-                    'data_posyandu' => $request->data_posyandu,
-                    'no_kk' => $request->no_kk,
-                    'pekerjaan' => $request->pekerjaan,
-                    'kd_pj' => $request->kd_pj,
-            ];
-
-            // (debug dihapus sesuai permintaan)
-
-            // Percobaan update utama menggunakan RM yang terdeteksi di DB
-            $affected = DB::table('pasien')
-                ->where('no_rkm_medis', '=', $noRmToUpdate)
-                ->update($updateData);
-                
-            if ($affected === 0) {
-                // Cek keberadaan data untuk memberikan log yang lebih informatif
-                $existsExact = DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->exists();
-                $existsNormalized = DB::table('pasien')
-                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
-                    ->exists();
-
-                Log::warning('No rows affected when updating pasien data', [
-                    'requested_no_rkm_medis' => (string)$no_rkm_medis,
-                    'target_no_rkm_medis' => $noRmToUpdate,
-                    'exists_exact' => $existsExact,
-                    'exists_normalized' => $existsNormalized
-                ]);
-
-                // Fallback percobaan update menggunakan normalized RM langsung
-                $affectedFallback = DB::table('pasien')
-                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$noRmNormalizedParam])
-                    ->update($updateData);
-
-                if ($affectedFallback > 0) {
-                    Log::info('Update pasien berhasil melalui fallback normalized RM', [
-                        'requested_no_rkm_medis' => (string)$no_rkm_medis,
-                        'normalized_param' => $noRmNormalizedParam
-                    ]);
-                    return Redirect::to('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui (fallback normalized RM)');
-                }
-
-                // Jika tetap tidak ada baris yang ter-update, tentukan apakah memang tidak ada perubahan
-                $current = DB::table('pasien')
-                    ->where('no_rkm_medis', '=', $noRmToUpdate)
-                    ->first();
-
-                if ($current) {
-                    $noChange = (
-                        ($current->nm_pasien ?? null) === $request->nm_pasien &&
-                        ($current->no_ktp ?? null) === $request->no_ktp &&
-                        ($current->no_peserta ?? null) === $request->no_peserta &&
-                        ($current->no_tlp ?? null) === $request->no_tlp &&
-                        ($current->tgl_lahir ?? null) === $tgl_lahir_formatted &&
-                        ($current->alamat ?? null) === $request->alamat &&
-                        ($current->stts_nikah ?? null) === $request->stts_nikah &&
-                        ($current->status ?? null) === $request->status &&
-                        ($current->data_posyandu ?? null) === $request->data_posyandu &&
-                        ($current->no_kk ?? null) === $request->no_kk &&
-                        ($current->pekerjaan ?? null) === $request->pekerjaan &&
-                        ($current->kd_pj ?? null) === $request->kd_pj
-                    );
-
-                    if ($noChange) {
-                        Log::info('Tidak ada perubahan data pasien (nilai yang dikirim sama dengan di database)', [
-                            'no_rkm_medis' => $noRmToUpdate
-                        ]);
-                        return Redirect::to('/data-pasien')->with('success', 'Tidak ada perubahan data pasien');
-                    }
-                }
-
-                // Jika sampai di sini, berarti gagal update walaupun ada perubahan
-                Log::error('Gagal memperbarui data pasien: tidak ada baris yang ter-update', [
-                    'no_rkm_medis' => $noRmToUpdate,
-                    'requested_no_rkm_medis' => (string)$no_rkm_medis
-                ]);
-                return Redirect::to('/data-pasien')->with('error', 'Update gagal: Data pasien tidak terubah. Periksa kembali nomor rekam medis atau coba ulang.');
-            }
+            DB::table('pasien')->where('no_rkm_medis', $no_rkm_medis)->update([
+                'nm_pasien' => $request->nm_pasien,
+                'no_ktp' => $request->no_ktp,
+                'no_peserta' => $request->no_peserta,
+                'no_tlp' => $request->no_tlp,
+                'tgl_lahir' => $request->tgl_lahir,
+                'umur' => $this->rubahUmur($request->tgl_lahir),
+                'alamat' => $request->alamat,
+                'stts_nikah' => $request->stts_nikah,
+                'status' => $request->status,
+                'data_posyandu' => $request->data_posyandu,
+                'no_kk' => $request->no_kk,
+            ]);
 
             // Log sukses update
-            $noRkmMedisLog = $no_rkm_medis !== null ? (string)$no_rkm_medis : 'unknown';
-            Log::info('PasienController - simpan: Berhasil memperbarui data pasien', [
-                'no_rkm_medis' => $noRkmMedisLog
+            \Log::info('PasienController - simpan: Berhasil memperbarui data pasien', [
+                'no_rkm_medis' => $no_rkm_medis
             ]);
 
-            return Redirect::to('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui');
+            return redirect('/data-pasien')->with('success', 'Data Pasien berhasil diperbarui');
         } catch (\Exception $e) {
-            // Log error dengan type safety
-            $errorMessage = $e->getMessage();
-            $noRkmMedis = $no_rkm_medis !== null ? (string)$no_rkm_medis : 'unknown';
-            Log::error('PasienController - simpan: Gagal memperbarui data pasien', [
-                'no_rkm_medis' => $noRkmMedis,
-                'error' => $errorMessage
+            // Log error
+            \Log::error('PasienController - simpan: Gagal memperbarui data pasien', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'error' => $e->getMessage()
             ]);
             
-            return Redirect::to('/data-pasien')->with('error', 'Data Pasien gagal diperbarui: ' . $errorMessage);
+            return redirect('/data-pasien')->with('error', 'Data Pasien gagal diperbarui: ' . $e->getMessage());
         }
     }
 
     public function rubahUmur($tgl_lahir)
     {
-        try {
-            if (empty($tgl_lahir)) {
-                return '0 Th 0 Bl 0 Hr';
+        $tgl_lahir = Carbon::parse($tgl_lahir);
+        return $tgl_lahir->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
+    }
+
+    private function generateNoRekamMedis(): string
+    {
+        $lastRecord = DB::table('pasien')
+            ->orderByRaw('CAST(no_rkm_medis AS UNSIGNED) DESC')
+            ->first();
+
+        $lastNumber = $lastRecord ? (int) $lastRecord->no_rkm_medis : 0;
+
+        return str_pad($lastNumber + 1, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function makeSkriningPasienValidator(Request $request)
+    {
+        return Validator::make($request->all(), [
+            'no_ktp' => 'required|string|max:20',
+            'nm_pasien' => 'required|string|max:40',
+            'jk' => 'required|in:L,P',
+            'tgl_lahir' => 'required|date',
+            'nm_ibu' => 'required|string|max:40',
+            'tmp_lahir' => 'nullable|string|max:15',
+            'no_tlp' => 'nullable|string|max:40',
+            'alamat' => 'nullable|string|max:200',
+            'stts_nikah' => 'nullable|string|max:20',
+            'agama' => 'nullable|string|max:12',
+            'pnd' => 'nullable|string|max:20',
+            'keluarga' => 'nullable|string|max:20',
+            'namakeluarga' => 'nullable|string|max:50',
+            'no_kk' => 'nullable|string|max:20',
+            'data_posyandu' => 'nullable|string|max:70',
+            'kd_pj' => 'nullable|string|max:3',
+            'no_peserta' => 'nullable|string|max:25',
+            'perusahaan_pasien' => 'nullable|string|max:8',
+            'pekerjaanpj' => 'nullable|string|max:35',
+            'alamatpj' => 'nullable|string|max:100',
+            'kelurahanpj' => 'nullable|string|max:60',
+            'kecamatanpj' => 'nullable|string|max:60',
+            'kabupatenpj' => 'nullable|string|max:60',
+            'propinsipj' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:50',
+            'pekerjaan' => 'nullable|string|max:60',
+            'nip' => 'nullable|string|max:30',
+            'status' => 'nullable|string|max:20',
+        ], [
+            'no_ktp.required' => 'NIK wajib diisi.',
+            'nm_pasien.required' => 'Nama lengkap wajib diisi.',
+            'jk.required' => 'Jenis kelamin wajib dipilih.',
+            'tgl_lahir.required' => 'Tanggal lahir wajib diisi.',
+            'nm_ibu.required' => 'Nama ibu wajib diisi.',
+        ]);
+    }
+
+    private function buildSkriningPasienPayload(Request $request, array $referenceDefaults, string $tglDaftar): array
+    {
+        return [
+            'nm_pasien' => strtoupper(trim((string) $request->nm_pasien)),
+            'no_ktp' => trim((string) $request->no_ktp),
+            'jk' => $request->jk,
+            'tmp_lahir' => strtoupper(trim((string) ($request->tmp_lahir ?: '-'))),
+            'tgl_lahir' => $request->tgl_lahir,
+            'nm_ibu' => strtoupper(trim((string) $request->nm_ibu)),
+            'alamat' => strtoupper(trim((string) ($request->alamat ?: '-'))),
+            'gol_darah' => $request->gol_darah ?: '-',
+            'pekerjaan' => strtoupper(trim((string) ($request->pekerjaan ?: 'SWASTA'))),
+            'stts_nikah' => $request->stts_nikah ?: 'MENIKAH',
+            'agama' => strtoupper(trim((string) ($request->agama ?: 'ISLAM'))),
+            'tgl_daftar' => $tglDaftar,
+            'no_tlp' => trim((string) ($request->no_tlp ?: '081')),
+            'umur' => $this->rubahUmur($request->tgl_lahir),
+            'pnd' => $request->pnd ?: '-',
+            'keluarga' => $request->keluarga ?: 'DIRI SENDIRI',
+            'namakeluarga' => strtoupper(trim((string) ($request->namakeluarga ?: $request->nm_pasien))),
+            'kd_pj' => $referenceDefaults['kd_pj'],
+            'no_peserta' => trim((string) ($request->no_peserta ?: '0000')),
+            'kd_kel' => $referenceDefaults['kd_kel'],
+            'kd_kec' => $referenceDefaults['kd_kec'],
+            'kd_kab' => $referenceDefaults['kd_kab'],
+            'pekerjaanpj' => strtoupper(trim((string) ($request->pekerjaanpj ?: 'SWASTA'))),
+            'alamatpj' => strtoupper(trim((string) ($request->alamatpj ?: $request->alamat ?: '-'))),
+            'kelurahanpj' => strtoupper(trim((string) ($request->kelurahanpj ?: 'KELURAHAN'))),
+            'kecamatanpj' => strtoupper(trim((string) ($request->kecamatanpj ?: 'KECAMATAN'))),
+            'kabupatenpj' => strtoupper(trim((string) ($request->kabupatenpj ?: 'KABUPATEN'))),
+            'perusahaan_pasien' => $referenceDefaults['perusahaan_pasien'],
+            'suku_bangsa' => $referenceDefaults['suku_bangsa'],
+            'bahasa_pasien' => $referenceDefaults['bahasa_pasien'],
+            'cacat_fisik' => $referenceDefaults['cacat_fisik'],
+            'email' => strtolower(trim((string) ($request->email ?: 'puskesmaskerjo@gmail.com'))),
+            'nip' => trim((string) ($request->nip ?: '0')),
+            'kd_prop' => $referenceDefaults['kd_prop'],
+            'propinsipj' => strtoupper(trim((string) ($request->propinsipj ?: 'PROPINSI'))),
+            'no_kk' => trim((string) ($request->no_kk ?: '0')),
+            'data_posyandu' => trim((string) ($request->data_posyandu ?: '')) ?: null,
+            'status' => $request->status ?: 'Kepala Keluarga',
+        ];
+    }
+
+    private function resolvePasienReferenceDefaults(Request $request): array
+    {
+        return [
+            'kd_prop' => $this->resolveReferenceValue($request->kd_prop, 'propinsi', 'kd_prop'),
+            'kd_kab' => $this->resolveReferenceValue($request->kd_kab, 'kabupaten', 'kd_kab'),
+            'kd_kec' => $this->resolveReferenceValue($request->kd_kec, 'kecamatan', 'kd_kec'),
+            'kd_kel' => $this->resolveReferenceValue($request->kd_kel, 'kelurahan', 'kd_kel'),
+            'kd_pj' => $this->resolveReferenceValue($request->kd_pj, 'penjab', 'kd_pj'),
+            'perusahaan_pasien' => $this->resolveReferenceValue($request->perusahaan_pasien, 'perusahaan_pasien', 'kode_perusahaan', '-'),
+            'suku_bangsa' => $this->resolveReferenceValue($request->suku_bangsa, 'suku_bangsa', 'id', 5),
+            'bahasa_pasien' => $this->resolveReferenceValue($request->bahasa_pasien, 'bahasa_pasien', 'id', 11),
+            'cacat_fisik' => $this->resolveReferenceValue($request->cacat_fisik, 'cacat_fisik', 'id', 5),
+        ];
+    }
+
+    private function resolveReferenceValue($requestedValue, string $table, string $column, $preferredDefault = null)
+    {
+        $requestedValue = is_string($requestedValue) ? trim($requestedValue) : $requestedValue;
+
+        if ($requestedValue !== null && $requestedValue !== '') {
+            $exists = DB::table($table)
+                ->where($column, $requestedValue)
+                ->exists();
+
+            if ($exists) {
+                return $requestedValue;
             }
-            
-            // Parse tanggal lahir dengan format yang benar
-            $tgl_lahir_parsed = Carbon::parse($tgl_lahir);
-            $umur_result = $tgl_lahir_parsed->diff(Carbon::now())->format('%y Th %m Bl %d Hr');
-            
-            return $umur_result;
-        } catch (\Exception $e) {
-            // Error handling dengan type safety
-            $errorMessage = $e->getMessage();
-            $tglLahirValue = isset($tgl_lahir) ? (string)$tgl_lahir : 'null';
-            Log::error('Error calculating umur: ' . $errorMessage, [
-                'tgl_lahir' => $tglLahirValue,
-                'error_detail' => $errorMessage
-            ]);
-            return '0 Th 0 Bl 0 Hr';
         }
+
+        if ($preferredDefault !== null) {
+            $preferredExists = DB::table($table)
+                ->where($column, $preferredDefault)
+                ->exists();
+
+            if ($preferredExists) {
+                return $preferredDefault;
+            }
+        }
+
+        return DB::table($table)
+            ->orderBy($column)
+            ->value($column);
+    }
+
+    private function getPasienLookupData(string $noRkmMedis)
+    {
+        return DB::table('pasien')
+            ->leftJoin('kelurahan', 'pasien.kd_kel', '=', 'kelurahan.kd_kel')
+            ->leftJoin('data_posyandu', 'pasien.data_posyandu', '=', 'data_posyandu.kode_posyandu')
+            ->where('pasien.no_rkm_medis', $noRkmMedis)
+            ->select(
+                'pasien.*',
+                DB::raw('kelurahan.nm_kel as nm_kel'),
+                DB::raw('data_posyandu.nama_posyandu as nama_posyandu'),
+                DB::raw('pasien.data_posyandu as kode_posyandu')
+            )
+            ->first();
     }
 
     /**
@@ -394,7 +504,7 @@ class PasienController extends Controller
             $userAgent = $request->header('User-Agent', 'Unknown');
             
             // Log lengkap untuk debugging
-            Log::info('PasienController - getDetailByRekamMedis: Request diterima', [
+            \Log::info('PasienController - getDetailByRekamMedis: Request diterima', [
                 'no_rkm_medis' => $no_rkm_medis,
                 'timestamp' => $timestamp,
                 'clear_cache' => $clearCache,
@@ -411,7 +521,6 @@ class PasienController extends Controller
             $registrasiHariIni = DB::table('reg_periksa')
                 ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                 ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
-                // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                 ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
                 ->where('reg_periksa.tgl_registrasi', $today)
                 ->select(
@@ -426,17 +535,14 @@ class PasienController extends Controller
                     'reg_periksa.kd_pj',
                     'penjab.png_jawab',
                     'pasien.no_tlp',
-                    'pasien.alamat',
-                    // Tambahan untuk melengkapi informasi wilayah
-                    'pasien.kd_kec',
-                    'pasien.kd_kel'
+                    'pasien.alamat'
                 )
                 ->orderBy('reg_periksa.jam_reg', 'desc')
                 ->first();
                 
             // Jika ada registrasi hari ini, gunakan data tersebut
             if ($registrasiHariIni) {
-                Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi hari ini', [
+                \Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi hari ini', [
                     'no_rkm_medis' => $no_rkm_medis,
                     'no_rawat' => $registrasiHariIni->no_rawat,
                     'kd_pj' => $registrasiHariIni->kd_pj,
@@ -450,7 +556,6 @@ class PasienController extends Controller
                 $registrasiTerakhir = DB::table('reg_periksa')
                     ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
                     ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
-                    // Perketat perbandingan: gunakan pencocokan langsung agar indeks dipakai
                     ->where('reg_periksa.no_rkm_medis', $no_rkm_medis)
                     ->select(
                         'reg_periksa.no_rawat',
@@ -465,10 +570,7 @@ class PasienController extends Controller
                         'penjab.png_jawab',
                         'pasien.no_tlp',
                         'pasien.alamat',
-                        'reg_periksa.tgl_registrasi',
-                        // Tambahan untuk melengkapi informasi wilayah
-                        'pasien.kd_kec',
-                        'pasien.kd_kel'
+                        'reg_periksa.tgl_registrasi'
                     )
                     ->orderBy('reg_periksa.tgl_registrasi', 'desc')
                     ->orderBy('reg_periksa.jam_reg', 'desc')
@@ -476,7 +578,7 @@ class PasienController extends Controller
                 
                 // Jika ada registrasi terakhir, gunakan data tersebut
                 if ($registrasiTerakhir) {
-                    Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi terakhir', [
+                    \Log::info('PasienController - getDetailByRekamMedis: Ditemukan registrasi terakhir', [
                         'no_rkm_medis' => $no_rkm_medis,
                         'no_rawat' => $registrasiTerakhir->no_rawat,
                         'tgl_registrasi' => $registrasiTerakhir->tgl_registrasi,
@@ -487,7 +589,7 @@ class PasienController extends Controller
                     $pasien = $registrasiTerakhir;
                 } else {
                     // Jika tidak ada registrasi sama sekali, ambil dari data pasien saja
-                    Log::info('PasienController - getDetailByRekamMedis: Tidak ditemukan registrasi, menggunakan data master pasien');
+                    \Log::info('PasienController - getDetailByRekamMedis: Tidak ditemukan registrasi, menggunakan data master pasien');
                     
                     $pasien = DB::table('pasien')
                         ->select(
@@ -502,77 +604,27 @@ class PasienController extends Controller
                             DB::raw("'' as kd_pj"),
                             DB::raw("'' as png_jawab"),
                             'no_tlp',
-                            'alamat',
-                            // Tambahan untuk melengkapi informasi wilayah
-                            'kd_kec',
-                            'kd_kel'
+                            'alamat'
                         )
                         ->where('no_rkm_medis', $no_rkm_medis)
                         ->first();
                 }
             }
-
-            // Override kd_pj dan png_jawab dengan data master pasien (prioritas dari tabel pasien)
-            // Sesuai kebutuhan UI: Informasi Pasien harus menampilkan Cara Bayar berdasarkan pasien.kd_pj
-            if ($pasien) {
-                $pasienMaster = DB::table('pasien')->select('kd_pj')->where('no_rkm_medis', $no_rkm_medis)->first();
-                if ($pasienMaster && !empty($pasienMaster->kd_pj)) {
-                    $pasien->kd_pj = $pasienMaster->kd_pj;
-                    $pj = DB::table('penjab')->select('png_jawab')->where('kd_pj', $pasienMaster->kd_pj)->first();
-                    if ($pj && !empty($pj->png_jawab)) {
-                        $pasien->png_jawab = $pj->png_jawab;
-                    }
-                }
-            }
-
+            
             if (!$pasien) {
-                // Fallback pencarian: coba LIKE dan hilangkan semua spasi (termasuk NBSP) untuk mengatasi inkonsistensi penyimpanan RM
-                $rmNoSpaces = preg_replace('/\s+/', '', $no_rkm_medis);
-                $pasien = DB::table('pasien')
-                    ->select(
-                        DB::raw("'' as no_rawat"),
-                        'no_rkm_medis',
-                        'nm_pasien',
-                        'no_ktp',
-                        'jk',
-                        'tmp_lahir',
-                        'tgl_lahir',
-                        'no_peserta',
-                        DB::raw("'' as kd_pj"),
-                        DB::raw("'' as png_jawab"),
-                        'no_tlp',
-                        'alamat',
-                        // Tambahan untuk melengkapi informasi wilayah
-                        'kd_kec',
-                        'kd_kel'
-                    )
-                    ->whereRaw("REPLACE(REPLACE(no_rkm_medis, CHAR(160), ''), ' ', '') = ?", [$rmNoSpaces])
-                    ->first();
-
-                if (!$pasien) {
-                    Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan (setelah fallback) dengan no_rkm_medis: ' . ($no_rkm_medis ?? 'unknown'));
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Data pasien tidak ditemukan',
-                        'data' => null
-                    ], 404);
-                } else {
-                    Log::info('PasienController - getDetailByRekamMedis: Fallback matching menemukan pasien', [
-                        'requested_rm' => $no_rkm_medis,
-                        'matched_rm' => $pasien->no_rkm_medis,
-                    ]);
-                }
+                \Log::warning('PasienController - getDetailByRekamMedis: Pasien tidak ditemukan dengan no_rkm_medis: ' . $no_rkm_medis);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pasien tidak ditemukan',
+                    'data' => null
+                ], 404);
             }
             
-            // Verifikasi ulang nomor rekam medis untuk memastikan kecocokan data (normalisasi spasi/NBSP)
-            $requestedNorm = preg_replace('/\s+/', '', $no_rkm_medis);
-            $returnedNorm = preg_replace('/\s+/', '', str_replace(chr(160), '', $pasien->no_rkm_medis ?? ''));
-            if ($returnedNorm !== $requestedNorm) {
-                Log::error('PasienController - getDetailByRekamMedis: Ketidakcocokan data (normalized mismatch)', [
-                    'requested_rm' => $no_rkm_medis ?? 'unknown',
-                    'requested_norm' => $requestedNorm,
+            // Verifikasi ulang nomor rekam medis untuk memastikan kecocokan data
+            if ($pasien->no_rkm_medis !== $no_rkm_medis) {
+                \Log::error('PasienController - getDetailByRekamMedis: Ketidakcocokan data', [
+                    'requested_rm' => $no_rkm_medis,
                     'returned_rm' => $pasien->no_rkm_medis,
-                    'returned_norm' => $returnedNorm,
                     'timestamp' => now()->format('Y-m-d H:i:s.u')
                 ]);
                 
@@ -581,13 +633,6 @@ class PasienController extends Controller
                     'message' => 'Ketidakcocokan data pasien terdeteksi',
                     'data' => null
                 ], 409);
-            }
-            // Jika hanya beda spasi/NBSP, lanjutkan dengan mencatat informasi
-            if ($pasien->no_rkm_medis !== $no_rkm_medis) {
-                Log::info('PasienController - getDetailByRekamMedis: Raw RM mismatch namun sama setelah normalisasi, melanjutkan.', [
-                    'requested_rm' => $no_rkm_medis ?? 'unknown',
-                    'returned_rm' => $pasien->no_rkm_medis,
-                ]);
             }
             
             // Hitung umur
@@ -600,7 +645,7 @@ class PasienController extends Controller
             // Tambahkan umur ke objek pasien
             $pasien->umur = "$umurTahun tahun, $umurBulan bulan, $umurHari hari";
             
-            Log::info('PasienController - getDetailByRekamMedis: Pasien ditemukan', [
+            \Log::info('PasienController - getDetailByRekamMedis: Pasien ditemukan', [
                 'no_rkm_medis' => $pasien->no_rkm_medis,
                 'nama' => $pasien->nm_pasien,
                 'no_peserta' => $pasien->no_peserta,
@@ -615,27 +660,27 @@ class PasienController extends Controller
                 'message' => 'Data pasien ditemukan',
                 'data' => $pasien,
                 'timestamp' => now()->timestamp, // Tambahkan timestamp di respons
-                'request_rm' => $no_rkm_medis ?? 'unknown' // Echo back requested RM untuk verifikasi client
+                'request_rm' => $no_rkm_medis // Echo back requested RM untuk verifikasi client
             ])
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0')
             ->header('X-Content-Type-Options', 'nosniff')
             ->header('X-Response-Time', now()->format('Y-m-d H:i:s.u'))
-            ->header('X-Patient-RM', $no_rkm_medis ?? 'unknown');
+            ->header('X-Patient-RM', $no_rkm_medis);
             
         } catch (\Exception $e) {
-            Log::error('PasienController - getDetailByRekamMedis: Error', [
-                'no_rkm_medis' => $no_rkm_medis ?? 'unknown',
-                'error' => $e ? $e->getMessage() : 'Unknown error',
-                'file' => $e ? $e->getFile() : 'Unknown file',
-                'line' => $e ? $e->getLine() : 0,
-                'trace' => $e ? $e->getTraceAsString() : 'No trace available'
+            \Log::error('PasienController - getDetailByRekamMedis: Error', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . ($e ? $e->getMessage() : 'Unknown error'),
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
                 'data' => null
             ], 500);
         }
@@ -720,8 +765,8 @@ class PasienController extends Controller
     {
         try {
             // Log request untuk debugging
-            Log::info('PasienController - show: Mengambil detail pasien', [
-                'no_rkm_medis' => $no_rkm_medis ?? 'unknown'
+            \Log::info('PasienController - show: Mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis
             ]);
             
             // Memastikan query langsung ke database tanpa cache
@@ -733,8 +778,8 @@ class PasienController extends Controller
             
             if (!$pasien) {
                 // Log jika pasien tidak ditemukan
-                Log::warning('PasienController - show: Pasien tidak ditemukan', [
-                    'no_rkm_medis' => $no_rkm_medis ?? 'unknown'
+                \Log::warning('PasienController - show: Pasien tidak ditemukan', [
+                    'no_rkm_medis' => $no_rkm_medis
                 ]);
                 
                 return response()->json([
@@ -744,8 +789,8 @@ class PasienController extends Controller
             }
             
             // Log sukses
-            Log::info('PasienController - show: Berhasil mengambil detail pasien', [
-                'no_rkm_medis' => $no_rkm_medis ?? 'unknown'
+            \Log::info('PasienController - show: Berhasil mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis
             ]);
             
             // Menambahkan header no-cache
@@ -755,14 +800,14 @@ class PasienController extends Controller
                    ->header('Expires', '0');
         } catch (\Exception $e) {
             // Log error
-            Log::error('PasienController - show: Gagal mengambil detail pasien', [
-                'no_rkm_medis' => $no_rkm_medis ?? 'unknown',
-                'error' => $e ? $e->getMessage() : 'Unknown error'
+            \Log::error('PasienController - show: Gagal mengambil detail pasien', [
+                'no_rkm_medis' => $no_rkm_medis,
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
                 'error' => true,
-                'message' => 'Gagal mengambil data pasien: ' . ($e ? $e->getMessage() : 'Unknown error')
+                'message' => 'Gagal mengambil data pasien: ' . $e->getMessage()
             ], 500);
         }
     }

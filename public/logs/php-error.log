@@ -1,0 +1,8 @@
+2025-05-12 21:38:14 - Exception: Class "Illuminate\Foundation\Application" not found in /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/bootstrap/app.php on line 14
+Stack trace: #0 /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/public/index.php(136): require_once()
+#1 /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php(16): require_once('/Users/agusbudi...')
+#2 {main}
+2025-05-12 21:38:18 - Exception: Class "Illuminate\Foundation\Application" not found in /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/bootstrap/app.php on line 14
+Stack trace: #0 /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/public/index.php(136): require_once()
+#1 /Users/agusbudiyono/Documents/PEKERJAAN IT/dist/edokter/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php(16): require_once('/Users/agusbudi...')
+#2 {main}

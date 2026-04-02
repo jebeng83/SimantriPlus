@@ -16,6 +16,7 @@ use App\Models\Propinsi;
 use App\Models\CacatFisik;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class FormPendaftaran extends Component
 {
@@ -136,14 +137,14 @@ public function generateNoRekamMedis()
         $this->no_rkm_medis = str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
 
         // Log informasi
-        \Log::info('Generated RM number:', [
+        Log::info('Generated RM number:', [
             'last_number' => $lastNumber,
             'next_number' => $nextNumber,
             'formatted' => $this->no_rkm_medis
         ]);
 
     } catch (\Exception $e) {
-        \Log::error('Error generating RM number: ' . $e->getMessage());
+        Log::error('Error generating RM number: ' . $e->getMessage());
         $this->no_rkm_medis = '000001';
     }
 }
@@ -246,8 +247,8 @@ public function generateNoRekamMedis()
             $this->filtered_posyandu = [];
 
         } catch (\Exception $e) {
-            \Log::error('Error in mount: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error in mount: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
             // Initialize empty arrays if error occurs
             $this->penjab_list = [];
@@ -307,7 +308,7 @@ public function generateNoRekamMedis()
                     ->select('kd_kab', 'nm_kab')
                     ->get();
             } catch (\Exception $e) {
-                \Log::error('Error loading kabupaten: ' . $e->getMessage());
+                Log::error('Error loading kabupaten: ' . $e->getMessage());
                 $this->kabupaten_list = collect();
             }
         }
@@ -322,7 +323,7 @@ public function generateNoRekamMedis()
                     ->select('kd_kec', 'nm_kec')
                     ->get();
             } catch (\Exception $e) {
-                \Log::error('Error loading kecamatan: ' . $e->getMessage());
+                Log::error('Error loading kecamatan: ' . $e->getMessage());
                 $this->kecamatan_list = collect();
             }
         }
@@ -339,7 +340,7 @@ public function generateNoRekamMedis()
                     ->get()
                     ->toArray();
             } catch (\Exception $e) {
-                \Log::error('Error loading kelurahan: ' . $e->getMessage());
+                Log::error('Error loading kelurahan: ' . $e->getMessage());
                 $this->kelurahan_list = [];
             }
         }
@@ -355,7 +356,7 @@ public function generateNoRekamMedis()
                     ->get()
                     ->toArray();
             } catch (\Exception $e) {
-                \Log::error('Error loading posyandu: ' . $e->getMessage());
+                Log::error('Error loading posyandu: ' . $e->getMessage());
                 $this->filtered_posyandu = [];
             }
         } else {
@@ -369,7 +370,7 @@ public function generateNoRekamMedis()
     // Tambahkan method untuk debugging
     public function getFilteredPosyanduProperty()
     {
-        \Log::info('Current filtered_posyandu:', [
+        Log::info('Current filtered_posyandu:', [
             'data' => $this->filtered_posyandu,
             'kelurahan' => $this->kelurahan
         ]);
@@ -393,7 +394,7 @@ public function generateNoRekamMedis()
 
             $this->alamat = implode(', ', $alamat_lengkap);
         } catch (\Exception $e) {
-            \Log::error('Error updating alamat: ' . $e->getMessage());
+            Log::error('Error updating alamat: ' . $e->getMessage());
         }
     }
 
@@ -415,7 +416,7 @@ public function generateNoRekamMedis()
                 $this->filtered_posyandu = [];
             }
         } catch (\Exception $e) {
-            \Log::error('Error loading posyandu: ' . $e->getMessage());
+            Log::error('Error loading posyandu: ' . $e->getMessage());
             $this->filtered_posyandu = [];
         }
     }
@@ -442,6 +443,34 @@ public function generateNoRekamMedis()
             $umur = $this->umur_tahun . " Th " . 
                     $this->umur_bulan . " Bl " . 
                     $this->umur_hari . " Hr";
+
+            $lock = DB::select('SELECT GET_LOCK("pasien_no_rkm_medis_lock", 10) AS l');
+            if (!$lock || (int)($lock[0]->l ?? 0) !== 1) {
+                throw new \Exception('Gagal mendapatkan lock penomoran');
+            }
+
+            if (empty($this->propinsi) || !preg_match('/^\d+$/', (string)$this->propinsi)) {
+                $this->propinsi = DB::table('propinsi')->select('kd_prop')->orderBy('kd_prop')->value('kd_prop');
+            }
+            if (empty($this->kabupaten) || !preg_match('/^\d+$/', (string)$this->kabupaten)) {
+                $this->kabupaten = DB::table('kabupaten')->select('kd_kab')->orderBy('kd_kab')->value('kd_kab');
+            }
+            if (empty($this->kecamatan) || !preg_match('/^\d+$/', (string)$this->kecamatan)) {
+                $this->kecamatan = DB::table('kecamatan')->select('kd_kec')->orderBy('kd_kec')->value('kd_kec');
+            }
+            if (empty($this->kelurahan) || !preg_match('/^\d+$/', (string)$this->kelurahan)) {
+                $this->kelurahan = DB::table('kelurahan')->select('kd_kel')->orderBy('kd_kel')->value('kd_kel');
+            }
+            if (empty($this->kd_pj) || $this->kd_pj === '-') {
+                $this->kd_pj = DB::table('penjab')->select('kd_pj')->orderBy('kd_pj')->value('kd_pj') ?? '-';
+            }
+
+            $lastRecord = DB::table('pasien')
+                            ->orderByRaw('CAST(no_rkm_medis AS UNSIGNED) DESC')
+                            ->first();
+            $lastNumber = $lastRecord ? (int)$lastRecord->no_rkm_medis : 0;
+            $nextNumber = $lastNumber + 1;
+            $this->no_rkm_medis = str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
 
             // Siapkan data untuk disimpan
             $data = [
@@ -487,12 +516,13 @@ public function generateNoRekamMedis()
             ];
 
             // Log data sebelum insert
-            \Log::info('Saving patient data:', $data);
+            Log::info('Saving patient data:', $data);
 
             // Insert data
             DB::table('pasien')->insert($data);
 
             DB::commit();
+            DB::select('SELECT RELEASE_LOCK("pasien_no_rkm_medis_lock") AS r');
             
             // Reset form dan generate nomor baru
             $this->reset();
@@ -509,8 +539,9 @@ public function generateNoRekamMedis()
             $this->dispatchBrowserEvent('pasien-saved', ['message' => 'Data pasien berhasil disimpan']);
 
         } catch (\Exception $e) {
+            DB::select('SELECT RELEASE_LOCK("pasien_no_rkm_medis_lock") AS r');
             DB::rollback();
-            \Log::error('Error saving patient: ' . $e->getMessage());
+            Log::error('Error saving patient: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage());
             $this->emit('showNotification');
         }
@@ -519,7 +550,7 @@ public function generateNoRekamMedis()
     public function render()
     {
         // Debug log untuk melihat data yang dikirim ke view
-        \Log::info('Render data:', [
+        Log::info('Render data:', [
             'kelurahan' => $this->kelurahan,
             'filtered_posyandu' => $this->filtered_posyandu
         ]);
@@ -556,7 +587,7 @@ public function generateNoRekamMedis()
 
                 $this->showKelurahanDropdown = true;
             } catch (\Exception $e) {
-                \Log::error('Error searching kelurahan: ' . $e->getMessage());
+                Log::error('Error searching kelurahan: ' . $e->getMessage());
                 $this->filtered_kelurahan = [];
             }
         } else {
@@ -583,7 +614,7 @@ public function generateNoRekamMedis()
 
                 $this->showKecamatanDropdown = true;
             } catch (\Exception $e) {
-                \Log::error('Error searching kecamatan: ' . $e->getMessage());
+                Log::error('Error searching kecamatan: ' . $e->getMessage());
                 $this->filtered_kecamatan = [];
             }
         } else {
@@ -610,7 +641,7 @@ public function generateNoRekamMedis()
 
                 $this->showKabupatenDropdown = true;
             } catch (\Exception $e) {
-                \Log::error('Error searching kabupaten: ' . $e->getMessage());
+                Log::error('Error searching kabupaten: ' . $e->getMessage());
                 $this->filtered_kabupaten = [];
             }
         } else {
@@ -637,7 +668,7 @@ public function generateNoRekamMedis()
 
                 $this->showPropinsiDropdown = true;
             } catch (\Exception $e) {
-                \Log::error('Error searching propinsi: ' . $e->getMessage());
+                Log::error('Error searching propinsi: ' . $e->getMessage());
                 $this->filtered_propinsi = [];
             }
         } else {
@@ -655,13 +686,13 @@ public function generateNoRekamMedis()
             $this->showKelurahanDropdown = false;
 
             // Log untuk debugging
-            \Log::info('Selected kelurahan:', [
+            Log::info('Selected kelurahan:', [
                 'kd_kel' => $kd_kel,
                 'nama' => $nama
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in selectKelurahan: ' . $e->getMessage());
+            Log::error('Error in selectKelurahan: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memilih kelurahan');
         }
     }
@@ -706,7 +737,7 @@ public function generateNoRekamMedis()
             $this->search_kelurahan = '';
 
             // Log untuk debugging
-            \Log::info('Selected kecamatan:', [
+            Log::info('Selected kecamatan:', [
                 'kd_kec' => $kd_kec,
                 'nama' => $nama,
                 'kabupaten' => $this->kabupaten ?? null,
@@ -714,7 +745,7 @@ public function generateNoRekamMedis()
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in selectKecamatan: ' . $e->getMessage());
+            Log::error('Error in selectKecamatan: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memilih kecamatan');
         }
     }
@@ -751,14 +782,14 @@ public function generateNoRekamMedis()
             $this->search_kecamatan = '';
 
             // Log untuk debugging
-            \Log::info('Selected kabupaten:', [
+            Log::info('Selected kabupaten:', [
                 'kd_kab' => $kd_kab,
                 'nama' => $nama,
                 'propinsi' => $this->propinsi ?? null
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in selectKabupaten: ' . $e->getMessage());
+            Log::error('Error in selectKabupaten: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memilih kabupaten');
         }
     }
@@ -780,7 +811,7 @@ public function generateNoRekamMedis()
             $this->showPropinsiDropdown = false;
 
         } catch (\Exception $e) {
-            \Log::error('Error in selectPropinsi: ' . $e->getMessage());
+            Log::error('Error in selectPropinsi: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat memilih propinsi');
         }
     }
@@ -806,12 +837,12 @@ public function generateNoRekamMedis()
                 $this->showPosyanduDropdown = true;
                 $this->posyandu_not_found = empty($this->filtered_posyandu);
 
-                \Log::info('Posyandu search result:', [
+                Log::info('Posyandu search result:', [
                     'keyword' => $this->search_posyandu,
                     'count' => count($this->filtered_posyandu)
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Error searching posyandu: ' . $e->getMessage());
+                Log::error('Error searching posyandu: ' . $e->getMessage());
                 $this->filtered_posyandu = [];
                 $this->posyandu_not_found = true;
             }
@@ -847,7 +878,7 @@ public function generateNoRekamMedis()
                 ->value($kolom_nama);
             return $data ?? strtoupper($kode);
         } catch (\Exception $e) {
-            \Log::error("Error getting nama wilayah: " . $e->getMessage());
+            Log::error("Error getting nama wilayah: " . $e->getMessage());
             return strtoupper($kode);
         }
     }

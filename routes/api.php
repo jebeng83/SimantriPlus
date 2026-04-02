@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\API\ResepController;
 use App\Http\Controllers\API\LabController;
 use App\Http\Controllers\API\PemeriksaanController;
@@ -16,9 +17,7 @@ use App\Http\Antrol\AddAntreanController;
 use App\Http\Antrol\PanggilAntreanController;
 use App\Http\Controllers\PasienController;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\AntriPendaftaranController;
-use App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController;
+use App\Http\Controllers\SkriningController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,40 +33,6 @@ use App\Http\Controllers\MatrikKegiatanUkm\JadwalUkmController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-
-// Test route untuk debugging
-Route::get('/test-api', function () {
-    return response()->json([
-        'message' => 'API test works',
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
-});
-
-// Endpoint data jabatan untuk dropdown kd_jbtn (menampilkan nm_jbtn)
-Route::get('/jabatan', function (Request $request) {
-    try {
-        $q = trim((string) $request->query('q', ''));
-        $limit = (int) $request->query('limit', 50);
-        $limit = max(1, min($limit, 200));
-
-        $query = DB::table('jabatan')->select('kd_jbtn', 'nm_jbtn');
-        if ($q !== '') {
-            $query->where(function ($qq) use ($q) {
-                $qq->where('nm_jbtn', 'like', "%{$q}%")
-                   ->orWhere('kd_jbtn', 'like', "%{$q}%");
-            });
-        }
-
-        $rows = $query->orderBy('nm_jbtn')->limit($limit)->get();
-        return response()->json($rows);
-    } catch (\Throwable $e) {
-        Log::error('API /jabatan error: ' . $e->getMessage());
-        return response()->json(['error' => 'Gagal mengambil data jabatan'], 500);
-    }
-});
-
-// Compatibility endpoint for legacy frontend
-Route::get('/set-harga-obat', [App\Http\Controllers\Farmasi\SetHargaObatController::class, 'getPercentageData']);
 
 // Rute untuk obat ranap
 Route::get('/ranap/{bangsal}/obat', [App\Http\Controllers\API\ResepRanapController::class, 'getObatRanap']);
@@ -167,22 +132,6 @@ Route::prefix('pcare')->group(function () {
     Route::get('/pendaftaran/detail/{no_rawat}', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getDetail']);
     Route::get('/pendaftaran/export/excel', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportExcel']);
     Route::get('/pendaftaran/export/pdf', [App\Http\Controllers\API\PcarePendaftaranController::class, 'exportPdf']);
-    // Status pendaftaran PCare dibandingkan dengan data registrasi (reg_periksa)
-    Route::get('/pendaftaran/status', [App\Http\Controllers\API\PcarePendaftaranController::class, 'getStatusRegistrations']);
-    
-    // API untuk referensi dengan pagination sesuai katalog BPJS
-    Route::get('poli/fktp/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoliFktp']);
-    Route::get('dokter/{start}/{limit}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokterPaginated']);
-    
-    // Test connection endpoint untuk debugging
-    Route::get('test-connection', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'testConnection']);
-    
-    // API untuk referensi poli dan dokter
-    Route::get('ref/poli', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli']);
-    Route::get('ref/poli/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiPoliController::class, 'getPoli']);
-    Route::get('ref/dokter', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter']);
-    Route::get('ref/dokter/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter']);
-    Route::get('ref/dokter/kodepoli/{kodepoli}/tanggal/{tanggal}', [App\Http\Controllers\PCare\ReferensiDokterController::class, 'getDokter']);
 });
 
 // ICare Routes
@@ -238,21 +187,8 @@ Route::prefix('fktp')->group(function () {
     Route::post('peserta', [App\Http\Controllers\API\WsFKTPController::class, 'registrasiPasienBaru']);
     Route::post('antrean', [App\Http\Controllers\API\WsFKTPController::class, 'ambilAntrean']);
     Route::get('antrean/status/{kodePoli}/{tanggalPeriksa}', [App\Http\Controllers\API\WsFKTPController::class, 'getStatusAntrean']);
+    Route::put('antrean/batal', [App\Http\Controllers\API\WsFKTPController::class, 'batalAntrean']);
 });
-
-// WhatsApp Gateway API Routes
-Route::prefix('whatsapp')->group(function () {
-    Route::post('/send', [App\Http\Controllers\WhatsAppController::class, 'sendMessage']);
-    Route::get('/session/status', [App\Http\Controllers\WhatsAppController::class, 'getSessionStatus']);
-    Route::get('/session/qr', [App\Http\Controllers\WhatsAppController::class, 'getQRCode']);
-    Route::post('/session/create', [App\Http\Controllers\WhatsAppController::class, 'createSession']);
-    Route::delete('/session/delete', [App\Http\Controllers\WhatsAppController::class, 'deleteSession']);
-    Route::post('/webhook', [App\Http\Controllers\WhatsAppController::class, 'webhook'])->withoutMiddleware(['auth:sanctum']);
-});
-
-// WhatsApp Gateway Public Webhook (tanpa autentikasi)
-Route::post('/whatsapp/webhook/public', [App\Http\Controllers\WhatsAppController::class, 'webhook'])
-    ->withoutMiddleware(['auth:sanctum']);
 
 // Route API untuk Mobile JKN yang dapat diakses tanpa autentikasi
 Route::prefix('mobile-jkn')->group(function () {
@@ -396,213 +332,74 @@ Route::get('/dokter', function () {
 // Route untuk pemeriksaan
 Route::post('/pemeriksaan/save', [PemeriksaanController::class, 'save']);
 
-// Status CKG tahun berjalan berdasarkan no_rkm_medis
-Route::get('/ckg/status/{no_rkm_medis}', function (Request $request, $no_rkm_medis) {
+// Route untuk menyimpan data skrining Hati, Kesehatan Jiwa, dan Kanker Leher Rahim
+Route::post('/skrining/simpan', [SkriningController::class, 'simpanSkrining'])->name('api.skrining.simpan');
+Route::post('/skrining/demografi', [SkriningController::class, 'simpanDemografi'])->name('api.skrining.demografi');
+Route::post('/skrining/tekanan-darah', [SkriningController::class, 'simpanTekananDarah'])->name('api.skrining.tekanan-darah');
+Route::post('/skrining/perilaku-merokok', [SkriningController::class, 'simpanPerilakuMerokok'])->name('api.skrining.perilaku-merokok');
+Route::post('/skrining/hati', [SkriningController::class, 'simpanHati'])->name('api.skrining.hati');
+Route::post('/skrining/kesehatan-jiwa', [SkriningController::class, 'simpanKesehatanJiwa'])->name('api.skrining.kesehatan-jiwa');
+Route::post('/skrining/kanker-leher-rahim', [SkriningController::class, 'simpanKankerLeherRahim'])->name('api.skrining.kanker-leher-rahim');
+Route::post('/skrining/kanker-usus', [SkriningController::class, 'simpanKankerUsus'])->name('api.skrining.kanker-usus');
+Route::post('/skrining/faktor-resiko-tb', [SkriningController::class, 'simpanFaktorResikoTB'])->name('api.skrining.faktor-resiko-tb');
+Route::post('/skrining/kanker-paru', [SkriningController::class, 'simpanKankerParu'])->name('api.skrining.kanker-paru');
+Route::post('/skrining/aktivitas-fisik', [SkriningController::class, 'simpanAktivitasFisik'])->name('api.skrining.aktivitas-fisik');
+Route::post('/skrining/tuberkulosis', [SkriningController::class, 'simpanTuberkulosis'])->name('api.skrining.tuberkulosis');
+Route::post('/skrining/antropometri-lab', [SkriningController::class, 'simpanAntropometriLab'])->name('api.skrining.antropometri-lab');
+Route::post('/skrining/penyakit-tropis', [SkriningController::class, 'simpanPenyakitTropis'])->name('api.skrining.penyakit-tropis');
+Route::post('/skrining/skrining-indra', [SkriningController::class, 'simpanSkriningIndra'])->name('api.skrining.skrining-indra');
+Route::post('/skrining/skrining-gigi', [SkriningController::class, 'simpanSkriningGigi'])->name('api.skrining.skrining-gigi');
+Route::post('/skrining/keluhan-lain', [SkriningController::class, 'simpanKeluhanLain'])->name('api.skrining.keluhan-lain');
+Route::post('/skrining/cek-nik', [SkriningController::class, 'cekNikSkrining'])->name('api.skrining.cek-nik');
+
+// Route untuk skrining anak
+Route::post('/skrining/gejala-dm-anak', [SkriningController::class, 'simpanGejalaDMAnak'])->name('api.skrining.gejala-dm-anak');
+Route::post('/skrining/riwayat-imunisasi-balita', [SkriningController::class, 'simpanRiwayatImunisasiBalita'])->name('api.skrining.riwayat-imunisasi-balita');
+Route::post('/skrining/hepatitis-balita', [SkriningController::class, 'simpanHepatitisBalita'])->name('api.skrining.hepatitis-balita');
+Route::post('/skrining/berat-lahir-balita', [SkriningController::class, 'simpanBeratLahirBalita'])->name('api.skrining.berat-lahir-balita');
+Route::post('/skrining/pjb-balita', [SkriningController::class, 'simpanPjbBalita'])->name('api.skrining.pjb-balita');
+Route::post('/skrining/darah-tumit-balita', [SkriningController::class, 'simpanDarahTumitBalita'])->name('api.skrining.darah-tumit-balita');
+Route::post('/skrining/shk-g6pd-hak-balita', [SkriningController::class, 'simpanShkG6pdHakBalita'])->name('api.skrining.shk-g6pd-hak-balita');
+Route::post('/skrining/konfirmasi-shk-g6pd-hak-balita', [SkriningController::class, 'simpanKonfirmasiShkG6pdHakBalita'])->name('api.skrining.konfirmasi-shk-g6pd-hak-balita');
+Route::post('/skrining/edukasi-warna-kulit-balita', [SkriningController::class, 'simpanEdukasiWarnaKulitBalita'])->name('api.skrining.edukasi-warna-kulit-balita');
+Route::post('/skrining/demografi-anak', [SkriningController::class, 'simpanDemografiAnak'])->name('api.skrining.demografi-anak');
+Route::post('/skrining/perkembangan-3-6-tahun', [SkriningController::class, 'simpanPerkembangan3_6Tahun'])->name('api.skrining.perkembangan-3-6-tahun');
+Route::post('/skrining/talasemia', [SkriningController::class, 'simpanTalasemia'])->name('api.skrining.talasemia');
+Route::post('/skrining/tuberkulosis-bayi-anak', [SkriningController::class, 'simpanTuberkulosisBayiAnak'])->name('api.skrining.tuberkulosis-bayi-anak');
+Route::post('/skrining/skrining-pertumbuhan', [SkriningController::class, 'simpanSkriningPertumbuhan'])->name('api.skrining.skrining-pertumbuhan');
+Route::post('/skrining/kpsp', [SkriningController::class, 'simpanSkriningKPSP'])->name('api.skrining.kpsp');
+Route::post('/skrining/skrining-telinga-mata', [SkriningController::class, 'simpanSkriningTelingaMata'])->name('api.skrining.telinga-mata');
+Route::post('/skrining/skrining-gigi-anak', [SkriningController::class, 'simpanSkriningGigiAnak'])->name('api.skrining.skrining-gigi-anak');
+
+// Debug: Describe table skrining_pkg
+Route::get('/debug/describe-skrining', function() {
     try {
-        $year = $request->query('year');
-        $yearInt = $year ? (int)$year : (int)date('Y');
-
-        if (empty($no_rkm_medis)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No. Rekam Medis diperlukan'
-            ], 400);
-        }
-
-        // Hitung jumlah entri skrining tahun ini
-        $count = DB::table('skrining_pkg')
-            ->where('no_rkm_medis', $no_rkm_medis)
-            ->whereYear('tanggal_skrining', $yearInt)
-            ->count();
-
-        // Ambil entri terbaru tahun ini
-        $latest = DB::table('skrining_pkg')
-            ->select('id_pkg', 'tanggal_skrining', 'status', 'kunjungan_sehat')
-            ->where('no_rkm_medis', $no_rkm_medis)
-            ->whereYear('tanggal_skrining', $yearInt)
-            ->orderBy('tanggal_skrining', 'desc')
-            ->first();
-
-        $statusText = null;
-        if ($latest) {
-            $st = (string)($latest->status ?? '');
-            $statusText = $st === '1' ? 'Selesai' : ($st === '2' ? 'Sedang Diproses' : 'Belum Selesai');
-        }
-
+        $columns = DB::select('SHOW COLUMNS FROM skrining_pkg');
         return response()->json([
-            'success' => true,
-            'year' => $yearInt,
-            'has_skrining' => $count > 0,
-            'count' => $count,
-            'latest' => $latest,
-            'status_text' => $statusText
+            'status' => 'success',
+            'table' => 'skrining_pkg',
+            'columns' => $columns,
         ]);
     } catch (\Exception $e) {
-        Log::error('Error get CKG status: ' . $e->getMessage());
         return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            'status' => 'error',
+            'message' => $e->getMessage()
         ], 500);
     }
 });
 
-// Cek Status SRK (Skrining Riwayat Kesehatan) via Mobile JKN
-Route::get('/bpjs/srk-status', function (Request $request) {
+Route::get('/debug/describe-pasien', function() {
     try {
-        $nomorkartu = preg_replace('/[^0-9]/', '', (string)$request->query('nomorkartu', ''));
-        $nik = preg_replace('/[^0-9]/', '', (string)$request->query('nik', ''));
-
-        if (!$nomorkartu && !$nik) {
-            return response()->json([
-                'success' => false,
-                'message' => 'nomorkartu atau nik diperlukan'
-            ], 400);
-        }
-
-        // Ambil pasien dari DB
-        $pasien = DB::table('pasien')
-            ->where(function($q) use ($nomorkartu, $nik) {
-                if ($nomorkartu) $q->orWhere('no_peserta', $nomorkartu);
-                if ($nik) $q->orWhere('no_ktp', $nik);
-            })
-            ->first();
-
-        if (!$pasien) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pasien tidak ditemukan'
-            ], 404);
-        }
-
-        $today = date('Y-m-d');
-        // Payload minimal untuk cek SRK; tidak ditujukan menambah antrean sungguhan
-        $payload = [
-            'nomorkartu' => $pasien->no_peserta ?? $nomorkartu,
-            'nik' => $pasien->no_ktp ?? $nik,
-            'nohp' => $pasien->no_tlp ?? '081000000000',
-            'kodepoli' => 'INT',
-            'namapoli' => 'Poli Internal',
-            'norm' => $pasien->no_rkm_medis,
-            'tanggalperiksa' => $today,
-            'kodedokter' => 999999,
-            'namadokter' => 'Dokter SRK Check',
-            'jampraktek' => '00:01-00:02',
-            'nomorantrean' => '000',
-            'angkaantrean' => 0,
-            'keterangan' => 'SRK check only'
-        ];
-
-        // Panggil WsBPJSController@tambahAntrean
-        $controller = new \App\Http\Controllers\API\WsBPJSController();
-        $req = new Request($payload);
-        $resp = $controller->tambahAntrean($req);
-
-        $json = $resp instanceof \Illuminate\Http\JsonResponse ? json_decode($resp->getContent(), true) : (is_string($resp) ? json_decode($resp, true) : (array)$resp);
-        $meta = $json['metadata'] ?? $json['metaData'] ?? null;
-        $code = $meta['code'] ?? null;
-        $message = $meta['message'] ?? '';
-
-        $belum = false;
-        $lowerMsg = is_string($message) ? strtolower($message) : '';
-        // Tentukan Belum SRK hanya jika pesan dari BPJS mengandung kata "skrining"
-        if ($lowerMsg && (strpos($lowerMsg, 'skrining') !== false)) {
-            $belum = true;
-        }
-
+        $columns = DB::select('SHOW COLUMNS FROM pasien');
         return response()->json([
-            'success' => true,
-            'srk_status' => $belum ? 'Belum SRK' : 'Sudah SRK',
-            'metadata' => $meta,
-            'url' => rtrim(env('BPJS_MOBILEJKN_BASE_URL', ''), '/') . '/antrean/add'
+            'status' => 'success',
+            'table' => 'pasien',
+            'columns' => $columns,
         ]);
     } catch (\Exception $e) {
-        Log::error('Error cek SRK status: ' . $e->getMessage());
         return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            'status' => 'error',
+            'message' => $e->getMessage()
         ], 500);
     }
-});
-
-Route::prefix('antripendaftaran')->group(function () {
-    Route::get('/next', [AntriPendaftaranController::class, 'next']);
-    Route::get('/stats', [AntriPendaftaranController::class, 'stats']);
-    // New: nomor yang sedang dipanggil (status=2)
-    Route::get('/current', [AntriPendaftaranController::class, 'current']);
-    Route::post('/call', [AntriPendaftaranController::class, 'call']);
-    Route::post('/recall', [AntriPendaftaranController::class, 'recall']);
-});
-
-// Farmasi: generate nomor permintaan medis otomatis (PMYYYYMMDDNNN)
-Route::get('/permintaan-medis/next-number', [\App\Http\Controllers\PermintaanMedisController::class, 'nextNumber']);
-// Farmasi: simpan permintaan medis
-Route::post('/permintaan-medis', [\App\Http\Controllers\PermintaanMedisController::class, 'store']);
-
-// Farmasi: endpoint pembelian/lokasi dan pembelian/petugas untuk autocomplete di PermintaanMedis.jsx
-Route::prefix('pembelian')->group(function () {
-    // Lokasi gudang/ruangan (bangsal)
-    Route::get('/lokasi', function () {
-        try {
-            $data = DB::table('bangsal')
-                ->select('kd_bangsal', 'nm_bangsal')
-                ->orderBy('nm_bangsal', 'asc')
-                ->get();
-            return response()->json(['success' => true, 'data' => $data]);
-        } catch (\Exception $e) {
-            Log::error('Error get pembelian/lokasi: '.$e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
-        }
-    });
-    // Daftar petugas (gunakan tabel petugas dengan kolom nip, nama)
-    Route::get('/petugas', function () {
-        try {
-            $data = DB::table('petugas')
-                ->select('nip', 'nama')
-                ->orderBy('nama', 'asc')
-                ->get();
-            return response()->json(['success' => true, 'data' => $data])
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
-        } catch (\Exception $e) {
-            Log::error('Error get pembelian/petugas: '.$e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
-        }
-    });
-});
-
-// Farmasi: fallback endpoint untuk riwayat-transaksi-gudang/bangsal (struktur sama)
-Route::prefix('riwayat-transaksi-gudang')->group(function () {
-    Route::get('/bangsal', function () {
-        try {
-            $data = DB::table('bangsal')
-                ->select('kd_bangsal', 'nm_bangsal')
-                ->orderBy('nm_bangsal', 'asc')
-                ->get();
-            return response()->json(['success' => true, 'data' => $data]);
-        } catch (\Exception $e) {
-            Log::error('Error get riwayat-transaksi-gudang/bangsal: '.$e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage(), 'data' => []], 500);
-        }
-    });
-});
-
-// Debug: lihat kolom tabel
-Route::get('/debug/columns/{table}', function ($table) {
-    try {
-        $cols = DB::select("SHOW COLUMNS FROM `$table`");
-        return response()->json(['table' => $table, 'columns' => $cols]);
-    } catch (\Exception $e) {
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-    }
-});
-
-// Jadwal UKM routes
-Route::prefix('jadwal-ukm')->group(function () {
-    Route::get('/meta', [JadwalUkmController::class, 'meta']);
-    Route::get('/describe', [JadwalUkmController::class, 'describe']);
-    Route::get('/', [JadwalUkmController::class, 'data']);
-    Route::post('/', [JadwalUkmController::class, 'store']);
-    Route::put('/{id}', [JadwalUkmController::class, 'update']);
-    Route::delete('/{id}', [JadwalUkmController::class, 'destroy']);
 });

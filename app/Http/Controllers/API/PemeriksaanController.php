@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\EnkripsiData;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class PemeriksaanController extends Controller
 {
@@ -86,6 +87,205 @@ EXT : Oedem -/-',
             ->selectRaw('nip AS id, nama AS text')
             ->get();
         return response()->json($pegawai, 200);
+    }
+    
+    public function getPegawaiNik(Request $request)
+    {
+        $q = $request->get('q');
+        $que = '%' . $q . '%';
+        $pegawai = DB::table('pegawai')
+            ->where(function($w) use ($que) {
+                $w->where('nama', 'like', $que)
+                  ->orWhere('nik', 'like', $que);
+            })
+            ->selectRaw('nik AS id, nama AS text')
+            ->limit(25)
+            ->get();
+        return response()->json($pegawai, 200);
+    }
+
+    public function getKader(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+
+        $kader = DB::table('data_kader')
+            ->where('status', '1')
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where('nama_kader', 'like', '%' . $q . '%');
+            })
+            ->selectRaw('nama_kader AS id, nama_kader AS text')
+            ->distinct()
+            ->orderBy('nama_kader', 'asc')
+            ->limit(25)
+            ->get();
+
+        return response()->json($kader, 200);
+    }
+
+    public function listKader(Request $request)
+    {
+        try {
+            $q = trim((string) $request->get('q', ''));
+
+            $kader = DB::table('data_kader')
+                ->leftJoin('data_posyandu', 'data_kader.kode_posyandu', '=', 'data_posyandu.kode_posyandu')
+                ->leftJoin('kelurahan', 'data_kader.kd_kel', '=', 'kelurahan.kd_kel')
+                ->when($q !== '', function ($query) use ($q) {
+                    $query->where(function ($subQuery) use ($q) {
+                        $subQuery->where('data_kader.nama_kader', 'like', '%' . $q . '%')
+                            ->orWhere('data_posyandu.nama_posyandu', 'like', '%' . $q . '%')
+                            ->orWhere('kelurahan.nm_kel', 'like', '%' . $q . '%')
+                            ->orWhere('data_kader.kode_posyandu', 'like', '%' . $q . '%')
+                            ->orWhere('data_kader.kd_kel', 'like', '%' . $q . '%');
+                    });
+                })
+                ->select(
+                    'data_kader.id',
+                    'data_kader.nama_kader',
+                    'data_kader.kode_posyandu',
+                    'data_kader.kd_kel',
+                    'data_kader.status',
+                    'data_posyandu.nama_posyandu',
+                    DB::raw('kelurahan.nm_kel as nama_kelurahan')
+                )
+                ->orderByDesc('data_kader.status')
+                ->orderBy('data_kader.nama_kader', 'asc')
+                ->limit(300)
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $kader
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Gagal memuat data kader', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memuat data kader'
+            ], 500);
+        }
+    }
+
+    public function storeKader(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama_kader' => 'required|string|max:50',
+            'kode_posyandu' => 'required|string|max:15',
+            'kd_kel' => 'required|string|max:10',
+            'status' => 'required|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $newId = DB::table('data_kader')->insertGetId([
+                'nama_kader' => trim((string) $request->nama_kader),
+                'kode_posyandu' => trim((string) $request->kode_posyandu),
+                'kd_kel' => trim((string) $request->kd_kel),
+                'status' => (string) $request->status,
+            ]);
+
+            $kader = DB::table('data_kader')
+                ->select('id', 'nama_kader', 'kode_posyandu', 'kd_kel', 'status')
+                ->where('id', $newId)
+                ->first();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data kader berhasil ditambahkan',
+                'data' => $kader
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Gagal menambahkan data kader', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menambahkan data kader'
+            ], 500);
+        }
+    }
+
+    public function updateKader(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama_kader' => 'required|string|max:50',
+            'kode_posyandu' => 'required|string|max:15',
+            'kd_kel' => 'required|string|max:10',
+            'status' => 'required|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $existing = DB::table('data_kader')->where('id', $id)->first();
+            if (!$existing) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data kader tidak ditemukan'
+                ], 404);
+            }
+
+            DB::table('data_kader')->where('id', $id)->update([
+                'nama_kader' => trim((string) $request->nama_kader),
+                'kode_posyandu' => trim((string) $request->kode_posyandu),
+                'kd_kel' => trim((string) $request->kd_kel),
+                'status' => (string) $request->status,
+            ]);
+
+            $kader = DB::table('data_kader')
+                ->select('id', 'nama_kader', 'kode_posyandu', 'kd_kel', 'status')
+                ->where('id', $id)
+                ->first();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data kader berhasil diperbarui',
+                'data' => $kader
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Gagal memperbarui data kader', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memperbarui data kader'
+            ], 500);
+        }
+    }
+
+    public function deleteKader($id)
+    {
+        try {
+            $existing = DB::table('data_kader')->where('id', $id)->first();
+            if (!$existing) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data kader tidak ditemukan'
+                ], 404);
+            }
+
+            DB::table('data_kader')->where('id', $id)->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data kader berhasil dihapus'
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus data kader', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menghapus data kader'
+            ], 500);
+        }
     }
     
     /**

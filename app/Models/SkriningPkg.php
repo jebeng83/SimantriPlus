@@ -36,12 +36,20 @@ class SkriningPkg extends Model
         'umur',
         'jenis_kelamin',
         'no_handphone',
+        'kode_posyandu',
+        'petugas_entri',
+        'status_petugas',
         'no_rkm_medis',
         'tanggal_skrining',
         
+        // Data Wali (untuk anak di bawah 5 tahun)
+        'nik_wali',
+        'nama_wali',
+        'tanggal_lahir_wali',
+        'jenis_kelamin_wali',
+        
         // Demografi
         'status_perkawinan',
-        'rencana_menikah',
         'status_hamil',
         'status_disabilitas',
         
@@ -88,6 +96,19 @@ class SkriningPkg extends Model
         // Antropometri dan Laboratorium
         'tinggi_badan',
         'berat_badan',
+        'berat_badan_balita',
+        'berat_lahir',
+        'pjb_tangan_kanan',
+        'pjb_kaki',
+        'darah_tumit',
+        'shk',
+        'G6PD',
+        'hak',
+        'konfirmasi_shk',
+        'konfirmasi_g6pd',
+        'konfirmasi_hak',
+        'edukasi_warna_kulit',
+        'hasil_kreamer',
         'lingkar_perut',
         'tekanan_sistolik',
         'tekanan_diastolik',
@@ -105,9 +126,9 @@ class SkriningPkg extends Model
         'hilang',
         'goyang',
         'status',
-        'id_petugas_entri',
+        'jumlah_karies',
         
-        // Barthel Index
+        // Gangguan Fungsional / Barthel Index
         'bab',
         'bak',
         'membersihkan_diri',
@@ -118,9 +139,47 @@ class SkriningPkg extends Model
         'memakai_baju',
         'naik_tangga',
         'mandi',
+        'total_skor_barthel',
+        'tingkat_ketergantungan',
         
-        // Keluhan Lain
-        'keluhan_lain',
+        // Field lain yang mungkin diperlukan
+        'umur_tahun',
+        'demam',
+
+        // Gejala DM Anak (baru)
+        'pernah_dm_oleh_dokter',
+        'lama_anak_dm',
+
+        // Riwayat Imunisasi Rutin Balita
+        'imunisasi_inti',
+        'imunisasi_lanjutan',
+        'imunisasi_lanjutan_1',
+        'imunisasi_lanjutan_2',
+        'imunisasi_lanjutan_3',
+        'imunisasi_lanjutan_4',
+        'imunisasi_lanjutan_5',
+        'imunisasi_lanjutan_6',
+        'imunisasi_lanjutan_7',
+        'imunisasi_lanjutan_8',
+        'imunisasi_lanjutan_9',
+        'imunisasi_lanjutan_10',
+        'imunisasi_lanjutan_11',
+        'imunisasi_lanjutan_12',
+        'imunisasi_lanjutan_13',
+        'imunisasi_lanjutan_14',
+        'imunisasi_lanjutan_15',
+        'imunisasi_lanjutan_16',
+        'imunisasi_lanjutan_17',
+        'imunisasi_lanjutan_18',
+
+        // Skrining pertumbuhan balita
+        'posisi_ukur',
+
+        // Skrining telinga & mata (detail)
+        'hasil_serumen',
+        'hasil_infeksi_telinga',
+        'selaput_mata',
+        'pupil',
     ];
 
     /**
@@ -133,6 +192,10 @@ class SkriningPkg extends Model
         'lama_merokok' => 'integer',
         'jumlah_rokok' => 'integer',
         'berat_badan' => 'decimal:1',
+        'berat_badan_balita' => 'decimal:2',
+        'berat_lahir' => 'integer',
+        'pjb_tangan_kanan' => 'integer',
+        'pjb_kaki' => 'integer',
         'tinggi_badan' => 'decimal:1',
         'lingkar_perut' => 'decimal:1',
         'tekanan_sistolik' => 'integer',
@@ -142,14 +205,6 @@ class SkriningPkg extends Model
         'kolesterol_lab' => 'decimal:1',
         'trigliserida' => 'decimal:1',
     ];
-    
-    /**
-     * Relasi dengan tabel pegawai untuk petugas entry
-     */
-    public function petugasEntry()
-    {
-        return $this->belongsTo('App\Models\Pegawai', 'id_petugas_entri', 'nik');
-    }
     
     /**
      * Menghitung umur berdasarkan tanggal lahir

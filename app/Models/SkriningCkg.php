@@ -36,7 +36,6 @@ class SkriningCkg extends Model
         
         // Demografi
         'status_perkawinan',
-        'rencana_menikah',
         'status_hamil',
         'status_disabilitas',
         
@@ -48,7 +47,15 @@ class SkriningCkg extends Model
         
         // Aktivitas Fisik
         'frekuensi_olahraga',
-        'durasi_olahraga',
+        'durasi_olahraga', // Legacy field
+        'frekuensi_olahraga_1',
+        'frekuensi_olahraga_2',
+        
+        'aktivitas_fisik_2', 'aktivitas_fisik_2_hari', 'aktivitas_fisik_2_menit',
+        'aktivitas_fisik_3', 'aktivitas_fisik_3_hari', 'aktivitas_fisik_3_menit',
+        'aktivitas_fisik_4', 'aktivitas_fisik_4_hari', 'aktivitas_fisik_4_menit',
+        'aktivitas_fisik_5', 'aktivitas_fisik_5_hari', 'aktivitas_fisik_5_menit',
+        'aktivitas_fisik_6', 'aktivitas_fisik_6_hari', 'aktivitas_fisik_6_menit',
         
         // Perilaku Merokok
         'status_merokok',
@@ -73,7 +80,22 @@ class SkriningCkg extends Model
         // Kanker Leher Rahim
         'hubungan_intim',
         
+        // Kanker Usus/Kolorektal
+        'kanker_usus_1',
+        'kanker_usus_2',
+        
+        // Faktor Resiko TB
+        'faktor_resiko_tb',
+        
+        // Penapisan Resiko Kanker Paru
+        'kanker_paru_1',
+        'kanker_paru_2',
+        'kanker_paru_3',
+        'kanker_paru_4',
+        
         // Tuberkulosis
+        'riwayat_tbc',
+        'jenis_tbc',
         'riwayat_merokok',
         'napas_pendek',
         'dahak',
@@ -81,25 +103,37 @@ class SkriningCkg extends Model
         'spirometri',
         
         // Antropometri dan Laboratorium
+        'riwayat_dm',
+        'riwayat_ht',
         'tinggi_badan',
         'berat_badan',
         'lingkar_perut',
         'tekanan_sistolik',
         'tekanan_diastolik',
+        'tekanan_sistolik_2',
+        'tekanan_diastolik_2',
         'gds',
         'gdp',
         'kolesterol_lab',
         'trigliserida',
         
         // Skrining Indra
+        'hasil_serumen',
+        'hasil_infeksi_telinga',
         'pendengaran',
         'penglihatan',
+        'pupil',
         
         // Skrining Gigi
         'karies',
         'hilang',
         'goyang',
         'status',
+        
+        // Penyakit Tropis
+        'frambusia',
+        'kusta',
+        'skabies',
     ];
 
     /**
