@@ -64,13 +64,13 @@ class PcareController extends Controller
 
             // Debugging info - tampilkan semua variabel environment yang diperlukan
             Log::info('PCare Environment Variables', [
-                'base_url' => env('BPJS_PCARE_BASE_URL'),
-                'cons_id' => env('BPJS_PCARE_CONS_ID'),
-                'user_key' => env('BPJS_PCARE_USER_KEY'),
-                'username' => env('BPJS_PCARE_USER'),
-                'has_password' => !empty(env('BPJS_PCARE_PASS')),
-                'has_cons_pwd' => !empty(env('BPJS_PCARE_CONS_PWD')),
-                'app_code' => env('BPJS_PCARE_APP_CODE')
+                'base_url' => config('bpjs.pcare.base_url'),
+                'cons_id' => config('bpjs.pcare.cons_id'),
+                'user_key' => config('bpjs.pcare.user_key'),
+                'username' => config('bpjs.pcare.username'),
+                'has_password' => !empty(config('bpjs.pcare.password')),
+                'has_cons_pwd' => !empty(config('bpjs.pcare.secret_key')),
+                'app_code' => config('bpjs.pcare.app_code')
             ]);
 
             // Kirim request ke PCare

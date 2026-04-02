@@ -11,6 +11,15 @@ use Exception;
 trait PcareTrait
 {
     /**
+     * Ambil konfigurasi PCare dari config cache-safe source.
+     */
+    protected function getPcareConfig(string $key, $default = null)
+    {
+        $value = config("bpjs.pcare.{$key}");
+        return $value !== null ? $value : $default;
+    }
+
+    /**
      * Mendapatkan timestamp untuk request
      * @return string
      */
@@ -27,8 +36,8 @@ trait PcareTrait
      */
     protected function generateSignature($timestamp)
     {
-        $consId = env('BPJS_PCARE_CONS_ID');
-        $secretKey = env('BPJS_PCARE_CONS_PWD');
+        $consId = $this->getPcareConfig('cons_id', env('BPJS_PCARE_CONS_ID'));
+        $secretKey = $this->getPcareConfig('secret_key', env('BPJS_PCARE_CONS_PWD'));
         
         $data = $consId . "&" . $timestamp;
         
@@ -42,9 +51,9 @@ trait PcareTrait
      */
     protected function generateAuthorization()
     {
-        $username = env('BPJS_PCARE_USER');
-        $password = env('BPJS_PCARE_PASS');
-        $appCode = env('BPJS_PCARE_APP_CODE', "095");
+        $username = $this->getPcareConfig('username', env('BPJS_PCARE_USER'));
+        $password = $this->getPcareConfig('password', env('BPJS_PCARE_PASS'));
+        $appCode = $this->getPcareConfig('app_code', env('BPJS_PCARE_APP_CODE', "095"));
         
         // Gunakan password sesuai dengan yang dikonfigurasi di environment
         // PCare tidak selalu memerlukan '#' di akhir password
@@ -71,10 +80,10 @@ trait PcareTrait
                 return Cache::get($cacheKey);
             }
             
-            // Gunakan konfigurasi dari .env
-            $baseUrl = env('BPJS_PCARE_BASE_URL');
-            $consId = env('BPJS_PCARE_CONS_ID');
-            $userKey = env('BPJS_PCARE_USER_KEY');
+            // Gunakan konfigurasi dari aplikasi (aman saat config:cache aktif)
+            $baseUrl = $this->getPcareConfig('base_url', env('BPJS_PCARE_BASE_URL'));
+            $consId = $this->getPcareConfig('cons_id', env('BPJS_PCARE_CONS_ID'));
+            $userKey = $this->getPcareConfig('user_key', env('BPJS_PCARE_USER_KEY'));
             
             // Validasi konfigurasi environment
             if (empty($baseUrl) || empty($consId) || empty($userKey)) {
