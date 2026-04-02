@@ -18,6 +18,7 @@ read_dotenv_value() {
     awk -v k="$key" '
         $0 ~ "^[[:space:]]*"k"=" {
             sub(/^[^=]*=/, "", $0);
+            gsub(/\r/, "", $0);
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0);
             if (($0 ~ /^".*"$/) || ($0 ~ /^'\''.*'\''$/)) {
                 $0 = substr($0, 2, length($0) - 2);
@@ -26,6 +27,15 @@ read_dotenv_value() {
             exit;
         }
     ' "$env_file"
+}
+
+normalize_bool() {
+    local value="${1:-}"
+    value="$(printf '%s' "$value" | tr -d '\r' | tr '[:upper:]' '[:lower:]' | xargs)"
+    case "$value" in
+        1|true|yes|on) echo "true" ;;
+        *) echo "false" ;;
+    esac
 }
 
 BRANCH="${DEPLOY_WEBHOOK_BRANCH:-$(read_dotenv_value DEPLOY_WEBHOOK_BRANCH)}"
@@ -38,6 +48,8 @@ SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-$(read_dotenv_value DEPLOY_SKIP_NPM_BUI
 SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-$(read_dotenv_value DEPLOY_SKIP_MIGRATIONS)}"
 [[ -n "$SKIP_MIGRATIONS" ]] || SKIP_MIGRATIONS="false"
 RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-$(read_dotenv_value DEPLOY_RESTART_COMMAND)}"
+SKIP_NPM_BUILD="$(normalize_bool "$SKIP_NPM_BUILD")"
+SKIP_MIGRATIONS="$(normalize_bool "$SKIP_MIGRATIONS")"
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -54,6 +66,7 @@ fi
 cd "$APP_DIR"
 
 log "Mulai deploy branch ${BRANCH}"
+log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}"
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
