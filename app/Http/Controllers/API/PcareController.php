@@ -81,47 +81,67 @@ class PcareController extends Controller
                 'response' => $response
             ]);
 
+            $metaCode = (int) data_get($response, 'metaData.code', 0);
+
             // Cek response
-            if (isset($response['metaData']) && $response['metaData']['code'] == 200) {
+            if ($metaCode === 200) {
                 // Simpan ke cache selama 6 jam
                 Cache::put($cacheKey, $response, now()->addHours(6));
                 
                 // Format response sesuai dengan contoh Java
-                $peserta = $response['response'];
+                $peserta = data_get($response, 'response');
+                if (!is_array($peserta)) {
+                    Log::warning('PCare response 200 namun payload peserta tidak valid', [
+                        'endpoint' => $endpoint,
+                        'response_type' => gettype($peserta),
+                    ]);
+                    return response()->json([
+                        'metaData' => [
+                            'code' => 502,
+                            'message' => 'Response PCare tidak valid (payload peserta kosong/invalid).',
+                        ],
+                        'response' => $response,
+                    ], 502);
+                }
+
+                $sex = strtoupper((string) data_get($peserta, 'sex', ''));
+                $sexLabel = $sex === 'L' ? 'Laki-Laki' : ($sex === 'P' ? 'Perempuan' : '-');
+                $cobRaw = data_get($peserta, 'asuransi.cob');
+                $cobLabel = $cobRaw === null ? '-' : ($cobRaw ? 'Ya' : 'Tidak');
                 
                 // Data yang ditampilkan sesuai dengan contoh Java
                 $formattedData = [
-                    ['No.Kartu', ': '.$peserta['noKartu']],
-                    ['Nama', ': '.$peserta['nama']],
-                    ['Hubungan Keluarga', ': '.$peserta['hubunganKeluarga']],
-                    ['Jenis Kelamin', ': '.str_replace(['L', 'P'], ['Laki-Laki', 'Perempuan'], $peserta['sex'])],
-                    ['Tanggal Lahir', ': '.$peserta['tglLahir']],
-                    ['Mulai Aktif', ': '.$peserta['tglMulaiAktif']],
-                    ['Akhir Berlaku', ': '.$peserta['tglAkhirBerlaku']],
+                    ['No.Kartu', ': '.data_get($peserta, 'noKartu', '-')],
+                    ['Nama', ': '.data_get($peserta, 'nama', '-')],
+                    ['Hubungan Keluarga', ': '.data_get($peserta, 'hubunganKeluarga', '-')],
+                    ['Jenis Kelamin', ': '.$sexLabel],
+                    ['Tanggal Lahir', ': '.data_get($peserta, 'tglLahir', '-')],
+                    ['Mulai Aktif', ': '.data_get($peserta, 'tglMulaiAktif', '-')],
+                    ['Akhir Berlaku', ': '.data_get($peserta, 'tglAkhirBerlaku', '-')],
                     ['Provider Umum', ':'],
-                    ['       Kode Provider', ': '.($peserta['kdProviderPst']['kdProvider'] ?? '-')],
-                    ['       Nama Provider', ': '.($peserta['kdProviderPst']['nmProvider'] ?? '-')],
+                    ['       Kode Provider', ': '.data_get($peserta, 'kdProviderPst.kdProvider', '-')],
+                    ['       Nama Provider', ': '.data_get($peserta, 'kdProviderPst.nmProvider', '-')],
                     ['Provider Gigi', ':'],
-                    ['       Kode Provider', ': '.($peserta['kdProviderGigi']['kdProvider'] ?? '-')],
-                    ['       Nama Provider', ': '.($peserta['kdProviderGigi']['nmProvider'] ?? '-')],
+                    ['       Kode Provider', ': '.data_get($peserta, 'kdProviderGigi.kdProvider', '-')],
+                    ['       Nama Provider', ': '.data_get($peserta, 'kdProviderGigi.nmProvider', '-')],
                     ['Kelas Tanggungan', ':'],
-                    ['       Kode Kelas', ': '.$peserta['jnsKelas']['kode']],
-                    ['       Nama Kelas', ': '.$peserta['jnsKelas']['nama']],
+                    ['       Kode Kelas', ': '.data_get($peserta, 'jnsKelas.kode', '-')],
+                    ['       Nama Kelas', ': '.data_get($peserta, 'jnsKelas.nama', '-')],
                     ['Jenis Peserta', ':'],
-                    ['       Kode Jenis', ': '.$peserta['jnsPeserta']['kode']],
-                    ['       Nama Jenis', ': '.$peserta['jnsPeserta']['nama']],
-                    ['Golongan Darah', ': '.$peserta['golDarah']],
-                    ['Nomor HP', ': '.$peserta['noHP']],
-                    ['Nomor KTP', ': '.$peserta['noKTP']],
-                    ['Peserta Prolanis', ': '.($peserta['pstProl'] ?? '-')],
-                    ['Peserta PRB', ': '.($peserta['pstPrb'] ?? '-')],
-                    ['Status', ': '.$peserta['ketAktif']],
+                    ['       Kode Jenis', ': '.data_get($peserta, 'jnsPeserta.kode', '-')],
+                    ['       Nama Jenis', ': '.data_get($peserta, 'jnsPeserta.nama', '-')],
+                    ['Golongan Darah', ': '.data_get($peserta, 'golDarah', '-')],
+                    ['Nomor HP', ': '.data_get($peserta, 'noHP', '-')],
+                    ['Nomor KTP', ': '.data_get($peserta, 'noKTP', '-')],
+                    ['Peserta Prolanis', ': '.data_get($peserta, 'pstProl', '-')],
+                    ['Peserta PRB', ': '.data_get($peserta, 'pstPrb', '-')],
+                    ['Status', ': '.data_get($peserta, 'ketAktif', '-')],
                     ['Asuransi/COB', ':'],
-                    ['       Kode Asuransi', ': '.($peserta['asuransi']['kdAsuransi'] ?? '-')],
-                    ['       Nama Asuransi', ': '.($peserta['asuransi']['nmAsuransi'] ?? '-')],
-                    ['       Nomer Asuransi', ': '.($peserta['asuransi']['noAsuransi'] ?? '-')],
-                    ['       COB', ': '.($peserta['asuransi']['cob'] ? 'Ya' : 'Tidak')],
-                    ['Tunggakan', ': '.$peserta['tunggakan']]
+                    ['       Kode Asuransi', ': '.data_get($peserta, 'asuransi.kdAsuransi', '-')],
+                    ['       Nama Asuransi', ': '.data_get($peserta, 'asuransi.nmAsuransi', '-')],
+                    ['       Nomer Asuransi', ': '.data_get($peserta, 'asuransi.noAsuransi', '-')],
+                    ['       COB', ': '.$cobLabel],
+                    ['Tunggakan', ': '.data_get($peserta, 'tunggakan', '-')]
                 ];
 
                 $response['formattedData'] = $formattedData;
