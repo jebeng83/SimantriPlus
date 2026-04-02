@@ -429,8 +429,14 @@ trait PcareTrait
                 $responseData['response'] = $this->decrypt($responseData['response'], $timestamp);
             }
             
-            // Simpan ke cache jika GET request
-            if ($method === 'GET' && isset($responseData['metaData']) && $responseData['metaData']['code'] == 200) {
+            // Simpan ke cache jika GET request dan payload response valid
+            if (
+                $method === 'GET' &&
+                isset($responseData['metaData']) &&
+                (int) ($responseData['metaData']['code'] ?? 0) === 200 &&
+                isset($responseData['response']) &&
+                is_array($responseData['response'])
+            ) {
                 // Simpan cache selama 30 menit
                 Cache::put($cacheKey, $responseData, now()->addMinutes(30));
             }
@@ -606,26 +612,59 @@ trait PcareTrait
         }
         
         try {
-            $consId = env('BPJS_PCARE_CONS_ID');
-            $consSecret = env('BPJS_PCARE_CONS_PWD');
+            $consId = $this->getPcareConfig('cons_id', env('BPJS_PCARE_CONS_ID'));
+            $consSecret = $this->getPcareConfig('secret_key', env('BPJS_PCARE_CONS_PWD'));
+
+            if (empty($consId) || empty($consSecret)) {
+                Log::warning('Decrypt skipped karena kunci PCare kosong', [
+                    'cons_id_empty' => empty($consId),
+                    'cons_secret_empty' => empty($consSecret),
+                ]);
+                return null;
+            }
             
             // Generate decryption key
             $key = $consId . $consSecret . $timestamp;
             
             // Decrypt
             $decrypted = $this->stringDecrypt($key, $response);
+            if (!is_string($decrypted) || $decrypted === '') {
+                return null;
+            }
             
-            // Decompress
+            // Coba decompress format umum BPJS (LZString URI-encoded)
             $decompressed = LZString::decompressFromEncodedURIComponent($decrypted);
-            
-            return json_decode($decompressed, true);
+            if (is_string($decompressed) && $decompressed !== '') {
+                $parsed = json_decode($decompressed, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $parsed;
+                }
+            }
+
+            // Fallback: beberapa respons bisa berupa JSON plaintext setelah decrypt
+            $parsed = json_decode($decrypted, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $parsed;
+            }
+
+            // Fallback tambahan: decode URL-encoded lalu parse JSON
+            $decoded = urldecode($decrypted);
+            $parsed = json_decode($decoded, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $parsed;
+            }
+
+            Log::warning('Decrypt berhasil tapi payload tidak bisa diparse', [
+                'decrypted_preview' => substr($decrypted, 0, 200),
+            ]);
+            return null;
         } catch (Exception $e) {
             Log::error('Decrypt Error', [
                 'message' => $e->getMessage(),
                 'response' => $response
             ]);
             
-            return $response;
+            return null;
         }
     }
     
