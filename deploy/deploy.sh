@@ -5,13 +5,39 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 LOCK_FILE="${APP_DIR}/storage/logs/deploy.lock"
-BRANCH="${DEPLOY_WEBHOOK_BRANCH:-master}"
+
+read_dotenv_value() {
+    local key="$1"
+    local env_file="${APP_DIR}/.env"
+
+    if [[ ! -f "$env_file" ]]; then
+        echo ""
+        return
+    fi
+
+    awk -v k="$key" '
+        $0 ~ "^[[:space:]]*"k"=" {
+            sub(/^[^=]*=/, "", $0);
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0);
+            if (($0 ~ /^".*"$/) || ($0 ~ /^'\''.*'\''$/)) {
+                $0 = substr($0, 2, length($0) - 2);
+            }
+            print $0;
+            exit;
+        }
+    ' "$env_file"
+}
+
+BRANCH="${DEPLOY_WEBHOOK_BRANCH:-$(read_dotenv_value DEPLOY_WEBHOOK_BRANCH)}"
+[[ -n "$BRANCH" ]] || BRANCH="master"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
-SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-false}"
-SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-false}"
-RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-}"
+SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-$(read_dotenv_value DEPLOY_SKIP_NPM_BUILD)}"
+[[ -n "$SKIP_NPM_BUILD" ]] || SKIP_NPM_BUILD="false"
+SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-$(read_dotenv_value DEPLOY_SKIP_MIGRATIONS)}"
+[[ -n "$SKIP_MIGRATIONS" ]] || SKIP_MIGRATIONS="false"
+RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-$(read_dotenv_value DEPLOY_RESTART_COMMAND)}"
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
