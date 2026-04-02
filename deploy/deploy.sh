@@ -10,6 +10,7 @@ PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
 SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-false}"
+SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-false}"
 RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-}"
 
 log() {
@@ -50,7 +51,11 @@ if [[ -f package.json && "$SKIP_NPM_BUILD" != "true" ]]; then
     fi
 fi
 
-"$PHP_BIN" artisan migrate --force
+if [[ "$SKIP_MIGRATIONS" == "true" ]]; then
+    log "Migrations dilewati (DEPLOY_SKIP_MIGRATIONS=true)."
+else
+    "$PHP_BIN" artisan migrate --force
+fi
 "$PHP_BIN" artisan optimize:clear
 "$PHP_BIN" artisan config:cache
 "$PHP_BIN" artisan route:cache || true

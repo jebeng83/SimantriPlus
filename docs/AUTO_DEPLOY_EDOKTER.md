@@ -33,6 +33,7 @@ DEPLOY_WEBHOOK_BRANCH=master
 DEPLOY_SCRIPT_PATH=/www/wwwroot/faskesku.my.id/edokter/deploy/deploy.sh
 DEPLOY_LOG_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 DEPLOY_QUEUE_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/app/deploy-webhook.queue
+DEPLOY_SKIP_MIGRATIONS=true
 
 # Opsional:
 # DEPLOY_SKIP_NPM_BUILD=true
@@ -99,6 +100,7 @@ tail -f /www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 
 - Branch deploy saat ini `master` (bukan `main`).
 - Script memakai `git pull --ff-only` agar aman dan tidak rewrite history.
+- Jika database lama belum sinkron dengan tabel `migrations`, aktifkan `DEPLOY_SKIP_MIGRATIONS=true`.
 - Jika `git pull` gagal karena permission/safe directory, set:
 
 ```bash
