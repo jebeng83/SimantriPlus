@@ -1,6 +1,6 @@
 <?php
 
-namespace App\View\Components\ralan;
+namespace App\View\Components\Ralan;
 
 use App\Traits\EnkripsiData;
 use Request;

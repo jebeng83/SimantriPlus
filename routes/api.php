@@ -195,7 +195,7 @@ Route::prefix('icare')->group(function () {
 });
 
 // Endpoint untuk tes getObatRanap
-Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\Api\ResepRanapController::class, 'getObatRanap']);
+Route::get('/test/obat-ranap/{bangsal}', [App\Http\Controllers\API\ResepRanapController::class, 'getObatRanap']);
 
 // Routes untuk data wilayah dari file iyem
 Route::get('/propinsi', [WilayahController::class, 'getPropinsi']);

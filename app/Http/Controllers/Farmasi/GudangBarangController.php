@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Farmasi;
 
+use App\Http\Controllers\Controller;
 use App\Models\RawatJalan\Gudangbarang as GudangBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\View\Components\ralan;
+namespace App\View\Components\Ralan;
 
 use Illuminate\Support\Facades\Crypt;
 use Request;

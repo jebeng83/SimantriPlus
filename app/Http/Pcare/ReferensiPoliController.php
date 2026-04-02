@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\PCare;
+namespace App\Http\Pcare;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

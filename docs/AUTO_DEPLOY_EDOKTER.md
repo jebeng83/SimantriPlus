@@ -90,6 +90,11 @@ Hasil sukses endpoint:
 - `HTTP 200` -> deploy langsung dijalankan.
 - `HTTP 202` -> deploy masuk antrean fallback, lalu diproses oleh `deploy-consumer.sh` via cron.
 
+Untuk skip build frontend hanya pada push tertentu:
+- Tambahkan tag commit message: `[skip-build]` atau `[no-build]`.
+- Webhook akan mengantre deploy dengan `skip_npm_build=true`.
+- Consumer otomatis menjalankan deploy dengan `DEPLOY_SKIP_NPM_BUILD=true`.
+
 Pantau log deploy:
 
 ```bash

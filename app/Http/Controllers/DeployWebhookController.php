@@ -43,6 +43,7 @@ class DeployWebhookController extends Controller
 
         $scriptPath = $this->resolvePath((string) config('app.deploy_script_path', 'deploy/deploy.sh'));
         $logPath = $this->resolvePath((string) config('app.deploy_log_path', storage_path('logs/deploy.log')));
+        $skipNpmBuild = $this->shouldSkipNpmBuild($request);
 
         if (! is_file($scriptPath)) {
             Log::error('Deploy webhook gagal: script deploy tidak ditemukan.', ['script_path' => $scriptPath]);
@@ -51,13 +52,15 @@ class DeployWebhookController extends Controller
         }
 
         try {
-            $this->runInBackground($scriptPath, $logPath);
+            $this->runInBackground($scriptPath, $logPath, $skipNpmBuild);
         } catch (\Throwable $e) {
             $queuePath = $this->resolvePath((string) config('app.deploy_queue_path', storage_path('app/deploy-webhook.queue')));
             $this->queueDeployRequest($queuePath, [
                 'repository' => (string) $request->input('repository.full_name', ''),
                 'ref' => $actualRef,
                 'pusher' => (string) $request->input('pusher.name', ''),
+                'skip_npm_build' => $skipNpmBuild,
+                'head_commit_message' => (string) $request->input('head_commit.message', ''),
                 'queued_at' => date('c'),
                 'reason' => $e->getMessage(),
             ]);
@@ -76,6 +79,7 @@ class DeployWebhookController extends Controller
             'repository' => (string) $request->input('repository.full_name', ''),
             'ref' => $actualRef,
             'pusher' => (string) $request->input('pusher.name', ''),
+            'skip_npm_build' => $skipNpmBuild,
         ]);
 
         return response()->json(['message' => 'Deploy dijalankan'], 200);
@@ -102,15 +106,17 @@ class DeployWebhookController extends Controller
         return str_starts_with($path, '/') ? $path : base_path($path);
     }
 
-    protected function runInBackground(string $scriptPath, string $logPath): void
+    protected function runInBackground(string $scriptPath, string $logPath, bool $skipNpmBuild = false): void
     {
         $logDir = dirname($logPath);
         if (! is_dir($logDir)) {
             @mkdir($logDir, 0755, true);
         }
 
+        $envPrefix = $skipNpmBuild ? 'DEPLOY_SKIP_NPM_BUILD=true ' : '';
         $command = sprintf(
-            'nohup bash %s >> %s 2>&1 &',
+            '%snohup bash %s >> %s 2>&1 &',
+            $envPrefix,
             escapeshellarg($scriptPath),
             escapeshellarg($logPath)
         );
@@ -226,5 +232,31 @@ class DeployWebhookController extends Controller
         }
 
         return '';
+    }
+
+    protected function shouldSkipNpmBuild(Request $request): bool
+    {
+        $messages = [];
+
+        $headMessage = (string) $request->input('head_commit.message', '');
+        if ($headMessage !== '') {
+            $messages[] = $headMessage;
+        }
+
+        $commits = $request->input('commits', []);
+        if (is_array($commits)) {
+            foreach ($commits as $commit) {
+                if (is_array($commit) && isset($commit['message']) && is_string($commit['message'])) {
+                    $messages[] = $commit['message'];
+                }
+            }
+        }
+
+        $joined = strtolower(implode("\n", $messages));
+
+        return str_contains($joined, '[skip-build]')
+            || str_contains($joined, '[no-build]')
+            || str_contains($joined, '#skip-build')
+            || str_contains($joined, '#no-build');
     }
 }

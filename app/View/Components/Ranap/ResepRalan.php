@@ -1,6 +1,6 @@
 <?php
 
-namespace App\View\Components\ralan;
+namespace App\View\Components\Ranap;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

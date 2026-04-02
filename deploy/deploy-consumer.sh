@@ -26,4 +26,11 @@ latest_request="$(tail -n 1 "$QUEUE_FILE" || true)"
 
 printf '%s [deploy-consumer] Menjalankan deploy dari antrean: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$latest_request" >> "$LOG_FILE"
 
-bash "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1
+skip_npm_build="$(printf '%s' "$latest_request" | php -r '$j=json_decode(stream_get_contents(STDIN), true); echo (!empty($j["skip_npm_build"]) ? "true" : "false");' 2>/dev/null || echo "false")"
+
+if [[ "$skip_npm_build" == "true" ]]; then
+    printf '%s [deploy-consumer] Flag antrean: skip_npm_build=true\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
+    DEPLOY_SKIP_NPM_BUILD=true bash "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1
+else
+    bash "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1
+fi

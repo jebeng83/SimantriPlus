@@ -1,6 +1,6 @@
 <?php
 
-namespace App\View\Components\ranap;
+namespace App\View\Components\Ranap;
 use Illuminate\View\Component;
 use DB;
 
