@@ -49,6 +49,9 @@ const MenuItem = ({ item, collapsed, idx }) => {
   const prefetch = (url) => {
     try {
       if (!url || url === '#' || typeof url !== 'string') return;
+      const pathname = new URL(url, window.location.origin).pathname.replace(/\/$/, '');
+      // Hindari prefetch untuk halaman berat/sensitif agar tidak memicu 503 saat hover.
+      if (pathname === '/reg-periksa') return;
       const exists = document.querySelector(`link[rel="prefetch"][href="${url}"]`);
       if (exists) return;
       const link = document.createElement('link');

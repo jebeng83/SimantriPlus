@@ -877,6 +877,13 @@
             $('#btnEditPasien').attr('href', '/data-pasien/' + patient.no_rkm_medis + '/edit');
         }
         
+        function getMetaData(payload) {
+            const meta = (payload && (payload.metaData || payload.metadata)) ? (payload.metaData || payload.metadata) : {};
+            const code = Number(meta.code || 0);
+            const message = String(meta.message || '');
+            return { code, message };
+        }
+
         // Fungsi untuk mengecek status BPJS
         function checkBPJSStatus(noKartu) {
             $.ajax({
@@ -884,8 +891,9 @@
                 type: 'GET',
                 success: function(response) {
                     $('#bpjsLoading').hide();
+                    const metaData = getMetaData(response);
                     
-                    if (response.metaData.code === 200 && response.response) {
+                    if (metaData.code === 200 && response.response) {
                         const data = response.response;
                         
                         // Tampilkan data BPJS
@@ -927,41 +935,41 @@
                         $('#bpjsContent').hide();
                         
                         // Klasifikasi pesan error berdasarkan kode dan pesan
-                        if (response.metaData.code === 401 || response.metaData.code === 403 || 
-                            (response.metaData.message && response.metaData.message.includes('Password Pcare'))) {
+                        if (metaData.code === 401 || metaData.code === 403 || 
+                            (metaData.message && metaData.message.includes('Password Pcare'))) {
                             // Error authentication/credential
                             $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + response.metaData.message + '</b>');
+                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + (metaData.message || 'Maaf Cek Kembali Password Pcare Anda') + '</b>');
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.code === 201) {
+                        } else if (metaData.code === 201) {
                             // Data tidak ditemukan (biasanya kode 201 di BPJS)
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.message && 
-                            (response.metaData.message.includes('tidak ditemukan') || 
-                             response.metaData.message.includes('Peserta tidak ditemukan'))) {
+                        } else if (metaData.message && 
+                            (metaData.message.includes('tidak ditemukan') || 
+                             metaData.message.includes('Peserta tidak ditemukan'))) {
                             // Pesan error mengandung kata "tidak ditemukan"
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
-                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + metaData.message);
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.code >= 500) {
+                        } else if (metaData.code >= 500) {
                             // Error server (500+)
                             $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
-                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
-                        } else if (response.metaData.code >= 400 && response.metaData.code < 500) {
+                        } else if (metaData.code >= 400 && metaData.code < 500) {
                             // Error permintaan (400+)
                             $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
                         } else {
                             // Error umum
                             $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
                         }
                     }
@@ -970,23 +978,23 @@
                     $('#bpjsLoading').hide();
                     $('#bpjsContent').hide();
                     $('#bpjsError').show();
+                    const metaData = getMetaData(xhr ? xhr.responseJSON : null);
+                    const metaMessage = metaData.message;
                     
                     // Cek jika error authentication/credential
                     if (xhr.status === 401 || xhr.status === 403 || 
-                        (xhr.responseJSON && xhr.responseJSON.metaData && 
-                         xhr.responseJSON.metaData.message && 
-                         xhr.responseJSON.metaData.message.includes('Password Pcare'))) {
+                        (metaMessage && metaMessage.includes('Password Pcare'))) {
                         
                         $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
                         $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + 
-                            (xhr.responseJSON?.metaData?.message || 'Maaf Cek Kembali Password Pcare Anda') + '</b>');
+                            (metaMessage || 'Maaf Cek Kembali Password Pcare Anda') + '</b>');
                         $('#bpjsRetryButtonContainer').hide();
                         $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
                     }
                     // Cek jika error karena nomor kartu tidak ditemukan
-                    else if (xhr.responseJSON && xhr.responseJSON.metaData && 
-                        (xhr.responseJSON.metaData.message.includes('tidak ditemukan') || 
-                         xhr.responseJSON.metaData.message.includes('Peserta tidak ditemukan'))) {
+                    else if (metaMessage && 
+                        (metaMessage.includes('tidak ditemukan') || 
+                         metaMessage.includes('Peserta tidak ditemukan'))) {
                         
                         $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                         $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak ditemukan di database BPJS');
@@ -1008,11 +1016,11 @@
                     else {
                         $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
                         $('#bpjsErrorMessage').html('<b>Tidak dapat memperoleh data BPJS.</b><br>' + 
-                                                  (xhr.responseJSON?.metaData?.message || 'Gagal menghubungi server BPJS dengan kode error: ' + xhr.status));
+                                                  (metaMessage || 'Gagal menghubungi server BPJS dengan kode error: ' + xhr.status));
                         $('#bpjsRetryButtonContainer').show();
                         
-                        // Coba alternatif dengan endpoint lain jika gagal
-                        if (xhr.status === 404 || xhr.status === 400) {
+                        // Coba alternatif hanya jika endpoint utama benar-benar tidak ditemukan.
+                        if (xhr.status === 404) {
                             retryWithAlternativeEndpoint(noKartu);
                         }
                     }
@@ -1029,8 +1037,9 @@
                 type: 'GET',
                 success: function(response) {
                     $('#bpjsLoading').hide();
+                    const metaData = getMetaData(response);
                     
-                    if (response.metaData.code === 200 && response.response) {
+                    if (metaData.code === 200 && response.response) {
                         const data = response.response;
                         
                         // Tampilkan data BPJS
@@ -1074,41 +1083,41 @@
                         $('#bpjsContent').hide();
                         
                         // Klasifikasi pesan error berdasarkan kode dan pesan
-                        if (response.metaData.code === 401 || response.metaData.code === 403 || 
-                            (response.metaData.message && response.metaData.message.includes('Password Pcare'))) {
+                        if (metaData.code === 401 || metaData.code === 403 || 
+                            (metaData.message && metaData.message.includes('Password Pcare'))) {
                             // Error authentication/credential
                             $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + response.metaData.message + '</b>');
+                            $('#bpjsErrorMessage').html('<i class="fas fa-exclamation-triangle"></i> <b>' + (metaData.message || 'Maaf Cek Kembali Password Pcare Anda') + '</b>');
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.code === 201) {
+                        } else if (metaData.code === 201) {
                             // Data tidak ditemukan (biasanya kode 201 di BPJS)
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
                             $('#bpjsErrorMessage').html('<b>Informasi:</b> Nomor kartu BPJS <b>' + noKartu + '</b> tidak terdaftar di database BPJS');
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.message && 
-                            (response.metaData.message.includes('tidak ditemukan') || 
-                             response.metaData.message.includes('Peserta tidak ditemukan'))) {
+                        } else if (metaData.message && 
+                            (metaData.message.includes('tidak ditemukan') || 
+                             metaData.message.includes('Peserta tidak ditemukan'))) {
                             // Pesan error mengandung kata "tidak ditemukan"
                             $('#bpjsError').removeClass('alert-danger alert-warning').addClass('alert-info');
-                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Informasi:</b> ' + metaData.message);
                             $('#bpjsRetryButtonContainer').hide();
                             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
-                        } else if (response.metaData.code >= 500) {
+                        } else if (metaData.code >= 500) {
                             // Error server (500+)
                             $('#bpjsError').removeClass('alert-info alert-warning').addClass('alert-danger');
-                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Server BPJS mengalami masalah.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
-                        } else if (response.metaData.code >= 400 && response.metaData.code < 500) {
+                        } else if (metaData.code >= 400 && metaData.code < 500) {
                             // Error permintaan (400+)
                             $('#bpjsError').removeClass('alert-info alert-danger').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Permintaan tidak valid.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
                         } else {
                             // Error umum
                             $('#bpjsError').removeClass('alert-info').addClass('alert-warning');
-                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + response.metaData.code + '<br>Pesan: ' + response.metaData.message);
+                            $('#bpjsErrorMessage').html('<b>Gagal mendapatkan data BPJS.</b><br>Kode: ' + metaData.code + '<br>Pesan: ' + (metaData.message || '-'));
                             $('#bpjsRetryButtonContainer').show();
                         }
                     }
