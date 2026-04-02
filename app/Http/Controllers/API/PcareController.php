@@ -638,17 +638,31 @@ class PcareController extends Controller
             ]);
             
             // Penanganan khusus untuk Kunjungan Sehat dari fungsi daftarKunjunganSehat()
-            if (isset($request->kunjSakit) && $request->kunjSakit === false && 
+            $kunjSakitRaw = $request->input('kunjSakit');
+            $isKunjunganSehat = false;
+            if (is_bool($kunjSakitRaw)) {
+                $isKunjunganSehat = ($kunjSakitRaw === false);
+            } elseif (is_string($kunjSakitRaw)) {
+                $kunjSakitNorm = strtolower(trim($kunjSakitRaw));
+                $isKunjunganSehat = in_array($kunjSakitNorm, ['false', '0', 'kunjungan sehat'], true);
+            } elseif (is_numeric($kunjSakitRaw)) {
+                $isKunjunganSehat = ((int) $kunjSakitRaw === 0);
+            }
+
+            if ($isKunjunganSehat && 
                 isset($request->noKartu) && !isset($request->no_rawat) && !isset($request->no_rkm_medis) && 
                 isset($request->keluhan) && $request->keluhan === 'Konsultasi Kesehatan') {
                 
                 Log::info('PCare Kunjungan Sehat - Request Khusus Terdeteksi');
                 
                 // Persiapkan data untuk dikirim ke PCare (minimal yang diperlukan)
+                $providerFallback = config('bpjs.pcare.kode_ppk', env('BPJS_PCARE_KODE_PPK', '11251919'));
+                $noKartu = preg_replace('/[^0-9]/', '', (string) $request->noKartu);
+                $noKartu = str_pad(ltrim($noKartu, '0'), 13, '0', STR_PAD_LEFT);
                 $dataRequest = [
-                    'kdProviderPeserta' => $request->kdProviderPeserta ?? env('BPJS_PCARE_KODE_PPK', '11251919'),
-                    'tglDaftar' => $request->tglDaftar,
-                    'noKartu' => $request->noKartu,
+                    'kdProviderPeserta' => $request->kdProviderPeserta ?: $providerFallback,
+                    'tglDaftar' => $request->tglDaftar ?: now()->format('d-m-Y'),
+                    'noKartu' => $noKartu,
                     'kdPoli' => $request->kdPoli ?? '021',
                     'keluhan' => $request->keluhan ?? 'Konsultasi Kesehatan',
                     'kunjSakit' => false,
@@ -662,6 +676,11 @@ class PcareController extends Controller
                     'rujukBalik' => $request->rujukBalik ?? '0',
                     'kdTkp' => $request->kdTkp ?? '10'
                 ];
+
+                // Sertakan kdSadar bila dikirim client.
+                if ($request->filled('kdSadar')) {
+                    $dataRequest['kdSadar'] = (string) $request->kdSadar;
+                }
                 
                 Log::info('PCare Kunjungan Sehat - Request Data', [
                     'data' => $dataRequest

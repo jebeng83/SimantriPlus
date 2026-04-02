@@ -671,6 +671,9 @@
     })();
 
     $(document).ready(function() {
+        // Simpan provider peserta BPJS aktif untuk kebutuhan kirim kunjungan sehat.
+        let currentBpjsProviderCode = '';
+
         // Animasi untuk elemen saat halaman dimuat
         $('.info-box').each(function(index) {
             $(this).css({
@@ -834,6 +837,7 @@
             $('#bpjsContent').hide();
             $('#bpjsError').hide();
             $('#icareBpjsContainer').hide(); // Sembunyikan tombol i-Care
+            currentBpjsProviderCode = '';
             
             // Jika ada nomor BPJS, cek status kepesertaan
             if (patient.no_peserta) {
@@ -905,6 +909,7 @@
                         $('#bpjsJenisPeserta').text(data.jnsPeserta && data.jnsPeserta.nama ? data.jnsPeserta.nama : '-');
                         $('#bpjsFaskes').text(data.kdProviderPst && data.kdProviderPst.nmProvider ? data.kdProviderPst.nmProvider : '-');
                         $('#bpjsKelas').text(data.jnsKelas && data.jnsKelas.nama ? data.jnsKelas.nama : '-');
+                        currentBpjsProviderCode = (data.kdProviderPst && data.kdProviderPst.kdProvider) ? data.kdProviderPst.kdProvider : '';
                         
                         // Perbarui nomor BPJS pada komponen i-Care (tetap diatur tapi tidak ditampilkan)
                         $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
@@ -1053,6 +1058,7 @@
                         $('#bpjsJenisPeserta').text(data.jnsPeserta && data.jnsPeserta.nama ? data.jnsPeserta.nama : '-');
                         $('#bpjsFaskes').text(data.kdProviderPst && data.kdProviderPst.nmProvider ? data.kdProviderPst.nmProvider : '-');
                         $('#bpjsKelas').text(data.jnsKelas && data.jnsKelas.nama ? data.jnsKelas.nama : '-');
+                        currentBpjsProviderCode = (data.kdProviderPst && data.kdProviderPst.kdProvider) ? data.kdProviderPst.kdProvider : '';
                         
                         // Perbarui nomor BPJS pada komponen i-Care (tetap diatur tapi tidak ditampilkan)
                         $('#icareBpjsContainer button').attr('onclick', `showIcareHistory('${data.noKartu}', '102')`);
@@ -1154,6 +1160,7 @@
             $('#bpjsContent').hide();
             $('#bpjsError').hide();
             $('#icareBpjsContainer').hide();
+            currentBpjsProviderCode = '';
         });
 
         // Fungsi untuk mendaftarkan kunjungan sehat
@@ -1170,6 +1177,17 @@
                 return;
             }
             
+            const kdProviderPeserta = currentBpjsProviderCode || '{{ $kdProviderPeserta ?? '' }}';
+            if (!kdProviderPeserta || kdProviderPeserta === '-') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Provider Tidak Ditemukan',
+                    text: 'Kode provider peserta BPJS tidak tersedia. Buka ulang detail pasien lalu coba lagi.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
             // Konfirmasi pendaftaran
             Swal.fire({
                 title: 'Daftar Kunjungan Sehat',
@@ -1199,7 +1217,7 @@
                         dataType: 'json',
                         contentType: 'application/json',
                         data: JSON.stringify({
-                            kdProviderPeserta: '{{ $kdProviderPeserta }}',
+                            kdProviderPeserta: kdProviderPeserta,
                             noKartu: noKartu,
                             tglDaftar: moment().format('DD-MM-YYYY'),
                             kdPoli: '021',
@@ -1218,7 +1236,7 @@
                         }),
                         success: function(response) {
                             Swal.close();
-                            if (response.metaData && (response.metaData.code === 200 || response.metaData.code === 201)) {
+                            if (response.metaData && response.metaData.code === 201 && response.response && response.response.message) {
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil',
