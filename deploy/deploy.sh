@@ -47,12 +47,26 @@ SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-$(read_dotenv_value DEPLOY_SKIP_NPM_BUI
 [[ -n "$SKIP_NPM_BUILD" ]] || SKIP_NPM_BUILD="false"
 SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-$(read_dotenv_value DEPLOY_SKIP_MIGRATIONS)}"
 [[ -n "$SKIP_MIGRATIONS" ]] || SKIP_MIGRATIONS="false"
+DB_HEALTHCHECK="${DEPLOY_DB_HEALTHCHECK:-$(read_dotenv_value DEPLOY_DB_HEALTHCHECK)}"
+[[ -n "$DB_HEALTHCHECK" ]] || DB_HEALTHCHECK="true"
 RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-$(read_dotenv_value DEPLOY_RESTART_COMMAND)}"
 SKIP_NPM_BUILD="$(normalize_bool "$SKIP_NPM_BUILD")"
 SKIP_MIGRATIONS="$(normalize_bool "$SKIP_MIGRATIONS")"
+DB_HEALTHCHECK="$(normalize_bool "$DB_HEALTHCHECK")"
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+}
+
+run_db_healthcheck() {
+    local output
+    if output=$("$PHP_BIN" -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $kernel=$app->make(Illuminate\Contracts\Console\Kernel::class); $kernel->bootstrap(); try { Illuminate\Support\Facades\DB::select("select 1"); echo "DB_OK\n"; } catch (\Throwable $e) { fwrite(STDERR, "DB_FAIL: ".$e->getMessage()."\n"); exit(1); }' 2>&1); then
+        log "DB healthcheck berhasil (select 1)."
+    else
+        output="${output//$'\n'/ }"
+        log "DB healthcheck gagal: ${output}"
+        return 1
+    fi
 }
 
 mkdir -p "$(dirname "$LOCK_FILE")"
@@ -66,7 +80,7 @@ fi
 cd "$APP_DIR"
 
 log "Mulai deploy branch ${BRANCH}"
-log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}"
+log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}, db_healthcheck=${DB_HEALTHCHECK}"
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
@@ -107,6 +121,12 @@ fi
 
 if [[ -n "$RESTART_COMMAND" ]]; then
     bash -lc "$RESTART_COMMAND" || true
+fi
+
+if [[ "$DB_HEALTHCHECK" == "true" ]]; then
+    run_db_healthcheck
+else
+    log "DB healthcheck dilewati (DEPLOY_DB_HEALTHCHECK=false)."
 fi
 
 log "Deploy selesai."

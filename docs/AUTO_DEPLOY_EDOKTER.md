@@ -15,6 +15,7 @@ Panduan ini mengikuti pola "jari emas": GitHub Webhook memanggil endpoint Larave
   - `DEPLOY_SCRIPT_PATH`
   - `DEPLOY_LOG_PATH`
   - `DEPLOY_QUEUE_PATH`
+  - `DEPLOY_DB_HEALTHCHECK` (default `true`)
 
 ## 2) Setup di server
 
@@ -34,6 +35,7 @@ DEPLOY_SCRIPT_PATH=/www/wwwroot/faskesku.my.id/edokter/deploy/deploy.sh
 DEPLOY_LOG_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 DEPLOY_QUEUE_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/app/deploy-webhook.queue
 DEPLOY_SKIP_MIGRATIONS=true
+DEPLOY_DB_HEALTHCHECK=true
 
 # Opsional:
 # DEPLOY_SKIP_NPM_BUILD=true
@@ -106,6 +108,7 @@ tail -f /www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 - Branch deploy saat ini `master` (bukan `main`).
 - Script memakai `git pull --ff-only` agar aman dan tidak rewrite history.
 - Jika database lama belum sinkron dengan tabel `migrations`, aktifkan `DEPLOY_SKIP_MIGRATIONS=true`.
+- Script menjalankan healthcheck DB `select 1` di akhir deploy saat `DEPLOY_DB_HEALTHCHECK=true`.
 - Jika `git pull` gagal karena permission/safe directory, set:
 
 ```bash
