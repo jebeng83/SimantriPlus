@@ -95,13 +95,18 @@ class PcareController extends Controller
                         'endpoint' => $endpoint,
                         'response_type' => gettype($peserta),
                     ]);
+
+                    // Beberapa respons BPJS mengembalikan code=200 namun response=null.
+                    // Normalisasi ke format "data tidak ditemukan" agar frontend tidak
+                    // menganggap ini sebagai error server.
                     return response()->json([
                         'metaData' => [
-                            'code' => 502,
-                            'message' => 'Response PCare tidak valid (payload peserta kosong/invalid).',
+                            'code' => 201,
+                            'message' => 'Data peserta tidak ditemukan di PCare.',
                         ],
-                        'response' => $response,
-                    ], 502);
+                        'response' => null,
+                    ], 200);
+
                 }
 
                 $sex = strtoupper((string) data_get($peserta, 'sex', ''));
