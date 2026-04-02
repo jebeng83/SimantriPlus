@@ -50,7 +50,21 @@ class PcareController extends Controller
             $cacheKey = 'peserta_' . $noKartu;
             if (Cache::has($cacheKey)) {
                 Log::info('PCare Get Peserta From Cache', ['noKartu' => $noKartu]);
-                return response()->json(Cache::get($cacheKey));
+                $cached = Cache::get($cacheKey);
+                $cachedMetaCode = (int) data_get($cached, 'metaData.code', 0);
+                $cachedPeserta = data_get($cached, 'response');
+
+                if ($cachedMetaCode === 200 && !is_array($cachedPeserta)) {
+                    return response()->json([
+                        'metaData' => [
+                            'code' => 201,
+                            'message' => 'Data peserta tidak ditemukan di PCare.',
+                        ],
+                        'response' => null,
+                    ], 200);
+                }
+
+                return response()->json($cached, $this->resolvePcareHttpStatus($cached));
             }
 
             // Log request
@@ -85,9 +99,6 @@ class PcareController extends Controller
 
             // Cek response
             if ($metaCode === 200) {
-                // Simpan ke cache selama 6 jam
-                Cache::put($cacheKey, $response, now()->addHours(6));
-                
                 // Format response sesuai dengan contoh Java
                 $peserta = data_get($response, 'response');
                 if (!is_array($peserta)) {
@@ -99,13 +110,16 @@ class PcareController extends Controller
                     // Beberapa respons BPJS mengembalikan code=200 namun response=null.
                     // Normalisasi ke format "data tidak ditemukan" agar frontend tidak
                     // menganggap ini sebagai error server.
-                    return response()->json([
+                    $notFoundResponse = [
                         'metaData' => [
                             'code' => 201,
                             'message' => 'Data peserta tidak ditemukan di PCare.',
                         ],
                         'response' => null,
-                    ], 200);
+                    ];
+
+                    Cache::put($cacheKey, $notFoundResponse, now()->addHours(6));
+                    return response()->json($notFoundResponse, 200);
 
                 }
 
@@ -150,6 +164,7 @@ class PcareController extends Controller
                 ];
 
                 $response['formattedData'] = $formattedData;
+                Cache::put($cacheKey, $response, now()->addHours(6));
                 return response()->json($response);
             }
 
