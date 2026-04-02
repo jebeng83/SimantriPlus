@@ -10,6 +10,7 @@ use App\Http\Controllers\RegPeriksaController;
 use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
+use App\Http\Controllers\DeployWebhookController;
 use App\Http\Controllers\MobileJknController;
 use App\Http\Controllers\SkriningController;
 use App\Http\Controllers\PcareKunjunganController;
@@ -33,6 +34,7 @@ Route::get('/test-bpjs-connection', [BPJSTestController::class, 'testConnection'
 Route::get('/', [App\Http\Controllers\LoginController::class, 'index'])->name('login');
 Route::post('/customlogin', [App\Http\Controllers\LoginController::class, 'customLogin'])->name('customlogin');
 Route::get('/logout', [App\Http\Controllers\HomeController::class, 'logout'])->name('logout');
+Route::post('/webhook-deploy', [DeployWebhookController::class, 'handle'])->name('webhook.deploy');
 
 // Error page routes
 Route::get('/error', [App\Http\Controllers\ErrorController::class, 'index'])->name('error.500');

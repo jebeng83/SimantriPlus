@@ -60,6 +60,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deploy Webhook
+    |--------------------------------------------------------------------------
+    |
+    | Pengaturan ini dipakai endpoint webhook deploy agar push ke GitHub bisa
+    | otomatis menjalankan script deploy di server.
+    |
+    */
+    'deploy_webhook_secret' => env('DEPLOY_WEBHOOK_SECRET'),
+    'deploy_webhook_branch' => env('DEPLOY_WEBHOOK_BRANCH', 'master'),
+    'deploy_script_path' => env('DEPLOY_SCRIPT_PATH', base_path('deploy/deploy.sh')),
+    'deploy_log_path' => env('DEPLOY_LOG_PATH', storage_path('logs/deploy.log')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

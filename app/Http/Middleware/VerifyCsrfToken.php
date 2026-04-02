@@ -18,6 +18,7 @@ class VerifyCsrfToken extends Middleware
         '/refresh-csrf',
         '/customlogin',
         '/ilp/whatsapp/node/*',
+        '/webhook-deploy',
         '/test-*',
     ];
     
