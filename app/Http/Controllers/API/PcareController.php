@@ -134,17 +134,7 @@ class PcareController extends Controller
                 'endpoint' => $endpoint
             ]);
 
-            // Cek jika ada error authentication
-            if (isset($response['metaData']) && $response['metaData']['code'] == 401) {
-                return response()->json($response, 401);
-            }
-            
-            // Cek jika ada error authentication
-            if (isset($response['metaData']) && $response['metaData']['code'] == 401) {
-                return response()->json($response, 401);
-            }
-            
-            return response()->json($response, 400);
+            return response()->json($response, $this->resolvePcareHttpStatus($response));
 
         } catch (\Exception $e) {
             Log::error('PCare Get Peserta Error', [
@@ -204,7 +194,7 @@ class PcareController extends Controller
                 return response()->json($response);
             }
 
-            return response()->json($response, 400);
+            return response()->json($response, $this->resolvePcareHttpStatus($response));
 
         } catch (\Exception $e) {
             Log::error('PCare Get Peserta By NIK Error', [
@@ -220,6 +210,28 @@ class PcareController extends Controller
                 'response' => null
             ], 500);
         }
+    }
+
+    /**
+     * Samakan HTTP status agar error bisnis dari BPJS tetap bisa diproses di frontend.
+     * - 401/403 tetap dipertahankan untuk kasus kredensial/otorisasi.
+     * - 5xx dipetakan sebagai upstream error.
+     * - Kode lain (mis. peserta tidak ditemukan/invalid data dari BPJS) dikirim 200
+     *   agar UI bisa membaca metaData.code tanpa terjebak di callback error jQuery.
+     */
+    private function resolvePcareHttpStatus(array $response): int
+    {
+        $metaCode = isset($response['metaData']['code']) ? (int) $response['metaData']['code'] : 0;
+
+        if ($metaCode === 401 || $metaCode === 403 || $metaCode === 429) {
+            return $metaCode;
+        }
+
+        if ($metaCode >= 500) {
+            return 502;
+        }
+
+        return 200;
     }
 
     /**
@@ -1440,4 +1452,3 @@ class PcareController extends Controller
         }
     }
 }
-
