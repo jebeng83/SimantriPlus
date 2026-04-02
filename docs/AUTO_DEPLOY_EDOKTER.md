@@ -16,6 +16,7 @@ Panduan ini mengikuti pola "jari emas": GitHub Webhook memanggil endpoint Larave
   - `DEPLOY_LOG_PATH`
   - `DEPLOY_QUEUE_PATH`
   - `DEPLOY_DB_HEALTHCHECK` (default `true`)
+  - `DEPLOY_AUTO_RESET_ENV_PRODUCTION` (default `true`)
 
 ## 2) Setup di server
 
@@ -36,6 +37,7 @@ DEPLOY_LOG_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 DEPLOY_QUEUE_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/app/deploy-webhook.queue
 DEPLOY_SKIP_MIGRATIONS=true
 DEPLOY_DB_HEALTHCHECK=true
+DEPLOY_AUTO_RESET_ENV_PRODUCTION=true
 
 # Opsional:
 # DEPLOY_SKIP_NPM_BUILD=true
@@ -109,6 +111,8 @@ tail -f /www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
 - Script memakai `git pull --ff-only` agar aman dan tidak rewrite history.
 - Jika database lama belum sinkron dengan tabel `migrations`, aktifkan `DEPLOY_SKIP_MIGRATIONS=true`.
 - Script menjalankan healthcheck DB `select 1` di akhir deploy saat `DEPLOY_DB_HEALTHCHECK=true`.
+- Script menampilkan ringkasan healthcheck di awal deploy log untuk monitoring cepat.
+- Jika `.env.production` berubah lokal, script otomatis backup+reset sebelum `git pull`, lalu memulihkan lagi file lokal setelah pull saat `DEPLOY_AUTO_RESET_ENV_PRODUCTION=true`.
 - Jika `git pull` gagal karena permission/safe directory, set:
 
 ```bash

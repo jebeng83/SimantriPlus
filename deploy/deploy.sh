@@ -43,16 +43,22 @@ BRANCH="${DEPLOY_WEBHOOK_BRANCH:-$(read_dotenv_value DEPLOY_WEBHOOK_BRANCH)}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
+LOG_FILE="${DEPLOY_LOG_PATH:-$(read_dotenv_value DEPLOY_LOG_PATH)}"
+[[ -n "$LOG_FILE" ]] || LOG_FILE="${APP_DIR}/storage/logs/deploy.log"
 SKIP_NPM_BUILD="${DEPLOY_SKIP_NPM_BUILD:-$(read_dotenv_value DEPLOY_SKIP_NPM_BUILD)}"
 [[ -n "$SKIP_NPM_BUILD" ]] || SKIP_NPM_BUILD="false"
 SKIP_MIGRATIONS="${DEPLOY_SKIP_MIGRATIONS:-$(read_dotenv_value DEPLOY_SKIP_MIGRATIONS)}"
 [[ -n "$SKIP_MIGRATIONS" ]] || SKIP_MIGRATIONS="false"
 DB_HEALTHCHECK="${DEPLOY_DB_HEALTHCHECK:-$(read_dotenv_value DEPLOY_DB_HEALTHCHECK)}"
 [[ -n "$DB_HEALTHCHECK" ]] || DB_HEALTHCHECK="true"
+AUTO_RESET_ENV_PRODUCTION="${DEPLOY_AUTO_RESET_ENV_PRODUCTION:-$(read_dotenv_value DEPLOY_AUTO_RESET_ENV_PRODUCTION)}"
+[[ -n "$AUTO_RESET_ENV_PRODUCTION" ]] || AUTO_RESET_ENV_PRODUCTION="true"
 RESTART_COMMAND="${DEPLOY_RESTART_COMMAND:-$(read_dotenv_value DEPLOY_RESTART_COMMAND)}"
 SKIP_NPM_BUILD="$(normalize_bool "$SKIP_NPM_BUILD")"
 SKIP_MIGRATIONS="$(normalize_bool "$SKIP_MIGRATIONS")"
 DB_HEALTHCHECK="$(normalize_bool "$DB_HEALTHCHECK")"
+AUTO_RESET_ENV_PRODUCTION="$(normalize_bool "$AUTO_RESET_ENV_PRODUCTION")"
+ENV_PROD_BACKUP_FILE=""
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -62,11 +68,58 @@ run_db_healthcheck() {
     local output
     if output=$("$PHP_BIN" -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $kernel=$app->make(Illuminate\Contracts\Console\Kernel::class); $kernel->bootstrap(); try { Illuminate\Support\Facades\DB::select("select 1"); echo "DB_OK\n"; } catch (\Throwable $e) { fwrite(STDERR, "DB_FAIL: ".$e->getMessage()."\n"); exit(1); }' 2>&1); then
         log "DB healthcheck berhasil (select 1)."
+        log "Ringkasan healthcheck: status=ok."
     else
         output="${output//$'\n'/ }"
         log "DB healthcheck gagal: ${output}"
+        log "Ringkasan healthcheck: status=failed."
         return 1
     fi
+}
+
+latest_healthcheck_summary() {
+    local line=""
+    if [[ -f "$LOG_FILE" ]]; then
+        line="$(grep -E '\[deploy-edokter\] (DB healthcheck berhasil|DB healthcheck gagal|DB healthcheck dilewati|Ringkasan healthcheck: status=)' "$LOG_FILE" | tail -n 1 || true)"
+    fi
+
+    if [[ -n "$line" ]]; then
+        echo "$line"
+    else
+        echo "belum ada riwayat healthcheck."
+    fi
+}
+
+prepare_env_production_before_pull() {
+    local env_file=".env.production"
+    local backup_file=""
+
+    if [[ "$AUTO_RESET_ENV_PRODUCTION" != "true" ]]; then
+        log "Auto reset ${env_file} dimatikan (DEPLOY_AUTO_RESET_ENV_PRODUCTION=false)."
+        return
+    fi
+
+    if ! git ls-files --error-unmatch "$env_file" >/dev/null 2>&1; then
+        return
+    fi
+
+    if [[ -n "$(git status --porcelain -- "$env_file")" ]]; then
+        backup_file="${APP_DIR}/storage/logs/env-production-before-pull-$(date '+%Y%m%d-%H%M%S').bak"
+        cp -a "$env_file" "$backup_file" || true
+        git checkout -- "$env_file"
+        ENV_PROD_BACKUP_FILE="$backup_file"
+        log "Perubahan lokal ${env_file} dibackup ke ${backup_file}, lalu di-reset agar git pull tidak bentrok."
+    fi
+}
+
+restore_env_production_after_pull() {
+    local env_file=".env.production"
+    if [[ -z "$ENV_PROD_BACKUP_FILE" || ! -f "$ENV_PROD_BACKUP_FILE" ]]; then
+        return
+    fi
+
+    cp -a "$ENV_PROD_BACKUP_FILE" "$env_file" || true
+    log "Perubahan lokal ${env_file} dipulihkan dari backup ${ENV_PROD_BACKUP_FILE}."
 }
 
 mkdir -p "$(dirname "$LOCK_FILE")"
@@ -80,9 +133,13 @@ fi
 cd "$APP_DIR"
 
 log "Mulai deploy branch ${BRANCH}"
-log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}, db_healthcheck=${DB_HEALTHCHECK}"
+log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}, db_healthcheck=${DB_HEALTHCHECK}, auto_reset_env_production=${AUTO_RESET_ENV_PRODUCTION}"
+log "Ringkasan healthcheck sebelumnya: $(latest_healthcheck_summary)"
+log "Ringkasan healthcheck saat ini: status=pending."
+prepare_env_production_before_pull
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
+restore_env_production_after_pull
 
 if ! command -v "$COMPOSER_BIN" >/dev/null 2>&1; then
     log "Gagal: composer tidak ditemukan."
@@ -127,6 +184,7 @@ if [[ "$DB_HEALTHCHECK" == "true" ]]; then
     run_db_healthcheck
 else
     log "DB healthcheck dilewati (DEPLOY_DB_HEALTHCHECK=false)."
+    log "Ringkasan healthcheck: status=skipped."
 fi
 
 log "Deploy selesai."
