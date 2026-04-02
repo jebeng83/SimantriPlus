@@ -8,11 +8,13 @@ Panduan ini mengikuti pola "jari emas": GitHub Webhook memanggil endpoint Larave
 - Controller: `app/Http/Controllers/DeployWebhookController.php`
 - CSRF exception: `app/Http/Middleware/VerifyCsrfToken.php`
 - Script deploy: `deploy/deploy.sh`
+- Script consumer antrean deploy: `deploy/deploy-consumer.sh`
 - Konfigurasi env/app:
   - `DEPLOY_WEBHOOK_SECRET`
   - `DEPLOY_WEBHOOK_BRANCH` (default `master`)
   - `DEPLOY_SCRIPT_PATH`
   - `DEPLOY_LOG_PATH`
+  - `DEPLOY_QUEUE_PATH`
 
 ## 2) Setup di server
 
@@ -30,6 +32,7 @@ DEPLOY_WEBHOOK_SECRET=isi_dengan_secret_panjang_acak
 DEPLOY_WEBHOOK_BRANCH=master
 DEPLOY_SCRIPT_PATH=/www/wwwroot/faskesku.my.id/edokter/deploy/deploy.sh
 DEPLOY_LOG_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/logs/deploy.log
+DEPLOY_QUEUE_PATH=/www/wwwroot/faskesku.my.id/edokter/storage/app/deploy-webhook.queue
 
 # Opsional:
 # DEPLOY_SKIP_NPM_BUILD=true
@@ -42,6 +45,16 @@ Reload config Laravel:
 cd /www/wwwroot/faskesku.my.id/edokter
 php artisan optimize:clear
 php artisan config:cache
+```
+
+Aktifkan mode fallback consumer (wajib jika `exec/proc_open/popen` dibatasi di PHP-FPM):
+
+```bash
+cd /www/wwwroot/faskesku.my.id/edokter
+chmod +x deploy/deploy.sh deploy/deploy-consumer.sh
+
+# Tambahkan cron (jalan tiap menit)
+(crontab -l 2>/dev/null; echo '* * * * * /bin/bash /www/wwwroot/faskesku.my.id/edokter/deploy/deploy-consumer.sh >/dev/null 2>&1') | crontab -
 ```
 
 ## 3) Setup GitHub Webhook
@@ -72,7 +85,9 @@ curl -i -X POST "https://faskesku.my.id/webhook-deploy" \
   -d "$payload"
 ```
 
-Hasil sukses endpoint: `HTTP 200` dengan pesan `Deploy dijalankan`.
+Hasil sukses endpoint:
+- `HTTP 200` -> deploy langsung dijalankan.
+- `HTTP 202` -> deploy masuk antrean fallback, lalu diproses oleh `deploy-consumer.sh` via cron.
 
 Pantau log deploy:
 

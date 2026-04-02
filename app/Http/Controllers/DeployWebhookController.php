@@ -53,12 +53,23 @@ class DeployWebhookController extends Controller
         try {
             $this->runInBackground($scriptPath, $logPath);
         } catch (\Throwable $e) {
-            Log::error('Deploy webhook gagal menjalankan script.', [
-                'error' => $e->getMessage(),
-                'script_path' => $scriptPath,
+            $queuePath = $this->resolvePath((string) config('app.deploy_queue_path', storage_path('app/deploy-webhook.queue')));
+            $this->queueDeployRequest($queuePath, [
+                'repository' => (string) $request->input('repository.full_name', ''),
+                'ref' => $actualRef,
+                'pusher' => (string) $request->input('pusher.name', ''),
+                'queued_at' => date('c'),
+                'reason' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Gagal menjalankan deploy script'], 500);
+            Log::warning('Deploy webhook fallback ke antrean file.', [
+                'error' => $e->getMessage(),
+                'queue_path' => $queuePath,
+            ]);
+
+            return response()->json([
+                'message' => 'Deploy diantrekan (fallback mode). Jalankan consumer deploy di server.',
+            ], 202);
         }
 
         Log::info('Deploy webhook diterima.', [
@@ -151,6 +162,16 @@ class DeployWebhookController extends Controller
         $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
 
         return ! in_array($function, $disabled, true);
+    }
+
+    protected function queueDeployRequest(string $queuePath, array $payload): void
+    {
+        $queueDir = dirname($queuePath);
+        if (! is_dir($queueDir)) {
+            @mkdir($queueDir, 0755, true);
+        }
+
+        @file_put_contents($queuePath, json_encode($payload, JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
 
     protected function resolveDeploySecret(): string

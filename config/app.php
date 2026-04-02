@@ -71,6 +71,7 @@ return [
     'deploy_webhook_branch' => env('DEPLOY_WEBHOOK_BRANCH', 'master'),
     'deploy_script_path' => env('DEPLOY_SCRIPT_PATH', base_path('deploy/deploy.sh')),
     'deploy_log_path' => env('DEPLOY_LOG_PATH', storage_path('logs/deploy.log')),
+    'deploy_queue_path' => env('DEPLOY_QUEUE_PATH', storage_path('app/deploy-webhook.queue')),
 
     /*
     |--------------------------------------------------------------------------
