@@ -13,6 +13,7 @@ use App\Http\Controllers\AntrianPoliklinikController;
 use App\Http\Controllers\AntrianDisplayController;
 use App\Http\Controllers\MobileJknController;
 use App\Http\Controllers\SkriningController;
+use App\Http\Controllers\DeployWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,9 @@ use App\Http\Controllers\SkriningController;
 
 // Route untuk test BPJS
 Route::get('/test-bpjs-connection', [BPJSTestController::class, 'testConnection'])->name('test.bpjs');
+
+// Webhook deploy dari GitHub (auto deploy)
+Route::post('/webhook-deploy', [DeployWebhookController::class, 'handle'])->name('deploy.webhook');
 
 // Route yang tidak memerlukan autentikasi
 Route::get('/', [App\Http\Controllers\SkriningController::class, 'index'])->name('skrining.minimal');
