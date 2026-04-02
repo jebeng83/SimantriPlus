@@ -56,29 +56,25 @@
         try{
             var __origParse = JSON.parse;
             JSON.parse = function(v){
-                try {
-                    return __origParse.apply(JSON, arguments);
-                } catch (e) {
-                    if (typeof v === 'string'){
-                        var s = v.trim();
-                        if (s === 'auto' || s === 'static'){
-                            return s;
-                        }
-                        if (/^-?\d+(?:\.\d+)?$/.test(s)){
-                            return Number(s);
-                        }
-                        if (/^-?\d+(?:\.\d+)?(px|em|rem|%)$/.test(s)){
-                            return s;
-                        }
-                        if (s === 'true' || s === 'false'){
-                            return s === 'true';
-                        }
-                        if (s === 'null'){
-                            return null;
-                        }
+                if (typeof v === 'string'){
+                    var s = v.trim();
+                    if (s === 'auto' || s === 'static'){
+                        return s;
                     }
-                    throw e;
+                    if (/^-?\d+(?:\.\d+)?$/.test(s)){
+                        return Number(s);
+                    }
+                    if (/^-?\d+(?:\.\d+)?(px|em|rem|%)$/.test(s)){
+                        return s;
+                    }
+                    if (s === 'true' || s === 'false'){
+                        return s === 'true';
+                    }
+                    if (s === 'null'){
+                        return null;
+                    }
                 }
+                return __origParse.apply(JSON, arguments);
             };
         }catch(e){}
     })();
@@ -328,7 +324,7 @@
                     <i class="fas fa-heart"></i> Jadikan Kunjungan Sehat
                 </button>
                 <button type="button" class="btn btn-success" id="btn-selesai">Selesai</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" id="btn-tutup-detail-ckg" data-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -713,6 +709,21 @@
         
         // Release processing status when Detail CKG Sekolah modal is closed
         $('#detailSekolahModal').on('hidden.bs.modal', function () {
+            const currentIdSekolah = $('#detailSekolahModal').data('current-id');
+            const loginNikSekolah = "{{ session('username') }}";
+            const containerSekolah = $('#detail-sekolah-content');
+            const currentAssignedSekolah = (containerSekolah.find('#current-id-petugas-entri').val() || '').trim();
+            if (currentIdSekolah && loginNikSekolah && (!currentAssignedSekolah || currentAssignedSekolah !== loginNikSekolah)) {
+                    $.ajax({
+                        url: "{{ route('ilp.pendaftaran-ckg.update-petugas-entry-sekolah') }}",
+                    type: "POST",
+                    data: {
+                        id: currentIdSekolah,
+                        id_petugas_entri: loginNikSekolah,
+                        _token: "{{ csrf_token() }}"
+                    }
+                });
+            }
             // Find the currently processing record and release it
             $('.detail-sekolah-btn.currently-processing').each(function() {
                 const button = $(this);
@@ -1062,6 +1073,25 @@
             });
         });
         
+        // Update petugas entry hanya ketika tombol tutup diklik
+        $(document).on('click', '#btn-tutup-detail-ckg', function() {
+            const currentId = $('#detailModal').data('current-id');
+            const loginNik = "{{ session('username') }}";
+            const containerUmum = $('#detail-content');
+            const currentAssignedUmum = (containerUmum.find('#current-id-petugas-entri').val() || '').trim();
+            if (currentId && loginNik && (!currentAssignedUmum || currentAssignedUmum !== loginNik)) {
+                $.ajax({
+                    url: "{{ route('ilp.pendaftaran-ckg.update-petugas-entry-sekolah') }}",
+                    type: "POST",
+                    data: {
+                        id: currentId,
+                        id_petugas_entri: loginNik,
+                        _token: "{{ csrf_token() }}"
+                    }
+                });
+            }
+        });
+
         // Release processing status when modal is closed
         $('#detailModal').on('hidden.bs.modal', function () {
             // Find the currently processing record and release it

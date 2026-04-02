@@ -93,6 +93,7 @@
                               </select>
                               <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Field ini wajib diisi</small>
                            @endif
+                           <input type="hidden" id="current-id-petugas-entri" value="{{ $detail->id_petugas_entri ?? '' }}">
                         </td>
                      </tr>
                      <tr>
@@ -1756,28 +1757,15 @@
 
 <script>
 $(document).ready(function() {
-    // Handle petugas entry dropdown change
     $('#id_petugas_entri').on('change', function() {
         var petugasId = $(this).val();
         var pkgId = '{{ $detail->id_pkg ?? "" }}';
-        
-        if (petugasId && pkgId) {
-            // Show loading state
-            $(this).prop('disabled', true);
-            
-<script>
-$(document).ready(function() {
-    // Update petugas entry functionality
-    $('#id_petugas_entri').change(function() {
-        var petugasId = $(this).val();
-        var pkgId = '{{ $detail->id ?? "" }}';
         
         if (!petugasId || !pkgId) {
             toastr.warning('Data tidak lengkap');
             return;
         }
         
-        // Disable the select while processing
         $(this).prop('disabled', true);
         
         $.ajax({
@@ -1790,8 +1778,8 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
+                    $('#current-id-petugas-entri').val(petugasId);
                     toastr.success(response.message || 'Petugas entry berhasil diperbarui');
-                    // Refresh main table without full page reload if available
                     setTimeout(function() {
                         if (window.pendaftaranCKGTable) {
                             window.pendaftaranCKGTable.ajax.reload(null, false);

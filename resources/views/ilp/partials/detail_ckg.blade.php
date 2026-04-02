@@ -79,6 +79,7 @@
                               </select>
                               <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Field ini wajib diisi</small>
                            @endif
+                           <input type="hidden" id="current-id-petugas-entri" value="{{ $detail->id_petugas_entri ?? '' }}">
                         </td>
                      </tr>
                   </table>
