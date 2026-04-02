@@ -50,7 +50,16 @@ class DeployWebhookController extends Controller
             return response()->json(['message' => 'Script deploy tidak ditemukan'], 500);
         }
 
-        $this->runInBackground($scriptPath, $logPath);
+        try {
+            $this->runInBackground($scriptPath, $logPath);
+        } catch (\Throwable $e) {
+            Log::error('Deploy webhook gagal menjalankan script.', [
+                'error' => $e->getMessage(),
+                'script_path' => $scriptPath,
+            ]);
+
+            return response()->json(['message' => 'Gagal menjalankan deploy script'], 500);
+        }
 
         Log::info('Deploy webhook diterima.', [
             'repository' => (string) $request->input('repository.full_name', ''),
@@ -95,6 +104,52 @@ class DeployWebhookController extends Controller
             escapeshellarg($logPath)
         );
 
-        exec($command);
+        if ($this->isFunctionAvailable('popen') && $this->isFunctionAvailable('pclose')) {
+            $handle = @popen($command, 'r');
+            if (is_resource($handle)) {
+                @pclose($handle);
+                return;
+            }
+        }
+
+        if ($this->isFunctionAvailable('proc_open') && $this->isFunctionAvailable('proc_close')) {
+            $process = @proc_open(
+                ['/bin/sh', '-c', $command],
+                [
+                    0 => ['pipe', 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ],
+                $pipes
+            );
+
+            if (is_resource($process)) {
+                foreach ($pipes as $pipe) {
+                    if (is_resource($pipe)) {
+                        fclose($pipe);
+                    }
+                }
+                @proc_close($process);
+                return;
+            }
+        }
+
+        if ($this->isFunctionAvailable('exec')) {
+            @exec($command);
+            return;
+        }
+
+        throw new \RuntimeException('Fungsi eksekusi shell tidak tersedia di server (exec/proc_open/popen).');
+    }
+
+    protected function isFunctionAvailable(string $function): bool
+    {
+        if (! function_exists($function)) {
+            return false;
+        }
+
+        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
+
+        return ! in_array($function, $disabled, true);
     }
 }
