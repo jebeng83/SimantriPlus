@@ -10,7 +10,7 @@ class DeployWebhookController extends Controller
 {
     public function handle(Request $request): JsonResponse
     {
-        $secret = (string) config('app.deploy_webhook_secret', '');
+        $secret = $this->resolveDeploySecret();
         if ($secret === '') {
             Log::warning('Deploy webhook ditolak: DEPLOY_WEBHOOK_SECRET belum di-set.');
 
@@ -151,5 +151,59 @@ class DeployWebhookController extends Controller
         $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
 
         return ! in_array($function, $disabled, true);
+    }
+
+    protected function resolveDeploySecret(): string
+    {
+        $configSecret = trim((string) config('app.deploy_webhook_secret', ''));
+        if ($configSecret !== '') {
+            return $configSecret;
+        }
+
+        return $this->readDotEnvValue('DEPLOY_WEBHOOK_SECRET');
+    }
+
+    protected function readDotEnvValue(string $key): string
+    {
+        $envPath = base_path('.env');
+        if (! is_file($envPath) || ! is_readable($envPath)) {
+            return '';
+        }
+
+        $lines = @file($envPath, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return '';
+        }
+
+        $prefix = $key . '=';
+
+        foreach ($lines as $line) {
+            $trimmed = trim((string) $line);
+
+            if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+                continue;
+            }
+
+            if (! str_starts_with($trimmed, $prefix)) {
+                continue;
+            }
+
+            $value = trim(substr($trimmed, strlen($prefix)));
+
+            if ($value === '') {
+                return '';
+            }
+
+            if (
+                (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))
+            ) {
+                $value = substr($value, 1, -1);
+            }
+
+            return trim($value);
+        }
+
+        return '';
     }
 }
