@@ -59,6 +59,8 @@ SKIP_MIGRATIONS="$(normalize_bool "$SKIP_MIGRATIONS")"
 DB_HEALTHCHECK="$(normalize_bool "$DB_HEALTHCHECK")"
 AUTO_RESET_ENV_PRODUCTION="$(normalize_bool "$AUTO_RESET_ENV_PRODUCTION")"
 ENV_PROD_BACKUP_FILE=""
+USER_INI_BACKUP_FILE=""
+LOCAL_BACKUPS_RESTORED="false"
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -90,7 +92,55 @@ latest_healthcheck_summary() {
     fi
 }
 
-prepare_env_production_before_pull() {
+prepare_user_ini_before_pull() {
+    local ini_file="public/.user.ini"
+    local backup_file=""
+
+    # Handle file whether tracked by git or not - any local change that would block git pull
+    # git ls-files returns 1 if file is not tracked; we still check for local changes
+    local is_tracked=false
+    if git ls-files --error-unmatch "$ini_file" >/dev/null 2>&1; then
+        is_tracked=true
+    fi
+
+    # Check for local changes regardless of tracking status
+    if [[ -n "$(git status --porcelain -- "$ini_file" 2>/dev/null)" ]]; then
+        backup_file="${APP_DIR}/storage/logs/public-user-ini-before-pull-$(date '+%Y%m%d-%H%M%S').bak"
+        cp -a "$ini_file" "$backup_file" || true
+
+        if $is_tracked; then
+            git checkout -- "$ini_file"
+            log "Perubahan lokal ${ini_file} dibackup ke ${backup_file}, lalu di-checkout dari HEAD."
+        else
+            # File not tracked locally but has local changes - remove to allow git pull
+            rm -f "$ini_file"
+            log "File lokal ${ini_file} dibackup ke ${backup_file}, lalu dihapus sementara untuk git pull."
+        fi
+        USER_INI_BACKUP_FILE="$backup_file"
+    fi
+}
+
+restore_user_ini_after_pull() {
+    local ini_file="public/.user.ini"
+    if [[ -z "$USER_INI_BACKUP_FILE" || ! -f "$USER_INI_BACKUP_FILE" ]]; then
+        return
+    fi
+
+    cp -a "$USER_INI_BACKUP_FILE" "$ini_file" || true
+    log "Perubahan lokal ${ini_file} dipulihkan dari backup ${USER_INI_BACKUP_FILE}."
+}
+
+restore_local_backups() {
+    if [[ "$LOCAL_BACKUPS_RESTORED" == "true" ]]; then
+        return
+    fi
+
+    restore_env_production_after_pull
+    restore_user_ini_after_pull
+    LOCAL_BACKUPS_RESTORED="true"
+}
+
+trap restore_local_backups EXIT
     local env_file=".env.production"
     local backup_file=""
 
@@ -137,9 +187,10 @@ log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}
 log "Ringkasan healthcheck sebelumnya: $(latest_healthcheck_summary)"
 log "Ringkasan healthcheck saat ini: status=pending."
 prepare_env_production_before_pull
+prepare_user_ini_before_pull
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
-restore_env_production_after_pull
+restore_local_backups
 
 if ! command -v "$COMPOSER_BIN" >/dev/null 2>&1; then
     log "Gagal: composer tidak ditemukan."
