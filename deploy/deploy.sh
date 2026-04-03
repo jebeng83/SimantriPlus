@@ -141,6 +141,8 @@ restore_local_backups() {
 }
 
 trap restore_local_backups EXIT
+
+prepare_env_production_before_pull() {
     local env_file=".env.production"
     local backup_file=""
 
