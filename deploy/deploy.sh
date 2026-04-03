@@ -61,6 +61,7 @@ AUTO_RESET_ENV_PRODUCTION="$(normalize_bool "$AUTO_RESET_ENV_PRODUCTION")"
 ENV_PROD_BACKUP_FILE=""
 USER_INI_BACKUP_FILE=""
 LOCAL_BACKUPS_RESTORED="false"
+STASHED_FILES=""
 
 log() {
     printf '%s [deploy-edokter] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -92,55 +93,54 @@ latest_healthcheck_summary() {
     fi
 }
 
-prepare_user_ini_before_pull() {
-    local ini_file="public/.user.ini"
-    local backup_file=""
+# Robust: stash ALL local changes (tracked + untracked) before git pull to prevent any file conflicts
+stash_local_changes() {
+    # Check if there are any local changes
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+        log "Menyimpan perubahan lokal sementara dengan git stash (untuk menghindari konflik dengan git pull)..."
 
-    # Handle file whether tracked by git or not - any local change that would block git pull
-    # git ls-files returns 1 if file is not tracked; we still check for local changes
-    local is_tracked=false
-    if git ls-files --error-unmatch "$ini_file" >/dev/null 2>&1; then
-        is_tracked=true
-    fi
-
-    # Check for local changes regardless of tracking status
-    if [[ -n "$(git status --porcelain -- "$ini_file" 2>/dev/null)" ]]; then
-        backup_file="${APP_DIR}/storage/logs/public-user-ini-before-pull-$(date '+%Y%m%d-%H%M%S').bak"
-        cp -a "$ini_file" "$backup_file" || true
-
-        if $is_tracked; then
-            git checkout -- "$ini_file"
-            log "Perubahan lokal ${ini_file} dibackup ke ${backup_file}, lalu di-checkout dari HEAD."
+        if git stash push --include-untracked --message "Auto-stash before deploy $(date '+%Y-%m-%d %H:%M:%S')" 2>/dev/null; then
+            STASHED_FILES="true"
+            log "Perubahan lokal berhasil di-stash."
         else
-            # File not tracked locally but has local changes - remove to allow git pull
-            rm -f "$ini_file"
-            log "File lokal ${ini_file} dibackup ke ${backup_file}, lalu dihapus sementara untuk git pull."
+            log "WARNING: git stash gagal, mencoba handle per-file..."
+
+            # Fallback: manually handle tracked files
+            for file in $(git diff --name-only 2>/dev/null); do
+                if [[ -f "$file" ]]; then
+                    local backup_path="${APP_DIR}/storage/logs/pre-deploy-backup-$(date '+%Y%m%d-%H%M%S')-${file//\//_}"
+                    cp -a "$file" "$backup_path" 2>/dev/null || true
+                    log "Backup tracked file: $file -> $backup_path"
+                fi
+                git checkout -- "$file" 2>/dev/null || true
+            done
+
+            # Remove untracked files that would block merge (but preserve dirs)
+            for file in $(git ls-files --others --exclude-standard 2>/dev/null); do
+                if [[ -f "$file" ]]; then
+                    local backup_path="${APP_DIR}/storage/logs/pre-deploy-backup-$(date '+%Y%m%d-%H%M%S')-${file//\//_}"
+                    cp -a "$file" "$backup_path" 2>/dev/null || true
+                    log "Backup untracked file: $file -> $backup_path"
+                    rm -f "$file" 2>/dev/null || true
+                fi
+            done
         fi
-        USER_INI_BACKUP_FILE="$backup_file"
     fi
 }
 
-restore_user_ini_after_pull() {
-    local ini_file="public/.user.ini"
-    if [[ -z "$USER_INI_BACKUP_FILE" || ! -f "$USER_INI_BACKUP_FILE" ]]; then
-        return
+# Restore stashed changes after git pull
+unstash_local_changes() {
+    if [[ "$STASHED_FILES" == "true" ]]; then
+        log "Memulihkan perubahan lokal dari stash..."
+
+        if git stash pop 2>/dev/null; then
+            log "Perubahan lokal berhasil dipulihkan dari stash."
+        else
+            log "WARNING: Gagal pop stash. Cek 'git stash list' secara manual untuk memulihkan."
+            git stash list
+        fi
     fi
-
-    cp -a "$USER_INI_BACKUP_FILE" "$ini_file" || true
-    log "Perubahan lokal ${ini_file} dipulihkan dari backup ${USER_INI_BACKUP_FILE}."
 }
-
-restore_local_backups() {
-    if [[ "$LOCAL_BACKUPS_RESTORED" == "true" ]]; then
-        return
-    fi
-
-    restore_env_production_after_pull
-    restore_user_ini_after_pull
-    LOCAL_BACKUPS_RESTORED="true"
-}
-
-trap restore_local_backups EXIT
 
 prepare_env_production_before_pull() {
     local env_file=".env.production"
@@ -174,6 +174,54 @@ restore_env_production_after_pull() {
     log "Perubahan lokal ${env_file} dipulihkan dari backup ${ENV_PROD_BACKUP_FILE}."
 }
 
+prepare_user_ini_before_pull() {
+    local ini_file="public/.user.ini"
+    local backup_file=""
+
+    # Handle file whether tracked by git or not - any local change that would block git pull
+    local is_tracked=false
+    if git ls-files --error-unmatch "$ini_file" >/dev/null 2>&1; then
+        is_tracked=true
+    fi
+
+    if [[ -n "$(git status --porcelain -- "$ini_file" 2>/dev/null)" ]]; then
+        backup_file="${APP_DIR}/storage/logs/public-user-ini-before-pull-$(date '+%Y%m%d-%H%M%S').bak"
+        cp -a "$ini_file" "$backup_file" || true
+
+        if $is_tracked; then
+            git checkout -- "$ini_file"
+            log "Perubahan lokal ${ini_file} dibackup ke ${backup_file}, lalu di-checkout dari HEAD."
+        else
+            # File not tracked but has local changes - remove to allow git pull
+            rm -f "$ini_file"
+            log "File lokal ${ini_file} dibackup ke ${backup_file}, lalu dihapus sementara untuk git pull."
+        fi
+        USER_INI_BACKUP_FILE="$backup_file"
+    fi
+}
+
+restore_user_ini_after_pull() {
+    local ini_file="public/.user.ini"
+    if [[ -z "$USER_INI_BACKUP_FILE" || ! -f "$USER_INI_BACKUP_FILE" ]]; then
+        return
+    fi
+
+    cp -a "$USER_INI_BACKUP_FILE" "$ini_file" || true
+    log "Perubahan lokal ${ini_file} dipulihkan dari backup ${USER_INI_BACKUP_FILE}."
+}
+
+restore_local_backups() {
+    if [[ "$LOCAL_BACKUPS_RESTORED" == "true" ]]; then
+        return
+    fi
+
+    restore_env_production_after_pull
+    restore_user_ini_after_pull
+    LOCAL_BACKUPS_RESTORED="true"
+}
+
+trap restore_local_backups EXIT
+
 mkdir -p "$(dirname "$LOCK_FILE")"
 exec 200>"$LOCK_FILE"
 
@@ -188,10 +236,21 @@ log "Mulai deploy branch ${BRANCH}"
 log "Flags: skip_npm_build=${SKIP_NPM_BUILD}, skip_migrations=${SKIP_MIGRATIONS}, db_healthcheck=${DB_HEALTHCHECK}, auto_reset_env_production=${AUTO_RESET_ENV_PRODUCTION}"
 log "Ringkasan healthcheck sebelumnya: $(latest_healthcheck_summary)"
 log "Ringkasan healthcheck saat ini: status=pending."
+
+# STASH all local changes FIRST - this handles ALL file conflicts including deploy.sh itself
+stash_local_changes
+
+# Then do the specific file handling as additional safety net
 prepare_env_production_before_pull
 prepare_user_ini_before_pull
+
 git fetch origin "$BRANCH"
 git pull --ff-only origin "$BRANCH"
+
+# Restore stashed changes first (handles deploy.sh and all other files)
+unstash_local_changes
+
+# Then restore specific files (in case stash failed or was skipped)
 restore_local_backups
 
 if ! command -v "$COMPOSER_BIN" >/dev/null 2>&1; then
